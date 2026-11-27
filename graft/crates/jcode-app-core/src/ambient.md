@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/ambient.rs
+
+- directives · module · L6-L6 — mod directives;
+- manager · module · L7-L7 — mod manager;
+- paths · module · L8-L8 — mod paths;
+- persistence · module · L9-L9 — mod persistence;
+- prompt · module · L10-L10 — mod prompt;
+- runner · module · L11-L11 — pub mod runner;
+- scheduler · module · L12-L12 — pub mod scheduler;
+- VisibleCycleContext · struct · L36-L39 — pub struct VisibleCycleContext
+- context_path · function · L42-L46 — pub fn context_path() -> Result<PathBuf>
+- save · function · L48-L54 — pub fn save(&self) -> Result<()>
+- load · function · L56-L59 — pub fn load() -> Result<Self>
+- result_path · function · L61-L65 — pub fn result_path() -> Result<PathBuf>
+- AmbientStatus · enum · L70-L83 — pub enum AmbientStatus
+- Priority · enum · L87-L91 — pub enum Priority
+- ScheduleTarget · enum · L96-L104 — pub enum ScheduleTarget
+- is_direct_delivery · function · L107-L109 — pub fn is_direct_delivery(&self) -> bool
+- ScheduledItem · struct · L114-L136 — pub struct ScheduledItem
+- ItemState · enum · L148-L159 — pub enum ItemState
+- as_str · function · L162-L171 — pub fn as_str(self) -> &'static str
+- DeliveryAttempt · struct · L177-L198 — pub struct DeliveryAttempt
+- DeliveryRecord · struct · L201-L216 — pub struct DeliveryRecord
+- is_untouched · function · L219-L221 — fn is_untouched(&self) -> bool
+- AmbientState · struct · L226-L233 — pub struct AmbientState
+- AmbientCycleResult · struct · L237-L249 — pub struct AmbientCycleResult
+- CycleStatus · enum · L252-L256 — pub enum CycleStatus
+- ScheduleRequest · struct · L259-L278 — pub struct ScheduleRequest
+- ambient_tests · module · L286-L286 — mod ambient_tests;

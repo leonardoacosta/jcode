@@ -1,0 +1,39 @@
+# crates/jcode-tui-core/src/anchor_stability.rs
+
+- BLANK_ROW_HASH · constant · L23-L23 — pub const BLANK_ROW_HASH: u64 = 0;
+- EVENT_LOG_CAP · constant · L26-L26 — const EVENT_LOG_CAP: usize = 256;
+- BIG_POP_ROWS · constant · L30-L30 — const BIG_POP_ROWS: usize = 5;
+- SLIDE_TOLERANCE · constant · L35-L35 — const SLIDE_TOLERANCE: i32 = 2;
+- MASS_CHANGE_SURVIVOR_FRACTION · constant · L39-L39 — const MASS_CHANGE_SURVIVOR_FRACTION: f64 = 0.5;
+- MASS_CHANGE_MIN_ROWS · constant · L43-L43 — const MASS_CHANGE_MIN_ROWS: usize = 8;
+- AnchorFrame · struct · L47-L58 — pub struct AnchorFrame
+- JarringKind · enum · L63-L77 — pub enum JarringKind
+- JarringEvent · struct · L81-L89 — pub struct JarringEvent
+- AnchorDiff · struct · L93-L118 — pub struct AnchorDiff
+- AnchorStabilityReport · struct · L122-L153 — pub struct AnchorStabilityReport
+- AnchorStabilityRecorder · struct · L156-L177 — pub struct AnchorStabilityRecorder
+- default · function · L180-L182 — fn default() -> Self
+- new · function · L186-L208 — pub fn new() -> Self
+- observe · function · L212-L330 — pub fn observe(&mut self, frame: AnchorFrame) -> Option<AnchorDiff>
+- push_event · function · L332-L337 — fn push_event(&mut self, event: JarringEvent)
+- report · function · L339-L384 — pub fn report(&self) -> AnchorStabilityReport
+- unique_nonblank_hashes · function · L388-L402 — fn unique_nonblank_hashes(rows: &[u64]) -> HashMap<u64, usize>
+- align_frames · function · L408-L486 — fn align_frames(prev: &[u64], cur: &[u64]) -> AnchorDiff
+- tests · module · L489-L701 — mod tests
+- frame · function · L492-L500 — fn frame(rows: Vec<u64>) -> AnchorFrame
+- hashes · function · L502-L504 — fn hashes(range: std::ops::Range<u64>) -> Vec<u64>
+- first_frame_yields_no_diff · function · L507-L510 — fn first_frame_yields_no_diff()
+- identical_frames_report_no_motion · function · L513-L524 — fn identical_frames_report_no_motion()
+- tail_append_scrolls_up_without_jarring_events · function · L527-L538 — fn tail_append_scrolls_up_without_jarring_events()
+- block_jumping_to_bottom_is_a_reposition · function · L541-L555 — fn block_jumping_to_bottom_is_a_reposition()
+- screen_pinned_footer_rows_are_stationary_not_repositioned · function · L558-L578 — fn screen_pinned_footer_rows_are_stationary_not_repositioned()
+- insertion_above_pushes_content_down · function · L581-L591 — fn insertion_above_pushes_content_down()
+- large_single_frame_block_is_a_big_pop · function · L594-L603 — fn large_single_frame_block_is_a_big_pop()
+- small_incremental_appends_are_not_big_pops · function · L606-L615 — fn small_incremental_appends_are_not_big_pops()
+- blink_detects_row_disappearing_and_returning · function · L618-L626 — fn blink_detects_row_disappearing_and_returning()
+- scroll_change_skips_classification · function · L629-L640 — fn scroll_change_skips_classification()
+- resize_skips_classification · function · L643-L653 — fn resize_skips_classification()
+- mass_reflow_detected_when_most_rows_change · function · L656-L663 — fn mass_reflow_detected_when_most_rows_change()
+- duplicate_hashes_do_not_vote_or_count_as_displaced · function · L666-L674 — fn duplicate_hashes_do_not_vote_or_count_as_displaced()
+- blank_rows_are_ignored_entirely · function · L677-L686 — fn blank_rows_are_ignored_entirely()
+- report_counts_appeared_stats · function · L689-L700 — fn report_counts_appeared_stats()

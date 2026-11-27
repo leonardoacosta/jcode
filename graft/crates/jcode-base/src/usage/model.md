@@ -1,0 +1,48 @@
+# crates/jcode-base/src/usage/model.rs
+
+- mask_email · function · L9-L30 — pub(super) fn mask_email(email: &str) -> String
+- reset_timestamp_from_json_value · function · L36-L53 — pub(super) fn reset_timestamp_from_json_value(value: &serde_json::Value) -> Option<String>
+- openai_provider_display_name · function · L55-L72 — pub(super) fn openai_provider_display_name(
+- UsageData · struct · L76-L99 — pub struct UsageData
+- model_scoped_exhausted · function · L106-L120 — pub fn model_scoped_exhausted(&self, model: &str) -> bool
+- is_stale · function · L123-L151 — pub fn is_stale(&self) -> bool
+- is_rate_limited · function · L154-L159 — fn is_rate_limited(&self) -> bool
+- five_hour_percent · function · L162-L164 — pub fn five_hour_percent(&self) -> String
+- seven_day_percent · function · L167-L169 — pub fn seven_day_percent(&self) -> String
+- ModelScopedUsageWindow · struct · L173-L178 — pub struct ModelScopedUsageWindow
+- UsageResponse · struct · L182-L191 — pub(super) struct UsageResponse
+- StructuredUsageLimit · struct · L194-L199 — pub(super) struct StructuredUsageLimit
+- UsageLimitScope · struct · L202-L204 — pub(super) struct UsageLimitScope
+- UsageLimitModel · struct · L207-L209 — pub(super) struct UsageLimitModel
+- UsageWindow · struct · L212-L215 — pub(super) struct UsageWindow
+- ExtraUsageResponse · struct · L218-L220 — pub(super) struct ExtraUsageResponse
+- OpenAIUsageWindow · struct · L226-L231 — pub struct OpenAIUsageWindow
+- OpenAIUsageData · struct · L235-L244 — pub struct OpenAIUsageData
+- banked_reset_available_for_account · function · L250-L270 — pub fn banked_reset_available_for_account(&self, account_label: Option<&str>) -> bool
+- age_ms · function · L272-L274 — pub fn age_ms(&self) -> Option<u128>
+- freshness_state · function · L276-L284 — pub fn freshness_state(&self) -> &'static str
+- exhausted · function · L286-L300 — pub fn exhausted(&self) -> bool
+- diagnostic_fields · function · L302-L323 — pub fn diagnostic_fields(&self) -> String
+- is_stale · function · L325-L353 — pub fn is_stale(&self) -> bool
+- is_rate_limited · function · L355-L360 — fn is_rate_limited(&self) -> bool
+- is_transport_error · function · L363-L367 — pub(crate) fn is_transport_error(&self) -> bool
+- has_limits · function · L369-L374 — pub fn has_limits(&self) -> bool
+- MultiAccountProviderKind · enum · L378-L381 — pub enum MultiAccountProviderKind
+- display_name · function · L384-L389 — pub fn display_name(self) -> &'static str
+- switch_command · function · L391-L396 — pub fn switch_command(self, label: &str) -> String
+- AccountUsageSnapshot · struct · L400-L411 — pub struct AccountUsageSnapshot
+- summary · function · L414-L450 — pub fn summary(&self) -> String
+- preference_score · function · L452-L459 — fn preference_score(&self) -> f32
+- AccountUsageProbe · struct · L463-L467 — pub struct AccountUsageProbe
+- current_account · function · L470-L474 — pub fn current_account(&self) -> Option<&AccountUsageSnapshot>
+- current_exhausted · function · L476-L480 — pub fn current_exhausted(&self) -> bool
+- has_multiple_accounts · function · L482-L484 — pub fn has_multiple_accounts(&self) -> bool
+- best_available_alternative · function · L486-L496 — pub fn best_available_alternative(&self) -> Option<&AccountUsageSnapshot>
+- all_accounts_exhausted · function · L498-L505 — pub fn all_accounts_exhausted(&self) -> bool
+- switch_guidance · function · L507-L516 — pub fn switch_guidance(&self) -> Option<String>
+- RETRY_AT_MARKER · constant · L519-L519 — const RETRY_AT_MARKER: &str = "retry at ";
+- usage_error_with_retry · function · L523-L541 — pub fn usage_error_with_retry(error: Option<String>, retry: Option<Instant>) -> Option<String>
+- usage_error_retry_at · function · L544-L553 — pub fn usage_error_retry_at(error: &str) -> Option<&str>
+- retry_hint_tests · module · L556-L593 — mod retry_hint_tests
+- retry_hint_roundtrips · function · L560-L575 — fn retry_hint_roundtrips()
+- malformed_retry_hints_are_not_deadlines · function · L578-L592 — fn malformed_retry_hints_are_not_deadlines()

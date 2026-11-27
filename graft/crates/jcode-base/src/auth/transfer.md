@@ -1,0 +1,88 @@
+# crates/jcode-base/src/auth/transfer.rs
+
+- MAX_TRANSFER_BYTES · constant · L27-L27 — pub const MAX_TRANSFER_BYTES: usize = 64 * 1024;
+- MAX_STORE_BYTES · constant · L28-L28 — const MAX_STORE_BYTES: usize = 1024 * 1024;
+- TRANSFER_VERSION · constant · L29-L29 — const TRANSFER_VERSION: u32 = 1;
+- TransferProvider · enum · L33-L36 — pub enum TransferProvider
+- as_str · function · L39-L44 — pub fn as_str(self) -> &'static str
+- store_name · function · L46-L51 — fn store_name(self) -> &'static str
+- Err · type · L55-L55 — type Err = TransferError;
+- from_str · function · L57-L63 — fn from_str(value: &str) -> Result<Self, Self::Err>
+- TransferError · enum · L68-L84 — pub enum TransferError
+- message · function · L87-L121 — pub fn message(self) -> &'static str
+- fmt · function · L125-L127 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- CredentialTransfer · struct · L134-L136 — pub struct CredentialTransfer
+- as_bytes · function · L139-L141 — pub fn as_bytes(&self) -> &[u8]
+- Envelope · struct · L146-L150 — struct Envelope<T>
+- OpenAiCredential · struct · L154-L163 — struct OpenAiCredential
+- ClaudeCredential · struct · L167-L175 — struct ClaudeCredential
+- validate_tokens · function · L177-L185 — fn validate_tokens(access: &str, refresh: &str, expires: Option<i64>) -> Result<(), TransferError>
+- serialize · function · L187-L201 — fn serialize<T: Serialize>(
+- available_local · function · L205-L211 — pub fn available_local(provider: TransferProvider) -> Result<bool, TransferError>
+- available_at · function · L214-L220 — pub fn available_at(home: &Path, provider: TransferProvider) -> Result<bool, TransferError>
+- validate_labels · function · L222-L230 — fn validate_labels<'a>(labels: impl Iterator<Item = &'a str>) -> Result<(), TransferError>
+- export_local · function · L234-L238 — pub fn export_local(provider: TransferProvider) -> Result<CredentialTransfer, TransferError>
+- export_at · function · L241-L246 — pub fn export_at(
+- export_account_at · function · L250-L351 — pub fn export_account_at(
+- Store · struct · L296-L301 — struct Store
+- Legacy · struct · L303-L307 — struct Legacy
+- read_store · function · L353-L383 — fn read_store(path: &Path) -> Result<Vec<u8>, TransferError>
+- import_local · function · L387-L392 — pub fn import_local(provider: TransferProvider, bytes: &[u8]) -> Result<(), TransferError>
+- import_at · function · L394-L470 — pub fn import_at(
+- Store · struct · L450-L453 — struct Store
+- secure_publish · function · L473-L476 — fn secure_publish(_: &Path, _: &str, _: &[u8]) -> Result<(), TransferError>
+- secure_directory · function · L479-L540 — fn secure_directory(home: &Path, create: bool) -> Result<std::fs::File, TransferError>
+- secure_publish · function · L543-L546 — fn secure_publish(home: &Path, name: &str, bytes: &[u8]) -> Result<(), TransferError>
+- publish_in · function · L549-L651 — fn publish_in(
+- Staged · struct · L581-L584 — struct Staged<'a>
+- drop · function · L586-L590 — fn drop(&mut self)
+- CloudCredentialTransfer · struct · L655-L659 — pub struct CloudCredentialTransfer
+- as_bytes · function · L662-L664 — pub fn as_bytes(&self) -> &[u8]
+- label · function · L665-L667 — pub fn label(&self) -> &str
+- provider · function · L668-L670 — pub fn provider(&self) -> TransferProvider
+- CloudEnvelope · struct · L675-L680 — struct CloudEnvelope
+- cloud_keys · function · L682-L699 — fn cloud_keys(
+- valid_cloud_label · function · L701-L703 — fn valid_cloud_label(label: &str) -> bool
+- cloud_account · function · L707-L736 — fn cloud_account(
+- parse_cloud · function · L738-L762 — fn parse_cloud(
+- cloud_store · function · L764-L795 — fn cloud_store(
+- export_cloud_local · function · L799-L806 — pub fn export_cloud_local(
+- cloud_accounts_at · function · L811-L842 — pub fn cloud_accounts_at(home: &Path) -> Result<Vec<(TransferProvider, String)>, TransferError>
+- export_cloud_account_at · function · L846-L894 — pub fn export_cloud_account_at(
+- import_cloud_at · function · L912-L919 — pub fn import_cloud_at(
+- import_cloud_handoff_at · function · L925-L932 — pub fn import_cloud_handoff_at(
+- import_cloud_return_at · function · L941-L957 — pub fn import_cloud_return_at(
+- import_cloud_local · function · L959-L966 — pub fn import_cloud_local(
+- identity_hints_match · function · L968-L993 — fn identity_hints_match(
+- identity_hints_present · function · L995-L1003 — fn identity_hints_present(provider: TransferProvider, account: &serde_json::Value) -> bool
+- cloud_expiry · function · L1005-L1014 — fn cloud_expiry(provider: TransferProvider, account: &serde_json::Value) -> Option<i64>
+- import_cloud_inner · function · L1016-L1160 — fn import_cloud_inner(
+- read_in · function · L1163-L1203 — fn read_in(directory: &std::fs::File, name: &str, private: bool) -> Result<Vec<u8>, TransferError>
+- tests · module · L1206-L2185 — mod tests
+- FUTURE · constant · L1213-L1213 — const FUTURE: i64 = 4_102_444_800_000;
+- cloud_fixture · function · L1215-L1228 — fn cloud_fixture(provider: TransferProvider, label: &str) -> Vec<u8>
+- revised · function · L1230-L1234 — fn revised(bytes: &[u8], key: &str, value: Value) -> Vec<u8>
+- cloud_enumerates_all_accounts_without_selecting_or_exporting_extra_fields · function · L1237-L1270 — fn cloud_enumerates_all_accounts_without_selecting_or_exporting_extra_fields()
+- cloud_handoff_replaces_stale_rotated_copy_but_not_other_identity · function · L1273-L1304 — fn cloud_handoff_replaces_stale_rotated_copy_but_not_other_identity()
+- cloud_handoff_accepts_destination_entry_missing_identity_hints · function · L1307-L1339 — fn cloud_handoff_accepts_destination_entry_missing_identity_hints()
+- cloud_roundtrip_preserves_exact_label_and_expired_refreshable_account · function · L1342-L1387 — fn cloud_roundtrip_preserves_exact_label_and_expired_refreshable_account()
+- cloud_merge_preserves_unrelated_accounts_fields_and_active_selection · function · L1390-L1440 — fn cloud_merge_preserves_unrelated_accounts_fields_and_active_selection()
+- cloud_refresh_requires_same_identity_and_preserves_unknown_account_fields · function · L1443-L1488 — fn cloud_refresh_requires_same_identity_and_preserves_unknown_account_fields()
+- cloud_identityless_return_requires_original_departure_and_no_intervening_update · function · L1491-L1526 — fn cloud_identityless_return_requires_original_departure_and_no_intervening_update()
+- cloud_validation_is_bounded_and_does_not_modify_existing_store · function · L1529-L1585 — fn cloud_validation_is_bounded_and_does_not_modify_existing_store()
+- cloud_rejects_unsafe_files_and_ancestors_without_touching_targets · function · L1588-L1646 — fn cloud_rejects_unsafe_files_and_ancestors_without_touching_targets()
+- cloud_concurrent_imports_do_not_lose_unrelated_accounts · function · L1649-L1673 — fn cloud_concurrent_imports_do_not_lose_unrelated_accounts()
+- cloud_rejects_unlabeled_legacy_and_duplicate_labels · function · L1676-L1704 — fn cloud_rejects_unlabeled_legacy_and_duplicate_labels()
+- fixture · function · L1706-L1719 — fn fixture(provider: TransferProvider, token: &str) -> Vec<u8>
+- source · function · L1721-L1739 — fn source(home: &Path, provider: TransferProvider) -> Vec<u8>
+- round_trip_only_active_account_leaves_source_and_other_stores_unchanged · function · L1742-L1791 — fn round_trip_only_active_account_leaves_source_and_other_stores_unchanged()
+- explicit_selection_is_respected_and_missing_selection_never_falls_back · function · L1794-L1809 — fn explicit_selection_is_respected_and_missing_selection_never_falls_back()
+- availability_never_discovers_external_or_unrelated_credentials · function · L1812-L1851 — fn availability_never_discovers_external_or_unrelated_credentials()
+- supported_provider_set_and_expiry_rules_are_explicit · function · L1854-L1897 — fn supported_provider_set_and_expiry_rules_are_explicit()
+- openai_jwt_expiry_fallback_is_checked_and_persisted_without_source_mutation · function · L1900-L1961 — fn openai_jwt_expiry_fallback_is_checked_and_persisted_without_source_mutation()
+- legacy_claude_export_does_not_migrate_the_source · function · L1964-L1975 — fn legacy_claude_export_does_not_migrate_the_source()
+- every_existing_destination_is_refused_without_reading_or_modifying_it · function · L1978-L2001 — fn every_existing_destination_is_refused_without_reading_or_modifying_it()
+- payload_validation_precedes_all_filesystem_writes_and_errors_are_static · function · L2004-L2058 — fn payload_validation_precedes_all_filesystem_writes_and_errors_are_static()
+- source_bounds_malformed_and_expired_stores_fail_closed · function · L2061-L2106 — fn source_bounds_malformed_and_expired_stores_fail_closed()
+- symlink_and_nonregular_destinations_cannot_be_followed · function · L2109-L2144 — fn symlink_and_nonregular_destinations_cannot_be_followed()
+- racing_imports_have_exactly_one_winner_and_no_partial_or_leftover_files · function · L2147-L2184 — fn racing_imports_have_exactly_one_winner_and_no_partial_or_leftover_files()

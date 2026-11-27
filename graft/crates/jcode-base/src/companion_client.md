@@ -1,0 +1,27 @@
+# crates/jcode-base/src/companion_client.rs
+
+- PROTOCOL_VERSION · constant · L21-L21 — pub const PROTOCOL_VERSION: u32 = 1;
+- CONNECT_TIMEOUT · constant · L23-L23 — const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+- CompanionRequest · enum · L27-L77 — pub enum CompanionRequest
+- spawn_terminal · function · L82-L117 — pub fn spawn_terminal(
+- runtime_env_wire · module · L119-L143 — mod runtime_env_wire
+- serialize · function · L123-L132 — pub fn serialize<S>(env: &[(String, String)], serializer: S) -> Result<S::Ok, S::Error>
+- deserialize · function · L134-L142 — pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<(String, String)>, D::Error>
+- CompanionResponse · struct · L146-L156 — pub struct CompanionResponse
+- ok · function · L159-L166 — pub fn ok(message: impl Into<String>) -> Self
+- error · function · L168-L175 — pub fn error(message: impl Into<String>) -> Self
+- DISABLED_SUFFIX · constant · L180-L180 — pub const DISABLED_SUFFIX: &str = "is disabled in [companion] config";
+- socket_path · function · L183-L188 — pub fn socket_path() -> PathBuf
+- CompanionError · enum · L192-L199 — pub enum CompanionError
+- fmt · function · L202-L208 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- request · function · L214-L219 — pub fn request(
+- request_at · function · L221-L252 — pub fn request_at(
+- request_async · function · L255-L263 — pub async fn request_async(
+- open_url · function · L270-L285 — pub fn open_url(url: &str) -> bool
+- is_running · function · L288-L290 — pub fn is_running() -> bool
+- tests · module · L293-L471 — mod tests
+- requests_round_trip_as_tagged_json · function · L297-L322 — fn requests_round_trip_as_tagged_json()
+- contextual_terminal_requests_use_a_distinct_filtered_wire_variant · function · L325-L430 — fn contextual_terminal_requests_use_a_distinct_filtered_wire_variant()
+- missing_socket_reports_unavailable · function · L434-L443 — fn missing_socket_reports_unavailable()
+- failed_reply_maps_to_failed_error · function · L447-L470 — fn failed_reply_maps_to_failed_error()
+- OldCompanionRequest · enum · L477-L503 — enum OldCompanionRequest

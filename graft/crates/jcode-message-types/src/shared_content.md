@@ -1,0 +1,44 @@
+# crates/jcode-message-types/src/shared_content.rs
+
+- bench_tests · module · L6-L6 — mod bench_tests;
+- SharedContent · struct · L16-L16 — pub struct SharedContent(Arc<ContentPayload>);
+- fmt · function · L19-L24 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- ContentPayload · struct · L29-L33 — struct ContentPayload
+- clone · function · L36-L42 — fn clone(&self) -> Self
+- ContentMetrics · struct · L46-L49 — struct ContentMetrics
+- serialized_json_bytes · function · L54-L72 — pub fn serialized_json_bytes(&self) -> usize
+- Counter · struct · L57-L57 — struct Counter(usize);
+- write · function · L59-L62 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- flush · function · L63-L65 — fn flush(&mut self) -> std::io::Result<()>
+- record_serialized_json_bytes · function · L74-L80 — pub(crate) fn record_serialized_json_bytes(&self, bytes: usize)
+- cached_message_hash · function · L82-L107 — pub(crate) fn cached_message_hash(
+- mutable_payload · function · L109-L120 — fn mutable_payload(&mut self) -> &mut ContentPayload
+- into_vec · function · L122-L127 — pub fn into_vec(self) -> Vec<ContentBlock>
+- shares_storage_with · function · L130-L132 — pub fn shares_storage_with(&self, other: &Self) -> bool
+- from · function · L136-L141 — fn from(value: Vec<ContentBlock>) -> Self
+- from · function · L145-L147 — fn from(value: SharedContent) -> Self
+- Target · type · L151-L151 — type Target = Vec<ContentBlock>;
+- deref · function · L152-L154 — fn deref(&self) -> &Self::Target
+- deref_mut · function · L158-L160 — fn deref_mut(&mut self) -> &mut Self::Target
+- as_ref · function · L164-L166 — fn as_ref(&self) -> &[ContentBlock]
+- as_mut · function · L170-L172 — fn as_mut(&mut self) -> &mut [ContentBlock]
+- from_iter · function · L176-L178 — fn from_iter<T: IntoIterator<Item = ContentBlock>>(iter: T) -> Self
+- extend · function · L182-L184 — fn extend<T: IntoIterator<Item = ContentBlock>>(&mut self, iter: T)
+- Item · type · L188-L188 — type Item = ContentBlock;
+- IntoIter · type · L189-L189 — type IntoIter = std::vec::IntoIter<ContentBlock>;
+- into_iter · function · L190-L192 — fn into_iter(self) -> Self::IntoIter
+- Item · type · L196-L196 — type Item = &'a ContentBlock;
+- IntoIter · type · L197-L197 — type IntoIter = std::slice::Iter<'a, ContentBlock>;
+- into_iter · function · L198-L200 — fn into_iter(self) -> Self::IntoIter
+- Item · type · L204-L204 — type Item = &'a mut ContentBlock;
+- IntoIter · type · L205-L205 — type IntoIter = std::slice::IterMut<'a, ContentBlock>;
+- into_iter · function · L206-L208 — fn into_iter(self) -> Self::IntoIter
+- tests · module · L212-L380 — mod tests
+- payload · function · L215-L222 — fn payload() -> SharedContent
+- cached_sizes_and_hashes_detach_on_all_mutation_paths · function · L225-L263 — fn cached_sizes_and_hashes_detach_on_all_mutation_paths()
+- message_hash_and_size_match_legacy_bytes_across_metadata_and_edits · function · L266-L294 — fn message_hash_and_size_match_legacy_bytes_across_metadata_and_edits()
+- benchmark_repeated_message_hash_and_size · function · L298-L333 — fn benchmark_repeated_message_hash_and_size()
+- clone_shares_payload_until_mutation · function · L336-L347 — fn clone_shares_payload_until_mutation()
+- serde_matches_legacy_vector_bytes · function · L350-L356 — fn serde_matches_legacy_vector_bytes()
+- uniquely_owned_into_vec_reuses_vector_allocation · function · L359-L364 — fn uniquely_owned_into_vec_reuses_vector_allocation()
+- owned_iteration_preserves_other_snapshots · function · L367-L379 — fn owned_iteration_preserves_other_snapshots()

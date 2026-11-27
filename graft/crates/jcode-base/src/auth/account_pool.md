@@ -1,0 +1,47 @@
+# crates/jcode-base/src/auth/account_pool.rs
+
+- FILE_NAME · constant · L17-L17 — const FILE_NAME: &str = "account-pool.json";
+- AccountPool · struct · L20-L31 — pub struct AccountPool
+- subscription_label · function · L34-L57 — pub fn subscription_label(key: &str) -> Option<String>
+- subscription_priority · function · L61-L81 — fn subscription_priority(key: &str, plan: Option<&str>) -> u32
+- account_key · function · L84-L89 — pub fn account_key(provider: &str, label: Option<&str>) -> String
+- OAuthLogin · struct · L93-L100 — pub struct OAuthLogin
+- oauth_logins · function · L103-L130 — pub fn oauth_logins() -> Vec<OAuthLogin>
+- default_route_for_key · function · L135-L146 — pub fn default_route_for_key(key: &str) -> Option<&'static str>
+- model_for_route · function · L151-L169 — fn model_for_route(model: Option<&str>, route: &str) -> Option<String>
+- same_route · function · L173-L182 — pub fn same_route(a: &str, b: &str) -> bool
+- account_for_route · function · L186-L200 — pub fn account_for_route<'a>(
+- active_label · function · L202-L208 — fn active_label(provider: &str) -> Option<String>
+- default_account_key · function · L212-L216 — pub fn default_account_key<'a>(keys: impl IntoIterator<Item = &'a str> + Clone) -> Option<&'a str>
+- promote_route · function · L222-L240 — fn promote_route(&mut self, route: &str, active: impl Fn(&str) -> Option<String>) -> bool
+- key_for_route · function · L245-L259 — fn key_for_route(route: &str, active: impl Fn(&str) -> Option<String>) -> Option<(String, bool)>
+- sync_order_with_default_route · function · L263-L269 — pub fn sync_order_with_default_route(route: &str) -> Result<()>
+- apply_default_account · function · L274-L310 — pub fn apply_default_account(key: &str) -> Result<bool>
+- JCODE_SUBSCRIPTION_KEY · constant · L315-L315 — pub const JCODE_SUBSCRIPTION_KEY: &str = "jcode";
+- default_member · function · L320-L322 — pub fn default_member(key: &str, api_key: bool) -> bool
+- path · function · L324-L326 — fn path() -> Result<PathBuf>
+- priority · function · L329-L334 — pub fn priority(&self, key: &str) -> u32
+- set_priority · function · L336-L338 — pub fn set_priority(&mut self, key: &str, priority: u32)
+- clear_priority · function · L340-L342 — pub fn clear_priority(&mut self, key: &str)
+- load · function · L345-L351 — pub fn load() -> Self
+- save · function · L353-L355 — pub fn save(&self) -> Result<()>
+- is_member · function · L359-L367 — pub fn is_member(&self, key: &str, default: bool) -> bool
+- partition · function · L373-L403 — pub fn partition<'a>(&self, accounts: &'a [(String, bool)]) -> (Vec<&'a str>, Vec<&'a str>)
+- place · function · L408-L428 — pub fn place(&mut self, key: &str, pooled: bool, index: usize, visible: &[&str])
+- rotation · function · L433-L465 — pub fn rotation(
+- routing_rank · function · L471-L490 — fn routing_rank(&self, key: &str) -> (u32, bool)
+- ordered_members · function · L493-L498 — pub fn ordered_members(&self) -> Vec<String>
+- tests · module · L502-L762 — mod tests
+- subscription_tiers_are_conservative_and_overridable · function · L506-L522 — fn subscription_tiers_are_conservative_and_overridable()
+- legacy_pool_loads_without_priorities_and_overrides_roundtrip · function · L525-L533 — fn legacy_pool_loads_without_priorities_and_overrides_roundtrip()
+- priority_tiers_precede_order_and_never_enroll_manual_accounts · function · L536-L572 — fn priority_tiers_precede_order_and_never_enroll_manual_accounts()
+- rotation_stays_with_highest_available_tier_before_lower_tiers · function · L575-L586 — fn rotation_stays_with_highest_available_tier_before_lower_tiers()
+- accounts · function · L588-L593 — fn accounts(entries: &[(&str, bool)]) -> Vec<(String, bool)>
+- account_keys_map_to_distinct_default_routes · function · L596-L612 — fn account_keys_map_to_distinct_default_routes()
+- default_model_follows_same_vendor_routes_only · function · L615-L633 — fn default_model_follows_same_vendor_routes_only()
+- jcode_subscription_joins_by_default_but_comes_last · function · L636-L657 — fn jcode_subscription_joins_by_default_but_comes_last()
+- default_route_changes_elsewhere_reorder_the_pool · function · L660-L688 — fn default_route_changes_elsewhere_reorder_the_pool()
+- defaults_put_subscriptions_in_and_api_keys_out · function · L691-L701 — fn defaults_put_subscriptions_in_and_api_keys_out()
+- placing_moves_between_groups_and_preserves_order · function · L704-L727 — fn placing_moves_between_groups_and_preserves_order()
+- hidden_members_keep_their_place · function · L730-L740 — fn hidden_members_keep_their_place()
+- rotation_cycles_after_current_and_skips_excluded · function · L743-L761 — fn rotation_cycles_after_current_and_skips_excluded()

@@ -1,0 +1,24 @@
+# crates/jcode-base/src/config/composition.rs
+
+- INCLUDE_KEY · constant · L17-L17 — pub(super) const INCLUDE_KEY: &str = "include";
+- Composed · struct · L20-L23 — pub(super) struct Composed
+- redact_message · function · L34-L71 — pub(super) fn redact_message(message: &str) -> String
+- describe_parse_error · function · L74-L96 — pub(super) fn describe_parse_error(path: &Path, text: &str, error: &toml::de::Error) -> String
+- describe_typed_error · function · L99-L101 — pub(super) fn describe_typed_error(path: &Path, error: &toml::de::Error) -> String
+- parse_table · function · L103-L110 — fn parse_table(path: &Path, text: &str) -> anyhow::Result<toml::Table>
+- validate_include_entry · function · L113-L152 — pub(super) fn validate_include_entry(entry: &str) -> anyhow::Result<PathBuf>
+- take_manifest · function · L155-L175 — fn take_manifest(root: &mut toml::Table, root_path: &Path) -> anyhow::Result<Vec<String>>
+- Origins · struct · L177-L180 — struct Origins
+- record · function · L185-L192 — fn record(&mut self, key: &str, value: &toml::Value, source: usize)
+- label · function · L194-L199 — fn label(&self, key: &str) -> &str
+- merge_table · function · L202-L237 — fn merge_table(
+- load_fragments · function · L240-L300 — fn load_fragments(
+- fragment_tables · function · L303-L310 — pub(super) fn fragment_tables(
+- compose · function · L313-L335 — pub(super) fn compose(root_path: &Path, root_text: &str) -> anyhow::Result<Composed>
+- SourceStamp · enum · L338-L342 — enum SourceStamp
+- read · function · L345-L361 — fn read(path: &Path) -> (Self, Option<Vec<u8>>)
+- SourceFingerprint · struct · L369-L372 — pub(crate) struct SourceFingerprint
+- read · function · L375-L391 — pub(crate) fn read(root: Option<PathBuf>) -> Self
+- describe_change · function · L394-L412 — pub(crate) fn describe_change(&self, other: &Self) -> Option<String>
+- source_paths · function · L419-L430 — pub(crate) fn source_paths(root: &Path) -> Vec<PathBuf>
+- selected_includes · function · L433-L453 — fn selected_includes(root_bytes: &[u8]) -> Vec<PathBuf>

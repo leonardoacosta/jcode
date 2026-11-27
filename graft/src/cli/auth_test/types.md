@@ -1,0 +1,29 @@
+# src/cli/auth_test/types.rs
+
+- ResolvedAuthTestTarget · enum · L6-L12 — pub(crate) enum ResolvedAuthTestTarget
+- AuthTestTarget · enum · L15-L23 — pub(crate) enum AuthTestTarget
+- provider_choice · function · L26-L36 — fn provider_choice(self) -> super::provider_init::ProviderChoice
+- label · function · L38-L48 — fn label(self) -> &'static str
+- supports_smoke · function · L50-L52 — fn supports_smoke(self) -> bool
+- from_provider_choice · function · L55-L66 — fn from_provider_choice(choice: &super::provider_init::ProviderChoice) -> Option<Self>
+- credential_paths · function · L68-L158 — fn credential_paths(self) -> Result<Vec<String>>
+- AuthTestStepReport · struct · L162-L166 — struct AuthTestStepReport
+- AuthTestProviderReport · struct · L169-L176 — struct AuthTestProviderReport
+- AuthTestContextModelReport · struct · L179-L184 — struct AuthTestContextModelReport
+- AuthTestContextAuditReport · struct · L187-L195 — struct AuthTestContextAuditReport
+- new · function · L198-L207 — fn new(target: AuthTestTarget) -> Self
+- new_generic · function · L209-L218 — fn new_generic(provider_id: String, credential_paths: Vec<String>) -> Self
+- push_step · function · L220-L229 — fn push_step(&mut self, name: impl Into<String>, ok: bool, detail: impl Into<String>)
+- from_choice · function · L233-L242 — fn from_choice(choice: &super::provider_init::ProviderChoice) -> Option<Self>
+- from_provider · function · L244-L250 — fn from_provider(provider: crate::provider_catalog::LoginProviderDescriptor) -> Option<Self>
+- AuthTestSmokeKind · enum · L254-L257 — enum AuthTestSmokeKind
+- step_name · function · L260-L265 — fn step_name(self) -> &'static str
+- skipped_by_flag_detail · function · L267-L272 — fn skipped_by_flag_detail(self) -> &'static str
+- unsupported_detail · function · L274-L276 — fn unsupported_detail(self) -> &'static str
+- success_detail · function · L278-L285 — fn success_detail(self) -> &'static str
+- failure_detail · function · L287-L297 — fn failure_detail(self, output: &str) -> String
+- run · function · L299-L307 — async fn run(
+- run_for_choice · function · L309-L319 — async fn run_for_choice(
+- set_output · function · L321-L326 — fn set_output(self, report: &mut AuthTestProviderReport, output: String)
+- push_result_step · function · L329-L349 — fn push_result_step<T, E, F>(
+- auth_email_suffix · function · L351-L355 — fn auth_email_suffix(email: Option<&str>) -> String

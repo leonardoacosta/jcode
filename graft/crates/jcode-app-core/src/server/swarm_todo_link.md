@@ -1,0 +1,48 @@
+# crates/jcode-app-core/src/server/swarm_todo_link.rs
+
+- completion_lane_plan · function · L24-L70 — pub(super) fn completion_lane_plan(todos: &[TodoItem]) -> Option<String>
+- is_open · function · L72-L74 — fn is_open(todo: &TodoItem) -> bool
+- is_lane_task · function · L78-L80 — fn is_lane_task(task_id: &str) -> bool
+- plan_items_from_todos · function · L93-L157 — pub(crate) fn plan_items_from_todos(todos: &[TodoItem]) -> Vec<PlanItem>
+- lane_todos_mut · function · L160-L165 — fn lane_todos_mut<'a>(todos: &'a mut [TodoItem], task_id: &str) -> Vec<&'a mut TodoItem>
+- normalize · function · L167-L172 — fn normalize(text: &str) -> String
+- find_todo · function · L174-L196 — fn find_todo<'a>(
+- apply_assignment · function · L199-L233 — pub(crate) fn apply_assignment(
+- apply_task_status · function · L238-L263 — pub(crate) fn apply_task_status(
+- assignment_brief · function · L270-L292 — pub(crate) fn assignment_brief(
+- lane_brief · function · L294-L314 — fn lane_brief(lane: &[TodoItem]) -> String
+- seed_spawn_lane · function · L318-L332 — pub(crate) fn seed_spawn_lane(
+- spawn_lane_message · function · L334-L339 — pub(crate) fn spawn_lane_message(initial_message: Option<&str>, brief: &str) -> String
+- details_for · function · L341-L348 — fn details_for(todos: &mut [TodoItem], task_id: &str, content: &str) -> Option<String>
+- update_todos · function · L350-L362 — fn update_todos(session_id: &str, update: impl FnOnce(&mut Vec<TodoItem>) -> bool)
+- link_assignment · function · L366-L383 — pub(crate) fn link_assignment(
+- apply_plan · function · L387-L406 — pub(crate) fn apply_plan(todos: &mut [TodoItem], items: &[PlanItem]) -> bool
+- sync_plan · function · L411-L416 — pub(crate) fn sync_plan(coordinator_session: &str, items: &[PlanItem])
+- resync_lane_plan · function · L421-L442 — pub(crate) fn resync_lane_plan(todos: &[TodoItem], existing: &[PlanItem]) -> Option<Vec<PlanItem>>
+- resync_plan_after_todo_save · function · L447-L499 — pub(crate) async fn resync_plan_after_todo_save(
+- tests · module · L502-L998 — mod tests
+- todo · function · L505-L514 — fn todo(id: &str, status: &str, stage: Option<u32>) -> TodoItem
+- laned · function · L516-L520 — fn laned(id: &str, stage: u32, group: &str) -> TodoItem
+- completion_lane_snapshot_preserves_incomplete_and_cancelled_tasks · function · L523-L539 — fn completion_lane_snapshot_preserves_incomplete_and_cancelled_tasks()
+- completion_lane_snapshot_bounds_tasks_and_preserves_total · function · L542-L548 — fn completion_lane_snapshot_bounds_tasks_and_preserves_total()
+- deps · function · L550-L555 — fn deps(items: &[PlanItem]) -> Vec<(String, Vec<String>)>
+- explicit_item_completion_releases_lane_before_source_lane_or_phase · function · L558-L591 — fn explicit_item_completion_releases_lane_before_source_lane_or_phase()
+- explicit_dependencies_require_all_items_and_fail_closed_on_removal_or_cancel · function · L594-L620 — fn explicit_dependencies_require_all_items_and_fail_closed_on_removal_or_cancel()
+- worker_item_save_unblocks_consumer_while_worker_lane_is_unfinished · function · L623-L656 — fn worker_item_save_unblocks_consumer_while_worker_lane_is_unfinished()
+- sequential_todos_chain · function · L659-L669 — fn sequential_todos_chain()
+- each_lane_is_one_item_and_stages_chain · function · L672-L694 — fn each_lane_is_one_item_and_stages_chain()
+- stages_order_and_completed_todos_are_skipped · function · L697-L717 — fn stages_order_and_completed_todos_are_skipped()
+- details_reach_the_matching_todo_only · function · L720-L730 — fn details_reach_the_matching_todo_only()
+- plain_plan_items_keep_details_brief · function · L733-L741 — fn plain_plan_items_keep_details_brief()
+- assignment_matches_by_id_then_content · function · L744-L763 — fn assignment_matches_by_id_then_content()
+- only_success_completes_the_todo · function · L766-L772 — fn only_success_completes_the_todo()
+- plan_reconcile_links_lanes_and_completes_idempotently · function · L775-L797 — fn plan_reconcile_links_lanes_and_completes_idempotently()
+- flat_plan_hands_self_or_previous_worker_assignment_to_exact_worker · function · L800-L826 — fn flat_plan_hands_self_or_previous_worker_assignment_to_exact_worker()
+- lane_plan_hands_self_assignment_to_worker_without_changing_statuses · function · L829-L847 — fn lane_plan_hands_self_assignment_to_worker_without_changing_statuses()
+- lane_plan_resyncs_from_todos_keeping_running_state · function · L850-L878 — fn lane_plan_resyncs_from_todos_keeping_running_state()
+- spawn_lane_message_starts_without_a_duplicate_prompt · function · L881-L890 — fn spawn_lane_message_starts_without_a_duplicate_prompt()
+- spawn_lane_seeding_persists_only_the_explicit_phase_lane · function · L893-L932 — fn spawn_lane_seeding_persists_only_the_explicit_phase_lane()
+- lane_brief_lists_steps_with_details_and_rules · function · L935-L946 — fn lane_brief_lists_steps_with_details_and_rules()
+- colliding_ids_never_touch_an_unrelated_todo · function · L949-L970 — fn colliding_ids_never_touch_an_unrelated_todo()
+- duplicate_text_prefers_matching_id · function · L973-L979 — fn duplicate_text_prefers_matching_id()
+- edge_inputs_are_noops · function · L982-L997 — fn edge_inputs_are_noops()

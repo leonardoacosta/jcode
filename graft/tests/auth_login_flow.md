@@ -1,0 +1,23 @@
+# tests/auth_login_flow.rs
+
+- ENV_LOCK · constant · L17-L17 — static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- lock_env · function · L19-L24 — fn lock_env() -> MutexGuard<'static, ()>
+- tracked_env_vars · function · L26-L62 — fn tracked_env_vars() -> Vec<String>
+- TestEnv · struct · L64-L68 — struct TestEnv
+- new · function · L71-L101 — fn new() -> Result<Self>
+- configure_openai_compatible_runtime · function · L103-L128 — fn configure_openai_compatible_runtime(
+- drop · function · L132-L142 — fn drop(&mut self)
+- FakeModelsServer · struct · L145-L149 — struct FakeModelsServer
+- spawn_models_server · function · L151-L157 — fn spawn_models_server(
+- spawn_raw_models_server · function · L159-L216 — fn spawn_raw_models_server(
+- assert_models_request · function · L218-L223 — fn assert_models_request(request: &str)
+- lower_headers · function · L225-L227 — fn lower_headers(request: &str) -> String
+- run_current_thread · function · L229-L235 — fn run_current_thread<T>(future: impl std::future::Future<Output = T>) -> T
+- every_login_provider_has_auth_status_and_tui_copy_metadata · function · L238-L270 — fn every_login_provider_has_auth_status_and_tui_copy_metadata() -> Result<()>
+- live_models_contract_uses_models_endpoint_and_bearer_auth · function · L273-L307 — fn live_models_contract_uses_models_endpoint_and_bearer_auth() -> Result<()>
+- live_models_contract_supports_api_key_header_mode · function · L310-L343 — fn live_models_contract_supports_api_key_header_mode() -> Result<()>
+- local_no_auth_models_contract_sends_no_auth_header · function · L346-L377 — fn local_no_auth_models_contract_sends_no_auth_header() -> Result<()>
+- model_picker_cache_miss_schedules_single_background_refresh_and_updates_routes · function · L380-L449 — fn model_picker_cache_miss_schedules_single_background_refresh_and_updates_routes() -> Result<()>
+- live_model_catalog_failure_keeps_static_and_selected_model_picker_fallbacks · function · L452-L498 — fn live_model_catalog_failure_keeps_static_and_selected_model_picker_fallbacks() -> Result<()>
+- buffer_to_text · function · L500-L510 — fn buffer_to_text(buffer: &Buffer) -> String
+- login_picker_renders_openai_compatible_setup_copy · function · L513-L550 — fn login_picker_renders_openai_compatible_setup_copy() -> Result<()>

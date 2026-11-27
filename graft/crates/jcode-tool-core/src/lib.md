@@ -1,0 +1,28 @@
+# crates/jcode-tool-core/src/lib.rs
+
+- ACCEPT_LARGE_OUTPUT_KEY · constant · L18-L18 — pub const ACCEPT_LARGE_OUTPUT_KEY: &str = "accept_large_output";
+- intent_schema_property · function · L22-L24 — pub fn intent_schema_property() -> Value
+- ensure_intent_in_schema · function · L30-L70 — pub fn ensure_intent_in_schema(mut schema: Value) -> Value
+- StdinInputRequest · struct · L73-L78 — pub struct StdinInputRequest
+- ToolContext · struct · L81-L89 — pub struct ToolContext
+- ToolExecutionMode · enum · L92-L95 — pub enum ToolExecutionMode
+- for_subcall · function · L98-L117 — pub fn for_subcall(&self, tool_call_id: String) -> Self
+- resolve_path · function · L119-L127 — pub fn resolve_path(&self, path: &Path) -> PathBuf
+- Tool · interface · L132-L165 — pub trait Tool: Send + Sync
+- name · function · L134-L134 — fn name(&self) -> &str;
+- mcp_identity · function · L137-L139 — fn mcp_identity(&self) -> Option<(&str, &str)>
+- model_visible · function · L143-L145 — fn model_visible(&self) -> bool
+- description · function · L148-L148 — fn description(&self) -> &str;
+- parameters_schema · function · L151-L151 — fn parameters_schema(&self) -> Value;
+- execute · function · L154-L154 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>;
+- to_definition · function · L157-L164 — fn to_definition(&self) -> ToolDefinition
+- tests · module · L168-L260 — mod tests
+- subcall_ids_are_parent_scoped_and_retry_stable · function · L172-L199 — fn subcall_ids_are_parent_scoped_and_retry_stable()
+- ensure_intent_adds_property_and_required · function · L202-L220 — fn ensure_intent_adds_property_and_required()
+- ensure_intent_creates_required_array_when_missing · function · L223-L230 — fn ensure_intent_creates_required_array_when_missing()
+- ensure_intent_preserves_existing_intent_property · function · L233-L252 — fn ensure_intent_preserves_existing_intent_property()
+- ensure_intent_skips_non_object_schemas · function · L255-L259 — fn ensure_intent_skips_non_object_schemas()
+- escape_hatch_tests · module · L263-L313 — mod escape_hatch_tests
+- never_adds_the_escape_hatch_to_a_schema · function · L267-L289 — fn never_adds_the_escape_hatch_to_a_schema()
+- never_overwrites_a_schema_that_declares_the_flag_itself · function · L292-L304 — fn never_overwrites_a_schema_that_declares_the_flag_itself()
+- the_schema_key_matches_what_the_guard_reads · function · L307-L312 — fn the_schema_key_matches_what_the_guard_reads()

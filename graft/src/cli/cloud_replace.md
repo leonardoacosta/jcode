@@ -1,0 +1,29 @@
+# src/cli/cloud_replace.rs
+
+- run · function · L5-L76 — pub(super) fn run(target: &Target, yes: bool, dry_run: bool, json: bool) -> Result<()>
+- same_repository · function · L78-L82 — fn same_repository(path: &Path, root: &Path) -> Result<bool>
+- reject_lease · function · L84-L98 — fn reject_lease(root: &Path, lease: &storage::SessionLease) -> Result<()>
+- reject_active_session · function · L100-L108 — fn reject_active_session(root: &Path, id: &str, working_dir: Option<&str>) -> Result<()>
+- reject_owners · function · L110-L139 — fn reject_owners(root: &Path) -> Result<()>
+- resolved_path · function · L141-L153 — fn resolved_path(path: &Path) -> Result<PathBuf>
+- path_error_tests · module · L156-L174 — mod path_error_tests
+- repository_comparison_propagates_symlink_loops · function · L161-L167 — fn repository_comparison_propagates_symlink_loops()
+- repository_comparison_resolves_expected_missing_paths · function · L170-L173 — fn repository_comparison_resolves_expected_missing_paths()
+- validate_destination · function · L176-L215 — fn validate_destination(root: &Path) -> Result<()>
+- install · function · L217-L283 — fn install(repo: &RepoManifest, bundle: &Path, id: &str) -> Result<Option<PathBuf>>
+- receive · function · L285-L319 — pub(super) fn receive(dry_run: bool) -> Result<()>
+- tests · module · L322-L745 — mod tests
+- replacement_requires_confirmation_before_contacting_cloud · function · L326-L329 — fn replacement_requires_confirmation_before_contacting_cloud()
+- replacement_rejects_protected_and_linked_paths · function · L332-L351 — fn replacement_rejects_protected_and_linked_paths()
+- isolated · function · L355-L377 — fn isolated(name: &str) -> bool
+- replacement_rejects_other_session_ownership · function · L380-L416 — fn replacement_rejects_other_session_ownership()
+- durable_return_replays_original_work_after_replacement · function · L419-L502 — fn durable_return_replays_original_work_after_replacement()
+- legacy_export_does_not_require_completion_and_pending_export_can_cancel · function · L505-L554 — fn legacy_export_does_not_require_completion_and_pending_export_can_cancel()
+- durable_return_state_is_private_and_rejects_path_traversal · function · L557-L580 — fn durable_return_state_is_private_and_rejects_path_traversal()
+- replacement_refuses_live_owners_without_touching_checkout · function · L583-L631 — fn replacement_refuses_live_owners_without_touching_checkout()
+- replacement_cli_has_no_session_or_auth_arguments · function · L634-L646 — fn replacement_cli_has_no_session_or_auth_arguments()
+- source · function · L648-L656 — fn source() -> (tempfile::TempDir, tempfile::TempDir, RepoManifest)
+- replacement_preserves_entire_previous_checkout · function · L659-L693 — fn replacement_preserves_entire_previous_checkout()
+- replacement_creates_absent_checkout · function · L696-L711 — fn replacement_creates_absent_checkout()
+- invalid_bundle_never_moves_existing_checkout · function · L714-L737 — fn invalid_bundle_never_moves_existing_checkout()
+- repository_ownership_includes_subdirectories_and_ancestors · function · L740-L744 — fn repository_ownership_includes_subdirectories_and_ancestors()

@@ -1,0 +1,51 @@
+# crates/jcode-setup-hints/src/windows_setup.rs
+
+- detect_terminal · function · L10-L20 — fn detect_terminal() -> &'static str
+- is_alacritty_installed · function · L22-L30 — fn is_alacritty_installed() -> bool
+- is_winget_available · function · L32-L40 — fn is_winget_available() -> bool
+- find_alacritty_path · function · L42-L72 — pub(super) fn find_alacritty_path() -> Option<String>
+- resolve_windows_hotkeys · function · L77-L105 — fn resolve_windows_hotkeys() -> Vec<WindowsHotkey>
+- primary_hotkey_display · function · L107-L117 — pub(super) fn primary_hotkey_display() -> Option<(String, String)>
+- default_windows_launch_entries · function · L119-L128 — fn default_windows_launch_entries() -> Vec<LaunchHotkeyEntry>
+- effective_windows_launch_hotkeys_config · function · L129-L135 — fn effective_windows_launch_hotkeys_config() -> LaunchHotkeysConfig
+- startup_dir · function · L137-L142 — fn startup_dir() -> PathBuf
+- startup_shortcut_path · function · L143-L145 — fn startup_shortcut_path() -> PathBuf
+- hotkey_vbs_path · function · L147-L151 — fn hotkey_vbs_path() -> Result<PathBuf>
+- legacy_hotkey_ps1_path · function · L153-L157 — fn legacy_hotkey_ps1_path() -> Result<PathBuf>
+- remove_file_if_exists · function · L159-L165 — fn remove_file_if_exists(path: &Path) -> Result<()>
+- ps_single_quote · function · L167-L169 — fn ps_single_quote(input: &str) -> String
+- render_stop_windows_hotkey_listeners_script · function · L171-L185 — fn render_stop_windows_hotkey_listeners_script(current_pid: u32) -> String
+- stop_windows_hotkey_listeners · function · L187-L192 — fn stop_windows_hotkey_listeners()
+- render_startup_shortcut_script · function · L194-L217 — fn render_startup_shortcut_script(shortcut_path: &Path, exe_path: &Path) -> String
+- create_startup_shortcut · function · L219-L239 — fn create_startup_shortcut(exe_path: &Path) -> Result<()>
+- uninstall_windows_hotkey_listener · function · L241-L253 — pub(super) fn uninstall_windows_hotkey_listener() -> Result<()>
+- create_hotkey_shortcut · function · L255-L300 — fn create_hotkey_shortcut(_use_alacritty: bool) -> Result<()>
+- CREATE_NO_WINDOW · constant · L283-L283 — const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+- launch_windows_hotkey · function · L302-L328 — fn launch_windows_hotkey(entry: &WindowsHotkey) -> Result<()>
+- prewarm_windows_server · function · L330-L350 — fn prewarm_windows_server() -> Option<std::process::Child>
+- CREATE_NO_WINDOW · constant · L332-L332 — const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+- run_windows_hotkey_listener · function · L352-L362 — pub(super) fn run_windows_hotkey_listener() -> Result<()>
+- wide_null · function · L365-L371 — fn wide_null(text: &str) -> Vec<u16>
+- COPILOT_HOOK_MESSAGE · constant · L374-L374 — const COPILOT_HOOK_MESSAGE: u32 = 0x8000 + 0x4A;
+- COPILOT_HOOK_THREAD_ID · constant · L376-L376 — static COPILOT_HOOK_THREAD_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+- COPILOT_F23_HELD · constant · L378-L378 — static COPILOT_F23_HELD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+- copilot_keyboard_hook · function · L384-L433 — unsafe extern "system" fn copilot_keyboard_hook(
+- windows_native_hotkey_loop · function · L436-L580 — fn windows_native_hotkey_loop(entries: Vec<WindowsHotkey>) -> Result<()>
+- MUTEX_NAME · constant · L447-L447 — const MUTEX_NAME: &str = "Local\\JcodeLaunchHotkeyListener";
+- windows_native_hotkey_loop · function · L583-L585 — fn windows_native_hotkey_loop(_entries: Vec<WindowsHotkey>) -> Result<()>
+- windows_launch_hotkeys_notice · function · L591-L619 — pub(super) fn windows_launch_hotkeys_notice(state: &SetupHintsState) -> Option<StartupHints>
+- reinstall_windows_launch_hotkeys · function · L624-L635 — pub(super) fn reinstall_windows_launch_hotkeys()
+- refresh_windows_launch_hotkeys · function · L637-L640 — pub(super) fn refresh_windows_launch_hotkeys() -> Result<()>
+- install_alacritty · function · L642-L661 — fn install_alacritty() -> Result<()>
+- nudge_hotkey · function · L663-L731 — fn nudge_hotkey(state: &mut SetupHintsState) -> bool
+- nudge_alacritty · function · L733-L817 — fn nudge_alacritty(state: &mut SetupHintsState) -> bool
+- prompt_try_it_out · function · L819-L848 — fn prompt_try_it_out(installed_alacritty: bool)
+- tests · module · L851-L919 — mod tests
+- default_windows_hotkeys_are_shared_defaults_plus_copilot_key · function · L855-L864 — fn default_windows_hotkeys_are_shared_defaults_plus_copilot_key()
+- startup_lifecycle_paths_are_stable_for_upgrade_and_uninstall_cleanup · function · L867-L891 — fn startup_lifecycle_paths_are_stable_for_upgrade_and_uninstall_cleanup()
+- powershell_single_quote_escapes_embedded_quotes · function · L894-L896 — fn powershell_single_quote_escapes_embedded_quotes()
+- listener_stop_sweep_excludes_jcode_and_powershell_processes_running_it · function · L899-L903 — fn listener_stop_sweep_excludes_jcode_and_powershell_processes_running_it()
+- startup_shortcut_uses_native_listener_without_vbscript_or_bypass · function · L906-L918 — fn startup_shortcut_uses_native_listener_without_vbscript_or_bypass()
+- maybe_show_windows_setup_hints · function · L921-L966 — pub(super) fn maybe_show_windows_setup_hints(
+- run_setup_hotkey_windows · function · L968-L1064 — pub(super) fn run_setup_hotkey_windows() -> Result<()>
+- create_windows_desktop_shortcut · function · L1066-L1109 — pub(super) fn create_windows_desktop_shortcut(state: &mut SetupHintsState) -> Result<()>

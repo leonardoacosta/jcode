@@ -1,0 +1,39 @@
+# crates/jcode-companion/src/server.rs
+
+- POWER_LEASE · constant · L16-L16 — const POWER_LEASE: Duration = Duration::from_secs(30);
+- BRIDGE_UPDATE_INTERVAL · constant · L17-L17 — const BRIDGE_UPDATE_INTERVAL: Duration = Duration::from_secs(60 * 60);
+- MAX_REQUEST_BYTES · constant · L18-L18 — const MAX_REQUEST_BYTES: usize = 64 * 1024;
+- CompanionOptions · struct · L21-L37 — pub struct CompanionOptions
+- from_config · function · L41-L53 — pub fn from_config() -> Self
+- capabilities · function · L56-L72 — pub fn capabilities(&self) -> Vec<String>
+- default · function · L76-L87 — fn default() -> Self
+- TerminalLauncher · type · L90-L91 — type TerminalLauncher =
+- Companion · struct · L94-L98 — pub struct Companion
+- LidState · struct · L100-L103 — struct LidState
+- new · function · L106-L127 — fn new(capabilities: Vec<String>) -> Self
+- has · function · L129-L131 — fn has(&self, capability: &str) -> bool
+- handle · function · L133-L190 — pub async fn handle(&self, request: CompanionRequest) -> CompanionResponse
+- launch_terminal · function · L192-L205 — async fn launch_terminal(
+- set_power_active · function · L207-L213 — fn set_power_active(&self, active: bool, now: Instant)
+- expire_power_lease · function · L216-L225 — fn expire_power_lease(&self, now: Instant)
+- release_power · function · L227-L233 — fn release_power(&self)
+- open · function · L236-L239 — async fn open(target: &str) -> Result<String>
+- terminal_command_from_parts · function · L241-L261 — fn terminal_command_from_parts(
+- terminal_command_from_request · function · L263-L319 — fn terminal_command_from_request(
+- run · function · L323-L385 — pub async fn run(options: CompanionOptions) -> Result<()>
+- bind · function · L387-L419 — fn bind(path: &Path) -> Result<jcode_transport::Listener>
+- serve · function · L421-L442 — async fn serve(stream: jcode_transport::Stream, companion: &Companion) -> Result<()>
+- shutdown_signal · function · L444-L459 — async fn shutdown_signal() -> Result<()>
+- browser_bridge_updates · function · L463-L481 — async fn browser_bridge_updates()
+- tests · module · L484-L788 — mod tests
+- companion · function · L487-L489 — fn companion() -> Companion
+- companion_with_terminal_launcher · function · L491-L500 — fn companion_with_terminal_launcher(terminal_launcher: Arc<TerminalLauncher>) -> Companion
+- disabled_features_answer_as_unavailable_to_clients · function · L503-L530 — async fn disabled_features_answer_as_unavailable_to_clients()
+- status_reports_protocol_and_capabilities · function · L533-L538 — async fn status_reports_protocol_and_capabilities()
+- contextual_spawn_request_reconstructs_runtime_and_target_metadata · function · L541-L576 — fn contextual_spawn_request_reconstructs_runtime_and_target_metadata()
+- open_rejects_missing_paths_without_launching · function · L579-L587 — async fn open_rejects_missing_paths_without_launching()
+- power_lease_expires_without_renewal · function · L590-L601 — fn power_lease_expires_without_renewal()
+- serves_requests_over_the_socket · function · L605-L631 — async fn serves_requests_over_the_socket()
+- contextual_spawn_crosses_socket_and_launches_with_filtered_runtime · function · L635-L765 — async fn contextual_spawn_crosses_socket_and_launches_with_filtered_runtime()
+- request · function · L636-L643 — async fn request(path: PathBuf, request: CompanionRequest) -> CompanionResponse
+- refuses_to_replace_a_live_companion · function · L769-L787 — async fn refuses_to_replace_a_live_companion()

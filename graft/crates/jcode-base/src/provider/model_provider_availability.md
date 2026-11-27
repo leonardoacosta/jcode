@@ -1,0 +1,22 @@
+# crates/jcode-base/src/provider/model_provider_availability.rs
+
+- runtime_provider_unavailability · function · L3-L8 — pub(super) fn runtime_provider_unavailability(
+- runtime_provider_unavailability_for_key · function · L10-L27 — pub(super) fn runtime_provider_unavailability_for_key(
+- record_provider_unavailable_for_account · function · L29-L32 — pub fn record_provider_unavailable_for_account(provider: &str, reason: &str)
+- record_provider_unavailable_for_account_label · function · L35-L41 — pub fn record_provider_unavailable_for_account_label(
+- record_provider_unavailable_for_key · function · L43-L59 — pub(super) fn record_provider_unavailable_for_key(key: String, reason: &str)
+- clear_provider_unavailable_for_account · function · L61-L72 — pub fn clear_provider_unavailable_for_account(provider: &str)
+- clear_provider_unavailability_after_request · function · L76-L93 — pub(crate) fn clear_provider_unavailability_after_request(
+- clear_quota_unavailability_after_probe · function · L99-L113 — pub(crate) fn clear_quota_unavailability_after_probe(
+- is_quota_failure · function · L115-L140 — fn is_quota_failure(reason: &str) -> bool
+- clear_openai_provider_unavailability_for_account_label · function · L145-L152 — pub fn clear_openai_provider_unavailability_for_account_label(account_label: Option<&str>)
+- clear_claude_provider_unavailability_for_account_label · function · L156-L163 — pub fn clear_claude_provider_unavailability_for_account_label(account_label: Option<&str>)
+- clear_all_model_unavailability_for_account · function · L166-L170 — pub fn clear_all_model_unavailability_for_account()
+- clear_all_provider_unavailability_for_account · function · L173-L182 — pub fn clear_all_provider_unavailability_for_account()
+- provider_unavailability_detail_for_account · function · L184-L187 — pub fn provider_unavailability_detail_for_account(provider: &str) -> Option<String>
+- provider_unavailability_detail_for_account_label · function · L190-L197 — pub fn provider_unavailability_detail_for_account_label(
+- format_provider_unavailability_detail · function · L199-L211 — pub(super) fn format_provider_unavailability_detail(
+- quota_recovery_tests · module · L214-L282 — mod quota_recovery_tests
+- successful_request_preserves_a_concurrent_sessions_newer_denial · function · L218-L226 — fn successful_request_preserves_a_concurrent_sessions_newer_denial()
+- live_quota_recovery_is_account_scoped_and_preserves_newer_failures · function · L229-L247 — fn live_quota_recovery_is_account_scoped_and_preserves_newer_failures()
+- live_quota_recovery_preserves_auth_transport_and_billing_failures · function · L250-L281 — fn live_quota_recovery_preserves_auth_transport_and_billing_failures()

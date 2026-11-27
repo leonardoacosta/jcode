@@ -1,0 +1,51 @@
+# crates/jcode-tui/src/tui/herdr.rs
+
+- SOURCE · constant · L21-L21 — const SOURCE: &str = "jcode";
+- AGENT · constant · L23-L23 — const AGENT: &str = "jcode";
+- COMMAND_TIMEOUT · constant · L25-L25 — const COMMAND_TIMEOUT: Duration = Duration::from_secs(2);
+- MAX_RESUME_ARGS · constant · L27-L27 — const MAX_RESUME_ARGS: usize = 64;
+- MAX_RESUME_BYTES · constant · L28-L28 — const MAX_RESUME_BYTES: usize = 8 * 1024;
+- AgentState · enum · L31-L34 — pub enum AgentState
+- as_str · function · L37-L42 — fn as_str(self) -> &'static str
+- StateReport · struct · L47-L51 — pub struct StateReport
+- HerdrEnv · struct · L54-L57 — struct HerdrEnv
+- from_lookup · function · L60-L72 — fn from_lookup(get: impl Fn(&str) -> Option<String>) -> Option<Self>
+- Job · enum · L75-L77 — enum Job
+- Slot · struct · L80-L83 — struct Slot
+- Reporter · struct · L85-L89 — struct Reporter
+- REPORTER · constant · L91-L91 — static REPORTER: OnceLock<Option<Reporter>> = OnceLock::new();
+- LAST_SEQ · constant · L92-L92 — static LAST_SEQ: Mutex<u64> = Mutex::new(0);
+- RESUME_UNSUPPORTED · constant · L96-L96 — static RESUME_UNSUPPORTED: AtomicBool = AtomicBool::new(false);
+- reporter · function · L98-L125 — fn reporter() -> Option<&'static Reporter>
+- sync · function · L130-L158 — pub fn sync(state: AgentState, session_id: Option<&str>)
+- release · function · L163-L178 — pub fn release()
+- worker_loop · function · L180-L232 — fn worker_loop(
+- send_report · function · L234-L273 — fn send_report(env: &HerdrEnv, slot: &Arc<(Mutex<Slot>, Condvar)>, report: &StateReport) -> bool
+- USAGE_ERROR_EXIT_CODE · constant · L276-L276 — const USAGE_ERROR_EXIT_CODE: i32 = 2;
+- is_usage_error · function · L278-L280 — fn is_usage_error(status: Option<ExitStatus>) -> bool
+- resume_command · function · L284-L290 — fn resume_command(report: &StateReport) -> Option<&Vec<String>>
+- next_seq · function · L294-L302 — fn next_seq() -> u64
+- report_args · function · L304-L330 — fn report_args(pane_id: &str, report: &StateReport, seq: u64) -> Vec<String>
+- release_args · function · L332-L344 — fn release_args(pane_id: &str, seq: u64) -> Vec<String>
+- valid_resume_argv · function · L348-L364 — pub fn valid_resume_argv(argv: &[String]) -> bool
+- resume_argv_for_session · function · L369-L391 — fn resume_argv_for_session(
+- run_herdr · function · L395-L434 — fn run_herdr(bin: &str, args: &[String]) -> Option<ExitStatus>
+- lock · function · L436-L438 — fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T>
+- tests · module · L441-L741 — mod tests
+- env · function · L444-L450 — fn env(pairs: &[(&str, &str)]) -> Option<HerdrEnv>
+- activates_only_inside_herdr_with_all_vars · function · L453-L480 — fn activates_only_inside_herdr_with_all_vars()
+- report_args_include_resume_command_after_separator · function · L483-L511 — fn report_args_include_resume_command_after_separator()
+- report_args_without_session_omit_resume · function · L514-L522 — fn report_args_without_session_omit_resume()
+- release_args_match_herdr_cli · function · L525-L540 — fn release_args_match_herdr_cli()
+- resume_argv_validation_follows_herdr_rules · function · L543-L554 — fn resume_argv_validation_follows_herdr_rules()
+- resume_argv_keeps_ssh_target_and_selfdev · function · L557-L578 — fn resume_argv_keeps_ssh_target_and_selfdev()
+- seq_is_strictly_increasing · function · L581-L586 — fn seq_is_strictly_increasing()
+- FakeHerdr · struct · L593-L597 — struct FakeHerdr
+- new · function · L601-L632 — fn new(resume_exit_code: i32) -> Self
+- SERIAL · constant · L603-L603 — static SERIAL: Mutex<()> = Mutex::new(());
+- calls · function · L634-L640 — fn calls(&self) -> Vec<String>
+- drop · function · L645-L648 — fn drop(&mut self)
+- idle_report_with_resume · function · L652-L658 — fn idle_report_with_resume() -> StateReport
+- report_falls_back_to_state_only_when_herdr_rejects_resume · function · L662-L677 — fn report_falls_back_to_state_only_when_herdr_rejects_resume()
+- report_keeps_resume_after_non_usage_failure · function · L681-L691 — fn report_keeps_resume_after_non_usage_failure()
+- worker_clears_old_identity_before_reporting_replacement · function · L695-L740 — fn worker_clears_old_identity_before_reporting_replacement()

@@ -1,0 +1,39 @@
+# crates/jcode-tui/src/tui/app/tests/todo_card.rs
+
+- ssh_pinned_todos_arrive_before_history_and_survive_it · function · L4-L75 — fn ssh_pinned_todos_arrive_before_history_and_survive_it()
+- ssh_todos_command_renders_remote_card · function · L78-L110 — fn ssh_todos_command_renders_remote_card()
+- remote_todos_render_and_refresh_without_reading_local_todos · function · L113-L151 — fn remote_todos_render_and_refresh_without_reading_local_todos()
+- todos_command_requires_a_token_boundary · function · L154-L160 — fn todos_command_requires_a_token_boundary()
+- toggle_todo_card_pushes_then_dismisses_trailing_card · function · L163-L183 — fn toggle_todo_card_pushes_then_dismisses_trailing_card()
+- toggle_todo_card_moves_stale_card_to_bottom_instead_of_stacking · function · L186-L203 — fn toggle_todo_card_moves_stale_card_to_bottom_instead_of_stacking()
+- todos_command_defaults_to_card_and_panel_subcommand_keeps_side_panel · function · L206-L224 — fn todos_command_defaults_to_card_and_panel_subcommand_keeps_side_panel()
+- todo_alias_shows_card · function · L227-L231 — fn todo_alias_shows_card()
+- refresh_todo_card_updates_content_when_todos_change · function · L234-L283 — fn refresh_todo_card_updates_content_when_todos_change()
+- refresh_todo_card_updates_content_when_goal_scores_change · function · L286-L350 — fn refresh_todo_card_updates_content_when_goal_scores_change()
+- pinned_band_todo · function · L353-L373 — fn pinned_band_todo(id: &str, content: &str, status: &str) -> crate::todo::TodoItem
+- PinTodosEnvGuard · struct · L376-L376 — struct PinTodosEnvGuard;
+- enable · function · L379-L387 — fn enable() -> Self
+- disable · function · L389-L393 — fn disable() -> Self
+- drop · function · L397-L402 — fn drop(&mut self)
+- pinned_todos_payload_stays_empty_when_config_off · function · L406-L418 — fn pinned_todos_payload_stays_empty_when_config_off()
+- pinned_todos_render_before_resumed_server_history · function · L421-L478 — fn pinned_todos_render_before_resumed_server_history()
+- pinned_todos_session_switch_bypasses_previous_snapshot_and_throttle · function · L481-L525 — fn pinned_todos_session_switch_bypasses_previous_snapshot_and_throttle()
+- pinned_todos_payload_refreshes_and_clears_with_config_and_todos · function · L528-L552 — fn pinned_todos_payload_refreshes_and_clears_with_config_and_todos()
+- session_todos_and_swarm_plan_are_not_info_widget_data · function · L555-L601 — fn session_todos_and_swarm_plan_are_not_info_widget_data()
+- pinned_todos_are_omitted_from_info_widgets · function · L604-L624 — fn pinned_todos_are_omitted_from_info_widgets()
+- pinned_todos_hide_todo_tool_messages_from_the_transcript · function · L627-L668 — fn pinned_todos_hide_todo_tool_messages_from_the_transcript()
+- pinned_todo_band_renders_below_sticky_prompt_without_separator · function · L671-L749 — fn pinned_todo_band_renders_below_sticky_prompt_without_separator()
+- pinned_todo_band_uses_full_width_on_wide_terminals · function · L752-L784 — fn pinned_todo_band_uses_full_width_on_wide_terminals()
+- background_tasks_render_in_widget_data_not_the_pinned_band · function · L787-L821 — fn background_tasks_render_in_widget_data_not_the_pinned_band()
+- background_task_rows_retain_the_most_recently_active_tasks · function · L824-L839 — fn background_task_rows_retain_the_most_recently_active_tasks()
+- indeterminate_background_update_preserves_last_known_percent · function · L842-L857 — fn indeterminate_background_update_preserves_last_known_percent()
+- completed_background_tasks_clear_after_they_stop_being_relevant · function · L860-L890 — fn completed_background_tasks_clear_after_they_stop_being_relevant()
+- clicking_pinned_todo_more_row_expands_the_band · function · L893-L940 — fn clicking_pinned_todo_more_row_expands_the_band()
+- pinned_todo_card_shows_tasks_without_expanding · function · L943-L970 — fn pinned_todo_card_shows_tasks_without_expanding()
+- pinned_band_shows_stage_grid_and_live_swarm_agents_end_to_end · function · L973-L1058 — fn pinned_band_shows_stage_grid_and_live_swarm_agents_end_to_end()
+- pinned_todo_live_status_is_full_width_without_passive_gallery · function · L1062-L1112 — fn pinned_todo_live_status_is_full_width_without_passive_gallery()
+- debug_inject_todos_preserves_role_and_renders_fixture · function · L1115-L1139 — fn debug_inject_todos_preserves_role_and_renders_fixture()
+- expanded_pinned_todo_band_scrolls_when_taller_than_budget · function · L1142-L1166 — fn expanded_pinned_todo_band_scrolls_when_taller_than_budget()
+- pinned_todo_expand_collapse_commands_match_mouse_action · function · L1169-L1201 — fn pinned_todo_expand_collapse_commands_match_mouse_action()
+- pinned_todo_expand_collapse_remote_commands_stay_local · function · L1204-L1227 — fn pinned_todo_expand_collapse_remote_commands_stay_local()
+- additional_resumed_local_snapshot_keeps_polling_so_card_does_not_go_stale · module · L1229-L1229 — mod additional_resumed_local_snapshot_keeps_polling_so_card_does_not_go_stale;

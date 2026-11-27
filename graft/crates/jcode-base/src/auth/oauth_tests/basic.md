@@ -1,0 +1,27 @@
+# crates/jcode-base/src/auth/oauth_tests/basic.rs
+
+- claude_profile_live_organization_schema_detects_max_subscription_tiers · function · L5-L22 — fn claude_profile_live_organization_schema_detects_max_subscription_tiers()
+- pkce_verifier_and_challenge_are_different · function · L25-L30 — fn pkce_verifier_and_challenge_are_different()
+- pkce_challenge_is_base64url · function · L33-L38 — fn pkce_challenge_is_base64url()
+- pkce_challenge_is_sha256_of_verifier · function · L41-L48 — fn pkce_challenge_is_sha256_of_verifier()
+- pkce_generates_unique_values · function · L51-L56 — fn pkce_generates_unique_values()
+- state_is_random_hex · function · L59-L63 — fn state_is_random_hex()
+- state_generates_unique_values · function · L66-L70 — fn state_generates_unique_values()
+- oauth_tokens_serialization_roundtrip · function · L73-L88 — fn oauth_tokens_serialization_roundtrip() -> Result<()>
+- oauth_tokens_without_id_token · function · L91-L104 — fn oauth_tokens_without_id_token() -> Result<()>
+- save_openai_tokens_uses_jcode_home_sandbox · function · L107-L131 — fn save_openai_tokens_uses_jcode_home_sandbox() -> Result<()>
+- save_claude_tokens_preserves_existing_account_metadata · function · L134-L168 — fn save_claude_tokens_preserves_existing_account_metadata() -> Result<()>
+- save_claude_tokens_updates_fox_without_touching_otter · function · L171-L222 — fn save_claude_tokens_updates_fox_without_touching_otter() -> Result<()>
+- claude_oauth_constants · function · L225-L247 — fn claude_oauth_constants()
+- fetch_claude_profile_email_reads_account_email · function · L250-L264 — async fn fetch_claude_profile_email_reads_account_email() -> Result<()>
+- fetch_claude_profile_email_handles_missing_email · function · L267-L280 — async fn fetch_claude_profile_email_handles_missing_email() -> Result<()>
+- claude_profile_subscription_metadata_merges_without_clobbering_tokens · function · L283-L344 — async fn claude_profile_subscription_metadata_merges_without_clobbering_tokens() -> Result<()>
+- claude_profile_prefetch_throttles_per_home_and_label · function · L347-L389 — fn claude_profile_prefetch_throttles_per_home_and_label()
+- claude_profile_prefetch_without_runtime_is_safe · function · L392-L394 — fn claude_profile_prefetch_without_runtime_is_safe()
+- fetch_claude_profile_email_propagates_http_error · function · L397-L412 — async fn fetch_claude_profile_email_propagates_http_error() -> Result<()>
+- openai_oauth_constants · function · L415-L421 — fn openai_oauth_constants()
+- wait_for_callback_async_parses_code · function · L424-L454 — async fn wait_for_callback_async_parses_code() -> Result<()>
+- wait_for_callback_async_on_prebound_listener_parses_code · function · L457-L487 — async fn wait_for_callback_async_on_prebound_listener_parses_code() -> Result<()>
+- wait_for_callback_async_ignores_wrong_state_until_valid_callback · function · L490-L524 — async fn wait_for_callback_async_ignores_wrong_state_until_valid_callback() -> Result<()>
+- wait_for_callback_async_ignores_missing_code_until_valid_callback · function · L527-L560 — async fn wait_for_callback_async_ignores_missing_code_until_valid_callback() -> Result<()>
+- wait_for_callback_async_surfaces_provider_error · function · L563-L591 — async fn wait_for_callback_async_surfaces_provider_error() -> Result<()>

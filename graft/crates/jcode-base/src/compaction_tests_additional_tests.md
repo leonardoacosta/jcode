@@ -1,0 +1,15 @@
+# crates/jcode-base/src/compaction_tests_additional_tests.rs
+
+- test_new_manager · function · L4-L9 — fn test_new_manager()
+- test_notify_message_added · function · L12-L17 — fn test_notify_message_added()
+- test_restored_messages_do_not_trigger_compaction_immediately · function · L20-L33 — fn test_restored_messages_do_not_trigger_compaction_immediately()
+- test_new_message_after_restore_reenables_compaction · function · L36-L53 — fn test_new_message_after_restore_reenables_compaction()
+- test_token_estimate · function · L56-L64 — fn test_token_estimate()
+- test_should_compact · function · L67-L80 — fn test_should_compact()
+- test_context_usage_prefers_observed_tokens · function · L83-L91 — fn test_context_usage_prefers_observed_tokens()
+- reactive_threshold_accepts_tokens_or_percentage · function · L94-L126 — fn reactive_threshold_accepts_tokens_or_percentage()
+- test_should_compact_uses_observed_tokens · function · L129-L140 — fn test_should_compact_uses_observed_tokens()
+- test_messages_for_api_no_summary · function · L143-L154 — fn test_messages_for_api_no_summary()
+- test_force_compact_applies_summary · function · L157-L200 — async fn test_force_compact_applies_summary()
+- test_guard_below_80_does_nothing · function · L203-L225 — async fn test_guard_below_80_does_nothing()
+- test_guard_between_80_and_95_starts_background_only · function · L228-L255 — async fn test_guard_between_80_and_95_starts_background_only()

@@ -1,0 +1,38 @@
+# crates/jcode-sdk/src/native_ssh.rs
+
+- NativeSshKey · struct · L19-L22 — pub struct NativeSshKey
+- fmt · function · L25-L29 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- generate · function · L34-L44 — pub fn generate(comment: &str) -> Result<Self>
+- from_openssh · function · L47-L56 — pub fn from_openssh(pem: &str) -> Result<Self>
+- from_private · function · L58-L76 — fn from_private(private: russh::keys::PrivateKey, comment: &str) -> Result<Self>
+- public_openssh · function · L79-L81 — pub fn public_openssh(&self) -> &str
+- NativeSshOptions · struct · L86-L101 — pub struct NativeSshOptions
+- new · function · L104-L118 — pub fn new(target: CloudTarget, key: NativeSshKey) -> Self
+- remote_command · function · L120-L134 — fn remote_command(&self) -> Result<String>
+- PinnedHost · struct · L137-L140 — struct PinnedHost
+- Error · type · L143-L143 — type Error = russh::Error;
+- check_server_key · function · L144-L160 — async fn check_server_key(
+- Outgoing · enum · L163-L166 — enum Outgoing
+- NativeSshTransport · struct · L169-L172 — pub struct NativeSshTransport
+- connect · function · L176-L286 — pub fn connect(options: &NativeSshOptions) -> Result<Self>
+- open · function · L289-L334 — async fn open(
+- ChannelReader · struct · L336-L340 — struct ChannelReader
+- read · function · L343-L357 — fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize>
+- ChannelWriter · struct · L360-L360 — struct ChannelWriter(tokio::sync::mpsc::UnboundedSender<Outgoing>);
+- write · function · L363-L368 — fn write(&mut self, data: &[u8]) -> std::io::Result<usize>
+- flush · function · L369-L371 — fn flush(&mut self) -> std::io::Result<()>
+- shutdown_handle · function · L375-L384 — fn shutdown_handle(&self) -> Option<Arc<dyn Fn() + Send + Sync>>
+- split · function · L386-L396 — fn split(self: Box<Self>) -> Result<(Box<dyn BufRead + Send>, Box<dyn Write + Send>)>
+- connect_native_ssh · function · L403-L415 — pub fn connect_native_ssh(options: NativeSshOptions) -> Result<Self>
+- tests · module · L419-L651 — mod tests
+- TestSshServer · struct · L422-L424 — struct TestSshServer
+- Error · type · L427-L427 — type Error = russh::Error;
+- auth_publickey · function · L429-L441 — async fn auth_publickey(
+- channel_open_session · function · L443-L451 — async fn channel_open_session(
+- exec_request · function · L453-L463 — async fn exec_request(
+- ed25519_handshake_auth_exec_and_wrong_pin · function · L467-L532 — async fn ed25519_handshake_auth_exec_and_wrong_pin()
+- keys_are_fresh_openssh_ed25519_with_safe_comment · function · L535-L541 — fn keys_are_fresh_openssh_ed25519_with_safe_comment()
+- rejects_unpinned_and_unsafe_options · function · L544-L559 — fn rejects_unpinned_and_unsafe_options()
+- pinned_subject_does_not_implicitly_trust_host_certificates · function · L562-L584 — async fn pinned_subject_does_not_implicitly_trust_host_certificates()
+- host_key_mismatch_is_recorded_without_poisonable_state · function · L587-L602 — async fn host_key_mismatch_is_recorded_without_poisonable_state()
+- channel_bridge_carries_frames_to_the_client · function · L606-L650 — fn channel_bridge_carries_frames_to_the_client()

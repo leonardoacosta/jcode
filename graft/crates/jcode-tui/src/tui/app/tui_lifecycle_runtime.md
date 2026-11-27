@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/app/tui_lifecycle_runtime.rs
+
+- new_for_replay · function · L6-L8 — pub fn new_for_replay(session: crate::session::Session) -> Self
+- new_for_replay_silent · function · L10-L12 — pub(crate) fn new_for_replay_silent(session: crate::session::Session) -> Self
+- new_for_replay_with_title · function · L14-L66 — fn new_for_replay_with_title(session: crate::session::Session, set_title: bool) -> Self
+- session_id · function · L69-L71 — pub fn session_id(&self) -> &str
+- update_terminal_title · function · L73-L140 — pub(super) fn update_terminal_title(&self)
+- reconnect_target_session_id · function · L142-L146 — pub(super) fn reconnect_target_session_id(&self) -> Option<String>
+- reload_handoff_session_id · function · L158-L171 — pub(super) fn reload_handoff_session_id(&self) -> String
+- runtime_mode · function · L173-L175 — pub fn runtime_mode(&self) -> AppRuntimeMode
+- is_remote_client · function · L177-L179 — pub fn is_remote_client(&self) -> bool
+- is_replay_runtime · function · L181-L183 — pub fn is_replay_runtime(&self) -> bool
+- uses_server_or_replay_metadata · function · L185-L190 — pub(crate) fn uses_server_or_replay_metadata(&self) -> bool
+- has_newer_binary · function · L194-L220 — pub(super) fn has_newer_binary(&self) -> bool
+- maybe_hot_reload_onto_new_binary · function · L226-L263 — pub(super) fn maybe_hot_reload_onto_new_binary(&mut self) -> bool
+- TYPING_QUIET · constant · L234-L234 — const TYPING_QUIET: std::time::Duration = std::time::Duration::from_millis(1200);
+- maybe_self_reload_after_server_reload · function · L271-L294 — pub(super) fn maybe_self_reload_after_server_reload(&mut self) -> bool
+- init_mcp · function · L297-L361 — pub async fn init_mcp(&mut self)
+- restore_session · function · L364-L539 — pub fn restore_session(&mut self, session_id: &str)
+- was_interrupted_by_reload · function · L546-L572 — pub(super) fn was_interrupted_by_reload(&self) -> bool
+- handle_dev_command · function · L575-L845 — pub(super) fn handle_dev_command(app: &mut App, trimmed: &str) -> bool

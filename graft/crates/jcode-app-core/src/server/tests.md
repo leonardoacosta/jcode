@@ -1,0 +1,46 @@
+# crates/jcode-app-core/src/server/tests.rs
+
+- unwrap_test_turn_event · function · L27-L32 — fn unwrap_test_turn_event(mut event: ServerEvent) -> ServerEvent
+- EnvGuard · struct · L34-L38 — struct EnvGuard
+- ScopedEnvVar · struct · L40-L43 — struct ScopedEnvVar
+- file_access_with_summary · function · L45-L57 — fn file_access_with_summary(summary: Option<&str>) -> FileAccess
+- file_touch_with_summary · function · L59-L70 — fn file_touch_with_summary(summary: Option<&str>) -> FileTouch
+- file_activity_scope_label_classifies_overlap · function · L73-L89 — fn file_activity_scope_label_classifies_overlap()
+- session_env_live_updates_cannot_recreate_destroyed_sessions · function · L92-L119 — async fn session_env_live_updates_cannot_recreate_destroyed_sessions()
+- removing_server_session_clears_active_pid_marker · function · L122-L149 — async fn removing_server_session_clears_active_pid_marker()
+- configured_server_name_normalizes_operator_labels · function · L152-L162 — fn configured_server_name_normalizes_operator_labels()
+- server_identity_uses_configured_name · function · L165-L182 — fn server_identity_uses_configured_name()
+- server_identity_reads_name_from_env · function · L185-L193 — fn server_identity_reads_name_from_env()
+- drop · function · L196-L212 — fn drop(&mut self)
+- set · function · L216-L223 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L227-L234 — fn drop(&mut self)
+- configure_test_env · function · L237-L253 — fn configure_test_env(root: &tempfile::TempDir) -> EnvGuard
+- StreamingMockProvider · struct · L256-L258 — struct StreamingMockProvider
+- queue_response · function · L261-L266 — fn queue_response(&self, response: Vec<StreamEvent>)
+- complete · function · L271-L284 — async fn complete(
+- name · function · L286-L288 — fn name(&self) -> &str
+- fork · function · L290-L292 — fn fork(&self) -> Arc<dyn Provider>
+- test_agent · function · L295-L298 — async fn test_agent(provider: Arc<dyn Provider>) -> Arc<Mutex<Agent>>
+- empty_swarm_status_state · function · L301-L314 — fn empty_swarm_status_state() -> (
+- attached_swarm_member · function · L316-L342 — fn attached_swarm_member(
+- persisted_headless_member · function · L344-L373 — fn persisted_headless_member(
+- swarm_worker_report_wakes_idle_root_and_queues_for_busy_root · function · L376-L447 — async fn swarm_worker_report_wakes_idle_root_and_queues_for_busy_root()
+- swarm_worker_report_does_not_revive_cancelled_root · function · L450-L486 — async fn swarm_worker_report_does_not_revive_cancelled_root()
+- background_task_wake_runs_live_session_immediately_when_idle · function · L489-L584 — async fn background_task_wake_runs_live_session_immediately_when_idle()
+- external_background_task_wake_emits_request_without_starting_turn · function · L587-L669 — async fn external_background_task_wake_emits_request_without_starting_turn()
+- idle_live_agent_wakes_restored_headless_member_without_attachments · function · L672-L709 — async fn idle_live_agent_wakes_restored_headless_member_without_attachments()
+- idle_live_agent_reservation_blocks_a_second_wake_until_released · function · L712-L740 — async fn idle_live_agent_reservation_blocks_a_second_wake_until_released()
+- wake_turn_holds_reservation_until_terminal_status_is_published · function · L743-L813 — async fn wake_turn_holds_reservation_until_terminal_status_is_published()
+- wake_turn_tracks_member_status_and_emits_terminal_done · function · L816-L917 — async fn wake_turn_tracks_member_status_and_emits_terminal_done()
+- background_task_notify_without_wake_does_not_queue_soft_interrupt · function · L920-L980 — async fn background_task_notify_without_wake_does_not_queue_soft_interrupt()
+- background_task_progress_notifies_attached_clients · function · L983-L1034 — async fn background_task_progress_notifies_attached_clients()
+- write_generation_bound_task · function · L1036-L1063 — fn write_generation_bound_task(task_id: &str, session_id: &str, generation: Option<u64>)
+- drain_events · function · L1065-L1071 — fn drain_events(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> Vec<ServerEvent>
+- WakeKind · enum · L1074-L1077 — enum WakeKind
+- dispatch_task_wake · function · L1083-L1140 — async fn dispatch_task_wake(
+- revoked_wake_is_suppressed_but_resumed_work_wakes · function · L1142-L1226 — async fn revoked_wake_is_suppressed_but_resumed_work_wakes(kind: WakeKind)
+- run · function · L1177-L1182 — macro_rules! run
+- background_task_completion_wake_is_withheld_for_revoked_generation · function · L1229-L1231 — async fn background_task_completion_wake_is_withheld_for_revoked_generation()
+- background_task_stall_wake_is_withheld_for_revoked_generation · function · L1234-L1236 — async fn background_task_stall_wake_is_withheld_for_revoked_generation()
+- startup_recovery · module · L1239-L1239 — mod startup_recovery;
+- mobile_local · module · L1242-L1242 — mod mobile_local;

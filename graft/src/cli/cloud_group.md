@@ -1,0 +1,31 @@
+# src/cli/cloud_group.rs
+
+- tests · module · L13-L13 — mod tests;
+- GROUP_VERSION · constant · L15-L15 — const GROUP_VERSION: u32 = 1;
+- Member · struct · L18-L22 — struct Member
+- Group · struct · L25-L35 — struct Group
+- Phase · enum · L38-L42 — enum Phase
+- Journal · struct · L45-L49 — struct Journal
+- VerifiedMember · struct · L52-L57 — struct VerifiedMember
+- GroupReceipt · struct · L60-L66 — struct GroupReceipt
+- checked_id · function · L68-L70 — fn checked_id(id: &str) -> Result<()>
+- group_dir · function · L72-L75 — fn group_dir(id: &str) -> Result<PathBuf>
+- member_marker · function · L77-L82 — fn member_marker(id: &str) -> Result<PathBuf>
+- reject_member_return · function · L84-L91 — pub(super) fn reject_member_return(id: &str) -> Result<()>
+- is_group_root · function · L93-L100 — pub(super) fn is_group_root(id: &str, epoch: u64) -> Result<bool>
+- lock_sessions · function · L104-L121 — pub(super) fn lock_sessions(ids: &[String]) -> Result<Vec<std::fs::File>>
+- root · function · L123-L129 — fn root(group: &Group) -> Result<&Member>
+- digest · function · L131-L133 — fn digest(path: &Path) -> Result<String>
+- receipt · function · L135-L156 — fn receipt(group: &Group) -> Result<GroupReceipt>
+- validate · function · L158-L221 — fn validate(group: &Group, stage: &Path) -> Result<()>
+- save_journal · function · L223-L225 — fn save_journal(directory: &Path, journal: &Journal) -> Result<()>
+- durable_json · function · L227-L237 — fn durable_json(path: &Path, value: &impl Serialize) -> Result<()>
+- mark_members · function · L239-L250 — fn mark_members(group: &Group) -> Result<()>
+- member_lease · function · L252-L263 — fn member_lease(member: &Member, away: Option<String>) -> storage::SessionLease
+- restore_preparing · function · L265-L280 — fn restore_preparing(journal: &Journal) -> Result<()>
+- verify_preview_repo · function · L282-L306 — fn verify_preview_repo(group: &Group, stage: &Path) -> Result<()>
+- group_arrival_notice · function · L308-L321 — fn group_arrival_notice(manifest: &MoveManifest, coordinator: &str, members: &[String]) -> String
+- excluded_local_sessions · function · L323-L325 — fn excluded_local_sessions(root: &Path, included: &[String]) -> Result<Vec<String>>
+- excluded_local_sessions_at · function · L327-L371 — fn excluded_local_sessions_at(
+- inspection_error_tests · module · L374-L391 — mod inspection_error_tests
+- exclusion_scan_distinguishes_absence_from_unreadable_state · function · L378-L390 — fn exclusion_scan_distinguishes_absence_from_unreadable_state()

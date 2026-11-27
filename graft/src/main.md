@@ -1,0 +1,30 @@
+# src/main.rs
+
+- GLOBAL · constant · L3-L3 — static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+- malloc_conf · constant · L18-L19 — pub static malloc_conf: Option<&'static [u8; 50]> =
+- malloc_conf · constant · L25-L26 — pub static malloc_conf: Option<&'static [u8; 78]> =
+- configure_system_allocator · function · L31-L34 — fn configure_system_allocator()
+- mallopt · function · L32-L33 — unsafe extern "C"
+- M_ARENA_MAX · constant · L36-L36 — const M_ARENA_MAX: i32 = -8;
+- M_MMAP_THRESHOLD · constant · L37-L37 — const M_MMAP_THRESHOLD: i32 = -3;
+- parse_alloc_tuning_env · function · L61-L63 — fn parse_alloc_tuning_env(var: &str, default: i32) -> i32
+- parse_alloc_tuning · function · L70-L75 — fn parse_alloc_tuning(value: Option<&str>, default: i32) -> i32
+- configure_system_allocator · function · L78-L78 — fn configure_system_allocator() {}
+- main · function · L81-L98 — fn main() -> Result<()>
+- WINDOWS_MAIN_STACK_SIZE · constant · L88-L88 — const WINDOWS_MAIN_STACK_SIZE: usize = 8 * 1024 * 1024;
+- main · function · L101-L103 — fn main() -> Result<()>
+- run_main · function · L105-L149 — fn run_main() -> Result<()>
+- is_macos_hotkey_listener_invocation · function · L152-L154 — fn is_macos_hotkey_listener_invocation() -> bool
+- args_are_macos_hotkey_listener · function · L156-L160 — fn args_are_macos_hotkey_listener(args: impl IntoIterator<Item = String>) -> bool
+- cli_launch_hint_source_invocation · function · L162-L164 — fn cli_launch_hint_source_invocation() -> Option<String>
+- cli_launch_hint_source · function · L166-L173 — fn cli_launch_hint_source(args: impl IntoIterator<Item = String>) -> Option<String>
+- tests · module · L176-L245 — mod tests
+- alloc_tuning_uses_default_when_unset · function · L182-L184 — fn alloc_tuning_uses_default_when_unset()
+- alloc_tuning_parses_positive_value_with_whitespace · function · L187-L189 — fn alloc_tuning_parses_positive_value_with_whitespace()
+- alloc_tuning_rejects_garbage_zero_and_negative · function · L192-L198 — fn alloc_tuning_rejects_garbage_zero_and_negative()
+- argv · function · L200-L202 — fn argv(args: &[&str]) -> Vec<String>
+- detects_listener_invocation · function · L205-L210 — fn detects_listener_invocation()
+- ignores_plain_setup_hotkey · function · L213-L215 — fn ignores_plain_setup_hotkey()
+- ignores_other_commands · function · L218-L224 — fn ignores_other_commands()
+- detects_cli_launch_hint_callback · function · L227-L232 — fn detects_cli_launch_hint_callback()
+- ignores_launch_hint_flag_on_other_commands_or_without_value · function · L235-L244 — fn ignores_launch_hint_flag_on_other_commands_or_without_value()

@@ -1,0 +1,56 @@
+# crates/jcode-tui/src/tui/ui_animations.rs
+
+- IDLE_VARIANTS · constant · L8-L8 — const IDLE_VARIANTS: &[&str] = &["donut", "orbit_rings"];
+- LAST_IDLE_ANIMATION_AREA · constant · L17-L18 — static LAST_IDLE_ANIMATION_AREA: std::sync::atomic::AtomicU64 =
+- pack_area · function · L20-L30 — fn pack_area(area: Option<Rect>) -> u64
+- unpack_area · function · L32-L42 — fn unpack_area(packed: u64) -> Option<Rect>
+- IDLE_ANIMATION_PARTIAL_REPAINTS · constant · L49-L50 — static IDLE_ANIMATION_PARTIAL_REPAINTS: std::sync::atomic::AtomicU64 =
+- IDLE_ANIMATION_FULL_REPAINTS · constant · L51-L52 — static IDLE_ANIMATION_FULL_REPAINTS: std::sync::atomic::AtomicU64 =
+- note_idle_animation_partial_repaint · function · L54-L56 — pub(crate) fn note_idle_animation_partial_repaint()
+- note_idle_animation_full_repaint · function · L58-L60 — pub(crate) fn note_idle_animation_full_repaint()
+- IDLE_ANIMATION_FAST_PATH_BLOCKED · constant · L68-L70 — static IDLE_ANIMATION_FAST_PATH_BLOCKED: std::sync::Mutex<
+- note_idle_animation_fast_path_blocked · function · L72-L79 — pub(crate) fn note_idle_animation_fast_path_blocked(reason: &'static str)
+- idle_animation_fast_path_blocked_reasons · function · L81-L89 — pub(crate) fn idle_animation_fast_path_blocked_reasons() -> serde_json::Value
+- idle_animation_debug_json · function · L94-L103 — pub(crate) fn idle_animation_debug_json() -> serde_json::Value
+- record_idle_animation_area · function · L107-L118 — pub(crate) fn record_idle_animation_area(area: Option<Rect>)
+- last_idle_animation_area · function · L120-L129 — pub(crate) fn last_idle_animation_area() -> Option<Rect>
+- render_idle_animation_into · function · L139-L157 — pub(crate) fn render_idle_animation_into(buf: &mut Buffer, area: Rect, elapsed: f32)
+- animation_seed · function · L169-L177 — fn animation_seed() -> u64
+- SEED · constant · L170-L170 — static SEED: OnceLock<u64> = OnceLock::new();
+- normalized_animation_name · function · L179-L181 — fn normalized_animation_name(name: &str) -> String
+- expand_disabled_animation_names · function · L183-L202 — fn expand_disabled_animation_names<I>(names: I) -> HashSet<String>
+- disabled_animation_names · function · L204-L206 — fn disabled_animation_names() -> HashSet<String>
+- choose_animation_variant_from_disabled · function · L208-L226 — fn choose_animation_variant_from_disabled<'a>(
+- choose_animation_variant · function · L228-L231 — fn choose_animation_variant<'a>(variants: &'a [&'a str], salt: u64) -> &'a str
+- IdleBuffers · struct · L233-L238 — struct IdleBuffers
+- new · function · L241-L248 — fn new() -> Self
+- resize_and_clear · function · L250-L260 — fn resize_and_clear(&mut self, len: usize)
+- idle_donut_reserved_height · function · L281-L289 — pub(crate) fn idle_donut_reserved_height(show_donut: bool, input_height: u16) -> u16
+- IDLE_DONUT_HEIGHT · constant · L282-L282 — const IDLE_DONUT_HEIGHT: u16 = 14;
+- draw_idle_animation · function · L291-L298 — pub(super) fn draw_idle_animation(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- render_idle_animation · function · L307-L376 — pub(crate) fn render_idle_animation(buf: &mut Buffer, area: Rect, elapsed: f32)
+- SUB_X · constant · L315-L315 — const SUB_X: usize = 3;
+- SUB_Y · constant · L316-L316 — const SUB_Y: usize = 3;
+- blit_idle · function · L381-L439 — fn blit_idle(
+- SUB_X · constant · L389-L389 — const SUB_X: usize = 3;
+- SUB_Y · constant · L390-L390 — const SUB_Y: usize = 3;
+- idle_animation_variant · function · L441-L443 — fn idle_animation_variant() -> &'static str
+- tests · module · L446-L716 — mod tests
+- IdleSampler · type · L450-L450 — type IdleSampler = fn(f32, usize, usize, &mut [bool], &mut [f32], &mut [f32]);
+- render_idle_via_paragraph · function · L454-L517 — fn render_idle_via_paragraph(
+- SUB_X · constant · L463-L463 — const SUB_X: usize = 3;
+- SUB_Y · constant · L464-L464 — const SUB_Y: usize = 3;
+- direct_blit_matches_paragraph · function · L524-L571 — fn direct_blit_matches_paragraph()
+- Sampler · type · L525-L525 — type Sampler = fn(f32, usize, usize, &mut [bool], &mut [f32], &mut [f32]);
+- SUB_X · constant · L534-L534 — const SUB_X: usize = 3;
+- SUB_Y · constant · L535-L535 — const SUB_Y: usize = 3;
+- hit_bounds · function · L573-L593 — fn hit_bounds(hit: &[bool], sw: usize, sh: usize) -> Option<(usize, usize, usize, usize)>
+- assert_idle_sampler_avoids_heavy_border_clipping · function · L595-L626 — fn assert_idle_sampler_avoids_heavy_border_clipping(name: &str, sampler: IdleSampler)
+- assert_idle_sampler_stays_off_border_on_small_viewports · function · L628-L647 — fn assert_idle_sampler_stays_off_border_on_small_viewports(name: &str, sampler: IdleSampler)
+- idle_variants_exclude_retired_variants · function · L650-L653 — fn idle_variants_exclude_retired_variants()
+- animation_area_packing_round_trips · function · L660-L679 — fn animation_area_packing_round_trips()
+- idle_variants_keep_normal_donut_and_exclude_cube · function · L682-L688 — fn idle_variants_keep_normal_donut_and_exclude_cube()
+- disabling_three_rings_also_disables_gyroscope_alias · function · L691-L695 — fn disabling_three_rings_also_disables_gyroscope_alias()
+- variant_selection_avoids_disabled_entries_when_possible · function · L698-L703 — fn variant_selection_avoids_disabled_entries_when_possible()
+- idle_animation_samplers_avoid_heavy_border_clipping · function · L706-L710 — fn idle_animation_samplers_avoid_heavy_border_clipping()
+- three_rings_fit_small_viewports_without_touching_border · function · L713-L715 — fn three_rings_fit_small_viewports_without_touching_border()

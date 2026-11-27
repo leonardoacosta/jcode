@@ -1,0 +1,42 @@
+# crates/jcode-tui/src/tui/app/turn_notify.rs
+
+- SNIPPET_MAX_CHARS · constant · L18-L18 — const SNIPPET_MAX_CHARS: usize = 120;
+- TODO_MAX_CHARS · constant · L22-L22 — const TODO_MAX_CHARS: usize = 48;
+- TurnNotification · struct · L25-L29 — pub(super) struct TurnNotification
+- maybe_notify_turn_complete · function · L34-L84 — pub(super) fn maybe_notify_turn_complete(&self, duration_secs: Option<f32>)
+- runtime_mode_allows_turn_notifications · function · L86-L88 — fn runtime_mode_allows_turn_notifications(&self) -> bool
+- last_assistant_text_for_notification · function · L91-L97 — fn last_assistant_text_for_notification(&self) -> Option<String>
+- send_originating_terminal_notification · function · L108-L144 — fn send_originating_terminal_notification(
+- send_originating_terminal_notification · function · L147-L153 — fn send_originating_terminal_notification(
+- notification_text · function · L156-L161 — fn notification_text(notification: &TurnNotification) -> String
+- osc_safe · function · L164-L166 — fn osc_safe(text: &str) -> String
+- kitty_notification_id · function · L169-L179 — fn kitty_notification_id(session_id: &str) -> String
+- kitty_notification_sequence · function · L182-L197 — fn kitty_notification_sequence(notification: &TurnNotification, session_id: &str) -> String
+- iterm_notification_sequence · function · L200-L208 — fn iterm_notification_sequence(notification: &TurnNotification) -> String
+- load_session_todos · function · L210-L212 — fn load_session_todos(session_id: &str) -> Vec<TodoItem>
+- build_turn_notification · function · L222-L259 — pub(super) fn build_turn_notification(
+- todo_progress_line · function · L262-L281 — fn todo_progress_line(todos: &[TodoItem]) -> Option<String>
+- todo_work_line · function · L286-L337 — fn todo_work_line(todos: &[TodoItem]) -> Option<String>
+- resolve_todo_title · function · L339-L341 — fn resolve_todo_title(todos: &[TodoItem], id: &str) -> Option<String>
+- clip_todo · function · L344-L347 — fn clip_todo(s: &str) -> String
+- summary_snippet · function · L350-L360 — fn summary_snippet(text: &str) -> String
+- strip_markdown_inline · function · L362-L371 — fn strip_markdown_inline(line: &str) -> String
+- truncate_chars · function · L373-L380 — fn truncate_chars(s: &str, max: usize) -> String
+- format_duration_compact · function · L382-L403 — fn format_duration_compact(secs: f32) -> String
+- tests · module · L406-L567 — mod tests
+- todo · function · L409-L415 — fn todo(status: &str, blocked: bool) -> TodoItem
+- todo_named · function · L417-L437 — fn todo_named(content: &str, status: &str, blocked_by: &[&str]) -> TodoItem
+- Tap · interface · L439-L444 — trait Tap: Sized
+- tap · function · L440-L443 — fn tap(mut self, f: impl FnOnce(&mut Self)) -> Self
+- title_includes_session_and_compact_duration · function · L448-L453 — fn title_includes_session_and_compact_duration()
+- subtitle_holds_progress_and_body_names_the_work · function · L456-L466 — fn subtitle_holds_progress_and_body_names_the_work()
+- body_names_blocker_and_its_dependency · function · L469-L477 — fn body_names_blocker_and_its_dependency()
+- low_confidence_completion_is_flagged · function · L480-L486 — fn low_confidence_completion_is_flagged()
+- all_complete_celebrated_in_subtitle · function · L489-L497 — fn all_complete_celebrated_in_subtitle()
+- snippet_used_when_no_todos · function · L500-L504 — fn snippet_used_when_no_todos()
+- snippet_skips_markdown_noise_and_truncates · function · L507-L518 — fn snippet_skips_markdown_noise_and_truncates()
+- empty_inputs_fall_back_to_minimal_body · function · L521-L526 — fn empty_inputs_fall_back_to_minimal_body()
+- still_counts_blocked_in_subtitle · function · L529-L533 — fn still_counts_blocked_in_subtitle()
+- duration_formats_hours · function · L536-L541 — fn duration_formats_hours()
+- kitty_notification_is_one_completed_clickable_message · function · L544-L554 — fn kitty_notification_is_one_completed_clickable_message()
+- terminal_notification_payload_strips_osc_terminators · function · L557-L566 — fn terminal_notification_payload_strips_osc_terminators()

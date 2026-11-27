@@ -1,0 +1,46 @@
+# crates/jcode-base/src/mcp/remote.rs
+
+- Pending · type · L31-L31 — pub(super) type Pending = Arc<Mutex<HashMap<u64, oneshot::Sender<JsonRpcResponse>>>>;
+- SESSION_HEADER · constant · L33-L33 — const SESSION_HEADER: &str = "mcp-session-id";
+- PROTOCOL_HEADER · constant · L34-L34 — const PROTOCOL_HEADER: &str = "mcp-protocol-version";
+- SSE_ENDPOINT_TIMEOUT · constant · L36-L36 — const SSE_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(30);
+- TRANSPORT_ERROR_CODE · constant · L38-L38 — const TRANSPORT_ERROR_CODE: i64 = -32000;
+- MAX_RESPONSE_BYTES · constant · L39-L39 — const MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
+- MAX_ERROR_BYTES · constant · L40-L40 — const MAX_ERROR_BYTES: usize = 8 * 1024;
+- MAX_CONCURRENT_REQUESTS · constant · L41-L41 — const MAX_CONCURRENT_REQUESTS: usize = 32;
+- RemoteState · struct · L44-L68 — pub(super) struct RemoteState
+- auth_header · function · L71-L80 — fn auth_header(&self) -> Option<String>
+- request · function · L82-L107 — fn request(&self, method: reqwest::Method, url: reqwest::Url) -> reqwest::RequestBuilder
+- recover_from_unauthorized · function · L111-L129 — async fn recover_from_unauthorized(&self, failed: Option<String>) -> bool
+- unauthorized_message · function · L131-L143 — fn unauthorized_message(&self) -> String
+- dispatch · function · L146-L192 — async fn dispatch(&self, value: Value)
+- fail · function · L196-L216 — async fn fail(&self, id: Option<u64>, message: String)
+- mark_closed · function · L218-L221 — fn mark_closed(&self)
+- close · function · L223-L244 — async fn close(&self, message: &str)
+- bearer_token · function · L246-L251 — fn bearer_token(&self) -> Option<String>
+- Outbound · struct · L255-L258 — struct Outbound
+- outbound_info · function · L260-L269 — fn outbound_info(body: &str) -> Outbound
+- read_body · function · L271-L292 — async fn read_body(
+- snippet · function · L294-L301 — fn snippet(text: &str) -> String
+- RemoteConnection · struct · L304-L307 — pub(super) struct RemoteConnection
+- is_running · function · L310-L312 — pub(super) fn is_running(&self) -> bool
+- is_legacy · function · L314-L320 — pub(super) fn is_legacy(&self) -> bool
+- wants_sse_fallback · function · L322-L324 — pub(super) fn wants_sse_fallback(&self) -> bool
+- set_protocol_version · function · L326-L332 — pub(super) fn set_protocol_version(&self, version: &str)
+- shutdown · function · L335-L374 — pub(super) async fn shutdown(&mut self)
+- drop · function · L378-L391 — fn drop(&mut self)
+- build_static_headers · function · L394-L414 — fn build_static_headers(config: &McpServerConfig) -> Result<(HeaderMap, bool)>
+- start · function · L418-L523 — pub(super) async fn start(
+- outbound_worker · function · L529-L561 — async fn outbound_worker(
+- post_message · function · L563-L601 — async fn post_message(state: Arc<RemoteState>, body: String, info: Outbound, legacy: bool)
+- send_post · function · L603-L615 — async fn send_post(
+- streamable_post_inner · function · L617-L787 — async fn streamable_post_inner(
+- open_sse_stream · function · L793-L840 — async fn open_sse_stream(state: &Arc<RemoteState>) -> Result<reqwest::Response>
+- validate_endpoint · function · L842-L855 — fn validate_endpoint(base: &reqwest::Url, data: &str) -> Result<reqwest::Url>
+- sse_reader · function · L857-L915 — async fn sse_reader(
+- sse_post_inner · function · L917-L957 — async fn sse_post_inner(
+- SseEvent · struct · L964-L967 — pub(super) struct SseEvent
+- SseParser · struct · L973-L981 — pub(super) struct SseParser
+- push · function · L984-L1012 — pub(super) fn push(&mut self, chunk: &[u8]) -> Result<Vec<SseEvent>>
+- finish_line · function · L1014-L1059 — fn finish_line(&mut self) -> Result<Option<SseEvent>>
+- remote_tests · module · L1064-L1064 — mod remote_tests;

@@ -1,0 +1,66 @@
+# crates/jcode-logging/src/lib.rs
+
+- watchdog · module · L7-L7 — pub mod watchdog;
+- LOGGER · constant · L19-L19 — static LOGGER: Mutex<Option<Logger>> = Mutex::new(None);
+- CLEANUP_STARTED · constant · L20-L20 — static CLEANUP_STARTED: AtomicBool = AtomicBool::new(false);
+- TASK_LOG_CONTEXTS · constant · L21-L21 — static TASK_LOG_CONTEXTS: OnceLock<Mutex<HashMap<String, TaskLogContext>>> = OnceLock::new();
+- RATE_LIMITS · constant · L22-L22 — static RATE_LIMITS: OnceLock<Mutex<HashMap<String, RateLimitState>>> = OnceLock::new();
+- LogLevel · enum · L25-L30 — pub enum LogLevel
+- as_str · function · L33-L40 — fn as_str(self) -> &'static str
+- is_enabled · function · L42-L44 — fn is_enabled(self) -> bool
+- RateLimitState · struct · L48-L51 — struct RateLimitState
+- LogContext · struct · L55-L60 — pub struct LogContext
+- set_session · function · L67-L77 — pub fn set_session(session: &str)
+- set_server · function · L80-L90 — pub fn set_server(server: &str)
+- set_provider_info · function · L93-L106 — pub fn set_provider_info(provider: &str, model: &str)
+- context_prefix · function · L109-L115 — fn context_prefix() -> String
+- current_task_id · function · L117-L119 — fn current_task_id() -> Option<String>
+- with_task_context_mut · function · L121-L141 — fn with_task_context_mut(update: impl FnOnce(&mut LogContext)) -> bool
+- MAX_TASK_LOG_CONTEXTS · constant · L147-L147 — const MAX_TASK_LOG_CONTEXTS: usize = 1024;
+- TaskLogContext · struct · L149-L152 — struct TaskLogContext
+- evict_stale_task_contexts · function · L154-L159 — fn evict_stale_task_contexts(contexts: &mut HashMap<String, TaskLogContext>)
+- task_context_snapshot · function · L161-L168 — fn task_context_snapshot() -> Option<LogContext>
+- current_context_snapshot · function · L172-L174 — pub fn current_context_snapshot() -> LogContext
+- context_prefix_for · function · L176-L205 — fn context_prefix_for(ctx: &LogContext) -> String
+- Logger · struct · L207-L209 — pub struct Logger
+- log_dir · function · L211-L213 — fn log_dir() -> Option<PathBuf>
+- new · function · L216-L231 — fn new() -> Option<Self>
+- write · function · L233-L244 — fn write(&mut self, level: &str, message: &str)
+- init · function · L248-L271 — pub fn init()
+- info · function · L278-L284 — pub fn info(message: &str)
+- error · function · L291-L297 — pub fn error(message: &str)
+- warn · function · L304-L310 — pub fn warn(message: &str)
+- truncate_for_log · function · L316-L322 — pub fn truncate_for_log(value: &str, max_chars: usize) -> String
+- debug · function · L329-L337 — pub fn debug(message: &str)
+- event_info · function · L339-L346 — pub fn event_info<K, V, I>(event_name: &str, fields: I)
+- event_warn · function · L348-L355 — pub fn event_warn<K, V, I>(event_name: &str, fields: I)
+- event_error · function · L357-L364 — pub fn event_error<K, V, I>(event_name: &str, fields: I)
+- event_debug · function · L366-L373 — pub fn event_debug<K, V, I>(event_name: &str, fields: I)
+- event · function · L375-L385 — pub fn event<K, V, I>(level: LogLevel, event: &str, fields: I)
+- event_rate_limited · function · L387-L443 — pub fn event_rate_limited<K, V, I>(
+- write_level · function · L445-L451 — fn write_level(level: LogLevel, message: &str)
+- format_structured_event · function · L453-L485 — fn format_structured_event<K, V, I>(event: &str, fields: I) -> String
+- structured_json_enabled · function · L487-L492 — fn structured_json_enabled() -> bool
+- sanitize_log_key · function · L494-L510 — fn sanitize_log_key(key: &str) -> String
+- format_log_field_value · function · L512-L522 — fn format_log_field_value(value: &str) -> String
+- auth_event · function · L529-L547 — pub fn auth_event(event: &str, provider: &str, fields: &[(&str, &str)])
+- tool_call · function · L554-L566 — pub fn tool_call(name: &str, input: &str, output: &str)
+- crash · function · L573-L580 — pub fn crash(error: &str, context: &str)
+- current_session · function · L583-L588 — pub fn current_session() -> Option<String>
+- log_path · function · L591-L595 — pub fn log_path() -> Option<PathBuf>
+- cleanup_old_logs · function · L602-L606 — pub fn cleanup_old_logs()
+- cleanup_old_logs_in · function · L610-L637 — fn cleanup_old_logs_in(log_dir: &std::path::Path, now: chrono::DateTime<Local>)
+- truncate · function · L639-L645 — fn truncate(s: &str, max_len: usize) -> String
+- redact_auth_field · function · L647-L663 — fn redact_auth_field(key: &str, value: &str) -> String
+- sanitize_log_value · function · L665-L669 — fn sanitize_log_value(value: &str) -> String
+- redact_url_queries · function · L671-L684 — fn redact_url_queries(value: &str) -> String
+- tests · module · L687-L850 — mod tests
+- evicting_task_contexts_keeps_most_recent_half · function · L691-L708 — fn evicting_task_contexts_keeps_most_recent_half()
+- finished_task_contexts_do_not_accumulate · function · L711-L719 — async fn finished_task_contexts_do_not_accumulate()
+- auth_log_redacts_secret_like_fields · function · L722-L728 — fn auth_log_redacts_secret_like_fields()
+- auth_log_sanitizes_urls_and_control_characters · function · L731-L736 — fn auth_log_sanitizes_urls_and_control_characters()
+- structured_event_orders_and_redacts_fields · function · L739-L752 — fn structured_event_orders_and_redacts_fields()
+- structured_event_redacts_url_queries · function · L755-L764 — fn structured_event_redacts_url_queries()
+- structured_event_keeps_non_secret_code_fields · function · L767-L770 — fn structured_event_keeps_non_secret_code_fields()
+- diagnostic_field_names_are_not_redacted · function · L773-L799 — fn diagnostic_field_names_are_not_redacted()
+- cleanup_removes_only_old_jcode_logs · function · L802-L849 — fn cleanup_removes_only_old_jcode_logs()

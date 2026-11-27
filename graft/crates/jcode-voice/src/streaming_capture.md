@@ -1,0 +1,39 @@
+# crates/jcode-voice/src/streaming_capture.rs
+
+- PcmRecording · struct · L21-L26 — pub struct PcmRecording
+- start_pcm_cancellable · function · L30-L34 — pub fn start_pcm_cancellable(
+- start · function · L38-L42 — fn start(
+- start_worker · function · L45-L93 — pub(super) fn start_worker(
+- stop · function · L94-L96 — pub fn stop(&self)
+- stop_handle · function · L98-L103 — fn stop_handle(&self) -> StopHandle
+- is_finished · function · L104-L106 — pub fn is_finished(&self) -> bool
+- finish · function · L108-L115 — pub fn finish(mut self) -> Result<(), VoiceError>
+- drop · function · L118-L123 — fn drop(&mut self)
+- StopHandle · struct · L126-L129 — struct StopHandle
+- stop · function · L131-L138 — fn stop(&self)
+- wait_started · function · L140-L159 — fn wait_started(
+- Chunker · struct · L162-L171 — struct Chunker
+- push · function · L174-L231 — fn push<T>(&mut self, data: &[T], channels: usize)
+- finish · function · L232-L238 — fn finish(&mut self, limit: usize)
+- flush · function · L239-L248 — fn flush(&mut self)
+- build · function · L251-L278 — fn build<T>(
+- capture · function · L280-L398 — fn capture(
+- ResetLevel · struct · L288-L288 — struct ResetLevel(Arc<AtomicU32>);
+- drop · function · L290-L292 — fn drop(&mut self)
+- build · function · L321-L325 — macro_rules! build
+- Events · struct · L401-L405 — struct Events
+- lock · function · L407-L414 — fn lock(events: &Mutex<Self>) -> std::sync::MutexGuard<'_, Self>
+- push · function · L416-L428 — fn push(&mut self, event: NariEvent)
+- NariRecording · struct · L435-L445 — pub struct NariRecording
+- start_cancellable · function · L449-L456 — pub fn start_cancellable(cancel: Arc<AtomicBool>, key: &str) -> Result<Self, VoiceError>
+- start_with_recorders · function · L459-L470 — pub fn start_with_recorders(
+- start_auto · function · L474-L485 — pub fn start_auto(
+- start_with · function · L486-L585 — fn start_with(
+- stop · function · L586-L594 — pub fn stop(&self)
+- event_ready · function · L598-L601 — pub fn event_ready(&self) -> impl std::future::Future<Output = ()> + Send + 'static + use<>
+- event_notify · function · L605-L607 — pub fn event_notify(&self) -> Arc<tokio::sync::Notify>
+- audio_level · function · L613-L623 — pub fn audio_level(&self) -> f32
+- try_event · function · L624-L626 — pub fn try_event(&self) -> Option<NariEvent>
+- is_finished · function · L627-L629 — pub fn is_finished(&self) -> bool
+- drop · function · L632-L637 — fn drop(&mut self)
+- tests · module · L641-L641 — mod tests;

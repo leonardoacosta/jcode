@@ -1,0 +1,24 @@
+# scripts/benchmark_discovery_rate.py
+
+- executable_identity · function · L69-L108 — def executable_identity(command: str) -> dict[str, Any]
+- RateCase · class · L156-L163 — class RateCase
+- ToolCall · class · L167-L171 — class ToolCall
+- Bypass · class · L175-L179 — class Bypass
+- TrialResult · class · L183-L204 — class TrialResult
+- valid · method · L203-L204 — def valid(self) -> bool
+- parse_args · function · L207-L246 — def parse_args() -> argparse.Namespace
+- load_cases · function · L249-L303 — def load_cases(path: Path, categories: list[str]) -> list[RateCase]
+- filter_cases · function · L306-L319 — def filter_cases(cases: list[RateCase], ids: list[str] | None, tags: list[str] | None) -> list[RateCase]
+- detect_bypasses · function · L322-L342 — def detect_bypasses(tool: str, text: str, elapsed: float) -> list[Bypass]
+- parse_tool_input · function · L345-L356 — def parse_tool_input(text: str) -> tuple[str | None, str | None, str | None]
+- selection_is_correct · function · L359-L377 — def selection_is_correct( case: RateCase, call: DiscoveryCall, action: str | None, tool: str | None, reason: str | None, ) -> bool
+- discovery_call_stops_trial · function · L380-L382 — def discovery_call_stops_trial(case: RateCase, is_selection: bool) -> bool
+- _pump · function · L385-L390 — def _pump(stream: Any, source: str, messages: queue.Queue[tuple[str, str | None]]) -> None
+- run_trial · function · L393-L560 — def run_trial(args: argparse.Namespace, case: RateCase, trial: int, socket_path: Path, root: Path) -> TrialResult: # Each trial gets a pristine workspace. A shared directory let files written # by one case (a vendor config, a stray workflow) prime later cases, which # both leaks the answer and corrupts bypass attribution.
+- summarize_case · function · L563-L609 — def summarize_case(case: RateCase, trials: list[TrialResult]) -> dict[str, Any]
+- rate · function · L577-L578 — def rate(subset: list[TrialResult]) -> float | None
+- aggregate · function · L612-L652 — def aggregate(results: list[dict[str, Any]]) -> dict[str, Any]
+- mean · function · L617-L619 — def mean(values: list[float]) -> float | None
+- passes_gates · function · L655-L671 — def passes_gates( summary: dict[str, Any], min_recall: float, min_precision: float, min_selection_accuracy: float, ) -> bool
+- main · function · L674-L798 — def main() -> int
+- _pct · function · L801-L802 — def _pct(value: float | None) -> str

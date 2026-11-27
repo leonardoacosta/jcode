@@ -1,0 +1,24 @@
+# crates/jcode-base/src/provider/state.rs
+
+- ProviderState · struct · L13-L16 — pub(crate) struct ProviderState<'a>
+- ProviderModelSelectionSource · enum · L24-L28 — pub enum ProviderModelSelectionSource
+- ProviderStateEvent · enum · L31-L35 — pub enum ProviderStateEvent
+- ProviderRuntimeState · struct · L38-L42 — pub struct ProviderRuntimeState
+- default · function · L45-L51 — fn default() -> Self
+- selected_model · function · L55-L67 — pub fn selected_model(source: ProviderModelSelectionSource, model: impl Into<String>) -> Self
+- observed · function · L71-L77 — pub fn observed(model: impl Into<String>) -> Self
+- selection_generation · function · L79-L81 — pub fn selection_generation(&self) -> u64
+- user_selected_after · function · L83-L86 — pub fn user_selected_after(&self, generation: u64) -> bool
+- apply · function · L88-L101 — pub fn apply(&mut self, event: ProviderStateEvent)
+- record_selection · function · L103-L107 — fn record_selection(&mut self, model: String, source: ProviderModelSelectionSource)
+- from_parts · function · L111-L116 — pub(crate) fn from_parts(config: &'a Config, auth_status: &'a AuthStatus) -> Self
+- auth_status · function · L118-L120 — pub(crate) fn auth_status(&self) -> &'a AuthStatus
+- default_model · function · L122-L124 — pub(crate) fn default_model(&self) -> Option<&'a str>
+- default_provider_key · function · L126-L128 — pub(crate) fn default_provider_key(&self) -> Option<&'a str>
+- default_provider_selection · function · L130-L134 — pub(crate) fn default_provider_selection(&self) -> Option<ConfigProviderSelection>
+- preferred_active_provider · function · L136-L139 — pub(crate) fn preferred_active_provider(&self) -> Option<ActiveProvider>
+- preferred_provider_display_label · function · L141-L144 — pub(crate) fn preferred_provider_display_label(&self) -> Option<String>
+- preferred_provider_is_configured · function · L146-L152 — pub(crate) fn preferred_provider_is_configured(
+- tests · module · L156-L206 — mod tests
+- provider_state_resolves_default_provider_through_canonical_selection · function · L160-L180 — fn provider_state_resolves_default_provider_through_canonical_selection()
+- runtime_state_tracks_user_selection_after_auth_generation · function · L183-L205 — fn runtime_state_tracks_user_selection_after_auth_generation()

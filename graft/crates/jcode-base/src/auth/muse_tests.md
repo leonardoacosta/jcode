@@ -1,0 +1,40 @@
+# crates/jcode-base/src/auth/muse_tests.rs
+
+- StubServer · struct · L5-L9 — struct StubServer
+- shutdown · function · L12-L16 — async fn shutdown(self)
+- read_http_body · function · L19-L40 — async fn read_http_body(stream: &mut tokio::net::TcpStream) -> String
+- start_stub · function · L43-L67 — async fn start_stub(responses: Vec<(u16, String)>) -> StubServer
+- last_body · function · L69-L77 — fn last_body(server: &StubServer) -> String
+- sandbox_with_opt_in · function · L79-L84 — fn sandbox_with_opt_in() -> (crate::auth::test_sandbox::AuthTestSandbox, Option<String>)
+- use_stub · function · L86-L88 — fn use_stub(server: &StubServer) -> TestEndpointGuard
+- restore_opt_in · function · L90-L96 — fn restore_opt_in(previous: Option<String>)
+- device_json · function · L98-L107 — fn device_json(device_code: &str, verification_uri: &str) -> String
+- mint_json · function · L109-L122 — fn mint_json(api_key: &str, subs_active: Option<bool>, require_payment: Option<bool>) -> String
+- challenge_for · function · L124-L133 — fn challenge_for(base_url: &str) -> DeviceChallenge
+- begin_login_parses_loopback_challenge · function · L136-L155 — async fn begin_login_parses_loopback_challenge()
+- begin_login_wrong_type_body_leaks_no_values · function · L158-L177 — async fn begin_login_wrong_type_body_leaks_no_values()
+- begin_login_clamps_numbers_like_launcher · function · L180-L200 — async fn begin_login_clamps_numbers_like_launcher()
+- begin_login_rejects_non_first_party_verification_url · function · L203-L222 — async fn begin_login_rejects_non_first_party_verification_url()
+- begin_login_rejects_missing_codes · function · L225-L243 — async fn begin_login_rejects_missing_codes()
+- begin_login_requires_opt_in · function · L246-L256 — async fn begin_login_requires_opt_in()
+- poll_pending_and_slowdown · function · L259-L281 — async fn poll_pending_and_slowdown()
+- poll_denied_and_expired · function · L284-L306 — async fn poll_denied_and_expired()
+- poll_http_failure_reports_status_without_body · function · L309-L329 — async fn poll_http_failure_reports_status_without_body()
+- poll_approval_mints_without_persisting · function · L332-L360 — async fn poll_approval_mints_without_persisting()
+- poll_rejects_unexpected_mint_base_url · function · L363-L393 — async fn poll_rejects_unexpected_mint_base_url()
+- poll_fails_closed_without_active_subscription · function · L396-L415 — async fn poll_fails_closed_without_active_subscription()
+- poll_fails_closed_when_payment_unverified · function · L418-L447 — async fn poll_fails_closed_when_payment_unverified()
+- mint_revoked_login_fails_closed · function · L450-L463 — async fn mint_revoked_login_fails_closed()
+- mint_rejects_empty_token_without_network · function · L466-L473 — async fn mint_rejects_empty_token_without_network()
+- credentials_debug_redacts_secrets · function · L476-L491 — fn credentials_debug_redacts_secrets()
+- load_rejects_tampered_stored_credentials · function · L494-L531 — fn load_rejects_tampered_stored_credentials()
+- device_challenge_debug_redacts_device_code · function · L534-L547 — fn device_challenge_debug_redacts_device_code()
+- save_load_clear_roundtrip_with_owner_only_file · function · L550-L596 — fn save_load_clear_roundtrip_with_owner_only_file()
+- usage_summary_rejects_invalid_snapshot_values · function · L599-L656 — fn usage_summary_rejects_invalid_snapshot_values()
+- refresh_if_needed_skips_network_when_fresh · function · L659-L680 — async fn refresh_if_needed_skips_network_when_fresh()
+- refresh_if_needed_remints_when_stale · function · L683-L710 — async fn refresh_if_needed_remints_when_stale()
+- start_stub_with_hook · function · L714-L743 — async fn start_stub_with_hook<F>(responses: Vec<(u16, String)>, on_request: F) -> StubServer
+- refresh_credentials_fails_and_does_not_resurrect_when_deleted_concurrently · function · L746-L789 — async fn refresh_credentials_fails_and_does_not_resurrect_when_deleted_concurrently()
+- refresh_credentials_refuses_to_overwrite_different_account_saved_concurrently · function · L792-L847 — async fn refresh_credentials_refuses_to_overwrite_different_account_saved_concurrently()
+- credentials_lock_provides_mutual_exclusion · function · L850-L889 — async fn credentials_lock_provides_mutual_exclusion()
+- refresh_holds_lock_so_logout_cannot_interleave_between_compare_and_write · function · L903-L969 — async fn refresh_holds_lock_so_logout_cannot_interleave_between_compare_and_write()

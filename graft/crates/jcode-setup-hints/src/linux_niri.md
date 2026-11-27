@@ -1,0 +1,38 @@
+# crates/jcode-setup-hints/src/linux_niri.rs
+
+- NIRI_BLOCK_BEGIN · constant · L38-L38 — pub(crate) const NIRI_BLOCK_BEGIN: &str = "// >>> jcode launch hotkeys (managed) >>>";
+- NIRI_BLOCK_END · constant · L40-L40 — pub(crate) const NIRI_BLOCK_END: &str = "// <<< jcode launch hotkeys (managed) <<<";
+- NiriHotkey · struct · L45-L54 — pub(crate) struct NiriHotkey
+- chord_to_niri_bind · function · L62-L84 — pub(crate) fn chord_to_niri_bind(chord: &KeyChord) -> Option<String>
+- niri_key_name · function · L88-L132 — fn niri_key_name(key: &str) -> Option<String>
+- kdl_escape · function · L135-L137 — fn kdl_escape(input: &str) -> String
+- sh_single_quote · function · L140-L142 — fn sh_single_quote(input: &str) -> String
+- launch_shell_command · function · L149-L185 — fn launch_shell_command(
+- render_niri_bind_line · function · L189-L215 — pub(crate) fn render_niri_bind_line(
+- render_niri_block · function · L220-L246 — pub(crate) fn render_niri_block(
+- SpliceResult · struct · L251-L254 — pub(crate) struct SpliceResult
+- splice_managed_block · function · L268-L324 — pub(crate) fn splice_managed_block(config: &str, block: &str) -> SpliceResult
+- find_managed_region · function · L329-L346 — fn find_managed_region(config: &str) -> (Option<usize>, Option<usize>)
+- binds_block_insert_point · function · L351-L373 — fn binds_block_insert_point(config: &str) -> Option<usize>
+- brace_depth_before · function · L381-L424 — fn brace_depth_before(config: &str, upto: usize) -> i32
+- line_offsets · function · L427-L440 — fn line_offsets(s: &str) -> Vec<(usize, &str)>
+- shortcut_tests · module · L444-L444 — mod shortcut_tests;
+- tests · module · L447-L879 — mod tests
+- chord · function · L450-L452 — fn chord(s: &str) -> KeyChord
+- hk · function · L454-L461 — fn hk(chord_str: &str, dir: &str, label: &str, self_dev: bool) -> NiriHotkey
+- maps_common_chords_to_niri_syntax · function · L464-L483 — fn maps_common_chords_to_niri_syntax()
+- rejects_unmappable_keys · function · L486-L489 — fn rejects_unmappable_keys()
+- renders_bind_line_with_cd_and_terminal · function · L492-L506 — fn renders_bind_line_with_cd_and_terminal()
+- render_block_wraps_sentinels · function · L509-L527 — fn render_block_wraps_sentinels()
+- splice_inserts_into_existing_binds_block · function · L530-L547 — fn splice_inserts_into_existing_binds_block()
+- splice_replaces_existing_managed_region_in_place · function · L550-L575 — fn splice_replaces_existing_managed_region_in_place()
+- splice_is_idempotent · function · L578-L591 — fn splice_is_idempotent()
+- splice_appends_binds_block_when_missing · function · L594-L607 — fn splice_appends_binds_block_when_missing()
+- splice_skips_nested_binds_and_appends_a_top_level_block · function · L610-L634 — fn splice_skips_nested_binds_and_appends_a_top_level_block()
+- splice_prefers_a_top_level_binds_block_over_an_earlier_nested_one · function · L637-L651 — fn splice_prefers_a_top_level_binds_block_over_an_earlier_nested_one()
+- splice_relocates_a_managed_block_previously_written_into_a_nested_node · function · L654-L688 — fn splice_relocates_a_managed_block_previously_written_into_a_nested_node()
+- spliced_config_is_accepted_by_the_real_niri_parser · function · L698-L756 — fn spliced_config_is_accepted_by_the_real_niri_parser()
+- unbalanced_braces_in_a_block_comment_do_not_hide_the_binds_node · function · L766-L796 — fn unbalanced_braces_in_a_block_comment_do_not_hide_the_binds_node()
+- fuzz_corpus_stays_valid_after_splicing · function · L810-L863 — fn fuzz_corpus_stays_valid_after_splicing()
+- brace_depth_ignores_braces_in_strings_and_comments · function · L866-L869 — fn brace_depth_ignores_braces_in_strings_and_comments()
+- shell_command_cds_and_self_devs · function · L872-L878 — fn shell_command_cds_and_self_devs()

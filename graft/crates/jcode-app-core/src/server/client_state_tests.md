@@ -1,0 +1,65 @@
+# crates/jcode-app-core/src/server/client_state_tests.rs
+
+- MockProvider · struct · L18-L18 — struct MockProvider(Option<&'static str>);
+- resume_todos_arrive_before_backpressured_large_history · function · L22-L69 — async fn resume_todos_arrive_before_backpressured_large_history()
+- StaticDiscoveryProvider · struct · L72-L72 — struct StaticDiscoveryProvider(Arc<std::sync::atomic::AtomicBool>);
+- complete · function · L76-L84 — async fn complete(
+- name · function · L85-L87 — fn name(&self) -> &str
+- model · function · L88-L90 — fn model(&self) -> String
+- fork · function · L91-L93 — fn fork(&self) -> Arc<dyn Provider>
+- available_models_display · function · L94-L100 — fn available_models_display(&self) -> Vec<String>
+- prefetch_models · function · L101-L104 — async fn prefetch_models(&self) -> Result<()>
+- model_prefetch_discovers_new_models_despite_static_fallback_names · function · L108-L150 — fn model_prefetch_discovers_new_models_despite_static_fallback_names()
+- CapabilityRefreshProvider · struct · L153-L155 — struct CapabilityRefreshProvider
+- complete · function · L159-L167 — async fn complete(
+- name · function · L169-L171 — fn name(&self) -> &str
+- model · function · L172-L174 — fn model(&self) -> String
+- fork · function · L175-L177 — fn fork(&self) -> Arc<dyn Provider>
+- available_models_display · function · L178-L180 — fn available_models_display(&self) -> Vec<String>
+- model_capabilities_need_refresh · function · L181-L183 — fn model_capabilities_need_refresh(&self) -> bool
+- prefetch_models · function · L184-L188 — async fn prefetch_models(&self) -> Result<()>
+- available_service_tiers · function · L189-L195 — fn available_service_tiers(&self) -> Vec<&'static str>
+- model_prefetch_hydrates_capabilities_with_existing_model_names · function · L199-L268 — fn model_prefetch_hydrates_capabilities_with_existing_model_names()
+- IdentityProvider · struct · L270-L273 — struct IdentityProvider
+- complete · function · L277-L285 — async fn complete(
+- name · function · L286-L288 — fn name(&self) -> &str
+- model · function · L289-L291 — fn model(&self) -> String
+- fork · function · L292-L297 — fn fork(&self) -> Arc<dyn Provider>
+- active_resolved_credential · function · L298-L300 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- oauth_account_label · function · L301-L303 — fn oauth_account_label(&self) -> Option<String>
+- active_oauth_account_email · function · L304-L306 — fn active_oauth_account_email(&self) -> Option<String>
+- provider_oauth_email_uses_exact_live_account · function · L310-L320 — fn provider_oauth_email_uses_exact_live_account()
+- provider_oauth_email_never_probes_disabled_api_key_or_unknown_accounts · function · L323-L337 — fn provider_oauth_email_never_probes_disabled_api_key_or_unknown_accounts()
+- provider_oauth_email_accepts_authoritative_oauth_only_and_skips_unknown_identity · function · L340-L359 — fn provider_oauth_email_accepts_authoritative_oauth_only_and_skips_unknown_identity()
+- complete · function · L363-L373 — async fn complete(
+- name · function · L375-L377 — fn name(&self) -> &str
+- display_name · function · L382-L384 — fn display_name(&self) -> String
+- fork · function · L386-L388 — fn fork(&self) -> Arc<dyn Provider>
+- model · function · L390-L392 — fn model(&self) -> String
+- available_service_tiers · function · L394-L400 — fn available_service_tiers(&self) -> Vec<&'static str>
+- service_tier · function · L402-L404 — fn service_tier(&self) -> Option<String>
+- reasoning_effort · function · L406-L408 — fn reasoning_effort(&self) -> Option<String>
+- oauth_account_label · function · L410-L412 — fn oauth_account_label(&self) -> Option<String>
+- session_activity_snapshot_prefers_live_tool_name_for_target_session · function · L416-L457 — async fn session_activity_snapshot_prefers_live_tool_name_for_target_session()
+- session_activity_snapshot_uses_fallback_when_no_live_connection_is_marked_busy · function · L460-L469 — async fn session_activity_snapshot_uses_fallback_when_no_live_connection_is_marked_busy()
+- turn_identity_busy_history_bootstraps_active_turn_and_idle_watermark · function · L476-L558 — async fn turn_identity_busy_history_bootstraps_active_turn_and_idle_watermark()
+- handle_get_history_falls_back_to_persisted_snapshot_when_agent_is_busy · function · L561-L565 — async fn handle_get_history_falls_back_to_persisted_snapshot_when_agent_is_busy()
+- handle_get_history_busy_fresh_session_returns_empty_without_waiting · function · L572-L711 — async fn handle_get_history_busy_fresh_session_returns_empty_without_waiting()
+- pdf_panels_history_capability_covers_live_and_persisted_paths · function · L714-L721 — async fn pdf_panels_history_capability_covers_live_and_persisted_paths()
+- handle_get_history_uses_live_snapshot_when_agent_is_available · function · L724-L726 — async fn handle_get_history_uses_live_snapshot_when_agent_is_available()
+- history_guard_survives_racing_turn_and_is_released_before_write · function · L729-L731 — async fn history_guard_survives_racing_turn_and_is_released_before_write()
+- assert_history_service_tier_and_pdf_capability · function · L737-L1004 — async fn assert_history_service_tier_and_pdf_capability(
+- LegacyFormat · enum · L899-L901 — enum LegacyFormat
+- LegacyPage · struct · L903-L905 — struct LegacyPage
+- LegacySnapshot · struct · L907-L909 — struct LegacySnapshot
+- LegacyHistory · struct · L911-L914 — struct LegacyHistory
+- model_catalog · module · L1007-L1007 — mod model_catalog;
+- ReloadHistoryEnvGuard · struct · L1009-L1012 — struct ReloadHistoryEnvGuard
+- new · function · L1015-L1024 — fn new(home: &std::path::Path, runtime: &std::path::Path) -> Self
+- drop · function · L1028-L1040 — fn drop(&mut self)
+- write_pending_user_session · function · L1043-L1057 — fn write_pending_user_session(
+- history_reload_recovery_infers_pending_active_user_turn_during_reload · function · L1060-L1089 — fn history_reload_recovery_infers_pending_active_user_turn_during_reload() -> Result<()>
+- history_reload_recovery_does_not_infer_pending_user_turn_without_reload_marker · function · L1092-L1102 — fn history_reload_recovery_does_not_infer_pending_user_turn_without_reload_marker() -> Result<()>
+- history_reload_recovery_infers_pending_assistant_tool_during_reload · function · L1105-L1132 — fn history_reload_recovery_infers_pending_assistant_tool_during_reload() -> Result<()>
+- history_reload_recovery_does_not_mark_delivered_until_continuation_is_accepted · function · L1135-L1225 — fn history_reload_recovery_does_not_mark_delivered_until_continuation_is_accepted() -> Result<()>
+- history_delta · module · L1228-L1228 — mod history_delta;

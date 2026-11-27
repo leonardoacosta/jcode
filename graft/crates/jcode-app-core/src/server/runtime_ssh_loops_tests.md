@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/server/runtime_ssh_loops_tests.rs
+
+- open_snapshot · function · L10-L21 — fn open_snapshot() -> todo::followup::TodoSnapshot
+- enabled_state · function · L23-L29 — fn enabled_state() -> LoopState
+- persisted_policy_keeps_unchanged_todo_retry_budget_across_reload · function · L32-L45 — fn persisted_policy_keeps_unchanged_todo_retry_budget_across_reload()
+- paused_plan_and_unregistered_sessions_never_continue · function · L48-L65 — fn paused_plan_and_unregistered_sessions_never_continue()
+- blockers_and_running_tasks_pause_without_consuming_retry_budget · function · L68-L91 — fn blockers_and_running_tasks_pause_without_consuming_retry_budget()
+- state_files_are_session_scoped_and_invalid_ids_cannot_escape · function · L94-L119 — fn state_files_are_session_scoped_and_invalid_ids_cannot_escape()
+- launch_prompts_keep_plan_and_refactor_review_semantics · function · L122-L146 — fn launch_prompts_keep_plan_and_refactor_review_semantics()
+- RecordingProvider · struct · L149-L153 — struct RecordingProvider
+- complete · function · L157-L181 — async fn complete(
+- name · function · L182-L184 — fn name(&self) -> &str
+- supports_compaction · function · L185-L187 — fn supports_compaction(&self) -> bool
+- fork · function · L188-L190 — fn fork(&self) -> Arc<dyn Provider>
+- RestoreHome · struct · L193-L193 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L195-L202 — fn drop(&mut self)
+- productive_remote_campaign_exceeds_old_turn_cap_then_stops_on_no_progress · function · L206-L243 — async fn productive_remote_campaign_exceeds_old_turn_cap_then_stops_on_no_progress()
+- ordinary_session_enables_real_followups_without_client_opt_in · function · L246-L308 — async fn ordinary_session_enables_real_followups_without_client_opt_in()
+- ordinary_session_respects_host_default_off_and_explicit_on · function · L311-L358 — async fn ordinary_session_respects_host_default_off_and_explicit_on()
+- cancelled_session_does_not_restart_for_unfinished_todos · function · L361-L387 — async fn cancelled_session_does_not_restart_for_unfinished_todos()
+- remote_loop_runtime_executes_turns_persists_controls_and_recovers_actual_context · function · L390-L534 — async fn remote_loop_runtime_executes_turns_persists_controls_and_recovers_actual_context()

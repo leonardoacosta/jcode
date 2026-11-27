@@ -1,0 +1,37 @@
+# crates/jcode-base/src/provider/model_catalog_service.rs
+
+- RuntimeModelUnavailability · struct · L6-L10 — pub(crate) struct RuntimeModelUnavailability
+- ModelCatalogService · struct · L19-L31 — pub(crate) struct ModelCatalogService
+- IN_FLIGHT_REFRESH_EXPIRY · constant · L37-L37 — const IN_FLIGHT_REFRESH_EXPIRY: Duration = Duration::from_secs(5 * 60);
+- new · function · L40-L57 — pub(crate) fn new(
+- model_ids · function · L59-L73 — pub(crate) fn model_ids(&self, scope: &str) -> Option<Vec<String>>
+- contains_model · function · L75-L78 — pub(crate) fn contains_model(&self, scope: &str, model: &str) -> Option<bool>
+- replace_scope_models · function · L80-L87 — pub(crate) fn replace_scope_models(
+- hydrate_scope_models_from_snapshot · function · L94-L105 — pub(crate) fn hydrate_scope_models_from_snapshot(
+- replace_scope_models_inner · function · L107-L133 — fn replace_scope_models_inner(
+- record_runtime_model_unavailable · function · L135-L151 — pub(crate) fn record_runtime_model_unavailable(&self, scope: &str, model: &str, reason: &str)
+- runtime_model_unavailability · function · L153-L170 — pub(crate) fn runtime_model_unavailability(
+- clear_runtime_model_unavailable · function · L175-L196 — pub(crate) fn clear_runtime_model_unavailable(&self, scope: &str, model: &str) -> bool
+- clear_runtime_model_unavailable_scope · function · L198-L202 — pub(crate) fn clear_runtime_model_unavailable_scope(&self, scope: &str)
+- is_fresh · function · L204-L211 — pub(crate) fn is_fresh(&self, scope: &str) -> bool
+- observed_at · function · L213-L218 — pub(crate) fn observed_at(&self, scope: &str) -> Option<SystemTime>
+- note_attempt · function · L220-L224 — pub(crate) fn note_attempt(&self, scope: &str)
+- refresh_throttled · function · L226-L233 — pub(crate) fn refresh_throttled(&self, scope: &str) -> bool
+- should_refresh · function · L235-L248 — pub(crate) fn should_refresh(&self, scope: &str) -> bool
+- begin_refresh · function · L250-L255 — pub(crate) fn begin_refresh(&self, scope: &str) -> bool
+- begin_forced_refresh · function · L259-L274 — pub(crate) fn begin_forced_refresh(&self, scope: &str) -> bool
+- finish_refresh · function · L276-L280 — pub(crate) fn finish_refresh(&self, scope: &str)
+- revision · function · L283-L285 — pub(crate) fn revision(&self) -> u64
+- backdate_in_flight_for_tests · function · L290-L296 — pub(crate) fn backdate_in_flight_for_tests(&self, scope: &str, age: Duration)
+- reset_for_tests · function · L303-L322 — pub(crate) fn reset_for_tests(&self)
+- tests · module · L326-L487 — mod tests
+- service · function · L329-L335 — fn service() -> ModelCatalogService
+- replace_scope_models_updates_catalog_and_revision · function · L338-L350 — fn replace_scope_models_updates_catalog_and_revision()
+- begin_refresh_blocks_duplicate_until_finished_then_retry_throttles · function · L353-L361 — fn begin_refresh_blocks_duplicate_until_finished_then_retry_throttles()
+- forced_catalog_refresh_bypasses_freshness_and_throttle_but_not_in_flight · function · L364-L378 — fn forced_catalog_refresh_bypasses_freshness_and_throttle_but_not_in_flight()
+- abandoned_in_flight_refresh_expires_and_is_reclaimed · function · L381-L401 — fn abandoned_in_flight_refresh_expires_and_is_reclaimed()
+- hydrating_stale_disk_snapshot_does_not_mark_scope_fresh · function · L404-L420 — fn hydrating_stale_disk_snapshot_does_not_mark_scope_fresh()
+- hydrating_recent_disk_snapshot_keeps_scope_fresh · function · L423-L432 — fn hydrating_recent_disk_snapshot_keeps_scope_fresh()
+- empty_model_sets_do_not_replace_existing_catalog · function · L435-L440 — fn empty_model_sets_do_not_replace_existing_catalog()
+- runtime_unavailability_is_account_scoped_and_clearable · function · L443-L466 — fn runtime_unavailability_is_account_scoped_and_clearable()
+- runtime_unavailability_scope_clear_drops_all_models_for_account · function · L469-L486 — fn runtime_unavailability_scope_clear_drops_all_models_for_account()

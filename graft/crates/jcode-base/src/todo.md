@@ -1,0 +1,45 @@
+# crates/jcode-base/src/todo.rs
+
+- TODO_LONG_SESSION_REVIEW_AFTER · constant · L13-L14 — const TODO_LONG_SESSION_REVIEW_AFTER: chrono::Duration =
+- todo_state_path · function · L16-L18 — fn todo_state_path(session_id: &str, file: TodoFile) -> Result<PathBuf>
+- load_todos · function · L20-L26 — pub fn load_todos(session_id: &str) -> Result<Vec<TodoItem>>
+- todos_exist · function · L28-L30 — pub fn todos_exist(session_id: &str) -> Result<bool>
+- save_todos · function · L33-L42 — pub fn save_todos(session_id: &str, todos: &[TodoItem]) -> Result<()>
+- write_todos · function · L45-L55 — fn write_todos(session_id: &str, todos: &[TodoItem]) -> Result<()>
+- todo_path · function · L57-L59 — fn todo_path(session_id: &str) -> Result<PathBuf>
+- todo_review_path · function · L61-L63 — fn todo_review_path(session_id: &str) -> Result<PathBuf>
+- update_todo_review_cycle · function · L68-L94 — pub fn update_todo_review_cycle(
+- take_long_session_review_if_due · function · L98-L110 — pub fn take_long_session_review_if_due(session_id: &str) -> Result<bool>
+- load_goals · function · L115-L121 — pub fn load_goals(session_id: &str) -> Result<Vec<TodoGoal>>
+- load_session_title · function · L124-L128 — pub fn load_session_title(session_id: &str) -> Option<String>
+- save_goals · function · L130-L135 — pub fn save_goals(session_id: &str, goals: &[TodoGoal]) -> Result<()>
+- publish_stored · function · L139-L143 — fn publish_stored(session_id: &str)
+- goals_path · function · L145-L147 — fn goals_path(session_id: &str) -> Result<PathBuf>
+- load_plan · function · L151-L157 — pub fn load_plan(session_id: &str) -> Result<TodoPlan>
+- save_plan · function · L159-L169 — pub fn save_plan(session_id: &str, plan: &TodoPlan) -> Result<()>
+- plan_path · function · L171-L173 — fn plan_path(session_id: &str) -> Result<PathBuf>
+- load_gate_observations · function · L180-L186 — pub fn load_gate_observations(session_id: &str) -> Result<Vec<GateObservation>>
+- save_gate_observations · function · L188-L191 — pub fn save_gate_observations(session_id: &str, observations: &[GateObservation]) -> Result<()>
+- append_gate_observations · function · L197-L208 — pub fn append_gate_observations(session_id: &str, new: &[GateObservation]) -> Result<()>
+- clear_gate_observations · function · L210-L216 — pub fn clear_gate_observations(session_id: &str) -> Result<()>
+- MAX_GATE_OBSERVATIONS · constant · L219-L219 — const MAX_GATE_OBSERVATIONS: usize = 256;
+- gate_observations_path · function · L221-L223 — fn gate_observations_path(session_id: &str) -> Result<PathBuf>
+- tests · module · L226-L402 — mod tests
+- intent_observation · function · L229-L235 — fn intent_observation(state: Option<IntentUnderstanding>) -> GateObservation
+- loop_observation · function · L237-L243 — fn loop_observation(group: Option<&str>, state: Option<FeedbackLoopState>) -> GateObservation
+- gate_observations_round_trip_and_clear · function · L246-L286 — fn gate_observations_round_trip_and_clear()
+- gate_observation_log_is_capped · function · L291-L311 — fn gate_observation_log_is_capped()
+- todo · function · L313-L333 — fn todo(content: &str, status: &str, group: Option<&str>) -> TodoItem
+- long_session_review_is_private_durable_and_one_shot · function · L336-L372 — fn long_session_review_is_private_durable_and_one_shot()
+- plan_intent_fields_round_trip_through_storage · function · L375-L401 — fn plan_intent_fields_round_trip_through_storage()
+- load_lane_links · function · L414-L434 — fn load_lane_links(session_id: &str) -> Vec<stages::LaneLink>
+- save_lane_links · function · L436-L438 — fn save_lane_links(session_id: &str, links: &[stages::LaneLink]) -> Result<()>
+- link_worker_lane · function · L443-L464 — pub fn link_worker_lane(coordinator: &str, worker: &str, lane: &str) -> Result<Vec<TodoItem>>
+- sync_lanes_after_save · function · L470-L519 — fn sync_lanes_after_save(session_id: &str, todos: &[TodoItem])
+- publish_todos · function · L523-L528 — fn publish_todos(session_id: &str, todos: Vec<TodoItem>)
+- lane_change_summary · function · L531-L563 — pub fn lane_change_summary(before: &[TodoItem], after: &[TodoItem]) -> String
+- lane_sync_tests · module · L566-L755 — mod lane_sync_tests
+- laned · function · L569-L579 — fn laned(id: &str, stage: u32, group: &str) -> TodoItem
+- lane_change_summary_names_added_removed_and_changed · function · L582-L594 — fn lane_change_summary_names_added_removed_and_changed()
+- launched_lane_mirrors_both_ways_through_real_todo_files · function · L597-L688 — fn launched_lane_mirrors_both_ways_through_real_todo_files()
+- worker_replacement_save_persists_assigned_lane_and_phase_on_both_sides · function · L691-L754 — fn worker_replacement_save_persists_assigned_lane_and_phase_on_both_sides()

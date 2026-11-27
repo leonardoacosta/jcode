@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/tool/load_tools.rs
+
+- LOAD_TOOLS_NAME · constant · L16-L16 — pub(crate) const LOAD_TOOLS_NAME: &str = "load_tools";
+- RARELY_USED_TOOLS · constant · L25-L38 — pub(crate) const RARELY_USED_TOOLS: &[&str] = &[
+- is_rarely_used · function · L40-L42 — pub(crate) fn is_rarely_used(name: &str) -> bool
+- apply_deferral · function · L52-L81 — pub(crate) fn apply_deferral(
+- LoadToolsTool · struct · L83-L83 — pub struct LoadToolsTool;
+- new · function · L86-L88 — pub fn new() -> Self
+- LoadToolsInput · struct · L92-L96 — struct LoadToolsInput
+- name · function · L100-L102 — fn name(&self) -> &str
+- model_visible · function · L104-L107 — fn model_visible(&self) -> bool
+- description · function · L109-L112 — fn description(&self) -> &str
+- parameters_schema · function · L114-L123 — fn parameters_schema(&self) -> Value
+- execute · function · L125-L160 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L164-L268 — mod tests
+- def · function · L167-L174 — fn def(name: &str) -> ToolDefinition
+- names · function · L176-L182 — fn names(tools: &[ToolDefinition], deferred: bool) -> Vec<&str>
+- defers_rare_tools_and_names_them_in_the_loader · function · L185-L196 — fn defers_rare_tools_and_names_them_in_the_loader()
+- without_native_support_everything_stays_eager_and_there_is_no_loader · function · L199-L204 — fn without_native_support_everything_stays_eager_and_there_is_no_loader()
+- nothing_is_deferred_when_the_loader_is_not_allowed · function · L207-L212 — fn nothing_is_deferred_when_the_loader_is_not_allowed()
+- protected_names_stay_eager_and_an_unneeded_loader_is_not_added · function · L215-L219 — fn protected_names_stay_eager_and_an_unneeded_loader_is_not_added()
+- skill_manage_is_never_deferred · function · L222-L230 — fn skill_manage_is_never_deferred()
+- the_loader_costs_less_than_the_cheapest_tool_it_defers · function · L233-L239 — fn the_loader_costs_less_than_the_cheapest_tool_it_defers()
+- loading_returns_references_for_known_names_only · function · L242-L267 — async fn loading_returns_references_for_known_names_only()

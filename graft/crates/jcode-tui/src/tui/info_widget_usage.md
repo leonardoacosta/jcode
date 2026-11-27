@@ -1,0 +1,31 @@
+# crates/jcode-tui/src/tui/info_widget_usage.rs
+
+- render_usage_widget · function · L9-L139 — pub(super) fn render_usage_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- with_account_hint · function · L144-L152 — fn with_account_hint(mut framed: Framed, info: &UsageInfo) -> Framed
+- token_output_share · function · L154-L161 — fn token_output_share(info: &UsageInfo) -> String
+- cost_rate · function · L163-L170 — fn cost_rate(info: &UsageInfo) -> String
+- usage_limit_reached_line · function · L172-L177 — fn usage_limit_reached_line() -> Line<'static>
+- usage_unavailable_line · function · L179-L184 — fn usage_unavailable_line() -> Line<'static>
+- render_usage_compact · function · L186-L282 — pub(super) fn render_usage_compact(
+- LABEL_WIDTH · constant · L284-L284 — const LABEL_WIDTH: usize = 7;
+- CARD_MAX_BAR_WIDTH · constant · L287-L287 — const CARD_MAX_BAR_WIDTH: usize = 16;
+- render_inline_limit_bar · function · L290-L313 — pub(crate) fn render_inline_limit_bar(
+- render_labeled_bar · function · L315-L334 — pub(crate) fn render_labeled_bar(
+- limit_color · function · L337-L340 — pub(crate) fn limit_color(left_pct: u8) -> Color
+- LimitBar · struct · L344-L358 — pub(crate) struct LimitBar<'a>
+- render · function · L361-L438 — pub(crate) fn render(&self) -> Line<'static>
+- MIN_BAR_WIDTH · constant · L374-L374 — const MIN_BAR_WIDTH: usize = 4;
+- bar_line · function · L441-L483 — fn bar_line(
+- tests · module · L486-L725 — mod tests
+- inline_limit_bar_reuses_widget_colors_and_compacts_without_bar · function · L490-L512 — fn inline_limit_bar_reuses_widget_colors_and_compacts_without_bar()
+- usage_footer_metadata_covers_provider_paths · function · L515-L561 — fn usage_footer_metadata_covers_provider_paths()
+- line_text · function · L563-L568 — fn line_text(line: &Line<'_>) -> String
+- usage_bar_shows_reset_countdown_before_exhaustion · function · L571-L583 — fn usage_bar_shows_reset_countdown_before_exhaustion()
+- usage_bar_keeps_wording_unambiguous_within_narrow_width · function · L586-L600 — fn usage_bar_keeps_wording_unambiguous_within_narrow_width()
+- used_wording_does_not_change_remaining_budget_color_thresholds · function · L603-L611 — fn used_wording_does_not_change_remaining_budget_color_thresholds()
+- exhausted_usage_bar_preserves_resets_wording_and_width · function · L614-L621 — fn exhausted_usage_bar_preserves_resets_wording_and_width()
+- unavailable_anthropic_usage_is_explicit_not_silently_hidden · function · L624-L637 — fn unavailable_anthropic_usage_is_explicit_not_silently_hidden()
+- openai_monthly_usage_renders_only_the_reported_window · function · L640-L656 — fn openai_monthly_usage_renders_only_the_reported_window()
+- usage_widget_shows_masked_account_and_drops_it_when_narrow · function · L659-L692 — fn usage_widget_shows_masked_account_and_drops_it_when_narrow()
+- usage_widget_account_hint_survives_the_real_narrow_widget_width · function · L695-L724 — fn usage_widget_account_hint_survives_the_real_narrow_widget_width()
+- format_tokens · function · L727-L735 — fn format_tokens(tokens: u64) -> String

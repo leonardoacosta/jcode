@@ -1,0 +1,96 @@
+# crates/jcode-tui/src/tui/ui_input.rs
+
+- command_suggestions · module · L2-L2 — mod command_suggestions;
+- status_rendering · module · L6-L6 — mod status_rendering;
+- shell_mode_color · function · L28-L30 — fn shell_mode_color() -> Color
+- ComposerMode · enum · L33-L38 — enum ComposerMode
+- is_shell · function · L41-L43 — fn is_shell(self) -> bool
+- composer_mode · function · L46-L58 — fn composer_mode(input: &str, is_remote_mode: bool) -> ComposerMode
+- shell_mode_hint · function · L60-L66 — fn shell_mode_hint(mode: ComposerMode) -> Option<&'static str>
+- normalize_repaint_sensitive_notice_text · function · L68-L70 — fn normalize_repaint_sensitive_notice_text(text: &str) -> String
+- command_suggestion_window_start · function · L72-L81 — fn command_suggestion_window_start(selected: usize, suggestion_count: usize) -> usize
+- command_suggestions_overlay_rect · function · L91-L128 — fn command_suggestions_overlay_rect(
+- command_suggestions_active · function · L131-L139 — fn command_suggestions_active(
+- draw_prompt_history_search_overlay · function · L145-L222 — pub(super) fn draw_prompt_history_search_overlay(
+- VISIBLE_LIMIT · constant · L153-L153 — const VISIBLE_LIMIT: usize = 8;
+- draw_command_suggestions_overlay · function · L228-L267 — pub(super) fn draw_command_suggestions_overlay(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- command_suggestion_needle · function · L271-L277 — fn command_suggestion_needle(input: &str) -> Option<String>
+- brighten_command_color · function · L281-L289 — pub(crate) fn brighten_command_color(color: Option<Color>) -> Color
+- dim_command_color · function · L292-L297 — pub(crate) fn dim_command_color(color: Option<Color>) -> Color
+- input_hint_line_height · function · L299-L316 — pub(super) fn input_hint_line_height(app: &dyn TuiState) -> u16
+- send_mode_reserved_width · function · L318-L321 — pub(super) fn send_mode_reserved_width(app: &dyn TuiState) -> usize
+- input_prompt · function · L323-L337 — pub(super) fn input_prompt(app: &dyn TuiState) -> (&'static str, Color)
+- input_prompt_len · function · L339-L342 — pub(crate) fn input_prompt_len(app: &dyn TuiState, next_prompt: usize) -> usize
+- next_input_prompt_number · function · L344-L348 — pub(crate) fn next_input_prompt_number(app: &dyn TuiState) -> usize
+- wrapped_input_line_count · function · L350-L377 — pub(super) fn wrapped_input_line_count(
+- pending_prompt_count · function · L379-L397 — pub(super) fn pending_prompt_count(app: &dyn TuiState) -> usize
+- pending_queue_preview · function · L399-L440 — pub(super) fn pending_queue_preview(app: &dyn TuiState) -> Vec<String>
+- draw_queued · function · L442-L506 — pub(super) fn draw_queued(frame: &mut Frame, app: &dyn TuiState, area: Rect, start_num: usize)
+- format_stream_tokens · function · L508-L516 — fn format_stream_tokens(tokens: u64) -> String
+- occasional_session_history_warning · function · L518-L559 — fn occasional_session_history_warning(
+- connection_phase_label · function · L561-L570 — fn connection_phase_label(phase: &ConnectionPhase) -> String
+- display_connection_type · function · L572-L579 — fn display_connection_type(connection_type: &str) -> String
+- normalize_status_detail · function · L581-L597 — fn normalize_status_detail(detail: &str) -> Option<String>
+- transport_label_overlaps · function · L599-L605 — fn transport_label_overlaps(left: &str, right: &str) -> bool
+- collect_transport_context_labels · function · L607-L635 — fn collect_transport_context_labels(
+- streaming_liveness_label · function · L637-L650 — fn streaming_liveness_label(
+- batch_progress_state · function · L652-L660 — fn batch_progress_state(
+- batch_running_summary · function · L662-L664 — fn batch_running_summary(batch_prog: &crate::bus::BatchProgress) -> Option<String>
+- append_batch_progress_spans · function · L666-L695 — fn append_batch_progress_spans(
+- live_processing_status_line · function · L699-L828 — pub(super) fn live_processing_status_line(
+- live_status_snapshot · function · L830-L842 — fn live_status_snapshot(app: &dyn TuiState, elapsed: f32) -> crate::protocol::SwarmLiveStatus
+- status_with_background_tasks · function · L846-L882 — fn status_with_background_tasks(
+- running_tool_header_spans · function · L884-L904 — fn running_tool_header_spans(
+- push_queued_suffix · function · L909-L916 — fn push_queued_suffix(spans: &mut Vec<Span<'static>>, queued_suffix: &str)
+- streaming_status_spans · function · L918-L937 — fn streaming_status_spans(
+- tests · module · L941-L941 — mod tests;
+- openai_reset_status_hint · function · L943-L979 — pub(crate) fn openai_reset_status_hint(
+- notification_lines · function · L981-L999 — fn notification_lines(app: &dyn TuiState, width: u16) -> Vec<Line<'static>>
+- notification_height · function · L1001-L1010 — pub(super) fn notification_height(app: &dyn TuiState, width: u16) -> u16
+- draw_notification · function · L1012-L1014 — pub(super) fn draw_notification(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- draw_overscroll_status · function · L1019-L1068 — pub(super) fn draw_overscroll_status(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- preview_overscroll_line · function · L1073-L1078 — pub(crate) fn preview_overscroll_line(
+- preview_overscroll_line_for_host · function · L1082-L1127 — pub(crate) fn preview_overscroll_line_for_host(
+- OVERSCROLL_MODEL_PINK · constant · L1130-L1130 — const OVERSCROLL_MODEL_PINK: Color = Color::Rgb(255, 135, 200);
+- OverscrollFacts · struct · L1133-L1145 — struct OverscrollFacts
+- OverscrollLevels · struct · L1150-L1161 — struct OverscrollLevels
+- OVERSCROLL_LADDER · constant · L1170-L1183 — const OVERSCROLL_LADDER: &[fn(&mut OverscrollLevels)] = &[
+- overscroll_fact_spans · function · L1185-L1313 — fn overscroll_fact_spans(
+- overscroll_fit_facts · function · L1317-L1344 — fn overscroll_fit_facts(facts: &OverscrollFacts, max_width: usize) -> (Vec<Span<'static>>, bool)
+- overscroll_truncate_label · function · L1346-L1353 — fn overscroll_truncate_label(label: &str, max_chars: usize) -> String
+- overscroll_truncate_spans · function · L1357-L1398 — fn overscroll_truncate_spans(spans: Vec<Span<'static>>, max_width: usize) -> Vec<Span<'static>>
+- overscroll_git_info · function · L1403-L1412 — fn overscroll_git_info(
+- overscroll_git_branch · function · L1416-L1426 — fn overscroll_git_branch(data: &crate::tui::info_widget::InfoWidgetData) -> Option<String>
+- overscroll_git_status_spans · function · L1432-L1469 — fn overscroll_git_status_spans(
+- overscroll_dir_label · function · L1471-L1473 — fn overscroll_dir_label(path: &str) -> Option<String>
+- overscroll_directory_transition · function · L1475-L1494 — fn overscroll_directory_transition(
+- overscroll_is_placeholder · function · L1497-L1503 — fn overscroll_is_placeholder(model: &str) -> bool
+- overscroll_is_runtime_placeholder · function · L1507-L1512 — fn overscroll_is_runtime_placeholder(provider: &str) -> bool
+- overscroll_provider_display · function · L1514-L1533 — fn overscroll_provider_display(provider: &str) -> String
+- overscroll_auth_label · function · L1535-L1552 — fn overscroll_auth_label(
+- overscroll_short_reasoning · function · L1554-L1569 — fn overscroll_short_reasoning(effort: &str) -> Option<&str>
+- overscroll_context_usage · function · L1571-L1588 — fn overscroll_context_usage(
+- overscroll_account_remaining · function · L1592-L1613 — fn overscroll_account_remaining(data: &crate::tui::info_widget::InfoWidgetData) -> Option<u8>
+- overscroll_format_tokens · function · L1616-L1626 — fn overscroll_format_tokens(tokens: usize) -> String
+- overscroll_context_percentage · function · L1629-L1644 — fn overscroll_context_percentage(used: usize, limit: usize) -> Span<'static>
+- draw_preview_input · function · L1649-L1668 — pub(crate) fn draw_preview_input(frame: &mut Frame, area: Rect, next_prompt: usize)
+- WrappedInputSegment · struct · L1671-L1676 — struct WrappedInputSegment
+- input_copy_snapshot_parts · function · L1683-L1722 — fn input_copy_snapshot_parts(
+- wrap_input_segments · function · L1724-L1792 — fn wrap_input_segments(input: &str, line_width: usize) -> Vec<WrappedInputSegment>
+- cursor_col_for_segment · function · L1794-L1804 — fn cursor_col_for_segment(segment: &WrappedInputSegment, cursor_char_pos: usize) -> usize
+- char_offset_for_clicked_column · function · L1806-L1832 — fn char_offset_for_clicked_column(text: &str, target_col: usize, display_width: usize) -> usize
+- input_cursor_pos_from_screen · function · L1834-L1904 — pub(crate) fn input_cursor_pos_from_screen(
+- wrap_input_text · function · L1907-L1926 — pub(crate) fn wrap_input_text<'a>(
+- wrap_input_text_with_images · function · L1930-L1951 — fn wrap_input_text_with_images<'a>(
+- wrap_input_text_with_ghost · function · L1957-L2063 — fn wrap_input_text_with_ghost<'a>(
+- voice_ghost · function · L2067-L2078 — fn voice_ghost(preview: Option<&crate::tui::VoiceComposerPreview>) -> Option<(&str, Style)>
+- dim_color_of · function · L2080-L2089 — fn dim_color_of(color: Color) -> Color
+- truncate_cells · function · L2092-L2111 — fn truncate_cells(text: &str, width: usize) -> String
+- voice_level_height · function · L2115-L2117 — fn voice_level_height(level: f32) -> f32
+- voice_waveform_line · function · L2124-L2193 — fn voice_waveform_line(preview: &crate::tui::VoiceComposerPreview, width: usize) -> Line<'static>
+- BARS · constant · L2126-L2126 — const BARS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+- send_mode_indicator · function · L2195-L2215 — fn send_mode_indicator(app: &dyn TuiState) -> (&'static str, Color)
+- draw_send_mode_indicator · function · L2217-L2234 — fn draw_send_mode_indicator(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- QueuedMsgType · enum · L2237-L2241 — enum QueuedMsgType
+- composer_line_width · function · L2246-L2255 — pub(crate) fn composer_line_width(
+- visual_line_move · function · L2262-L2299 — pub(crate) fn visual_line_move(

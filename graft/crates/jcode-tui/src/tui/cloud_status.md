@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/tui/cloud_status.rs
+
+- CloudProbeState · enum · L5-L9 — pub enum CloudProbeState
+- CloudStatusInfo · struct · L12-L25 — pub struct CloudStatusInfo
+- CloudDirectorySnapshot · struct · L28-L32 — pub struct CloudDirectorySnapshot
+- CloudDirectoryEntry · struct · L35-L39 — pub struct CloudDirectoryEntry
+- DIRECTORIES_PROBE · constant · L41-L41 — const DIRECTORIES_PROBE: &str = include_str!("cloud_directories_probe.py");
+- directories_script · function · L43-L48 — fn directories_script(session_id: Option<&str>) -> String
+- parse_directories · function · L50-L66 — fn parse_directories(bytes: &[u8]) -> Option<CloudDirectorySnapshot>
+- apply_directories · function · L68-L73 — fn apply_directories(info: &mut CloudStatusInfo, snapshot: Option<CloudDirectorySnapshot>)
+- CloudMachineStats · struct · L76-L85 — pub struct CloudMachineStats
+- SCRIPT · constant · L88-L101 — const SCRIPT: &str = r#"
+- CpuTicks · struct · L104-L107 — struct CpuTicks
+- cpu_percent · function · L109-L116 — fn cpu_percent(previous: CpuTicks, current: CpuTicks) -> Option<f64>
+- parse · function · L118-L202 — fn parse(
+- apply_result · function · L204-L219 — fn apply_result(
+- gather · function · L222-L324 — pub(crate) fn gather(session_id: Option<String>) -> Option<CloudStatusInfo>
+- SESSION_HINT · constant · L224-L224 — static SESSION_HINT: OnceLock<Arc<Mutex<Option<String>>>> = OnceLock::new();
+- CACHE · constant · L234-L234 — static CACHE: OnceLock<Arc<Mutex<CloudStatusInfo>>> = OnceLock::new();
+- gather · function · L327-L329 — pub(crate) fn gather(_session_id: Option<String>) -> Option<CloudStatusInfo>
+- directories_probe_tests · module · L333-L333 — mod directories_probe_tests;
+- tests · module · L336-L536 — mod tests
+- complete_sample_and_individually_invalid_fields · function · L339-L367 — fn complete_sample_and_individually_invalid_fields()
+- partial_invalid_and_cpu_deltas · function · L370-L405 — fn partial_invalid_and_cpu_deltas()
+- failure_retains_stale_success · function · L407-L440 — fn failure_retains_stale_success()
+- directory_snapshot_validation_and_failure_retains_last_good · function · L442-L485 — fn directory_snapshot_validation_and_failure_retains_last_good()
+- directory_script_runs_through_real_shell_transport · function · L488-L515 — async fn directory_script_runs_through_real_shell_transport()
+- bounded_transport_timeout_and_output_cap · function · L518-L535 — async fn bounded_transport_timeout_and_output_cap()

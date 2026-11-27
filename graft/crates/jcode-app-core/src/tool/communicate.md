@@ -1,0 +1,71 @@
+# crates/jcode-app-core/src/tool/communicate.rs
+
+- REQUEST_ID · constant · L22-L22 — const REQUEST_ID: u64 = 1;
+- transport · module · L24-L24 — pub(super) mod transport;
+- fresh_spawn_request_nonce · function · L27-L33 — fn fresh_spawn_request_nonce(ctx: &ToolContext) -> String
+- check_error · function · L35-L41 — fn check_error(response: &ServerEvent) -> Option<&str>
+- stop_inspect_command · function · L44-L46 — fn stop_inspect_command(target: &str) -> String
+- format_stop_outcome · function · L50-L63 — fn format_stop_outcome(target: &str, response: Result<ServerEvent>) -> Result<ToolOutput>
+- ensure_success · function · L65-L71 — fn ensure_success(response: &ServerEvent) -> Result<()>
+- fetch_plan_status · function · L73-L86 — async fn fetch_plan_status(session_id: &str) -> Result<PlanGraphStatus>
+- format_plan_followup · function · L88-L90 — fn format_plan_followup(summary: &PlanGraphStatus) -> String
+- default_cleanup_target_statuses · function · L92-L94 — fn default_cleanup_target_statuses() -> Vec<String>
+- cleanup_candidate_session_ids · function · L96-L110 — fn cleanup_candidate_session_ids(
+- auto_assignment_needs_spawn · function · L112-L118 — fn auto_assignment_needs_spawn(response: &ServerEvent) -> bool
+- fetch_swarm_members · function · L120-L133 — async fn fetch_swarm_members(session_id: &str) -> Result<Vec<AgentInfo>>
+- swarm_member_is_in_flight · function · L136-L141 — fn swarm_member_is_in_flight(member: &AgentInfo) -> bool
+- coordination_in_flight_count · function · L144-L157 — fn coordination_in_flight_count(
+- swarm_member_is_drivable_worker · function · L164-L167 — fn swarm_member_is_drivable_worker(member: &AgentInfo, coordinator_session_id: &str) -> bool
+- cleanup_swarm_workers · function · L169-L193 — async fn cleanup_swarm_workers(ctx: &ToolContext, params: &CommunicateInput) -> Result<String>
+- WorkerCleanupOutcome · struct · L198-L201 — struct WorkerCleanupOutcome
+- describe · function · L204-L223 — fn describe(&self) -> String
+- stop_swarm_sessions · function · L226-L249 — async fn stop_swarm_sessions(
+- spawn_assignment_session · function · L251-L284 — async fn spawn_assignment_session(ctx: &ToolContext, params: &CommunicateInput) -> Result<String>
+- assign_task_to_session · function · L286-L318 — async fn assign_task_to_session(
+- format_context_entries · function · L320-L322 — fn format_context_entries(entries: &[ContextEntry]) -> ToolOutput
+- format_members · function · L324-L332 — fn format_members(ctx: &ToolContext, members: &[AgentInfo]) -> ToolOutput
+- WorkerModelRecord · type · L335-L335 — type WorkerModelRecord = (String, &'static str);
+- spawned_worker_models · function · L337-L341 — fn spawned_worker_models() -> &'static std::sync::Mutex<HashMap<String, WorkerModelRecord>>
+- MODELS · constant · L338-L339 — static MODELS: std::sync::OnceLock<std::sync::Mutex<HashMap<String, WorkerModelRecord>>> =
+- is_inherit_model · function · L343-L346 — fn is_inherit_model(model: &str) -> bool
+- resolve_worker_model_source · function · L352-L388 — fn resolve_worker_model_source(
+- role_slot_source · function · L390-L399 — fn role_slot_source(role: &str) -> Option<&'static str>
+- spawn_role_slot · function · L402-L408 — fn spawn_role_slot<'a>(
+- format_spawn_model_line · function · L410-L425 — fn format_spawn_model_line(
+- format_member_models · function · L427-L448 — fn format_member_models(
+- format_tool_summary · function · L451-L453 — fn format_tool_summary(target: &str, calls: &[ToolCallSummary]) -> ToolOutput
+- MAX_FULL_REPORT_BYTES · constant · L456-L456 — const MAX_FULL_REPORT_BYTES: usize = 16 * 1024;
+- cap_full_report · function · L458-L472 — fn cap_full_report(report: &str) -> String
+- format_summary_with_report · function · L474-L489 — fn format_summary_with_report(
+- normalize_awaited_members · function · L493-L507 — fn normalize_awaited_members(members: &mut [AwaitedMemberStatus])
+- format_status_snapshot · function · L509-L511 — fn format_status_snapshot(snapshot: &AgentStatusSnapshot) -> ToolOutput
+- format_plan_status · function · L513-L515 — fn format_plan_status(summary: &PlanGraphStatus) -> ToolOutput
+- format_context_history · function · L517-L519 — fn format_context_history(target: &str, messages: &[HistoryMessage]) -> ToolOutput
+- format_awaited_members · function · L522-L528 — fn format_awaited_members(
+- latest_assistant_report · function · L530-L532 — fn latest_assistant_report(messages: &[HistoryMessage]) -> Option<String>
+- resolve_optional_target_session · function · L534-L536 — fn resolve_optional_target_session(target: Option<String>, current_session: &str) -> String
+- format_awaited_members_with_reports · function · L538-L547 — fn format_awaited_members_with_reports(
+- fetch_awaited_member_reports · function · L549-L575 — async fn fetch_awaited_member_reports(
+- default_await_target_statuses · function · L577-L579 — fn default_await_target_statuses() -> Vec<String>
+- non_blank · function · L581-L583 — fn non_blank(value: Option<String>) -> Option<String>
+- cross_swarm_confirmation · function · L585-L590 — fn cross_swarm_confirmation(swarm: &str, to_session: Option<&str>, message: &str) -> String
+- format_swarm_directory · function · L594-L616 — pub(super) fn format_swarm_directory(swarms: &[crate::protocol::SwarmInfo]) -> String
+- format_channels · function · L618-L620 — fn format_channels(channels: &[SwarmChannelInfo]) -> ToolOutput
+- format_swarm_model_list · function · L625-L680 — fn format_swarm_model_list(
+- CommunicateTool · struct · L682-L687 — pub struct CommunicateTool
+- new · function · L690-L692 — pub fn new() -> Self
+- new_for_working_dir · function · L694-L704 — fn new_for_working_dir(working_dir: Option<&std::path::Path>) -> Self
+- BASE_DESCRIPTION · constant · L695-L696 — const BASE_DESCRIPTION: &str =
+- ADVERTISED_SWARM_ACTIONS · constant · L712-L725 — const ADVERTISED_SWARM_ACTIONS: &[&str] = &[
+- await_members_socket_timeout · function · L727-L733 — fn await_members_socket_timeout(background: bool, timeout_secs: u64) -> std::time::Duration
+- unknown_action_message · function · L735-L741 — fn unknown_action_message(action: &str) -> String
+- CommunicateInput · struct · L744-L825 — struct CommunicateInput
+- spawn_initial_message · function · L828-L839 — fn spawn_initial_message(&self) -> Option<String>
+- required_spawn_label · function · L841-L853 — fn required_spawn_label(&self) -> anyhow::Result<String>
+- canonical_swarm_action · function · L860-L877 — fn canonical_swarm_action(action: &str) -> &str
+- swarm_model_schema · module · L880-L880 — mod swarm_model_schema;
+- name · function · L884-L886 — fn name(&self) -> &str
+- description · function · L888-L890 — fn description(&self) -> &str
+- parameters_schema · function · L892-L998 — fn parameters_schema(&self) -> Value
+- execute · function · L1000-L2161 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L2166-L2166 — mod tests;

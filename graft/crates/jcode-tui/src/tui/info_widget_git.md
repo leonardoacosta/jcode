@@ -1,0 +1,40 @@
+# crates/jcode-tui/src/tui/info_widget_git.rs
+
+- CHANGES_MAX_FILES · constant · L14-L14 — pub(super) const CHANGES_MAX_FILES: usize = 5;
+- edited_paths_from_tool_call · function · L18-L50 — pub(crate) fn edited_paths_from_tool_call(name: &str, input: &serde_json::Value) -> Vec<String>
+- resolve_edited_path · function · L54-L74 — pub(crate) fn resolve_edited_path(path: &str, working_dir: Option<&str>) -> std::path::PathBuf
+- is_agent_edited · function · L77-L91 — pub(crate) fn is_agent_edited(
+- AGENT_DOT_COLOR · constant · L94-L94 — pub(super) const AGENT_DOT_COLOR: (u8, u8, u8) = (186, 139, 255);
+- changes_legend · function · L98-L117 — pub(super) fn changes_legend(data: &InfoWidgetData, inner_height: u16) -> Option<Line<'static>>
+- changes_has_data · function · L122-L124 — pub(super) fn changes_has_data(info: &GitInfo) -> bool
+- changes_height · function · L127-L140 — pub(super) fn changes_height(info: &GitInfo) -> u16
+- render_changes_framed · function · L146-L207 — pub(super) fn render_changes_framed(data: &InfoWidgetData, inner: Rect) -> Framed
+- changes_file_lines · function · L209-L230 — fn changes_file_lines(
+- render_git_widget · function · L234-L279 — pub(super) fn render_git_widget(data: &InfoWidgetData, inner: Rect) -> Vec<Line<'static>>
+- truncate_cells · function · L281-L283 — fn truncate_cells(text: &str, width: usize) -> String
+- repo_rows · function · L285-L290 — fn repo_rows(state: &super::super::cloud_git::RepoState) -> u16
+- dual_git_height · function · L292-L294 — pub(super) fn dual_git_height(dual: &super::super::cloud_git::DualGitInfo) -> u16
+- render_dual_git · function · L296-L388 — fn render_dual_git(
+- line_counts · function · L391-L395 — fn line_counts(file: &DirtyFile) -> Option<(String, String)>
+- changes_file_line · function · L397-L451 — fn changes_file_line(file: &DirtyFile, agent: bool, count_w: usize, width: usize) -> Line<'static>
+- PREFIX · constant · L408-L408 — const PREFIX: usize = 3; // letter + agent marker + space
+- MIN_NAME · constant · L409-L409 — const MIN_NAME: usize = 8;
+- changes_display_path · function · L456-L474 — pub(super) fn changes_display_path(path: &str) -> String
+- tests · module · L477-L843 — mod tests
+- changes_footer_aggregates_directories_without_repeating_file_counts · function · L481-L504 — fn changes_footer_aggregates_directories_without_repeating_file_counts()
+- info · function · L506-L518 — fn info(files: &[(char, &str)], total: usize) -> GitInfo
+- text · function · L520-L531 — fn text(lines: &[Line<'static>]) -> String
+- changes_lists_files_without_repeating_branch_or_counts · function · L534-L556 — fn changes_lists_files_without_repeating_branch_or_counts()
+- changes_overflow_counts_files_beyond_the_capture_cap · function · L559-L569 — fn changes_overflow_counts_files_beyond_the_capture_cap()
+- clean_or_ahead_only_tree_has_no_changes_widget · function · L572-L575 — fn clean_or_ahead_only_tree_has_no_changes_widget()
+- display_path_keeps_parent_for_generic_names_and_rename_targets · function · L578-L586 — fn display_path_keeps_parent_for_generic_names_and_rename_targets()
+- dual_git_states_are_labeled_width_safe_and_mark_only_cloud_edits · function · L589-L632 — fn dual_git_states_are_labeled_width_safe_and_mark_only_cloud_edits()
+- dual_git_keeps_clean_missing_and_unavailable_repositories_visible · function · L635-L664 — fn dual_git_keeps_clean_missing_and_unavailable_repositories_visible()
+- porcelain_pairs_collapse_to_one_letter · function · L667-L678 — fn porcelain_pairs_collapse_to_one_letter()
+- line_counts_align_right_and_agent_edits_get_a_dot · function · L681-L718 — fn line_counts_align_right_and_agent_edits_get_a_dot()
+- overflow_row_reports_totals_across_all_files · function · L721-L747 — fn overflow_row_reports_totals_across_all_files()
+- narrow_width_drops_counts_before_the_name · function · L750-L766 — fn narrow_width_drops_counts_before_the_name()
+- edited_paths_cover_edit_write_and_both_patch_formats · function · L769-L791 — fn edited_paths_cover_edit_write_and_both_patch_formats()
+- edited_paths_resolve_against_working_dir_and_match_repo_paths · function · L794-L802 — fn edited_paths_resolve_against_working_dir_and_match_repo_paths()
+- numstat_parses_plain_binary_and_renamed_paths · function · L805-L813 — fn numstat_parses_plain_binary_and_renamed_paths()
+- real_repo_changes_widget · function · L820-L842 — fn real_repo_changes_widget()

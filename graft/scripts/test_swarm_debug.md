@@ -1,0 +1,17 @@
+# scripts/test_swarm_debug.py
+
+- send_cmd · function · L18-L56 — def send_cmd(cmd, session_id=None, timeout=10)
+- create_session · function · L58-L63 — def create_session(cwd="/tmp")
+- destroy_session · function · L65-L67 — def destroy_session(session_id)
+- test_basic_swarm_commands · function · L69-L103 — def test_basic_swarm_commands()
+- test_swarm_touches_timestamps · function · L105-L131 — def test_swarm_touches_timestamps()
+- test_swarm_member_timestamps · function · L133-L167 — def test_swarm_member_timestamps()
+- test_swarm_session_details · function · L169-L190 — def test_swarm_session_details()
+- test_swarm_context_timestamps · function · L192-L218 — def test_swarm_context_timestamps()
+- test_swarm_proposals · function · L220-L260 — def test_swarm_proposals()
+- test_swarm_touches_filtering · function · L262-L277 — def test_swarm_touches_filtering()
+- test_swarm_conflicts_details · function · L279-L303 — def test_swarm_conflicts_details()
+- test_swarm_id_provenance · function · L305-L326 — def test_swarm_id_provenance()
+- test_swarm_help · function · L328-L358 — def test_swarm_help()
+- test_event_commands · function · L361-L426 — def test_event_commands()
+- main · function · L428-L470 — def main()

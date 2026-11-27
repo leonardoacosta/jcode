@@ -1,0 +1,38 @@
+# crates/jcode-app-core/src/tool/todo.rs
+
+- TodoTool · struct · L17-L17 — pub struct TodoTool;
+- names · module · L20-L20 — mod names;
+- name_tests · module · L24-L24 — mod name_tests;
+- pause_tests · module · L28-L28 — mod pause_tests;
+- lane_dependency_tests · module · L32-L32 — mod lane_dependency_tests;
+- patch_lane_field · function · L36-L49 — fn patch_lane_field(todos: &mut [Value], id: &str, field: &str, value: Value) -> Result<()>
+- patch_lane_after · function · L51-L53 — fn patch_lane_after(todos: &mut [Value], id: &str, value: Value) -> Result<()>
+- normalize_item_pauses · function · L59-L112 — fn normalize_item_pauses(input: &mut Value) -> Result<()>
+- prepare_background_dependencies · function · L116-L190 — async fn prepare_background_dependencies(
+- new · function · L193-L195 — pub fn new() -> Self
+- todo_write_mode · function · L201-L212 — fn todo_write_mode(input: &Value) -> &'static str
+- record_todo_write_mode · function · L214-L242 — fn record_todo_write_mode(input: &Value)
+- COUNTER_LOCK · constant · L215-L215 — static COUNTER_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+- UPDATE_FIELDS · constant · L246-L269 — const UPDATE_FIELDS: &[&str] = &[
+- apply_todo_patch · function · L276-L462 — fn apply_todo_patch(mut input: Value, stored: impl FnOnce() -> Value) -> Result<Value>
+- TodoInput · struct · L465-L469 — struct TodoInput
+- parse_todo_input · function · L471-L496 — fn parse_todo_input(input: Value) -> Result<TodoInput>
+- validate_membership · function · L499-L528 — fn validate_membership(fields: &serde_json::Map<String, Value>) -> Result<()>
+- flatten_phases · function · L531-L652 — fn flatten_phases(input: &mut Value) -> Result<()>
+- todo_telemetry · module · L657-L657 — mod todo_telemetry;
+- merge_goals · function · L667-L770 — fn merge_goals(stored: &[TodoGoal], incoming: Option<Vec<TodoGoal>>) -> Vec<TodoGoal>
+- prune_orphaned_goals · function · L780-L792 — fn prune_orphaned_goals(goals: Vec<TodoGoal>, todos: &[TodoItem]) -> Vec<TodoGoal>
+- ignored_goal_groups_note · function · L800-L838 — fn ignored_goal_groups_note(incoming: &[TodoGoal], todos: &[TodoItem]) -> Option<String>
+- changed_goal_fields · function · L840-L889 — fn changed_goal_fields(before: Option<&TodoGoal>, after: Option<&TodoGoal>) -> Vec<TodoGoalField>
+- merge_plan · function · L897-L916 — fn merge_plan(stored: &TodoPlan, incoming: Option<TodoPlan>) -> TodoPlan
+- plan_change · function · L918-L934 — fn plan_change(before: &TodoPlan, after: &TodoPlan) -> Option<TodoPlanChange>
+- goal_changes · function · L936-L970 — fn goal_changes(before: &[TodoGoal], after: &[TodoGoal]) -> Vec<TodoGoalChange>
+- record_reframe_observations · function · L990-L1071 — fn record_reframe_observations(
+- build_todo_output · function · L1073-L1116 — fn build_todo_output(
+- normalize_todo_input · function · L1126-L1212 — fn normalize_todo_input(mut input: Value) -> Value
+- coerce_empty_string_to_null · function · L1218-L1224 — fn coerce_empty_string_to_null(value: &mut Value)
+- name · function · L1228-L1230 — fn name(&self) -> &str
+- description · function · L1232-L1239 — fn description(&self) -> &str
+- parameters_schema · function · L1241-L1514 — fn parameters_schema(&self) -> Value
+- execute · function · L1516-L1644 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L1649-L1649 — mod tests;

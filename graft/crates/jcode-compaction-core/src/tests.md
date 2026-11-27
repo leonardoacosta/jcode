@@ -1,0 +1,35 @@
+# crates/jcode-compaction-core/src/tests.rs
+
+- emergency_truncation_noops_keep_shared_bodies_at_exact_limits · function · L4-L16 — fn emergency_truncation_noops_keep_shared_bodies_at_exact_limits()
+- emergency_tool_truncation_detaches_only_changed_messages · function · L19-L50 — fn emergency_tool_truncation_detaches_only_changed_messages()
+- emergency_large_payload_truncation_detaches_only_changed_messages · function · L53-L96 — fn emergency_large_payload_truncation_detaches_only_changed_messages()
+- noop_image_recovery_preserves_shared_content_allocations · function · L99-L133 — fn noop_image_recovery_preserves_shared_content_allocations()
+- reusable_cache_boundary_excludes_only_split_uncached_tail · function · L136-L157 — fn reusable_cache_boundary_excludes_only_split_uncached_tail()
+- compaction_text_keeps_native_search_query_and_urls · function · L160-L185 — fn compaction_text_keeps_native_search_query_and_urls()
+- effective_context_split_accounting_adds_cache_counters · function · L188-L198 — fn effective_context_split_accounting_adds_cache_counters()
+- effective_context_subset_accounting_does_not_double_count · function · L201-L216 — fn effective_context_subset_accounting_does_not_double_count()
+- effective_context_infers_split_accounting_from_counter_shape · function · L219-L230 — fn effective_context_infers_split_accounting_from_counter_shape()
+- effective_context_zero_uncached_input_preserves_cached_prompt · function · L233-L238 — fn effective_context_zero_uncached_input_preserves_cached_prompt()
+- builds_compaction_prompt_with_summary_and_truncated_tool_result · function · L241-L254 — fn builds_compaction_prompt_with_summary_and_truncated_tool_result()
+- truncates_on_utf8_boundary · function · L257-L260 — fn truncates_on_utf8_boundary()
+- mean_embedding_is_normalized · function · L263-L269 — fn mean_embedding_is_normalized()
+- safe_cutoff_keeps_tool_use_with_tool_result · function · L272-L304 — fn safe_cutoff_keeps_tool_use_with_tool_result()
+- estimates_tokens_with_large_budget_overhead · function · L307-L320 — fn estimates_tokens_with_large_budget_overhead()
+- image_token_cost_is_bounded_not_base64_length · function · L323-L351 — fn image_token_cost_is_bounded_not_base64_length()
+- summary_clone_shares_encrypted_body_when_text_changes · function · L354-L374 — fn summary_clone_shares_encrypted_body_when_text_changes()
+- openai_native_compaction_cost_is_bounded_not_ciphertext_length · function · L377-L401 — fn openai_native_compaction_cost_is_bounded_not_ciphertext_length()
+- builds_semantic_text_from_relevant_content · function · L404-L426 — fn builds_semantic_text_from_relevant_content()
+- builds_emergency_summary_with_tools_and_files · function · L429-L452 — fn builds_emergency_summary_with_tools_and_files()
+- emergency_truncation_is_utf8_safe · function · L455-L460 — fn emergency_truncation_is_utf8_safe()
+- emergency_truncation_replaces_large_images_with_text_marker · function · L463-L484 — fn emergency_truncation_replaces_large_images_with_text_marker()
+- detects_request_payload_too_large_errors · function · L487-L518 — fn detects_request_payload_too_large_errors()
+- image_msg · function · L520-L531 — fn image_msg(data_len: usize) -> Message
+- strip_large_images_drops_oldest_until_under_budget · function · L534-L556 — fn strip_large_images_drops_oldest_until_under_budget()
+- tool_image_msg · function · L558-L576 — fn tool_image_msg(data_len: usize) -> Message
+- decay · function · L578-L581 — fn decay(messages: &mut [Message]) -> usize
+- is_image · function · L583-L588 — fn is_image(message: &Message) -> bool
+- tool_image_decay_waits_for_trigger_then_keeps_newest · function · L591-L622 — fn tool_image_decay_waits_for_trigger_then_keeps_newest()
+- tool_image_decay_bounds_bytes_but_keeps_newest_huge_image · function · L625-L639 — fn tool_image_decay_bounds_bytes_but_keeps_newest_huge_image()
+- tool_image_decay_ignores_user_pasted_images · function · L642-L650 — fn tool_image_decay_ignores_user_pasted_images()
+- strip_large_images_noop_when_under_budget · function · L653-L659 — fn strip_large_images_noop_when_under_budget()
+- strip_large_images_strips_all_when_single_image_exceeds_budget · function · L662-L669 — fn strip_large_images_strips_all_when_single_image_exceeds_budget()

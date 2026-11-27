@@ -1,0 +1,23 @@
+# crates/jcode-build-support/src/source_state.rs
+
+- FNV_OFFSET_BASIS_64 · constant · L7-L7 — const FNV_OFFSET_BASIS_64: u64 = 0xcbf29ce484222325;
+- FNV_PRIME_64 · constant · L8-L8 — const FNV_PRIME_64: u64 = 0x100000001b3;
+- stable_hash_update · function · L10-L15 — fn stable_hash_update(state: &mut u64, bytes: &[u8])
+- stable_hash_str · function · L17-L19 — fn stable_hash_str(state: &mut u64, value: &str)
+- stable_hash_hex · function · L21-L25 — fn stable_hash_hex(bytes: &[u8]) -> String
+- canonicalize_or_self · function · L27-L29 — fn canonicalize_or_self(path: &Path) -> PathBuf
+- hash_path_scope · function · L31-L33 — fn hash_path_scope(path: &Path) -> String
+- git_output_bytes · function · L35-L48 — fn git_output_bytes(repo_dir: &Path, args: &[&str]) -> Result<Vec<u8>>
+- git_common_dir · function · L50-L63 — fn git_common_dir(repo_dir: &Path) -> Result<PathBuf>
+- repo_scope_key · function · L65-L67 — pub fn repo_scope_key(repo_dir: &Path) -> Result<String>
+- worktree_scope_key · function · L69-L71 — pub fn worktree_scope_key(repo_dir: &Path) -> Result<String>
+- append_untracked_file_fingerprint · function · L73-L89 — fn append_untracked_file_fingerprint(state: &mut u64, repo_dir: &Path, relative: &str)
+- current_source_state · function · L91-L138 — pub fn current_source_state(repo_dir: &Path) -> Result<SourceState>
+- ensure_source_state_matches · function · L140-L150 — pub fn ensure_source_state_matches(repo_dir: &Path, expected: &SourceState) -> Result<SourceState>
+- repo_build_version · function · L152-L154 — pub fn repo_build_version(repo_dir: &Path) -> Result<String>
+- current_git_hash · function · L157-L168 — pub fn current_git_hash(repo_dir: &Path) -> Result<String>
+- current_git_hash_full · function · L171-L182 — pub fn current_git_hash_full(repo_dir: &Path) -> Result<String>
+- current_git_diff · function · L185-L192 — pub fn current_git_diff(repo_dir: &Path) -> Result<String>
+- is_working_tree_dirty · function · L195-L202 — pub fn is_working_tree_dirty(repo_dir: &Path) -> Result<bool>
+- get_commit_message · function · L205-L212 — pub fn get_commit_message(repo_dir: &Path, hash: &str) -> Result<String>
+- current_build_info · function · L215-L228 — pub fn current_build_info(repo_dir: &Path) -> Result<BuildInfo>

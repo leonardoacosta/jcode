@@ -1,0 +1,25 @@
+# crates/jcode-base/src/gateway.rs
+
+- auth · module · L26-L26 — mod auth;
+- control · module · L27-L27 — pub mod control;
+- registry · module · L28-L28 — mod registry;
+- DEFAULT_PORT · constant · L42-L42 — pub const DEFAULT_PORT: u16 = 7643;
+- WEBSOCKET_KEEPALIVE_INTERVAL_SECS · constant · L43-L43 — const WEBSOCKET_KEEPALIVE_INTERVAL_SECS: u64 = 20;
+- GatewayConfig · struct · L47-L54 — pub struct GatewayConfig
+- default · function · L57-L63 — fn default() -> Self
+- run_gateway · function · L78-L102 — pub async fn run_gateway(
+- handle_connection · function · L109-L129 — async fn handle_connection(
+- GatewayClient · struct · L132-L139 — pub struct GatewayClient
+- handle_ws_connection · function · L146-L323 — async fn handle_ws_connection(
+- find_header_end · function · L327-L329 — fn find_header_end(data: &[u8]) -> Option<usize>
+- http_response · function · L331-L336 — fn http_response(status: u16, status_text: &str, body: &str) -> Vec<u8>
+- handle_http · function · L343-L449 — async fn handle_http(
+- handle_pair_request · function · L471-L519 — async fn handle_pair_request(
+- PairRequest · struct · L476-L481 — struct PairRequest
+- UNKNOWN_CONNECT_HOST · constant · L526-L526 — pub const UNKNOWN_CONNECT_HOST: &str = "<this-machine>";
+- parse_tailscale_dns_name · function · L529-L544 — pub fn parse_tailscale_dns_name(status_json: &[u8]) -> Option<String>
+- detect_tailscale_dns_name · function · L547-L558 — pub fn detect_tailscale_dns_name() -> Option<String>
+- resolve_connect_host · function · L565-L583 — pub fn resolve_connect_host(bind_addr: &str) -> String
+- system_hostname · function · L589-L617 — fn system_hostname() -> Option<String>
+- default_client_working_dir · function · L627-L641 — fn default_client_working_dir() -> String
+- gateway_tests · module · L645-L645 — mod gateway_tests;

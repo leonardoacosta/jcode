@@ -1,0 +1,21 @@
+# crates/jcode-tui-mermaid/src/debug.rs
+
+- debug_stats · function · L3-L5 — pub fn debug_stats() -> MermaidDebugStats
+- reset_debug_stats · function · L7-L9 — pub fn reset_debug_stats()
+- debug_stats_json · function · L11-L13 — pub fn debug_stats_json() -> Option<serde_json::Value>
+- debug_cache · function · L15-L17 — pub fn debug_cache() -> Vec<MermaidCacheEntry>
+- debug_memory_profile · function · L19-L21 — pub fn debug_memory_profile() -> MermaidMemoryProfile
+- debug_memory_benchmark · function · L23-L25 — pub fn debug_memory_benchmark(iterations: usize) -> MermaidMemoryBenchmark
+- debug_flicker_benchmark · function · L27-L29 — pub fn debug_flicker_benchmark(steps: usize) -> MermaidFlickerBenchmark
+- debug_image_scroll_benchmark · function · L31-L37 — pub fn debug_image_scroll_benchmark(
+- parse_proc_status_value_bytes · function · L41-L43 — fn parse_proc_status_value_bytes(status: &str, key: &str) -> Option<u64>
+- clear_cache · function · L45-L93 — pub fn clear_cache() -> Result<(), String>
+- ImageStateInfo · struct · L97-L102 — pub struct ImageStateInfo
+- debug_image_state · function · L105-L132 — pub fn debug_image_state() -> Vec<ImageStateInfo>
+- TestRenderResult · struct · L136-L146 — pub struct TestRenderResult
+- debug_test_render · function · L149-L158 — pub fn debug_test_render() -> TestRenderResult
+- debug_render · function · L161-L212 — pub fn debug_render(content: &str) -> TestRenderResult
+- debug_test_resize_stability · function · L216-L278 — pub fn debug_test_resize_stability(hash: u64) -> serde_json::Value
+- ScrollTestResult · struct · L282-L290 — pub struct ScrollTestResult
+- ScrollFrameInfo · struct · L293-L299 — pub struct ScrollFrameInfo
+- debug_test_scroll · function · L307-L455 — pub fn debug_test_scroll(content: Option<&str>) -> ScrollTestResult

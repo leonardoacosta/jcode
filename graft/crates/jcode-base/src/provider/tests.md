@@ -1,0 +1,79 @@
+# crates/jcode-base/src/provider/tests.rs
+
+- catalog_discovery · module · L1-L1 — mod catalog_discovery;
+- catalog_memo · module · L3-L3 — mod catalog_memo;
+- saved_account_selection · module · L4-L4 — mod saved_account_selection;
+- session_binding · module · L5-L5 — mod session_binding;
+- session_cache_affinity · module · L6-L6 — mod session_cache_affinity;
+- startup_pool · module · L7-L7 — mod startup_pool;
+- with_clean_provider_test_env · function · L10-L102 — fn with_clean_provider_test_env<T>(f: impl FnOnce() -> T) -> T
+- enter_test_runtime · function · L104-L109 — fn enter_test_runtime() -> tokio::runtime::Runtime
+- openai_compatible_profile_catalog_cache_is_fresh_before_soft_refresh_boundary · function · L112-L117 — fn openai_compatible_profile_catalog_cache_is_fresh_before_soft_refresh_boundary()
+- openai_compatible_profile_catalog_cache_is_stale_at_soft_refresh_boundary · function · L120-L128 — fn openai_compatible_profile_catalog_cache_is_stale_at_soft_refresh_boundary()
+- with_env_var · function · L130-L140 — fn with_env_var<T>(key: &str, value: &str, f: impl FnOnce() -> T) -> T
+- save_test_openai_compatible_login_config · function · L142-L162 — fn save_test_openai_compatible_login_config(default_model: &str)
+- save_test_openrouter_model_cache · function · L164-L189 — fn save_test_openrouter_model_cache(namespace: &str, source_api_base: &str, model_ids: &[&str])
+- clear_openai_compatible_runtime_env · function · L191-L203 — fn clear_openai_compatible_runtime_env()
+- save_test_openai_oauth_credentials · function · L205-L214 — fn save_test_openai_oauth_credentials()
+- test_multi_provider_with_openai · function · L216-L239 — fn test_multi_provider_with_openai() -> MultiProvider
+- model_capabilities_refresh_forwards_only_active_present_openai · function · L242-L300 — fn model_capabilities_refresh_forwards_only_active_present_openai()
+- RefreshMock · struct · L243-L243 — struct RefreshMock(std::sync::atomic::AtomicBool);
+- complete · function · L247-L255 — async fn complete(
+- name · function · L257-L259 — fn name(&self) -> &str
+- model · function · L261-L263 — fn model(&self) -> String
+- fork · function · L265-L269 — fn fork(&self) -> Arc<dyn Provider>
+- model_capabilities_need_refresh · function · L271-L273 — fn model_capabilities_need_refresh(&self) -> bool
+- openai_model_switch_prefixes_preserve_oauth_vs_api_state_space · function · L303-L366 — fn openai_model_switch_prefixes_preserve_oauth_vs_api_state_space()
+- openai_model_route_roundtrip_preserves_auth_method_for_model_switches · function · L369-L446 — fn openai_model_route_roundtrip_preserves_auth_method_for_model_switches()
+- active_explicit_credential_reflects_openai_switch_immediately_and_none_for_auto · function · L449-L491 — fn active_explicit_credential_reflects_openai_switch_immediately_and_none_for_auto()
+- openai_model_routes_cover_oauth_api_and_no_auth_state_space · function · L494-L567 — fn openai_model_routes_cover_oauth_api_and_no_auth_state_space()
+- assert_openai_compatible_route_available · function · L569-L583 — fn assert_openai_compatible_route_available(provider: &MultiProvider, model: &str)
+- openai_compatible_api_key_setup_makes_configured_model_route_available · function · L586-L608 — fn openai_compatible_api_key_setup_makes_configured_model_route_available()
+- openai_compatible_api_key_setup_survives_process_restart_without_relogin · function · L611-L646 — fn openai_compatible_api_key_setup_survives_process_restart_without_relogin()
+- configured_openai_compatible_profile_routes_use_live_cache_when_not_active_provider · function · L649-L691 — fn configured_openai_compatible_profile_routes_use_live_cache_when_not_active_provider()
+- standard_openrouter_catalog_refresh_is_noop_when_cache_fresh · function · L694-L721 — fn standard_openrouter_catalog_refresh_is_noop_when_cache_fresh()
+- standard_openrouter_catalog_refresh_skips_without_key · function · L724-L738 — fn standard_openrouter_catalog_refresh_skips_without_key()
+- standard_openrouter_catalog_refresh_fires_when_named_profile_owns_slot · function · L741-L776 — fn standard_openrouter_catalog_refresh_fires_when_named_profile_owns_slot()
+- StubExternalRuntime · struct · L783-L791 — struct StubExternalRuntime
+- new · function · L794-L809 — fn new(
+- cursor · function · L811-L813 — fn cursor() -> Self
+- antigravity · function · L815-L822 — fn antigravity() -> Self
+- copilot · function · L824-L831 — fn copilot() -> Self
+- anthropic · function · L833-L840 — fn anthropic() -> Self
+- openai · function · L842-L844 — fn openai() -> Self
+- complete · function · L849-L857 — async fn complete(
+- name · function · L858-L860 — fn name(&self) -> &'static str
+- model · function · L861-L866 — fn model(&self) -> String
+- set_model · function · L867-L888 — fn set_model(&self, model: &str) -> anyhow::Result<()>
+- available_models · function · L889-L891 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L892-L894 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L895-L897 — fn available_models_for_switching(&self) -> Vec<String>
+- model_routes · function · L898-L911 — fn model_routes(&self) -> Vec<ModelRoute>
+- credential_mode · function · L912-L917 — fn credential_mode(&self) -> jcode_provider_core::CredentialMode
+- set_credential_mode · function · L918-L924 — fn set_credential_mode(&self, mode: jcode_provider_core::CredentialMode) -> anyhow::Result<()>
+- fork · function · L925-L932 — fn fork(&self) -> Arc<dyn Provider>
+- set_oauth_account · function · L934-L937 — fn set_oauth_account(&self, label: Option<&str>) -> anyhow::Result<()>
+- oauth_account_label · function · L939-L941 — fn oauth_account_label(&self) -> Option<String>
+- test_cursor_runtime · function · L944-L946 — fn test_cursor_runtime() -> Arc<dyn Provider>
+- test_antigravity_runtime · function · L948-L950 — fn test_antigravity_runtime() -> Arc<dyn Provider>
+- test_copilot_runtime · function · L952-L954 — fn test_copilot_runtime() -> Arc<dyn Provider>
+- test_anthropic_runtime · function · L956-L958 — fn test_anthropic_runtime() -> Arc<StubExternalRuntime>
+- test_openai_runtime · function · L960-L962 — fn test_openai_runtime() -> Arc<StubExternalRuntime>
+- register_test_external_runtimes · function · L967-L1003 — fn register_test_external_runtimes()
+- test_openrouter_runtime · function · L1007-L1009 — fn test_openrouter_runtime() -> anyhow::Result<Arc<dyn Provider>>
+- test_multi_provider_with_cursor · function · L1011-L1032 — fn test_multi_provider_with_cursor() -> MultiProvider
+- NativeBridgeProvider · struct · L1034-L1036 — struct NativeBridgeProvider
+- complete · function · L1040-L1048 — async fn complete(
+- name · function · L1050-L1052 — fn name(&self) -> &'static str
+- fork · function · L1054-L1058 — fn fork(&self) -> Arc<dyn Provider>
+- native_result_sender · function · L1060-L1062 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- cursor_native_result_sender_reaches_the_active_cursor_runtime · function · L1070-L1094 — fn cursor_native_result_sender_reaches_the_active_cursor_runtime()
+- PrewarmRecordingProvider · struct · L1096-L1100 — struct PrewarmRecordingProvider
+- prewarm · function · L1104-L1107 — async fn prewarm(&self, _tools: &[ToolDefinition], _system_static: &str)
+- complete · function · L1109-L1119 — async fn complete(
+- name · function · L1121-L1123 — fn name(&self) -> &'static str
+- fork · function · L1125-L1131 — fn fork(&self) -> Arc<dyn Provider>
+- prewarm_delegates_only_to_active_provider_without_completing · function · L1135-L1170 — fn prewarm_delegates_only_to_active_provider_without_completing()
+- new_session_fork_reloads_changed_config_provider_and_model · function · L1173-L1203 — fn new_session_fork_reloads_changed_config_provider_and_model()
+- jcode_subscription_model_prefix_parses_explicit_specs · function · L1213-L1228 — fn jcode_subscription_model_prefix_parses_explicit_specs()
+- stale_credential_route_fallback_follows_runtime_pin_or_drops_to_auto · function · L1234-L1279 — fn stale_credential_route_fallback_follows_runtime_pin_or_drops_to_auto()

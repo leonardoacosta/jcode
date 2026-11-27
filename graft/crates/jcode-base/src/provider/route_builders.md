@@ -1,0 +1,21 @@
+# crates/jcode-base/src/provider/route_builders.rs
+
+- is_listable_model_name · function · L5-L10 — pub fn is_listable_model_name(model: &str) -> bool
+- model_name_is_likely_non_chat · function · L18-L93 — pub fn model_name_is_likely_non_chat(model: &str) -> bool
+- SUBSTRING_MARKERS · constant · L28-L49 — const SUBSTRING_MARKERS: &[&str] = &[
+- TOKEN_MARKERS · constant · L55-L85 — const TOKEN_MARKERS: &[&str] = &[
+- openrouter_catalog_model_id · function · L95-L107 — pub fn openrouter_catalog_model_id(model: &str) -> Option<String>
+- listable_model_names_from_routes · function · L109-L118 — pub fn listable_model_names_from_routes(routes: &[ModelRoute]) -> Vec<String>
+- build_anthropic_oauth_route · function · L120-L134 — pub fn build_anthropic_oauth_route(
+- build_openai_oauth_route · function · L136-L142 — pub fn build_openai_oauth_route(
+- build_openai_api_key_route · function · L144-L150 — pub fn build_openai_api_key_route(
+- build_chatgpt_web_route · function · L152-L162 — pub fn build_chatgpt_web_route() -> ModelRoute
+- build_openai_route · function · L164-L179 — fn build_openai_route(
+- build_copilot_route · function · L181-L191 — pub fn build_copilot_route(model: &str, available: bool, detail: impl Into<String>) -> ModelRoute
+- build_openrouter_auto_route · function · L193-L207 — pub fn build_openrouter_auto_route(
+- build_openrouter_endpoint_route · function · L209-L241 — pub fn build_openrouter_endpoint_route(
+- build_openrouter_fallback_provider_route · function · L243-L257 — pub fn build_openrouter_fallback_provider_route(
+- listable_tests · module · L260-L345 — mod listable_tests
+- keeps_real_chat_models · function · L264-L283 — fn keeps_real_chat_models()
+- drops_non_chat_models · function · L286-L336 — fn drops_non_chat_models()
+- empty_and_sentinels_filtered · function · L339-L344 — fn empty_and_sentinels_filtered()

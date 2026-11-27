@@ -1,0 +1,101 @@
+# crates/jcode-tui/src/tui/test_harness.rs
+
+- lock_unpoisoned · function · L14-L18 — fn lock_unpoisoned<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T>
+- read_unpoisoned · function · L20-L23 — fn read_unpoisoned<T>(lock: &RwLock<T>) -> std::sync::RwLockReadGuard<'_, T>
+- write_unpoisoned · function · L26-L29 — fn write_unpoisoned<T>(lock: &RwLock<T>) -> std::sync::RwLockWriteGuard<'_, T>
+- TEST_CLOCK · constant · L37-L37 — static TEST_CLOCK: OnceLock<RwLock<TestClock>> = OnceLock::new();
+- TEST_CLOCK_ENABLED · constant · L38-L38 — static TEST_CLOCK_ENABLED: AtomicBool = AtomicBool::new(false);
+- TestClock · struct · L42-L45 — pub struct TestClock
+- new · function · L48-L52 — pub fn new() -> Self
+- now_ms · function · L55-L57 — pub fn now_ms(&self) -> u64
+- advance · function · L60-L63 — pub fn advance(&self, duration: Duration)
+- set · function · L66-L68 — pub fn set(&self, ms: u64)
+- instant · function · L71-L75 — pub fn instant(&self) -> SimulatedInstant
+- default · function · L79-L81 — fn default() -> Self
+- SimulatedInstant · struct · L86-L88 — pub struct SimulatedInstant
+- elapsed · function · L91-L96 — pub fn elapsed(&self) -> Duration
+- duration_since · function · L98-L100 — pub fn duration_since(&self, earlier: SimulatedInstant) -> Duration
+- enable_test_clock · function · L104-L107 — pub fn enable_test_clock()
+- disable_test_clock · function · L110-L112 — pub fn disable_test_clock()
+- is_test_clock_enabled · function · L115-L117 — pub fn is_test_clock_enabled() -> bool
+- get_test_clock · function · L120-L126 — pub fn get_test_clock() -> Option<&'static RwLock<TestClock>>
+- advance_clock · function · L129-L133 — pub fn advance_clock(duration: Duration)
+- now_ms · function · L136-L145 — pub fn now_ms() -> u64
+- EVENT_RECORDER · constant · L152-L152 — static EVENT_RECORDER: OnceLock<Mutex<EventRecorder>> = OnceLock::new();
+- TestEvent · enum · L157-L179 — pub enum TestEvent
+- RecordedEvent · struct · L183-L188 — pub struct RecordedEvent
+- EventRecorder · struct · L192-L196 — pub struct EventRecorder
+- new · function · L199-L205 — pub fn new() -> Self
+- start · function · L208-L212 — pub fn start(&mut self)
+- stop · function · L215-L217 — pub fn stop(&mut self)
+- record · function · L220-L227 — pub fn record(&mut self, event: TestEvent)
+- events · function · L230-L232 — pub fn events(&self) -> &[RecordedEvent]
+- to_json · function · L235-L237 — pub fn to_json(&self) -> String
+- from_json · function · L240-L242 — pub fn from_json(json: &str) -> Result<Vec<RecordedEvent>, serde_json::Error>
+- is_recording · function · L245-L247 — pub fn is_recording(&self) -> bool
+- default · function · L251-L253 — fn default() -> Self
+- get_event_recorder · function · L257-L259 — pub fn get_event_recorder() -> &'static Mutex<EventRecorder>
+- start_recording · function · L262-L264 — pub fn start_recording()
+- stop_recording · function · L267-L269 — pub fn stop_recording()
+- record_event · function · L272-L274 — pub fn record_event(event: TestEvent)
+- get_recorded_events_json · function · L277-L279 — pub fn get_recorded_events_json() -> String
+- EventPlayer · struct · L283-L286 — pub struct EventPlayer
+- new · function · L290-L295 — pub fn new(events: Vec<RecordedEvent>) -> Self
+- from_json · function · L298-L301 — pub fn from_json(json: &str) -> Result<Self, serde_json::Error>
+- start · function · L304-L306 — pub fn start(&mut self)
+- next_event · function · L310-L320 — pub fn next_event(&mut self) -> Option<TestEvent>
+- is_complete · function · L323-L325 — pub fn is_complete(&self) -> bool
+- remaining · function · L328-L330 — pub fn remaining(&self) -> usize
+- TestBundle · struct · L339-L368 — pub struct TestBundle
+- new · function · L372-L389 — pub fn new(name: &str) -> Self
+- complete · function · L392-L396 — pub fn complete(&mut self, passed: bool)
+- add_event · function · L399-L401 — pub fn add_event(&mut self, event: RecordedEvent)
+- add_frame · function · L404-L406 — pub fn add_frame(&mut self, frame: serde_json::Value)
+- add_trace · function · L409-L411 — pub fn add_trace(&mut self, trace: serde_json::Value)
+- add_assertion · function · L414-L416 — pub fn add_assertion(&mut self, assertion: serde_json::Value)
+- add_stdout · function · L419-L421 — pub fn add_stdout(&mut self, line: &str)
+- add_stderr · function · L424-L426 — pub fn add_stderr(&mut self, line: &str)
+- add_log · function · L429-L431 — pub fn add_log(&mut self, line: &str)
+- add_error · function · L434-L436 — pub fn add_error(&mut self, error: &str)
+- set_metadata · function · L439-L441 — pub fn set_metadata(&mut self, key: &str, value: serde_json::Value)
+- to_json · function · L444-L446 — pub fn to_json(&self) -> String
+- save · function · L449-L456 — pub fn save(&self, path: &PathBuf) -> std::io::Result<()>
+- load · function · L459-L463 — pub fn load(path: &PathBuf) -> std::io::Result<Self>
+- default_path · function · L466-L472 — pub fn default_path(name: &str) -> PathBuf
+- chrono_now · function · L475-L482 — fn chrono_now() -> String
+- sanitize_filename · function · L484-L494 — fn sanitize_filename(name: &str) -> String
+- HeadlessBuffer · struct · L503-L507 — pub struct HeadlessBuffer
+- Cell · struct · L511-L518 — pub struct Cell
+- new · function · L522-L529 — pub fn new(width: u16, height: u16) -> Self
+- size · function · L532-L534 — pub fn size(&self) -> (u16, u16)
+- resize · function · L537-L541 — pub fn resize(&mut self, width: u16, height: u16)
+- clear · function · L544-L550 — pub fn clear(&mut self)
+- set · function · L553-L557 — pub fn set(&mut self, x: u16, y: u16, cell: Cell)
+- get · function · L560-L562 — pub fn get(&self, x: u16, y: u16) -> Option<&Cell>
+- to_text · function · L565-L575 — pub fn to_text(&self) -> String
+- get_region_text · function · L578-L590 — pub fn get_region_text(&self, x: u16, y: u16, width: u16, height: u16) -> String
+- find_text · function · L593-L602 — pub fn find_text(&self, needle: &str) -> Vec<(u16, u16)>
+- contains_text · function · L605-L607 — pub fn contains_text(&self, needle: &str) -> bool
+- WidgetId · enum · L618-L654 — pub enum WidgetId
+- as_str · function · L658-L685 — pub fn as_str(&self) -> &'static str
+- WidgetInfo · struct · L690-L699 — pub struct WidgetInfo
+- WidgetRegistry · struct · L703-L705 — pub struct WidgetRegistry
+- new · function · L708-L712 — pub fn new() -> Self
+- register · function · L715-L717 — pub fn register(&mut self, info: WidgetInfo)
+- find · function · L720-L722 — pub fn find(&self, id: WidgetId) -> Option<&WidgetInfo>
+- all · function · L725-L727 — pub fn all(&self) -> &[WidgetInfo]
+- clear · function · L730-L732 — pub fn clear(&mut self)
+- to_json · function · L735-L737 — pub fn to_json(&self) -> String
+- TestScript · struct · L746-L757 — pub struct TestScript
+- TestStep · enum · L762-L785 — pub enum TestStep
+- new · function · L789-L797 — pub fn new(name: &str) -> Self
+- step · function · L800-L803 — pub fn step(mut self, step: TestStep) -> Self
+- to_json · function · L806-L808 — pub fn to_json(&self) -> String
+- from_json · function · L811-L813 — pub fn from_json(json: &str) -> Result<Self, serde_json::Error>
+- strip_ansi · function · L821-L845 — pub fn strip_ansi(s: &str) -> String
+- strings_equal_normalized · function · L848-L851 — pub fn strings_equal_normalized(a: &str, b: &str) -> bool
+- tests · module · L854-L918 — mod tests
+- test_clock_advance · function · L858-L868 — fn test_clock_advance()
+- test_event_recording · function · L871-L887 — fn test_event_recording()
+- test_headless_buffer · function · L890-L911 — fn test_headless_buffer()
+- test_strip_ansi · function · L914-L917 — fn test_strip_ansi()

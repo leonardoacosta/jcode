@@ -1,0 +1,25 @@
+# crates/jcode-tui/src/tui/app/onboarding_graph.rs
+
+- NodeId · enum · L36-L66 — pub enum NodeId
+- label · function · L70-L85 — pub fn label(self) -> &'static str
+- all · function · L90-L105 — pub fn all() -> [NodeId; 12]
+- EdgeId · enum · L110-L149 — pub enum EdgeId
+- label · function · L153-L175 — pub fn label(self) -> &'static str
+- NodeProps · struct · L181-L203 — pub struct NodeProps
+- node_props · function · L206-L323 — pub fn node_props(node: NodeId) -> NodeProps
+- Edge · struct · L327-L336 — pub struct Edge
+- graph · function · L344-L546 — pub fn graph() -> Vec<Edge>
+- node_for_phase · function · L554-L566 — pub fn node_for_phase(phase: &super::onboarding_flow::OnboardingPhase) -> NodeId
+- transition_is_declared · function · L575-L579 — pub fn transition_is_declared(from: NodeId, to: NodeId) -> bool
+- Violation · struct · L583-L586 — pub struct Violation
+- check_invariants · function · L592-L743 — pub fn check_invariants() -> Vec<Violation>
+- MAX_KEYSTROKES_TO_SETTLED · constant · L678-L678 — const MAX_KEYSTROKES_TO_SETTLED: u32 = 4;
+- MAX_FORCED_DECISIONS · constant · L722-L722 — const MAX_FORCED_DECISIONS: usize = 3;
+- min_keystrokes_to · function · L750-L774 — pub fn min_keystrokes_to<F: Fn(NodeId) -> bool>(
+- tests · module · L777-L920 — mod tests
+- onboarding_graph_satisfies_every_structural_invariant · function · L781-L792 — fn onboarding_graph_satisfies_every_structural_invariant()
+- invariant_checks_actually_catch_violations · function · L795-L816 — fn invariant_checks_actually_catch_violations()
+- every_failure_node_reaches_a_settled_state_quickly · function · L819-L836 — fn every_failure_node_reaches_a_settled_state_quickly()
+- invariant_exemptions_stay_narrow · function · L839-L876 — fn invariant_exemptions_stay_narrow()
+- labels_are_a_closed_snake_case_vocabulary · function · L879-L901 — fn labels_are_a_closed_snake_case_vocabulary()
+- the_happy_path_stays_short · function · L904-L919 — fn the_happy_path_stays_short()

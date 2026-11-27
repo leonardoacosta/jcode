@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/tool/conversation_search.rs
+
+- SearchInput · struct · L17-L29 — struct SearchInput
+- TurnRange · struct · L32-L35 — struct TurnRange
+- ConversationSearchTool · struct · L37-L39 — pub struct ConversationSearchTool
+- new · function · L42-L44 — pub fn new(compaction: Arc<RwLock<CompactionManager>>) -> Self
+- name · function · L49-L51 — fn name(&self) -> &str
+- description · function · L53-L55 — fn description(&self) -> &str
+- parameters_schema · function · L57-L81 — fn parameters_schema(&self) -> Value
+- execute · function · L83-L234 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- SearchResult · struct · L238-L242 — struct SearchResult
+- load_session_messages · function · L244-L253 — fn load_session_messages(session_id: &str) -> Option<Vec<Message>>
+- search_messages · function · L255-L273 — fn search_messages(messages: &[Message], query: &str) -> Vec<SearchResult>
+- message_to_text · function · L275-L288 — fn message_to_text(msg: &Message) -> String
+- extract_snippet · function · L291-L293 — fn extract_snippet(text: &str, query: &str) -> String
+- snippet_from_lower · function · L299-L322 — fn snippet_from_lower(text: &str, lower: &str, query: &str) -> String
+- map_lower_range · function · L332-L346 — fn map_lower_range(text: &str, lo: usize, hi: usize) -> (usize, usize)
+- tests · module · L349-L502 — mod tests
+- create_test_tool · function · L354-L357 — fn create_test_tool() -> ConversationSearchTool
+- env_lock · function · L359-L361 — fn env_lock() -> std::sync::MutexGuard<'static, ()>
+- setup_session · function · L363-L392 — fn setup_session(messages: Vec<Message>) -> (ToolContext, std::path::PathBuf, Option<String>)
+- restore_env · function · L394-L401 — fn restore_env(base: std::path::PathBuf, previous_home: Option<String>)
+- test_tool_name · function · L404-L407 — fn test_tool_name()
+- test_stats · function · L410-L420 — async fn test_stats()
+- test_empty_search · function · L423-L432 — async fn test_empty_search()
+- test_empty_turns · function · L435-L444 — async fn test_empty_turns()
+- snippet_never_splits_multibyte_chars · function · L450-L476 — fn snippet_never_splits_multibyte_chars()
+- snippet_finds_word_final_sigma_like_search · function · L479-L489 — fn snippet_finds_word_final_sigma_like_search()
+- snippet_from_large_message_is_short_and_contains_hit · function · L492-L501 — fn snippet_from_large_message_is_short_and_contains_hit()

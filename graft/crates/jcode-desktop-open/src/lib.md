@@ -1,0 +1,30 @@
+# crates/jcode-desktop-open/src/lib.rs
+
+- OPEN_GRACE_PERIOD_MS · constant · L17-L17 — const OPEN_GRACE_PERIOD_MS: u64 = 800;
+- LocalTargetKind · enum · L20-L23 — pub enum LocalTargetKind
+- as_str · function · L26-L31 — pub fn as_str(self) -> &'static str
+- of · function · L33-L39 — pub fn of(path: &Path) -> Self
+- Target · enum · L43-L49 — pub enum Target
+- parse · function · L53-L77 — pub fn parse(raw: &str) -> Result<Self>
+- spawn_detached · function · L80-L102 — fn spawn_detached(cmd: &mut Command) -> std::io::Result<std::process::Child>
+- CREATE_NEW_PROCESS_GROUP · constant · L97-L97 — const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+- DETACHED_PROCESS · constant · L98-L98 — const DETACHED_PROCESS: u32 = 0x0000_0008;
+- open_target · function · L105-L117 — pub async fn open_target(target: &Target) -> Result<String>
+- open_with_system · function · L119-L153 — async fn open_with_system(target: &Target) -> Result<String>
+- reveal_target · function · L157-L198 — pub async fn reveal_target(path: &Path, kind: LocalTargetKind) -> Result<(String, bool)>
+- try_unix_openers · function · L201-L234 — async fn try_unix_openers(arg_sets: Vec<Vec<OsString>>) -> Result<String>
+- spawn_with_grace · function · L236-L257 — async fn spawn_with_grace(mut cmd: Command, backend: &str) -> Result<()>
+- BrowserFocusContext · struct · L265-L268 — struct BrowserFocusContext
+- capture_browser_windows_before_open · function · L271-L287 — fn capture_browser_windows_before_open() -> Option<BrowserFocusContext>
+- capture_browser_windows_before_open · function · L290-L292 — fn capture_browser_windows_before_open() -> Option<BrowserFocusContext>
+- focus_browser_window_after_open · function · L294-L311 — async fn focus_browser_window_after_open(ctx: Option<BrowserFocusContext>)
+- NiriWindow · struct · L315-L321 — struct NiriWindow
+- NiriTimestamp · struct · L325-L328 — struct NiriTimestamp
+- select_window_to_focus · function · L336-L365 — fn select_window_to_focus(
+- app_id_matches · function · L369-L381 — fn app_id_matches(app_id: Option<&str>, stems: &[String]) -> bool
+- normalize_desktop_entry_to_stems · function · L386-L403 — fn normalize_desktop_entry_to_stems(entry: &str) -> Vec<String>
+- browser_app_stems · function · L406-L445 — fn browser_app_stems() -> Vec<String>
+- run_capture · function · L448-L466 — fn run_capture(program: &str, args: &[&str]) -> Option<String>
+- query_niri_windows · function · L469-L483 — fn query_niri_windows() -> Result<Vec<NiriWindow>>
+- focus_browser_window_niri · function · L486-L512 — fn focus_browser_window_niri(ctx: &BrowserFocusContext)
+- tests · module · L516-L516 — mod tests;

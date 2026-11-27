@@ -1,0 +1,153 @@
+# crates/jcode-tui/src/tui/session_picker/loading.rs
+
+- opencode · module · L3-L3 — mod opencode;
+- mobile_inventory · module · L28-L28 — mod mobile_inventory;
+- TRANSCRIPT_SEARCH_CHUNK_BYTES · constant · L33-L33 — const TRANSCRIPT_SEARCH_CHUNK_BYTES: usize = 64 * 1024;
+- PREVIEW_MESSAGE_LIMIT · constant · L38-L38 — pub(super) const PREVIEW_MESSAGE_LIMIT: usize = 400;
+- session_scan_limit · function · L40-L46 — fn session_scan_limit() -> usize
+- session_candidate_window · function · L48-L52 — fn session_candidate_window(scan_limit: usize) -> usize
+- include_external_sessions · function · L61-L63 — fn include_external_sessions() -> bool
+- include_old_saved_sessions_on_initial_load · function · L65-L69 — fn include_old_saved_sessions_on_initial_load() -> bool
+- SESSION_LIST_CACHE_TTL · constant · L71-L71 — const SESSION_LIST_CACHE_TTL: Duration = Duration::from_secs(5);
+- SESSION_LIST_DISK_CACHE_VERSION · constant · L72-L72 — const SESSION_LIST_DISK_CACHE_VERSION: u32 = 4;
+- SESSION_LIST_DISK_CACHE_MAX_AGE_SECONDS · constant · L73-L73 — const SESSION_LIST_DISK_CACHE_MAX_AGE_SECONDS: i64 = 7 * 24 * 60 * 60;
+- SAVED_METADATA_TAIL_SCAN_BYTES · constant · L74-L74 — const SAVED_METADATA_TAIL_SCAN_BYTES: u64 = 64 * 1024;
+- INITIAL_TRANSCRIPT_SEARCH_BUDGET_BYTES · constant · L75-L75 — const INITIAL_TRANSCRIPT_SEARCH_BUDGET_BYTES: usize = 64 * 1024;
+- MESSAGE_SEARCH_EXCERPT_BYTES · constant · L76-L76 — const MESSAGE_SEARCH_EXCERPT_BYTES: usize = 8 * 1024;
+- SESSION_LOAD_MAX_THREADS · constant · L82-L82 — const SESSION_LOAD_MAX_THREADS: usize = 8;
+- session_load_thread_count · function · L87-L95 — fn session_load_thread_count(item_count: usize) -> usize
+- parallel_map · function · L100-L146 — fn parallel_map<T, R, F>(items: Vec<T>, f: F) -> Vec<R>
+- SessionListCacheEntry · struct · L149-L158 — struct SessionListCacheEntry
+- SessionListCacheState · struct · L161-L164 — struct SessionListCacheState
+- GroupedSessionListDiskCache · struct · L167-L180 — struct GroupedSessionListDiskCache<Groups = Vec<ServerGroup>, Orphans = Vec<SessionInfo>>
+- default_true · function · L182-L184 — pub(crate) fn default_true() -> bool
+- session_list_cache · function · L186-L189 — fn session_list_cache() -> &'static Mutex<SessionListCacheState>
+- CACHE · constant · L187-L187 — static CACHE: OnceLock<Mutex<SessionListCacheState>> = OnceLock::new();
+- invalidate_session_list_cache · function · L191-L196 — pub fn invalidate_session_list_cache()
+- PublishHook · type · L199-L199 — type PublishHook = Box<dyn Fn() + Send>;
+- before_session_list_cache_publish_hook · function · L202-L205 — fn before_session_list_cache_publish_hook() -> &'static Mutex<Option<PublishHook>>
+- HOOK · constant · L203-L203 — static HOOK: OnceLock<Mutex<Option<PublishHook>>> = OnceLock::new();
+- run_before_session_list_cache_publish_hook · function · L208-L214 — fn run_before_session_list_cache_publish_hook()
+- set_before_session_list_cache_publish_hook · function · L217-L221 — pub(crate) fn set_before_session_list_cache_publish_hook(hook: Option<Box<dyn Fn() + Send>>)
+- session_list_disk_cache_path · function · L223-L225 — fn session_list_disk_cache_path() -> Result<PathBuf>
+- session_list_disk_cache_is_usable · function · L227-L242 — fn session_list_disk_cache_is_usable(
+- grouped_session_list_disk_cache · function · L246-L262 — fn grouped_session_list_disk_cache<'a>(
+- write_grouped_session_list_disk_cache · function · L264-L282 — fn write_grouped_session_list_disk_cache(
+- load_cached_sessions_grouped · function · L284-L298 — pub fn load_cached_sessions_grouped() -> Option<(Vec<ServerGroup>, Vec<SessionInfo>)>
+- load_recently_closed_sessions · function · L302-L321 — fn load_recently_closed_sessions() -> Vec<SessionInfo>
+- send_session_list_updates · function · L325-L331 — pub(crate) fn send_session_list_updates(sender: std::sync::mpsc::Sender<super::SessionListUpdate>)
+- send_session_list_updates_with_discovery · function · L333-L430 — fn send_session_list_updates_with_discovery(
+- search_text · module · L433-L433 — mod search_text;
+- session_matches_query · function · L444-L455 — pub(super) fn session_matches_query(session: &SessionInfo, query: &str) -> bool
+- session_matches_picker_query · function · L470-L476 — pub(super) fn session_matches_picker_query(session: &SessionInfo, query: &str) -> bool
+- search_query_tokens · function · L480-L485 — pub(super) fn search_query_tokens(query: &str) -> Vec<String>
+- session_transcript_contains_query · function · L488-L492 — fn session_transcript_contains_query(session: &SessionInfo, query_lower: &str) -> bool
+- transcript_paths_for_session · function · L495-L514 — fn transcript_paths_for_session(session: &SessionInfo) -> Vec<PathBuf>
+- file_contains_case_insensitive_query · function · L517-L533 — fn file_contains_case_insensitive_query(path: &Path, query_lower: &str) -> bool
+- file_contains_ascii_case_insensitive · function · L536-L564 — fn file_contains_ascii_case_insensitive(path: &Path, needle_lower: &[u8]) -> bool
+- contains_ascii_case_insensitive_bytes · function · L567-L581 — fn contains_ascii_case_insensitive_bytes(haystack: &[u8], needle_lower: &[u8]) -> bool
+- ExternalPreview · struct · L584-L587 — pub(super) struct ExternalPreview
+- new · function · L590-L595 — fn new() -> Self
+- non_empty · function · L597-L599 — fn non_empty(self) -> Option<Self>
+- build_classified_search_index · function · L603-L614 — pub(super) fn build_classified_search_index(
+- build_search_index_from_summary · function · L616-L633 — fn build_search_index_from_summary(
+- session_sort_key · function · L635-L649 — fn session_sort_key(stem: &str) -> u64
+- path_modified_sort_key · function · L651-L658 — fn path_modified_sort_key(path: &Path) -> u128
+- SessionCandidateMeta · struct · L661-L665 — struct SessionCandidateMeta
+- new · function · L668-L674 — fn new(stem: &str) -> Self
+- update · function · L676-L679 — fn update(&mut self, modified: u128, has_snapshot: bool)
+- session_file_stem_for_candidate · function · L682-L692 — fn session_file_stem_for_candidate(file_name: &str) -> Option<(&str, bool)>
+- classify_session_source · function · L694-L723 — fn classify_session_source(
+- collect_files_recursive · function · L725-L753 — fn collect_files_recursive(root: &Path, extension: &str) -> Vec<PathBuf>
+- walk · function · L726-L743 — fn walk(dir: &Path, extension: &str, out: &mut Vec<PathBuf>)
+- collect_recent_files_recursive · function · L755-L804 — fn collect_recent_files_recursive(root: &Path, extension: &str, limit: usize) -> Vec<PathBuf>
+- modified_sort_key · function · L756-L763 — fn modified_sort_key(path: &Path) -> u64
+- walk · function · L765-L793 — fn walk(
+- EXTERNAL_PREVIEW_TAIL_BYTES · constant · L816-L816 — const EXTERNAL_PREVIEW_TAIL_BYTES: u64 = 4 * 1024 * 1024;
+- read_file_tail_text · function · L823-L835 — fn read_file_tail_text(path: &Path, max_bytes: u64) -> Option<(String, bool)>
+- push_preview_message · function · L837-L855 — fn push_preview_message(preview: &mut Vec<PreviewMessage>, role: &str, content: String)
+- extract_text_from_value · function · L857-L892 — fn extract_text_from_value(value: &serde_json::Value) -> String
+- visit · function · L858-L887 — fn visit(value: &serde_json::Value, out: &mut Vec<String>)
+- classify_opencode_parts · function · L896-L920 — fn classify_opencode_parts(
+- extract_opencode_part_preview · function · L926-L947 — fn extract_opencode_part_preview(parts_base: &Path, message_id: &str) -> String
+- extract_block_text_from_value · function · L949-L990 — fn extract_block_text_from_value(value: &serde_json::Value) -> String
+- extract · function · L950-L987 — fn extract(value: &serde_json::Value, separator: &str) -> Option<String>
+- truncate_title_text · function · L992-L1002 — fn truncate_title_text(text: &str, max_chars: usize) -> String
+- parse_timestamp_value · function · L1004-L1011 — fn parse_timestamp_value(
+- value_first_text · function · L1014-L1021 — fn value_first_text(value: &serde_json::Value) -> Option<&str>
+- message_value_is_internal_system_reminder · function · L1024-L1029 — fn message_value_is_internal_system_reminder(message: &serde_json::Value) -> bool
+- message_value_is_visible_conversation · function · L1032-L1037 — fn message_value_is_visible_conversation(message: &serde_json::Value) -> bool
+- snapshot_has_visible_conversation · function · L1040-L1045 — fn snapshot_has_visible_conversation(path: &Path) -> Option<bool>
+- snapshot_bytes_look_trivial_hidden_only · function · L1048-L1059 — fn snapshot_bytes_look_trivial_hidden_only(bytes: &[u8]) -> bool
+- journal_has_visible_conversation · function · L1062-L1083 — fn journal_has_visible_conversation(path: &Path) -> Option<bool>
+- is_empty_session_file · function · L1086-L1098 — fn is_empty_session_file(path: &Path) -> bool
+- session_has_history · function · L1101-L1121 — fn session_has_history(sessions_dir: &Path, stem: &str) -> bool
+- collect_recent_session_candidates · function · L1123-L1188 — fn collect_recent_session_candidates(
+- json_bytes_saved_true · function · L1190-L1215 — fn json_bytes_saved_true(bytes: &[u8]) -> bool
+- file_tail_contains_saved_true · function · L1217-L1233 — fn file_tail_contains_saved_true(path: &Path) -> bool
+- session_snapshot_or_journal_has_saved_metadata · function · L1235-L1245 — fn session_snapshot_or_journal_has_saved_metadata(snapshot_path: &Path) -> bool
+- collect_saved_session_candidates · function · L1247-L1269 — fn collect_saved_session_candidates(sessions_dir: &Path) -> Result<Vec<String>>
+- collect_recent_session_stems · function · L1272-L1299 — pub(super) fn collect_recent_session_stems(
+- SessionSummary · struct · L1302-L1333 — struct SessionSummary
+- SessionMessageSummaryData · struct · L1336-L1347 — struct SessionMessageSummaryData
+- add_message · function · L1350-L1381 — fn add_message(&mut self, message: &SessionMessageSummary)
+- merge · function · L1383-L1404 — fn merge(&mut self, other: Self)
+- deserialize · function · L1408-L1413 — fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+- SessionMessageSummaryDataVisitor · struct · L1416-L1416 — struct SessionMessageSummaryDataVisitor;
+- Value · type · L1419-L1419 — type Value = SessionMessageSummaryData;
+- expecting · function · L1421-L1423 — fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- visit_seq · function · L1425-L1442 — fn visit_seq<A>(self, mut seq: A) -> std::result::Result<Self::Value, A::Error>
+- SessionMessageSummarySeed · struct · L1445-L1447 — struct SessionMessageSummarySeed
+- Value · type · L1450-L1450 — type Value = SessionMessageSummary;
+- deserialize · function · L1452-L1459 — fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
+- SessionMessageSummary · struct · L1462-L1476 — struct SessionMessageSummary
+- deserialize · function · L1479-L1486 — fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+- SessionMessageSummaryVisitor · struct · L1489-L1491 — struct SessionMessageSummaryVisitor
+- Value · type · L1494-L1494 — type Value = SessionMessageSummary;
+- expecting · function · L1496-L1498 — fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- visit_map · function · L1500-L1572 — fn visit_map<A>(self, mut map: A) -> std::result::Result<Self::Value, A::Error>
+- summary_message_is_visible_conversation · function · L1575-L1583 — fn summary_message_is_visible_conversation(message: &SessionMessageSummary) -> bool
+- raw_content_starts_with_system_reminder · function · L1585-L1589 — fn raw_content_starts_with_system_reminder(raw: &RawValue) -> bool
+- json_string_raw_starts_with_system_reminder · function · L1591-L1597 — fn json_string_raw_starts_with_system_reminder(raw: &str) -> bool
+- first_text_field_raw_starts_with_system_reminder · function · L1599-L1624 — fn first_text_field_raw_starts_with_system_reminder(raw: &str) -> bool
+- RAW_SYSTEM_REMINDER_SEARCH_BYTES · constant · L1600-L1600 — const RAW_SYSTEM_REMINDER_SEARCH_BYTES: usize = 2048;
+- SessionTokenUsageSummary · struct · L1627-L1634 — struct SessionTokenUsageSummary
+- total_tokens · function · L1637-L1642 — fn total_tokens(&self) -> u64
+- SessionJournalSummaryMeta · struct · L1646-L1674 — struct SessionJournalSummaryMeta
+- SessionJournalSummaryEntry · struct · L1677-L1681 — struct SessionJournalSummaryEntry
+- load_session_summary · function · L1683-L1732 — fn load_session_summary(path: &Path) -> Result<SessionSummary>
+- build_messages_preview · function · L1734-L1736 — pub(super) fn build_messages_preview(session: &Session) -> Vec<PreviewMessage>
+- build_messages_preview_with_offset · function · L1740-L1764 — pub(super) fn build_messages_preview_with_offset(
+- crashed_sessions_from_all_sessions · function · L1766-L1808 — pub(super) fn crashed_sessions_from_all_sessions(
+- parse_jcode_session_info · function · L1813-L1919 — fn parse_jcode_session_info(
+- load_sessions · function · L1921-L1923 — pub fn load_sessions() -> Result<Vec<SessionInfo>>
+- load_sessions_inner · function · L1925-L2076 — fn load_sessions_inner(bypass_cache: bool) -> Result<Vec<SessionInfo>>
+- limit_sessions_by_recency · function · L2082-L2095 — fn limit_sessions_by_recency(sessions: &mut Vec<SessionInfo>, limit: usize)
+- load_external_sessions · function · L2100-L2120 — fn load_external_sessions(enabled: bool, scan_limit: usize) -> Vec<SessionInfo>
+- load_external_claude_code_sessions · function · L2122-L2197 — fn load_external_claude_code_sessions(scan_limit: usize) -> Vec<SessionInfo>
+- load_claude_code_preview_from_path · function · L2200-L2202 — pub(super) fn load_claude_code_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>>
+- load_claude_code_external_preview · function · L2204-L2246 — pub(super) fn load_claude_code_external_preview(path: &Path) -> Option<ExternalPreview>
+- load_claude_code_preview · function · L2249-L2263 — pub(super) fn load_claude_code_preview(session_id: &str) -> Option<Vec<PreviewMessage>>
+- load_claude_code_external_preview_by_id · function · L2265-L2271 — pub(super) fn load_claude_code_external_preview_by_id(session_id: &str) -> Option<ExternalPreview>
+- load_external_codex_sessions · function · L2273-L2286 — fn load_external_codex_sessions(scan_limit: usize) -> Vec<SessionInfo>
+- load_codex_session_stub · function · L2288-L2369 — fn load_codex_session_stub(path: &Path) -> Result<Option<SessionInfo>>
+- find_codex_session_file · function · L2371-L2398 — fn find_codex_session_file(session_id: &str) -> Option<PathBuf>
+- load_codex_preview_from_path · function · L2401-L2403 — pub(super) fn load_codex_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>>
+- load_codex_external_preview · function · L2405-L2460 — pub(super) fn load_codex_external_preview(path: &Path) -> Option<ExternalPreview>
+- load_codex_preview · function · L2464-L2467 — pub(super) fn load_codex_preview(session_id: &str) -> Option<Vec<PreviewMessage>>
+- load_codex_external_preview_by_id · function · L2469-L2471 — pub(super) fn load_codex_external_preview_by_id(session_id: &str) -> Option<ExternalPreview>
+- pi_sessions · module · L2474-L2474 — mod pi_sessions;
+- load_external_opencode_sessions · function · L2480-L2495 — fn load_external_opencode_sessions(scan_limit: usize) -> Vec<SessionInfo>
+- load_opencode_preview_from_path · function · L2499-L2501 — pub(super) fn load_opencode_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>>
+- load_opencode_external_preview · function · L2503-L2509 — pub(super) fn load_opencode_external_preview(path: &Path) -> Option<ExternalPreview>
+- load_opencode_session_stub · function · L2511-L2596 — fn load_opencode_session_stub(path: &Path) -> Result<Option<SessionInfo>>
+- load_external_cursor_sessions · function · L2598-L2611 — fn load_external_cursor_sessions(scan_limit: usize) -> Vec<SessionInfo>
+- load_cursor_preview_from_path · function · L2615-L2617 — pub(super) fn load_cursor_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>>
+- load_cursor_external_preview · function · L2619-L2654 — pub(super) fn load_cursor_external_preview(path: &Path) -> Option<ExternalPreview>
+- load_cursor_session_stub · function · L2656-L2775 — fn load_cursor_session_stub(path: &Path) -> Result<Option<SessionInfo>>
+- load_servers · function · L2777-L2787 — pub fn load_servers() -> Vec<ServerInfo>
+- include_cloud_sessions · function · L2789-L2855 — fn include_cloud_sessions(
+- cloud_session_stub · function · L2859-L2909 — fn cloud_session_stub(lease: &storage::SessionLease) -> SessionInfo
+- load_sessions_grouped · function · L2911-L2988 — pub fn load_sessions_grouped() -> Result<(Vec<ServerGroup>, Vec<SessionInfo>)>
+- load_external_cli_sessions_grouped · function · L2996-L3009 — pub(crate) fn load_external_cli_sessions_grouped(
+- tests · module · L3013-L3013 — mod tests;

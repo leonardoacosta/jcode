@@ -1,0 +1,77 @@
+# crates/jcode-app-core/src/tool/session_search.rs
+
+- MAX_DESERIALIZE · constant · L44-L44 — const MAX_DESERIALIZE: usize = 500;
+- SCAN_THREADS · constant · L47-L47 — const SCAN_THREADS: usize = 8;
+- DEFAULT_LIMIT · constant · L49-L49 — const DEFAULT_LIMIT: usize = 10;
+- MAX_LIMIT · constant · L50-L50 — const MAX_LIMIT: usize = 50;
+- DEFAULT_MAX_PER_SESSION · constant · L51-L51 — const DEFAULT_MAX_PER_SESSION: usize = 1;
+- MAX_MAX_PER_SESSION · constant · L52-L52 — const MAX_MAX_PER_SESSION: usize = 20;
+- DEFAULT_MAX_SCAN_SESSIONS · constant · L53-L53 — const DEFAULT_MAX_SCAN_SESSIONS: usize = 1000;
+- MAX_MAX_SCAN_SESSIONS · constant · L54-L54 — const MAX_MAX_SCAN_SESSIONS: usize = 10_000;
+- MAX_CONTEXT_MESSAGES · constant · L55-L55 — const MAX_CONTEXT_MESSAGES: usize = 5;
+- INDEX_SCORE_CANDIDATE_MULTIPLIER · constant · L56-L56 — const INDEX_SCORE_CANDIDATE_MULTIPLIER: usize = 2;
+- LEGACY_INDEX_FILE_NAME · constant · L58-L58 — const LEGACY_INDEX_FILE_NAME: &str = "session_search_recent_index_v1.json";
+- SearchInput · struct · L61-L123 — struct SearchInput
+- SessionSearchTool · struct · L125-L125 — pub struct SessionSearchTool;
+- new · function · L128-L130 — pub fn new() -> Self
+- default · function · L134-L136 — fn default() -> Self
+- spawn_recent_index_warmup · function · L142-L190 — pub fn spawn_recent_index_warmup()
+- SearchOptions · struct · L193-L215 — struct SearchOptions
+- for_test · function · L219-L243 — fn for_test(current_session_id: impl Into<String>) -> Self
+- RoleFilter · enum · L247-L251 — enum RoleFilter
+- parse · function · L254-L261 — fn parse(raw: &str) -> Option<Self>
+- SessionFileCandidate · struct · L265-L270 — struct SessionFileCandidate
+- RawFilterOutcome · struct · L273-L276 — struct RawFilterOutcome
+- SearchWorkerOutcome · struct · L279-L282 — struct SearchWorkerOutcome
+- SessionFileCollection · struct · L285-L288 — struct SessionFileCollection
+- name · function · L292-L294 — fn name(&self) -> &str
+- description · function · L296-L298 — fn description(&self) -> &str
+- parameters_schema · function · L300-L404 — fn parameters_schema(&self) -> Value
+- execute · function · L406-L532 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- session_search_filters · module · L536-L536 — mod session_search_filters;
+- search_sessions_blocking · function · L541-L645 — fn search_sessions_blocking(
+- collect_session_files · function · L647-L712 — fn collect_session_files(
+- session_id_timestamp_ms · function · L714-L720 — fn session_id_timestamp_ms(session_id: &str) -> Option<u64>
+- system_time_from_unix_millis · function · L722-L724 — fn system_time_from_unix_millis(timestamp_ms: u64) -> SystemTime
+- index_dir · function · L726-L728 — fn index_dir() -> Result<PathBuf>
+- indexed_candidate_budget · function · L731-L738 — fn indexed_candidate_budget(options: &SearchOptions) -> usize
+- remove_legacy_index · function · L741-L745 — fn remove_legacy_index()
+- jcode_index_candidates · function · L749-L787 — fn jcode_index_candidates(
+- modified_time_or_epoch · function · L789-L793 — fn modified_time_or_epoch(path: &Path) -> SystemTime
+- filter_candidates_parallel · function · L795-L839 — fn filter_candidates_parallel(
+- read_candidate_raw · function · L841-L864 — fn read_candidate_raw(
+- score_candidates_parallel · function · L866-L906 — fn score_candidates_parallel(
+- search_external_sessions · function · L908-L973 — fn search_external_sessions(query: &QueryProfile, options: &SearchOptions) -> SearchReport
+- collect_external_jsonl_source · function · L975-L1010 — fn collect_external_jsonl_source(
+- external_index_candidate_paths · function · L1016-L1061 — fn external_index_candidate_paths(
+- ExternalLoadOutcome · struct · L1064-L1067 — struct ExternalLoadOutcome
+- load_external_candidates_parallel · function · L1072-L1115 — fn load_external_candidates_parallel(
+- claude_index_candidates · function · L1120-L1175 — fn claude_index_candidates(
+- load_claude_candidates_parallel · function · L1179-L1252 — fn load_claude_candidates_parallel(
+- external_path_or_raw_matches_query · function · L1254-L1261 — fn external_path_or_raw_matches_query(path: &Path, query: &QueryProfile) -> bool
+- external_text_matches_query · function · L1263-L1265 — fn external_text_matches_query(text: &str, query: &QueryProfile) -> bool
+- collect_opencode_external_sessions · function · L1267-L1303 — fn collect_opencode_external_sessions(
+- append_external_session_results · function · L1305-L1384 — fn append_external_session_results(
+- external_metadata_text · function · L1386-L1407 — fn external_metadata_text(session: &ExternalSessionRecord) -> String
+- build_external_context · function · L1409-L1431 — fn build_external_context(
+- append_session_results · function · L1433-L1531 — fn append_session_results(
+- metadata_text · function · L1533-L1566 — fn metadata_text(session: &Session) -> String
+- source_matches_filter · function · L1568-L1574 — fn source_matches_filter(source: &str, options: &SearchOptions) -> bool
+- jcode_session_matches_filters · function · L1576-L1603 — fn jcode_session_matches_filters(session: &Session, options: &SearchOptions) -> bool
+- external_session_matches_filters · function · L1605-L1625 — fn external_session_matches_filters(
+- provider_matches · function · L1627-L1632 — fn provider_matches(provider_key: Option<&str>, source: &str, options: &SearchOptions) -> bool
+- role_filter_allows_metadata · function · L1634-L1639 — fn role_filter_allows_metadata(options: &SearchOptions) -> bool
+- role_filter_allows_message · function · L1641-L1650 — fn role_filter_allows_message(msg: &StoredMessage, options: &SearchOptions) -> bool
+- role_filter_allows_external_message · function · L1652-L1661 — fn role_filter_allows_external_message(role: &str, options: &SearchOptions) -> bool
+- build_jcode_context · function · L1663-L1692 — fn build_jcode_context(
+- truncate_context_text · function · L1694-L1701 — fn truncate_context_text(text: &str) -> String
+- searchable_text · module · L1703-L1703 — mod searchable_text;
+- is_system_like_message · function · L1706-L1716 — fn is_system_like_message(msg: &StoredMessage) -> bool
+- is_tool_only_message · function · L1718-L1731 — fn is_tool_only_message(msg: &StoredMessage) -> bool
+- role_label · function · L1733-L1746 — fn role_label(msg: &StoredMessage) -> &'static str
+- compare_results · function · L1748-L1755 — fn compare_results(a: &SearchResult, b: &SearchResult) -> std::cmp::Ordering
+- group_and_limit_results · function · L1757-L1777 — fn group_and_limit_results(
+- render_options · function · L1779-L1788 — fn render_options(options: &SearchOptions) -> SessionSearchRenderOptions
+- format_results · function · L1790-L1792 — fn format_results(query: &str, report: &SearchReport, options: &SearchOptions) -> String
+- no_results_message · function · L1794-L1796 — fn no_results_message(query: &str, options: &SearchOptions) -> String
+- session_search_tests · module · L1800-L1800 — mod session_search_tests;

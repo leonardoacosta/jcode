@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/tool/mcp_tests.rs
+
+- create_test_tool · function · L6-L14 — fn create_test_tool() -> McpManagementTool
+- create_test_context · function · L16-L26 — fn create_test_context() -> ToolContext
+- LocalMcpConfigGuard · struct · L28-L32 — struct LocalMcpConfigGuard
+- new · function · L35-L57 — fn new(content: &str) -> std::io::Result<Self>
+- drop · function · L61-L75 — fn drop(&mut self)
+- test_tool_name · function · L79-L82 — fn test_tool_name()
+- test_tool_description · function · L85-L89 — fn test_tool_description()
+- test_parameters_schema · function · L92-L116 — fn test_parameters_schema()
+- unified_registry · function · L118-L140 — async fn unified_registry() -> crate::tool::Registry
+- unified_mcp_hides_alias_schemas_but_preserves_execution · function · L143-L183 — async fn unified_mcp_hides_alias_schemas_but_preserves_execution()
+- unified_mcp_respects_legacy_surface_and_management_policies · function · L186-L261 — async fn unified_mcp_respects_legacy_surface_and_management_policies()
+- mcp_call_allows_dynamic_argument_keys_in_provider_schemas · function · L264-L287 — fn mcp_call_allows_dynamic_argument_keys_in_provider_schemas()
+- mcp_call_dynamic_arguments_remain_ineligible_for_openai_strict_mode · function · L290-L301 — fn mcp_call_dynamic_arguments_remain_ineligible_for_openai_strict_mode()
+- search_name_matches_beat_description_matches · function · L304-L339 — fn search_name_matches_beat_description_matches()
+- search_descriptions_are_clipped · function · L342-L348 — fn search_descriptions_are_clipped()
+- search_result · function · L350-L358 — fn search_result(n: usize, description_chars: usize) -> McpSearchResult
+- search_results_fit_the_budget_adaptively · function · L361-L390 — fn search_results_fit_the_budget_adaptively()
+- test_list_empty · function · L393-L400 — async fn test_list_empty()
+- test_list_shows_disabled_configured_server · function · L403-L442 — async fn test_list_shows_disabled_configured_server()
+- test_connect_missing_server · function · L445-L453 — async fn test_connect_missing_server()
+- test_connect_missing_command · function · L456-L464 — async fn test_connect_missing_command()
+- test_disconnect_not_connected · function · L467-L474 — async fn test_disconnect_not_connected()
+- test_unknown_action · function · L477-L484 — async fn test_unknown_action()
+- test_reload_empty_config · function · L487-L504 — async fn test_reload_empty_config()

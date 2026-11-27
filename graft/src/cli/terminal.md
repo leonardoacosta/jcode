@@ -1,0 +1,78 @@
+# src/cli/terminal.rs
+
+- TuiRuntimeState · struct · L7-L11 — pub struct TuiRuntimeState
+- INHERITED_MODES_ENV · constant · L13-L13 — const INHERITED_MODES_ENV: &str = "JCODE_TUI_INHERITED_MODES";
+- INHERITED_THEME_ENV · constant · L14-L14 — const INHERITED_THEME_ENV: &str = "JCODE_TUI_INHERITED_THEME";
+- WINDOWS_VT_MOUSE_ENABLE · constant · L23-L23 — const WINDOWS_VT_MOUSE_ENABLE: &[u8] = b"\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1015h\x1b[?1006h";
+- WINDOWS_VT_MOUSE_DISABLE · constant · L25-L25 — const WINDOWS_VT_MOUSE_DISABLE: &[u8] = b"\x1b[?1006l\x1b[?1015l\x1b[?1003l\x1b[?1002l\x1b[?1000l";
+- sync_windows_vt_mouse_capture · function · L28-L38 — fn sync_windows_vt_mouse_capture(enabled: bool) -> io::Result<()>
+- sync_windows_vt_mouse_capture · function · L41-L43 — fn sync_windows_vt_mouse_capture(_enabled: bool) -> io::Result<()>
+- InheritedTerminalModes · struct · L46-L50 — struct InheritedTerminalModes
+- encode · function · L53-L60 — fn encode(self) -> String
+- decode · function · L62-L93 — fn decode(value: &str) -> Option<Self>
+- has_terminal_exec_handoff · function · L96-L101 — fn has_terminal_exec_handoff(
+- TuiRuntimeGuard · struct · L117-L120 — pub struct TuiRuntimeGuard
+- new · function · L130-L132 — fn new(state: TuiRuntimeState) -> Self
+- finish · function · L135-L138 — pub fn finish(mut self, restore_terminal: bool)
+- finish_for_run_result · function · L143-L149 — pub fn finish_for_run_result(mut self, run_result: &crate::tui::RunResult, extra_exec: bool)
+- drop · function · L153-L163 — fn drop(&mut self)
+- set_current_session · function · L166-L168 — pub fn set_current_session(session_id: &str)
+- get_current_session · function · L170-L172 — pub fn get_current_session() -> Option<String>
+- should_record_panic_as_crash · function · L180-L182 — fn should_record_panic_as_crash(status: &session::SessionStatus) -> bool
+- install_panic_hook · function · L184-L205 — pub fn install_panic_hook()
+- mark_current_session_crashed · function · L207-L222 — pub fn mark_current_session_crashed(message: String)
+- panic_payload_to_string · function · L224-L232 — pub fn panic_payload_to_string(payload: &(dyn std::any::Any + Send)) -> String
+- show_crash_resume_hint · function · L234-L253 — pub fn show_crash_resume_hint()
+- crash_resume_hint_lines · function · L262-L293 — fn crash_resume_hint_lines(
+- crash_resume_hint_tests · module · L296-L344 — mod crash_resume_hint_tests
+- session · function · L299-L301 — fn session(id: &str, name: &str) -> (String, String)
+- no_crashed_sessions_produces_no_hint · function · L304-L306 — fn no_crashed_sessions_produces_no_hint()
+- single_session_hint_also_points_at_the_picker · function · L311-L325 — fn single_session_hint_also_points_at_the_picker()
+- multiple_sessions_hint_lists_recent_and_the_picker · function · L328-L343 — fn multiple_sessions_hint_lists_recent_and_the_picker()
+- init_tui_terminal · function · L346-L356 — fn init_tui_terminal(inherited_terminal: bool) -> Result<ratatui::DefaultTerminal>
+- init_tui_runtime · function · L358-L468 — pub fn init_tui_runtime() -> Result<(ratatui::DefaultTerminal, TuiRuntimeGuard)>
+- cleanup_tui_runtime · function · L470-L507 — fn cleanup_tui_runtime(state: &TuiRuntimeState, restore_terminal: bool)
+- cleanup_tui_runtime_for_run_result · function · L509-L515 — fn cleanup_tui_runtime_for_run_result(
+- run_result_will_exec · function · L517-L524 — fn run_result_will_exec(run_result: &crate::tui::RunResult, extra_exec: bool) -> bool
+- export_tui_exec_handoff · function · L526-L542 — fn export_tui_exec_handoff(state: &TuiRuntimeState)
+- print_session_resume_hint · function · L544-L546 — pub fn print_session_resume_hint(session_id: &str)
+- write_session_resume_hint · function · L548-L565 — fn write_session_resume_hint(mut writer: impl Write, session_id: &str) -> io::Result<()>
+- init_tui_terminal_resume · function · L567-L582 — fn init_tui_terminal_resume() -> Result<ratatui::DefaultTerminal>
+- signal_name · function · L585-L599 — pub fn signal_name(sig: i32) -> &'static str
+- signal_name · function · L602-L604 — pub fn signal_name(_sig: i32) -> &'static str
+- signal_crash_reason · function · L607-L615 — fn signal_crash_reason(sig: i32) -> String
+- handle_termination_signal · function · L618-L648 — fn handle_termination_signal(sig: i32) -> !
+- handle_replaced_signal · function · L654-L660 — fn handle_replaced_signal() -> !
+- signal_cleanup_terminal_modes_to · function · L662-L685 — fn signal_cleanup_terminal_modes_to(mut writer: impl Write) -> bool
+- signal_cleanup_stream · function · L692-L694 — fn signal_cleanup_stream() -> std::io::Stdout
+- signal_cleanup_tests · module · L698-L769 — mod signal_cleanup_tests
+- SIGNAL_CLEANUP_TEST_LOCK · constant · L704-L704 — static SIGNAL_CLEANUP_TEST_LOCK: Mutex<()> = Mutex::new(());
+- EditorOwnershipGuard · struct · L706-L706 — struct EditorOwnershipGuard;
+- new · function · L709-L712 — fn new(owns_terminal: bool) -> Self
+- drop · function · L716-L718 — fn drop(&mut self)
+- signal_cleanup_skips_terminal_modes_while_editor_owns_terminal · function · L722-L729 — fn signal_cleanup_skips_terminal_modes_while_editor_owns_terminal()
+- signal_cleanup_waits_for_in_flight_editor_handoff · function · L732-L760 — fn signal_cleanup_waits_for_in_flight_editor_handoff()
+- signal_cleanup_targets_stdout_not_stderr · function · L763-L768 — fn signal_cleanup_targets_stdout_not_stderr()
+- spawn_session_signal_watchers · function · L772-L809 — pub fn spawn_session_signal_watchers()
+- spawn_one · function · L775-L793 — fn spawn_one(sig: i32, kind: SignalKind)
+- spawn_session_signal_watchers · function · L812-L812 — pub fn spawn_session_signal_watchers() {}
+- tests · module · L815-L982 — mod tests
+- TEST_SESSION_LOCK · constant · L819-L819 — static TEST_SESSION_LOCK: Mutex<()> = Mutex::new(());
+- test_guard · function · L821-L829 — fn test_guard() -> TuiRuntimeGuard
+- inherited_terminal_modes_roundtrip · function · L832-L839 — fn inherited_terminal_modes_roundtrip()
+- windows_vt_mouse_modes_enable_and_disable_the_same_tracking_protocols · function · L842-L855 — fn windows_vt_mouse_modes_enable_and_disable_the_same_tracking_protocols()
+- inherited_terminal_modes_reject_malformed_values · function · L858-L864 — fn inherited_terminal_modes_reject_malformed_values()
+- resume_requires_valid_terminal_handoff_metadata · function · L867-L876 — fn resume_requires_valid_terminal_handoff_metadata()
+- every_exec_action_preserves_terminal_modes · function · L879-L906 — fn every_exec_action_preserves_terminal_modes()
+- guard_drop_restores_terminal_when_not_finished · function · L909-L921 — fn guard_drop_restores_terminal_when_not_finished()
+- guard_finish_disarms_drop_restore · function · L924-L934 — fn guard_finish_disarms_drop_restore()
+- test_session_recovery_tracking · function · L937-L943 — fn test_session_recovery_tracking()
+- test_session_recovery_message_format · function · L946-L962 — fn test_session_recovery_message_format()
+- session_resume_hint_writer_reports_closed_stderr_without_panicking · function · L965-L981 — fn session_resume_hint_writer_reports_closed_stderr_without_panicking()
+- ClosedWriter · struct · L966-L966 — struct ClosedWriter;
+- write · function · L969-L971 — fn write(&mut self, _buf: &[u8]) -> io::Result<usize>
+- flush · function · L973-L975 — fn flush(&mut self) -> io::Result<()>
+- panic_crash_labeling_tests · module · L985-L1029 — mod panic_crash_labeling_tests
+- active_session_is_still_labeled_crashed_on_panic · function · L995-L999 — fn active_session_is_still_labeled_crashed_on_panic()
+- already_crashed_session_is_not_relabeled · function · L1002-L1008 — fn already_crashed_session_is_not_relabeled()
+- completed_session_is_not_relabeled_by_a_dying_client · function · L1011-L1028 — fn completed_session_is_not_relabeled_by_a_dying_client()

@@ -1,0 +1,29 @@
+# crates/jcode-provider-core/src/failover.rs
+
+- PROVIDER_FAILOVER_PROMPT_PREFIX · constant · L3-L3 — const PROVIDER_FAILOVER_PROMPT_PREFIX: &str = "[jcode-provider-failover]";
+- ProviderFailoverPrompt · struct · L6-L17 — pub struct ProviderFailoverPrompt
+- to_error_message · function · L20-L26 — pub fn to_error_message(&self) -> String
+- parse_failover_prompt_message · function · L29-L33 — pub fn parse_failover_prompt_message(message: &str) -> Option<ProviderFailoverPrompt>
+- FailoverDecision · enum · L36-L40 — pub enum FailoverDecision
+- should_failover · function · L43-L45 — pub fn should_failover(self) -> bool
+- should_mark_provider_unavailable · function · L47-L49 — pub fn should_mark_provider_unavailable(self) -> bool
+- as_str · function · L51-L57 — pub fn as_str(self) -> &'static str
+- contains_independent_status_code · function · L60-L70 — fn contains_independent_status_code(haystack: &str, code: &str) -> bool
+- is_definitive_usage_exhaustion · function · L74-L95 — pub fn is_definitive_usage_exhaustion(message: &str) -> bool
+- ProviderFailureKind · enum · L98-L106 — pub enum ProviderFailureKind
+- remedy · function · L109-L134 — pub fn remedy(self, provider: crate::DualAuthProvider) -> &'static str
+- classify_provider_failure · function · L139-L251 — pub fn classify_provider_failure(message: &str) -> ProviderFailureKind
+- classify_failover_error_message · function · L253-L337 — pub fn classify_failover_error_message(message: &str) -> FailoverDecision
+- tests · module · L340-L531 — mod tests
+- definitive_exhaustion_excludes_ambiguous_rate_limits · function · L344-L367 — fn definitive_exhaustion_excludes_ambiguous_rate_limits()
+- provider_failure_taxonomy_distinguishes_recovery_actions · function · L370-L387 — fn provider_failure_taxonomy_distinguishes_recovery_actions()
+- refresh_transport_failure_is_not_revocation · function · L390-L399 — fn refresh_transport_failure_is_not_revocation()
+- failure_remedies_name_exact_login_and_do_not_infer_revocation · function · L402-L430 — fn failure_remedies_name_exact_login_and_do_not_infer_revocation()
+- classified_auth_remedies_never_offer_another_identity · function · L433-L445 — fn classified_auth_remedies_never_offer_another_identity()
+- failover_prompt_roundtrips_from_error_message · function · L448-L462 — fn failover_prompt_roundtrips_from_error_message()
+- legacy_prompt_without_target_route_requires_manual_selection · function · L465-L469 — fn legacy_prompt_without_target_route_requires_manual_selection()
+- classifier_marks_rate_limits_unavailable · function · L472-L477 — fn classifier_marks_rate_limits_unavailable()
+- classifier_marks_usage_limit_unavailable · function · L480-L487 — fn classifier_marks_usage_limit_unavailable()
+- classifier_marks_cached_refresh_rejection_unavailable · function · L490-L514 — fn classifier_marks_cached_refresh_rejection_unavailable()
+- classifier_retries_context_errors_without_marking_unavailable · function · L517-L522 — fn classifier_retries_context_errors_without_marking_unavailable()
+- classifier_ignores_embedded_status_digits · function · L525-L530 — fn classifier_ignores_embedded_status_digits()

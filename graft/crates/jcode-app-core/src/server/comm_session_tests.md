@@ -1,0 +1,65 @@
+# crates/jcode-app-core/src/server/comm_session_tests.rs
+
+- reviewer_startup_uses_automatic_final_report_without_extra_tool_roundtrip · function · L24-L33 — fn reviewer_startup_uses_automatic_final_report_without_extra_tool_roundtrip()
+- MockProvider · struct · L35-L35 — struct MockProvider;
+- RoutingProvider · struct · L37-L37 — struct RoutingProvider(std::sync::Mutex<String>);
+- complete · function · L41-L49 — async fn complete(
+- name · function · L50-L52 — fn name(&self) -> &str
+- model · function · L53-L55 — fn model(&self) -> String
+- set_model · function · L56-L63 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L64-L66 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L71-L79 — async fn complete(
+- name · function · L81-L83 — fn name(&self) -> &str
+- fork · function · L85-L87 — fn fork(&self) -> Arc<dyn Provider>
+- member · function · L90-L121 — fn member(
+- test_agent_with_working_dir · function · L123-L132 — async fn test_agent_with_working_dir(session_id: &str, working_dir: &str) -> Arc<Mutex<Agent>>
+- resolve_spawn_working_dir_prefers_explicit_then_spawner_agent_dir · function · L135-L165 — async fn resolve_spawn_working_dir_prefers_explicit_then_spawner_agent_dir()
+- resolve_spawn_working_dir_falls_back_to_member_dir · function · L168-L186 — async fn resolve_spawn_working_dir_falls_back_to_member_dir()
+- stop_permission_defaults_to_sessions_spawned_by_requesting_coordinator · function · L189-L201 — fn stop_permission_defaults_to_sessions_spawned_by_requesting_coordinator()
+- stop_target_resolves_unique_friendly_name_and_suffix · function · L204-L225 — async fn stop_target_resolves_unique_friendly_name_and_suffix()
+- stop_target_rejects_ambiguous_friendly_name · function · L228-L243 — async fn stop_target_rejects_ambiguous_friendly_name()
+- register_visible_spawned_member_marks_startup_as_running · function · L246-L291 — async fn register_visible_spawned_member_marks_startup_as_running()
+- judge_feedback_visible_spawn_records_parent_before_launch · function · L294-L317 — fn judge_feedback_visible_spawn_records_parent_before_launch()
+- prepare_visible_council_spawn_persists_policy_and_startup_before_launch · function · L320-L381 — fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch()
+- prepare_visible_research_spawn_enforces_policy_in_new_process · function · L384-L426 — fn prepare_visible_research_spawn_enforces_policy_in_new_process()
+- prepare_visible_spawn_session_cleans_startup_when_launch_not_started · function · L429-L473 — fn prepare_visible_spawn_session_cleans_startup_when_launch_not_started()
+- prepare_visible_spawn_session_cleans_session_when_launch_errors · function · L476-L513 — fn prepare_visible_spawn_session_cleans_session_when_launch_errors()
+- prepare_visible_spawn_session_persists_and_launches_provider_key_for_openrouter_model · function · L516-L546 — fn prepare_visible_spawn_session_persists_and_launches_provider_key_for_openrouter_model()
+- prepare_visible_spawn_session_persists_requested_effort · function · L549-L580 — fn prepare_visible_spawn_session_persists_requested_effort()
+- prepare_visible_spawn_session_prefers_parent_provider_key_over_model_guess · function · L583-L613 — fn prepare_visible_spawn_session_prefers_parent_provider_key_over_model_guess()
+- coordinator_identity · function · L615-L626 — fn coordinator_identity(
+- resolve_swarm_spawn_model_prefers_configured_model_over_coordinator_model · function · L629-L644 — fn resolve_swarm_spawn_model_prefers_configured_model_over_coordinator_model()
+- resolve_swarm_spawn_model_inherits_coordinator_when_unconfigured · function · L647-L667 — fn resolve_swarm_spawn_model_inherits_coordinator_when_unconfigured()
+- resolve_swarm_spawn_model_inherits_coordinator_auth_route_for_oauth_vs_api · function · L670-L686 — fn resolve_swarm_spawn_model_inherits_coordinator_auth_route_for_oauth_vs_api()
+- resolve_swarm_spawn_model_keeps_provider_key_when_config_matches_coordinator · function · L689-L703 — fn resolve_swarm_spawn_model_keeps_provider_key_when_config_matches_coordinator()
+- resolve_swarm_spawn_model_openai_api_prefix_pins_api_route_over_coordinator · function · L706-L725 — fn resolve_swarm_spawn_model_openai_api_prefix_pins_api_route_over_coordinator()
+- resolve_swarm_spawn_model_auth_route_prefixes_pin_expected_routes · function · L728-L768 — fn resolve_swarm_spawn_model_auth_route_prefixes_pin_expected_routes()
+- resolve_swarm_spawn_model_inherit_sentinel_uses_coordinator_model · function · L771-L799 — fn resolve_swarm_spawn_model_inherit_sentinel_uses_coordinator_model()
+- resolve_swarm_spawn_model_requested_model_overrides_configured_pin · function · L802-L821 — fn resolve_swarm_spawn_model_requested_model_overrides_configured_pin()
+- resolve_swarm_spawn_model_requested_inherit_overrides_configured_pin · function · L824-L846 — fn resolve_swarm_spawn_model_requested_inherit_overrides_configured_pin()
+- resolve_swarm_spawn_model_requested_matching_coordinator_model_keeps_route · function · L849-L863 — fn resolve_swarm_spawn_model_requested_matching_coordinator_model_keeps_route()
+- resolve_swarm_spawn_model_blank_requested_model_falls_back_to_config · function · L866-L885 — fn resolve_swarm_spawn_model_blank_requested_model_falls_back_to_config()
+- resolve_swarm_spawn_model_omitted_request_trims_configured_model · function · L888-L905 — fn resolve_swarm_spawn_model_omitted_request_trims_configured_model()
+- resolve_swarm_spawn_model_blank_requested_model_inherits_when_unconfigured · function · L908-L922 — fn resolve_swarm_spawn_model_blank_requested_model_inherits_when_unconfigured()
+- coordinator_identity_uses_live_agent_when_lock_is_available · function · L925-L938 — async fn coordinator_identity_uses_live_agent_when_lock_is_available()
+- coordinator_identity_falls_back_to_persisted_session_when_agent_busy · function · L941-L976 — async fn coordinator_identity_falls_back_to_persisted_session_when_agent_busy()
+- global_agent_model_request_updates_server_config_not_session · function · L979-L1020 — async fn global_agent_model_request_updates_server_config_not_session()
+- read_only_spawn_preserves_routing_and_policy_while_coordinator_busy · function · L1023-L1149 — async fn read_only_spawn_preserves_routing_and_policy_while_coordinator_busy()
+- spawn_bootstraps_coordinator_when_swarm_has_none · function · L1152-L1204 — async fn spawn_bootstraps_coordinator_when_swarm_has_none()
+- nested_agent_cannot_spawn_regardless_of_root_effort · function · L1207-L1275 — async fn nested_agent_cannot_spawn_regardless_of_root_effort()
+- spawn_rejected_when_member_limit_reached · function · L1278-L1320 — async fn spawn_rejected_when_member_limit_reached()
+- terminal_members_do_not_consume_spawn_capacity · function · L1323-L1365 — async fn terminal_members_do_not_consume_spawn_capacity()
+- spawn_rejected_at_configured_live_agent_limit · function · L1368-L1407 — async fn spawn_rejected_at_configured_live_agent_limit()
+- spawn_admission_lock_serializes_per_swarm_only · function · L1410-L1435 — async fn spawn_admission_lock_serializes_per_swarm_only()
+- effort · module · L1438-L1438 — mod effort;
+- is_nonterminal_stop_frame · function · L1440-L1445 — fn is_nonterminal_stop_frame(event: &ServerEvent) -> bool
+- stop_after_member_removal · function · L1449-L1455 — async fn stop_after_member_removal(requester: &str, target: &str, force: bool) -> Vec<ServerEvent>
+- stop_frames_after_member_removal · function · L1457-L1498 — async fn stop_frames_after_member_removal(
+- next_terminal_stop_frame · function · L1500-L1507 — async fn next_terminal_stop_frame(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> ServerEvent
+- stop_emits_nonterminal_frames_before_the_terminal_reply · function · L1510-L1542 — async fn stop_emits_nonterminal_frames_before_the_terminal_reply()
+- stop_authorizes_removed_member_from_retained_owner_record · function · L1545-L1589 — async fn stop_authorizes_removed_member_from_retained_owner_record()
+- aliases_stay_swarm_local_while_exact_id_survives_owner_reconnect · function · L1592-L1679 — async fn aliases_stay_swarm_local_while_exact_id_survives_owner_reconnect()
+- status_after_member_removal · function · L1681-L1696 — async fn status_after_member_removal(requester: &str, target: &str) -> ServerEvent
+- status_resolves_removed_member_by_exact_id_for_owner_only · function · L1699-L1734 — async fn status_resolves_removed_member_by_exact_id_for_owner_only()
+- stop_with_unsettled_work_reports_unresolved_then_retry_settles · function · L1737-L1788 — async fn stop_with_unsettled_work_reports_unresolved_then_retry_settles()
+- stop_persistence_failure_reports_error_and_keeps_worker_revoked · function · L1791-L1826 — async fn stop_persistence_failure_reports_error_and_keeps_worker_revoked()

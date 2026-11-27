@@ -1,0 +1,42 @@
+# crates/jcode-base/src/import.rs
+
+- IMPORT_HISTORY_MAX_MESSAGES · constant · L36-L36 — const IMPORT_HISTORY_MAX_MESSAGES: usize = 160;
+- IMPORT_HISTORY_MAX_TEXT_BYTES · constant · L37-L37 — const IMPORT_HISTORY_MAX_TEXT_BYTES: usize = 256 * 1024;
+- IMPORT_BLOCK_MAX_TEXT_BYTES · constant · L38-L38 — const IMPORT_BLOCK_MAX_TEXT_BYTES: usize = 32 * 1024;
+- json_line_has_message_role · function · L40-L73 — fn json_line_has_message_role(line: &str) -> bool
+- has_value · function · L41-L69 — fn has_value(bytes: &[u8], value: &[u8]) -> bool
+- discover_project_dirs · function · L76-L95 — fn discover_project_dirs() -> Result<Vec<PathBuf>>
+- discover_projects · function · L99-L105 — fn discover_projects() -> Result<Vec<PathBuf>>
+- load_claude_code_entries · function · L107-L134 — fn load_claude_code_entries(path: &Path) -> Result<Vec<ClaudeCodeEntry>>
+- claude_code_session_info_from_file · function · L136-L198 — fn claude_code_session_info_from_file(
+- list_claude_code_sessions · function · L201-L270 — pub fn list_claude_code_sessions() -> Result<Vec<ClaudeCodeSessionInfo>>
+- list_claude_code_sessions_lazy · function · L272-L346 — pub fn list_claude_code_sessions_lazy(scan_limit: usize) -> Result<Vec<ClaudeCodeSessionInfo>>
+- list_sessions_for_project · function · L349-L360 — pub fn list_sessions_for_project(project_filter: &str) -> Result<Vec<ClaudeCodeSessionInfo>>
+- find_session_file · function · L363-L376 — fn find_session_file(session_id: &str) -> Result<PathBuf>
+- content_conversion · module · L379-L379 — mod content_conversion;
+- truncate_import_text · function · L381-L395 — fn truncate_import_text(text: String, max_bytes: usize) -> String
+- imported_message_text · function · L397-L470 — fn imported_message_text(blocks: &[ContentBlock], truncate_blocks: bool) -> (String, bool)
+- normalize_imported_history · function · L472-L542 — fn normalize_imported_history(session: &mut Session, apply_limits: bool) -> bool
+- reuse_existing_imported_session · function · L544-L552 — fn reuse_existing_imported_session(session_id: &str) -> bool
+- import_session · function · L555-L558 — pub fn import_session(session_id: &str) -> Result<Session>
+- imported_session_id_for_target · function · L560-L581 — pub fn imported_session_id_for_target(
+- resolve_resume_target_to_jcode · function · L583-L662 — pub fn resolve_resume_target_to_jcode(
+- import_external_resume_id · function · L664-L697 — pub fn import_external_resume_id(resume_id: &str) -> Result<Option<String>>
+- import_session_from_file · function · L700-L707 — pub fn import_session_from_file(path: &Path, session_id: &str) -> Result<Session>
+- import_session_from_file_with_target · function · L709-L823 — fn import_session_from_file_with_target(
+- remove_prepared_takeover_session · function · L825-L835 — fn remove_prepared_takeover_session(session_id: &str)
+- take_over_live_claude_session · function · L845-L849 — pub fn take_over_live_claude_session(
+- take_over_live_claude_session_with_timeout · function · L851-L937 — fn take_over_live_claude_session_with_timeout(
+- append_text_message · function · L939-L962 — fn append_text_message(
+- finalize_imported_session · function · L964-L993 — fn finalize_imported_session(
+- find_codex_session_file · function · L995-L1018 — fn find_codex_session_file(session_id: &str) -> Result<PathBuf>
+- import_codex_session · function · L1020-L1023 — pub fn import_codex_session(session_id: &str) -> Result<Session>
+- import_codex_session_from_path · function · L1025-L1148 — pub fn import_codex_session_from_path(
+- import_pi_session · function · L1150-L1245 — pub fn import_pi_session(session_path: &str) -> Result<Session>
+- find_opencode_session_file · function · L1247-L1258 — fn find_opencode_session_file(session_id: &str) -> Result<PathBuf>
+- import_opencode_session · function · L1260-L1263 — pub fn import_opencode_session(session_id: &str) -> Result<Session>
+- import_opencode_session_from_path · function · L1265-L1377 — pub fn import_opencode_session_from_path(
+- find_cursor_session_file · function · L1385-L1393 — fn find_cursor_session_file(session_id: &str) -> Result<PathBuf>
+- import_cursor_session · function · L1395-L1398 — pub fn import_cursor_session(session_id: &str) -> Result<Session>
+- import_cursor_session_from_path · function · L1400-L1454 — pub fn import_cursor_session_from_path(
+- tests · module · L1458-L1458 — mod tests;

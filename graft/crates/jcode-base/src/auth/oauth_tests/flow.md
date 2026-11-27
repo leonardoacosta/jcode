@@ -1,0 +1,63 @@
+# crates/jcode-base/src/auth/oauth_tests/flow.rs
+
+- utf8_body · function · L5-L7 — fn utf8_body(body: Vec<u8>) -> Result<String>
+- json_body · function · L9-L11 — fn json_body(body: Vec<u8>) -> Result<serde_json::Value>
+- require_json_str · function · L13-L18 — fn require_json_str<'a>(value: &'a serde_json::Value, key: &str) -> Result<&'a str>
+- require_param · function · L20-L25 — fn require_param<'a>(pairs: &'a HashMap<String, String>, key: &str) -> Result<&'a str>
+- claude_exchange_request_uses_json_like_claude_code · function · L28-L34 — fn claude_exchange_request_uses_json_like_claude_code() -> Result<()>
+- claude_exchange_request_body_is_json · function · L37-L43 — fn claude_exchange_request_body_is_json() -> Result<()>
+- claude_refresh_request_uses_json_like_claude_code · function · L46-L51 — fn claude_refresh_request_uses_json_like_claude_code() -> Result<()>
+- claude_refresh_request_body_is_json · function · L54-L59 — fn claude_refresh_request_body_is_json() -> Result<()>
+- claude_exchange_request_contains_required_fields · function · L66-L84 — fn claude_exchange_request_contains_required_fields() -> Result<()>
+- claude_exchange_request_includes_state_when_present · function · L87-L97 — fn claude_exchange_request_includes_state_when_present() -> Result<()>
+- claude_exchange_request_targets_correct_url · function · L100-L104 — fn claude_exchange_request_targets_correct_url() -> Result<()>
+- claude_refresh_request_contains_required_fields · function · L111-L122 — fn claude_refresh_request_contains_required_fields() -> Result<()>
+- claude_refresh_request_can_omit_scope_for_legacy_fallback · function · L125-L136 — fn claude_refresh_request_can_omit_scope_for_legacy_fallback() -> Result<()>
+- claude_refresh_invalid_scope_detection_matches_anthropic_error · function · L139-L144 — fn claude_refresh_invalid_scope_detection_matches_anthropic_error()
+- claude_scope_validation_requires_inference_when_scope_is_reported · function · L147-L160 — fn claude_scope_validation_requires_inference_when_scope_is_reported()
+- claude_refresh_request_targets_correct_url · function · L163-L167 — fn claude_refresh_request_targets_correct_url() -> Result<()>
+- openai_exchange_request_uses_form_urlencoded · function · L174-L179 — fn openai_exchange_request_uses_form_urlencoded() -> Result<()>
+- openai_exchange_request_contains_required_fields · function · L182-L195 — fn openai_exchange_request_contains_required_fields() -> Result<()>
+- openai_exchange_request_targets_correct_url · function · L198-L202 — fn openai_exchange_request_targets_correct_url() -> Result<()>
+- openai_refresh_request_uses_form_urlencoded · function · L209-L213 — fn openai_refresh_request_uses_form_urlencoded() -> Result<()>
+- openai_refresh_request_contains_required_fields · function · L216-L223 — fn openai_refresh_request_contains_required_fields() -> Result<()>
+- openai_refresh_request_targets_correct_url · function · L226-L230 — fn openai_refresh_request_targets_correct_url() -> Result<()>
+- claude_auth_url_contains_required_params · function · L237-L267 — fn claude_auth_url_contains_required_params() -> Result<()>
+- openai_auth_url_contains_required_params · function · L270-L296 — fn openai_auth_url_contains_required_params() -> Result<()>
+- claude_auth_url_with_dynamic_redirect_uri · function · L299-L318 — fn claude_auth_url_with_dynamic_redirect_uri() -> Result<()>
+- parse_plain_auth_code · function · L325-L331 — fn parse_plain_auth_code() -> Result<()>
+- parse_code_from_url · function · L334-L340 — fn parse_code_from_url() -> Result<()>
+- parse_code_from_query_string · function · L343-L349 — fn parse_code_from_query_string() -> Result<()>
+- parse_code_hash_state_format · function · L352-L358 — fn parse_code_hash_state_format() -> Result<()>
+- parse_code_without_hash · function · L361-L367 — fn parse_code_without_hash() -> Result<()>
+- parse_code_trims_input_whitespace · function · L370-L376 — fn parse_code_trims_input_whitespace() -> Result<()>
+- parse_code_url_with_whitespace_extracts_state · function · L379-L385 — fn parse_code_url_with_whitespace_extracts_state() -> Result<()>
+- parse_code_rejects_empty_input · function · L388-L391 — fn parse_code_rejects_empty_input()
+- parse_code_rejects_empty_code_query_param · function · L394-L398 — fn parse_code_rejects_empty_code_query_param()
+- parse_callback_input_requires_state · function · L401-L405 — fn parse_callback_input_requires_state()
+- parse_callback_input_extracts_code_and_state · function · L408-L415 — fn parse_callback_input_extracts_code_and_state() -> Result<()>
+- claude_redirect_uri_uses_manual_callback_for_platform_url · function · L418-L425 — fn claude_redirect_uri_uses_manual_callback_for_platform_url() -> Result<()>
+- claude_redirect_uri_accepts_legacy_console_callback_url · function · L428-L435 — fn claude_redirect_uri_accepts_legacy_console_callback_url() -> Result<()>
+- claude_redirect_uri_keeps_localhost_fallback_for_raw_code · function · L438-L442 — fn claude_redirect_uri_keeps_localhost_fallback_for_raw_code() -> Result<()>
+- claude_exchange_mock_server_receives_json · function · L449-L482 — async fn claude_exchange_mock_server_receives_json() -> Result<()>
+- claude_exchange_mock_server_with_state · function · L485-L501 — async fn claude_exchange_mock_server_with_state() -> Result<()>
+- claude_exchange_uses_state_from_url_query_when_present · function · L504-L527 — async fn claude_exchange_uses_state_from_url_query_when_present() -> Result<()>
+- claude_exchange_uses_claude_code_token_headers · function · L530-L560 — async fn claude_exchange_uses_claude_code_token_headers() -> Result<()>
+- claude_exchange_rejects_token_without_inference_scope · function · L563-L582 — async fn claude_exchange_rejects_token_without_inference_scope() -> Result<()>
+- claude_exchange_preserves_returned_scopes · function · L585-L600 — async fn claude_exchange_preserves_returned_scopes() -> Result<()>
+- claude_exchange_cloudflare_403_is_actionable · function · L603-L617 — async fn claude_exchange_cloudflare_403_is_actionable() -> Result<()>
+- claude_exchange_rejects_state_mismatch · function · L620-L635 — async fn claude_exchange_rejects_state_mismatch() -> Result<()>
+- openai_docs_reference_current_callback_uri · function · L638-L655 — fn openai_docs_reference_current_callback_uri() -> Result<()>
+- openai_callback_input_rejects_state_mismatch · function · L658-L673 — async fn openai_callback_input_rejects_state_mismatch() -> Result<()>
+- claude_exchange_falls_back_to_verifier_when_input_has_no_state · function · L676-L693 — async fn claude_exchange_falls_back_to_verifier_when_input_has_no_state() -> Result<()>
+- claude_exchange_uses_verifier_when_input_state_is_empty · function · L696-L712 — async fn claude_exchange_uses_verifier_when_input_state_is_empty() -> Result<()>
+- claude_exchange_mock_server_error_propagates · function · L715-L726 — async fn claude_exchange_mock_server_error_propagates() -> Result<()>
+- claude_refresh_mock_server_receives_json · function · L733-L766 — async fn claude_refresh_mock_server_receives_json() -> Result<()>
+- claude_refresh_mock_server_error_propagates · function · L769-L783 — async fn claude_refresh_mock_server_error_propagates() -> Result<()>
+- claude_json_body_accepted_by_strict_server · function · L790-L874 — async fn claude_json_body_accepted_by_strict_server() -> Result<()>
+- exchange_parses_optional_id_token · function · L881-L894 — async fn exchange_parses_optional_id_token() -> Result<()>
+- exchange_handles_missing_id_token · function · L897-L909 — async fn exchange_handles_missing_id_token() -> Result<()>
+- exchange_sets_expires_at_in_future · function · L912-L927 — async fn exchange_sets_expires_at_in_future() -> Result<()>
+- claude_exchange_handles_special_chars_in_code · function · L934-L947 — fn claude_exchange_handles_special_chars_in_code() -> Result<()>
+- openai_redirect_uri_format · function · L950-L955 — fn openai_redirect_uri_format()
+- token_requests_use_expected_content_types · function · L962-L993 — fn token_requests_use_expected_content_types()

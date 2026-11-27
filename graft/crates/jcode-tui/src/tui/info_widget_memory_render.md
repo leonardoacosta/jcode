@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/info_widget_memory_render.rs
+
+- render_memory_widget · function · L5-L67 — pub(super) fn render_memory_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render_memory_header_line · function · L69-L78 — fn render_memory_header_line(info: &MemoryInfo, max_width: usize) -> Line<'static>
+- memory_count_label · function · L80-L86 — fn memory_count_label(total_count: usize) -> String
+- substantive_footer_tests · module · L89-L166 — mod substantive_footer_tests
+- memory_no_trace_uses_scope_counts_and_keeps_body · function · L93-L108 — fn memory_no_trace_uses_scope_counts_and_keeps_body()
+- memory_active_no_trace_has_scope_footer_at_narrow_width · function · L111-L129 — fn memory_active_no_trace_has_scope_footer_at_narrow_width()
+- memory_active_keeps_last_trace_instead_of_scope_fallback · function · L132-L165 — fn memory_active_keeps_last_trace_instead_of_scope_fallback()
+- memory_recent_done · function · L168-L176 — fn memory_recent_done(activity: &MemoryActivity) -> bool
+- memory_should_render_pipeline · function · L178-L183 — fn memory_should_render_pipeline(activity: &MemoryActivity) -> bool
+- memory_compact_summary · function · L185-L210 — fn memory_compact_summary(info: &MemoryInfo) -> String
+- memory_status_badge · function · L212-L256 — fn memory_status_badge(activity: Option<&MemoryActivity>) -> (String, Color)
+- render_memory_status_line · function · L258-L303 — fn render_memory_status_line(activity: &MemoryActivity, max_width: usize) -> Line<'static>
+- render_memory_pipeline_lines · function · L305-L356 — fn render_memory_pipeline_lines(pipeline: &PipelineState, max_width: usize) -> Vec<Line<'static>>
+- render_memory_pipeline_display_lines · function · L358-L399 — fn render_memory_pipeline_display_lines(
+- fallback_pipeline_statuses · function · L401-L454 — fn fallback_pipeline_statuses(
+- render_memory_last_trace_line · function · L456-L477 — fn render_memory_last_trace_line(
+- render_memory_step_line · function · L479-L551 — fn render_memory_step_line(
+- current_memory_spinner_frame · function · L553-L564 — fn current_memory_spinner_frame() -> &'static str
+- FRAMES · constant · L558-L558 — const FRAMES: [&str; 4] = ["/", "-", "\\", "|"];
+- memory_step_detail · function · L566-L587 — fn memory_step_detail(
+- memory_pipeline_progress_summary · function · L589-L622 — fn memory_pipeline_progress_summary(pipeline: &PipelineState) -> String
+- render_memory_compact · function · L624-L657 — pub(super) fn render_memory_compact(info: &MemoryInfo, inner_width: u16) -> Vec<Line<'static>>
+- render_memory_expanded · function · L659-L682 — pub(super) fn render_memory_expanded(info: &MemoryInfo, inner: Rect) -> Vec<Line<'static>>
+- format_age · function · L683-L694 — fn format_age(duration: std::time::Duration) -> String

@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/app/auth_tests.rs
+
+- with_temp_jcode_home · function · L6-L24 — fn with_temp_jcode_home<T>(f: impl FnOnce() -> T) -> T
+- antigravity_auto_callback_code_skips_manual_callback_parser · function · L27-L32 — fn antigravity_auto_callback_code_skips_manual_callback_parser()
+- antigravity_manual_callback_url_keeps_state_validation · function · L35-L40 — fn antigravity_manual_callback_url_keeps_state_validation()
+- oauth_preflight_mentions_browser_fallback_and_doctor · function · L43-L47 — fn oauth_preflight_mentions_browser_fallback_and_doctor()
+- oauth_preflight_mentions_manual_safe_callback_mode · function · L50-L59 — fn oauth_preflight_mentions_manual_safe_callback_mode()
+- tui_openai_compatible_api_base_accepts_localhost_override · function · L62-L69 — fn tui_openai_compatible_api_base_accepts_localhost_override() -> anyhow::Result<()>
+- tui_openai_compatible_api_base_keeps_jcode_docs_and_remote_endpoint · function · L72-L81 — fn tui_openai_compatible_api_base_keeps_jcode_docs_and_remote_endpoint() -> anyhow::Result<()>
+- tui_openai_compatible_key_save_persists_key_for_current_session · function · L84-L112 — fn tui_openai_compatible_key_save_persists_key_for_current_session() -> anyhow::Result<()>
+- tui_api_key_logout_clears_saved_key_and_process_env · function · L115-L148 — fn tui_api_key_logout_clears_saved_key_and_process_env() -> anyhow::Result<()>
+- tui_jcode_subscription_logout_clears_credentials_and_preserves_api_base · function · L151-L202 — fn tui_jcode_subscription_logout_clears_credentials_and_preserves_api_base() -> anyhow::Result<()>
+- tui_openai_compatible_local_key_save_allows_empty_key · function · L205-L223 — fn tui_openai_compatible_local_key_save_allows_empty_key() -> anyhow::Result<()>
+- muse_subscription_pending_holds_attempt_cancel_slot · function · L226-L257 — fn muse_subscription_pending_holds_attempt_cancel_slot()
+- muse_subscription_code_progress_renders_without_success_side_effects · function · L260-L286 — fn muse_subscription_code_progress_renders_without_success_side_effects()
+- muse_subscription_stale_events_after_cancel_are_ignored · function · L289-L326 — fn muse_subscription_stale_events_after_cancel_are_ignored()
+- muse_subscription_canonical_success_publishes_untagged_event_and_updates_local_state · function · L329-L435 — fn muse_subscription_canonical_success_publishes_untagged_event_and_updates_local_state()
+- RestoreOptIn · struct · L339-L339 — struct RestoreOptIn(Option<String>);
+- drop · function · L341-L347 — fn drop(&mut self)
+- muse_subscription_failed_attempt_surfaces_message_and_clears_pending · function · L438-L474 — fn muse_subscription_failed_attempt_surfaces_message_and_clears_pending()
+- muse_subscription_stale_and_cancelled_progress_and_failure_are_ignored · function · L477-L548 — fn muse_subscription_stale_and_cancelled_progress_and_failure_are_ignored()
+- muse_subscription_accumulating_backoff_increases_interval · function · L551-L588 — fn muse_subscription_accumulating_backoff_increases_interval()
+- muse_subscription_old_success_arriving_after_new_attempt_leaves_new_pending_intact · function · L591-L694 — fn muse_subscription_old_success_arriving_after_new_attempt_leaves_new_pending_intact()
+- RestoreOptIn · struct · L596-L596 — struct RestoreOptIn(Option<String>);
+- drop · function · L598-L604 — fn drop(&mut self)
+- muse_subscription_old_failure_does_not_clear_newer_pending_attempt · function · L697-L743 — fn muse_subscription_old_failure_does_not_clear_newer_pending_attempt()
+- muse_subscription_approval_clears_leftover_login_input_for_the_finished_attempt · function · L751-L811 — fn muse_subscription_approval_clears_leftover_login_input_for_the_finished_attempt()
+- RestoreOptIn · struct · L756-L756 — struct RestoreOptIn(Option<String>);
+- drop · function · L758-L764 — fn drop(&mut self)
+- muse_subscription_old_attempt_event_does_not_clear_newer_login_input · function · L816-L844 — fn muse_subscription_old_attempt_event_does_not_clear_newer_login_input()

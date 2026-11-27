@@ -1,0 +1,84 @@
+# crates/jcode-terminal-launch/src/lib.rs
+
+- TerminalCommand · struct · L6-L30 — pub struct TerminalCommand
+- new · function · L33-L45 — pub fn new(program: impl Into<PathBuf>, args: Vec<String>) -> Self
+- title · function · L47-L50 — pub fn title(mut self, title: impl Into<String>) -> Self
+- fresh_spawn · function · L52-L55 — pub fn fresh_spawn(mut self) -> Self
+- kind · function · L57-L60 — pub fn kind(mut self, kind: impl Into<String>) -> Self
+- session_id · function · L62-L65 — pub fn session_id(mut self, session_id: impl Into<String>) -> Self
+- spawn_env · function · L67-L70 — pub fn spawn_env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self
+- runtime_env · function · L74-L80 — pub fn runtime_env(mut self, env: Vec<(String, String)>) -> Self
+- client_terminal_env · function · L85-L88 — pub fn client_terminal_env(mut self, env: Vec<(String, String)>) -> Self
+- RUNTIME_ENV_VARS · constant · L92-L98 — pub const RUNTIME_ENV_VARS: &[&str] = &[
+- CLIENT_TERMINAL_ENV_VARS · constant · L115-L156 — pub const CLIENT_TERMINAL_ENV_VARS: &[&str] = &[
+- snapshot_client_terminal_env · function · L161-L170 — pub fn snapshot_client_terminal_env() -> Vec<(String, String)>
+- apply_client_terminal_env · function · L178-L189 — pub fn apply_client_terminal_env(cmd: &mut Command, env: &[(String, String)])
+- SpawnAttempt · struct · L192-L196 — pub struct SpawnAttempt
+- sh_escape · function · L198-L200 — pub fn sh_escape(text: &str) -> String
+- shell_command · function · L202-L215 — pub fn shell_command(args: &[String]) -> String
+- push_unique_terminal · function · L217-L225 — fn push_unique_terminal(candidates: &mut Vec<String>, term: impl Into<String>)
+- terminal_env_value · function · L228-L238 — fn terminal_env_value(client_terminal_env: &[(String, String)], key: &str) -> Option<String>
+- detected_resume_terminal_with_client_env · function · L241-L303 — fn detected_resume_terminal_with_client_env(
+- macos_app_installed · function · L306-L317 — fn macos_app_installed(app_name: &str) -> bool
+- macos_current_terminal_is · function · L320-L322 — fn macos_current_terminal_is(term: &str) -> bool
+- macos_should_try_app_terminal · function · L325-L351 — fn macos_should_try_app_terminal(term: &str) -> bool
+- MACOS_TERMINAL_PREFERENCE · constant · L360-L367 — const MACOS_TERMINAL_PREFERENCE: &[&str] = &[
+- detected_resume_terminal · function · L370-L372 — pub fn detected_resume_terminal() -> Option<String>
+- detected_resume_terminal · function · L375-L386 — pub fn detected_resume_terminal() -> Option<String>
+- resume_terminal_candidates_with_client_env · function · L389-L443 — fn resume_terminal_candidates_with_client_env(
+- windows_resume_terminal_candidates_with · function · L446-L461 — fn windows_resume_terminal_candidates_with(
+- resume_terminal_candidates · function · L464-L467 — pub fn resume_terminal_candidates() -> Vec<String>
+- resume_terminal_candidates · function · L470-L478 — pub fn resume_terminal_candidates() -> Vec<String>
+- spawn_command_in_new_terminal_with · function · L480-L496 — pub fn spawn_command_in_new_terminal_with(
+- spawn_command_with_candidates · function · L498-L523 — fn spawn_command_with_candidates(
+- hook_commands · module · L526-L526 — mod hook_commands;
+- spawn_metadata_env · function · L543-L587 — fn spawn_metadata_env(command: &TerminalCommand, cwd: &Path) -> Vec<(String, String)>
+- apply_runtime_env · function · L591-L602 — pub fn apply_runtime_env(cmd: &mut Command, runtime_env: &[(String, String)])
+- build_hook_spawn_command · function · L614-L644 — pub fn build_hook_spawn_command(
+- spawn_command · module · L647-L647 — mod spawn_command;
+- windows_arg_quote · function · L650-L660 — fn windows_arg_quote(arg: &str) -> String
+- windows_command_line · function · L663-L668 — fn windows_command_line(args: &[String]) -> String
+- command_parts · function · L671-L694 — fn command_parts(command: &TerminalCommand) -> Vec<String>
+- command_parts_without_runtime · function · L696-L700 — fn command_parts_without_runtime(command: &TerminalCommand) -> Vec<String>
+- command_parts · function · L703-L705 — fn command_parts(command: &TerminalCommand) -> Vec<String>
+- macos_terminal_inner_script · function · L713-L723 — fn macos_terminal_inner_script(command: &TerminalCommand, cwd: &Path) -> String
+- macos_ghostty_applescript · function · L732-L755 — fn macos_ghostty_applescript(command: &TerminalCommand, cwd: &Path) -> String
+- macos_ghostty_spawn_wrapper · function · L760-L765 — fn macos_ghostty_spawn_wrapper() -> &'static str
+- macos_terminal_applescript · function · L769-L775 — fn macos_terminal_applescript(command: &TerminalCommand, cwd: &Path) -> String
+- windows_portable_tests · module · L779-L779 — mod windows_portable_tests;
+- tests · module · L781-L1657 — mod tests
+- ENV_LOCK · constant · L785-L785 — static ENV_LOCK: Mutex<()> = Mutex::new(());
+- client_terminal_env_replaces_inherited_identity_and_exports_aliases · function · L788-L816 — fn client_terminal_env_replaces_inherited_identity_and_exports_aliases()
+- spawn_metadata_env_reexports_client_terminal_env_with_native_and_client_keys · function · L819-L849 — fn spawn_metadata_env_reexports_client_terminal_env_with_native_and_client_keys()
+- spawn_metadata_env_without_client_env_has_no_client_keys · function · L852-L861 — fn spawn_metadata_env_without_client_env_has_no_client_keys()
+- snapshot_client_terminal_env_captures_set_vars_only · function · L865-L881 — fn snapshot_client_terminal_env_captures_set_vars_only()
+- detected_resume_terminal_recognizes_ghostty_env · function · L885-L901 — fn detected_resume_terminal_recognizes_ghostty_env()
+- tmux_client_context_is_preferred_over_terminal_emulator · function · L905-L918 — fn tmux_client_context_is_preferred_over_terminal_emulator()
+- inner_multiplexers_are_preferred_over_outer_tmux · function · L922-L937 — fn inner_multiplexers_are_preferred_over_outer_tmux()
+- term_program_detects_supported_emulators_cross_platform · function · L941-L954 — fn term_program_detects_supported_emulators_cross_platform()
+- explicit_terminal_override_stays_ahead_of_tmux · function · L958-L970 — fn explicit_terminal_override_stays_ahead_of_tmux()
+- authoritative_non_tmux_client_context_ignores_server_tmux · function · L974-L979 — fn authoritative_non_tmux_client_context_ignores_server_tmux()
+- tmux_context_without_current_pane_uses_emulator_fallbacks · function · L983-L995 — fn tmux_context_without_current_pane_uses_emulator_fallbacks()
+- herdr_context_is_preferred_over_outer_emulator_and_tmux · function · L999-L1011 — fn herdr_context_is_preferred_over_outer_emulator_and_tmux()
+- missing_tmux_binary_falls_back_to_detected_emulator · function · L1015-L1049 — fn missing_tmux_binary_falls_back_to_detected_emulator()
+- tmux_spawn_opens_right_split_in_requesting_pane · function · L1053-L1102 — fn tmux_spawn_opens_right_split_in_requesting_pane()
+- zellij_spawn_opens_right_pane_with_resume_command · function · L1106-L1131 — fn zellij_spawn_opens_right_pane_with_resume_command()
+- screen_spawn_opens_window_in_requesting_session · function · L1135-L1154 — fn screen_spawn_opens_window_in_requesting_session()
+- linux_ghostty_spawn_preserves_cwd_and_resume_command · function · L1158-L1178 — fn linux_ghostty_spawn_preserves_cwd_and_resume_command()
+- herdr_spawn_splits_calling_pane_and_runs_resume_command · function · L1182-L1215 — fn herdr_spawn_splits_calling_pane_and_runs_resume_command()
+- herdr_spawn_adapter_executes_split_then_run_with_quoted_values · function · L1219-L1275 — fn herdr_spawn_adapter_executes_split_then_run_with_quoted_values()
+- shell_command_quotes_arguments · function · L1278-L1282 — fn shell_command_quotes_arguments()
+- windows_candidates_end_with_cmd_fallback · function · L1286-L1291 — fn windows_candidates_end_with_cmd_fallback()
+- windows_cmd_fallback_runs_jcode_under_cmd_k · function · L1295-L1309 — fn windows_cmd_fallback_runs_jcode_under_cmd_k()
+- macos_terminal_inner_script_runs_jcode · function · L1313-L1325 — fn macos_terminal_inner_script_runs_jcode()
+- macos_terminal_inner_script_injects_fresh_spawn · function · L1329-L1340 — fn macos_terminal_inner_script_injects_fresh_spawn()
+- macos_terminal_applescript_uses_do_script · function · L1344-L1355 — fn macos_terminal_applescript_uses_do_script()
+- macos_ghostty_applescript_creates_tab_and_runs_resume_command · function · L1358-L1378 — fn macos_ghostty_applescript_creates_tab_and_runs_resume_command()
+- macos_ghostty_wrapper_falls_back_when_applescript_fails · function · L1382-L1426 — fn macos_ghostty_wrapper_falls_back_when_applescript_fails()
+- no_terminal_available_returns_ok_false · function · L1432-L1442 — fn no_terminal_available_returns_ok_false()
+- parse_hook_command_splits_words_and_quotes · function · L1445-L1458 — fn parse_hook_command_splits_words_and_quotes()
+- parse_hook_command_rejects_bad_input · function · L1461-L1466 — fn parse_hook_command_rejects_bad_input()
+- env_value · function · L1468-L1475 — fn env_value(cmd: &Command, key: &str) -> Option<String>
+- hook_spawn_command_appends_program_args_and_exports_metadata · function · L1478-L1582 — fn hook_spawn_command_appends_program_args_and_exports_metadata()
+- contextual_hook_invocation_delivers_runtime_to_executed_child · function · L1586-L1634 — fn contextual_hook_invocation_delivers_runtime_to_executed_child()
+- builtin_terminal_spawn_exports_metadata_env · function · L1638-L1656 — fn builtin_terminal_spawn_exports_metadata_env()

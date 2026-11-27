@@ -1,0 +1,64 @@
+# crates/jcode-base/src/mcp/manager.rs
+
+- CONNECT_ON_CALL_TIMEOUT · constant · L19-L19 — const CONNECT_ON_CALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+- OwnedConnectionResult · type · L21-L21 — type OwnedConnectionResult = Option<std::result::Result<(), String>>;
+- OwnedConnectionSender · type · L22-L22 — type OwnedConnectionSender = watch::Sender<OwnedConnectionResult>;
+- OwnedConnecting · type · L23-L23 — type OwnedConnecting = Arc<Mutex<HashMap<String, OwnedConnectionSender>>>;
+- meter_provenance_call · function · L28-L34 — fn meter_provenance_call(server: &str, result: &Result<ToolCallResult>)
+- McpManagerMemoryProfile · struct · L37-L46 — pub struct McpManagerMemoryProfile
+- McpManager · struct · L52-L69 — pub struct McpManager
+- OwnedConnectionAttemptGuard · struct · L71-L76 — struct OwnedConnectionAttemptGuard
+- new · function · L79-L86 — fn new(connecting: OwnedConnecting, name: &str, sender: OwnedConnectionSender) -> Self
+- disarm · function · L88-L90 — fn disarm(&mut self)
+- drop · function · L94-L119 — fn drop(&mut self)
+- new · function · L124-L137 — pub fn new() -> Self
+- with_shared_pool · function · L140-L142 — pub fn with_shared_pool(pool: Arc<SharedMcpPool>, session_id: String) -> Self
+- with_shared_pool_for_dir · function · L147-L163 — pub fn with_shared_pool_for_dir(
+- with_config · function · L166-L178 — pub fn with_config(config: McpConfig) -> Self
+- is_shared · function · L181-L183 — pub fn is_shared(&self) -> bool
+- connect_all · function · L191-L258 — pub async fn connect_all(&self) -> Result<(usize, Vec<(String, String)>)>
+- reset_failures · function · L261-L266 — pub async fn reset_failures(&self, name: &str)
+- set_status_sender · function · L268-L273 — pub async fn set_status_sender(
+- publish_status · function · L275-L300 — async fn publish_status(&self)
+- connect · function · L302-L306 — pub async fn connect(&self, name: &str, config: &McpServerConfig) -> Result<()>
+- connect_inner · function · L313-L342 — async fn connect_inner(&self, name: &str, config: &McpServerConfig) -> Result<()>
+- connect_owned · function · L345-L434 — async fn connect_owned(&self, name: &str, config: &McpServerConfig) -> Result<()>
+- disconnect · function · L437-L441 — pub async fn disconnect(&self, name: &str) -> Result<()>
+- disconnect_inner · function · L443-L463 — async fn disconnect_inner(&self, name: &str) -> Result<()>
+- disconnect_all · function · L466-L488 — pub async fn disconnect_all(&self)
+- health_snapshot · function · L490-L535 — pub async fn health_snapshot(&self) -> Vec<jcode_protocol::McpServerHealth>
+- connected_servers · function · L538-L556 — pub async fn connected_servers(&self) -> Vec<String>
+- server_tools · function · L561-L573 — pub async fn server_tools(&self, server_name: &str) -> Option<Vec<McpToolDef>>
+- notification_status · function · L578-L590 — pub async fn notification_status(
+- connected_server_scope · function · L592-L605 — pub async fn connected_server_scope(&self, name: &str) -> Option<String>
+- all_tools · function · L608-L632 — pub async fn all_tools(&self) -> Vec<(String, McpToolDef)>
+- searchable_tools · function · L640-L665 — pub async fn searchable_tools(&self) -> Vec<(String, McpToolDef)>
+- call_tool · function · L675-L752 — pub async fn call_tool(
+- ensure_server_connected · function · L756-L774 — pub async fn ensure_server_connected(
+- reload · function · L777-L791 — pub async fn reload(&mut self) -> Result<(usize, Vec<(String, String)>)>
+- project_dir · function · L794-L796 — pub fn project_dir(&self) -> Option<&std::path::Path>
+- config · function · L798-L800 — pub fn config(&self) -> &McpConfig
+- load_fresh_config · function · L804-L806 — pub fn load_fresh_config(&self) -> McpConfig
+- debug_memory_profile · function · L808-L851 — pub fn debug_memory_profile(&self) -> McpManagerMemoryProfile
+- has_connections · function · L854-L856 — pub async fn has_connections(&self) -> bool
+- default · function · L860-L862 — fn default() -> Self
+- estimate_tool_bytes · function · L865-L873 — fn estimate_tool_bytes(tool: &McpToolDef) -> usize
+- tests · module · L876-L1213 — mod tests
+- connected_provenance_scope_rejects_adhoc_and_pooled_config_mismatch · function · L881-L937 — async fn connected_provenance_scope_rejects_adhoc_and_pooled_config_mismatch()
+- empty_config · function · L939-L941 — fn empty_config() -> McpConfig
+- issue_790_owned_manager_keeps_its_initial_config_directory · function · L944-L971 — fn issue_790_owned_manager_keeps_its_initial_config_directory()
+- call_tool_unconfigured_server_bails_cleanly · function · L974-L984 — async fn call_tool_unconfigured_server_bails_cleanly()
+- ensure_server_connected_unconfigured_errors · function · L987-L994 — async fn ensure_server_connected_unconfigured_errors()
+- connect_all_skips_disabled_servers · function · L997-L1032 — async fn connect_all_skips_disabled_servers()
+- connect_on_first_call_fails_cleanly_for_broken_server · function · L1035-L1081 — async fn connect_on_first_call_fails_cleanly_for_broken_server()
+- cancelled_owned_connection_notifies_waiters_and_clears_entry · function · L1084-L1113 — async fn cancelled_owned_connection_notifies_waiters_and_clears_entry()
+- concurrent_owned_connects_spawn_only_one_server · function · L1120-L1212 — async fn concurrent_owned_connects_spawn_only_one_server()
+- owned_failure_health_is_visible_and_resettable · function · L1217-L1234 — async fn owned_failure_health_is_visible_and_resettable()
+- owned_lazy_failure_publishes_health_update · function · L1238-L1257 — async fn owned_lazy_failure_publishes_health_update()
+- owned_failure_stderr_is_redacted · function · L1261-L1280 — async fn owned_failure_stderr_is_redacted()
+- provenance_integration_tests · module · L1283-L1448 — mod provenance_integration_tests
+- write_fake_mcp_server · function · L1289-L1318 — pub(super) fn write_fake_mcp_server(dir: &std::path::Path) -> std::path::PathBuf
+- discovery_provenance_end_to_end_with_real_mcp_server · function · L1327-L1402 — async fn discovery_provenance_end_to_end_with_real_mcp_server()
+- scoped_manager · function · L1404-L1410 — fn scoped_manager(server: McpServerConfig, project: &str) -> McpManager
+- out_of_scope_server_is_not_spawned_or_callable · function · L1413-L1428 — async fn out_of_scope_server_is_not_spawned_or_callable()
+- lazy_server_connects_on_first_call · function · L1431-L1447 — async fn lazy_server_connects_on_first_call()

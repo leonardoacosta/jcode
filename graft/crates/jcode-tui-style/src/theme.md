@@ -1,0 +1,51 @@
+# crates/jcode-tui-style/src/theme.rs
+
+- user_color · function · L5-L7 — pub fn user_color() -> Color
+- ai_color · function · L8-L10 — pub fn ai_color() -> Color
+- tool_color · function · L11-L13 — pub fn tool_color() -> Color
+- file_link_color · function · L14-L16 — pub fn file_link_color() -> Color
+- dim_color · function · L17-L19 — pub fn dim_color() -> Color
+- accent_color · function · L20-L22 — pub fn accent_color() -> Color
+- system_message_color · function · L23-L25 — pub fn system_message_color() -> Color
+- queued_color · function · L26-L28 — pub fn queued_color() -> Color
+- asap_color · function · L29-L31 — pub fn asap_color() -> Color
+- pending_color · function · L32-L34 — pub fn pending_color() -> Color
+- user_text · function · L35-L37 — pub fn user_text() -> Color
+- user_bg · function · L38-L40 — pub fn user_bg() -> Color
+- ai_text · function · L41-L43 — pub fn ai_text() -> Color
+- header_icon_color · function · L44-L46 — pub fn header_icon_color() -> Color
+- header_name_color · function · L47-L49 — pub fn header_name_color() -> Color
+- header_session_color · function · L50-L52 — pub fn header_session_color() -> Color
+- success_color · function · L55-L57 — pub fn success_color() -> Color
+- warning_color · function · L59-L61 — pub fn warning_color() -> Color
+- error_color · function · L63-L65 — pub fn error_color() -> Color
+- info_color · function · L67-L69 — pub fn info_color() -> Color
+- border_color · function · L71-L73 — pub fn border_color() -> Color
+- selection_bg_color · function · L75-L77 — pub fn selection_bg_color() -> Color
+- SPINNER_FRAMES · constant · L82-L82 — const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+- ASCII_SPINNER_FRAMES · constant · L83-L83 — const ASCII_SPINNER_FRAMES: &[&str] = &["|", "/", "-", "\\", "|", "/", "-", "\\", "|", "/"];
+- ascii_safe · function · L87-L94 — pub fn ascii_safe() -> bool
+- chrome_symbol · function · L97-L99 — pub fn chrome_symbol(unicode: &'static str, ascii: &'static str) -> &'static str
+- spinner_frames · function · L101-L107 — fn spinner_frames() -> &'static [&'static str]
+- LIVENESS_INDICATOR_FPS · constant · L115-L115 — pub const LIVENESS_INDICATOR_FPS: f32 = 1.5;
+- LIVENESS_SPINNER_FPS · constant · L124-L124 — pub const LIVENESS_SPINNER_FPS: f32 = 12.5;
+- spinner_frame_index · function · L126-L128 — pub fn spinner_frame_index(elapsed: f32, fps: f32) -> usize
+- spinner_frame · function · L130-L132 — pub fn spinner_frame(elapsed: f32, fps: f32) -> &'static str
+- is_activity_indicator_frame · function · L139-L141 — pub fn is_activity_indicator_frame(symbol: &str) -> bool
+- activity_indicator_frame_index · function · L143-L156 — pub fn activity_indicator_frame_index(
+- activity_indicator · function · L158-L164 — pub fn activity_indicator(
+- color_to_floats · function · L170-L179 — pub fn color_to_floats(c: Color, fallback: (f32, f32, f32)) -> (f32, f32, f32)
+- blend_color · function · L181-L192 — pub fn blend_color(from: Color, to: Color, t: f32) -> Color
+- rainbow_prompt_color · function · L194-L224 — pub fn rainbow_prompt_color(distance: usize) -> Color
+- RAINBOW · constant · L196-L204 — const RAINBOW: [(u8, u8, u8); 7] = [
+- GRAY · constant · L207-L207 — const GRAY: (u8, u8, u8) = (80, 80, 80);
+- prompt_entry_color · function · L226-L231 — pub fn prompt_entry_color(base: Color, t: f32) -> Color
+- prompt_entry_bg_color · function · L233-L239 — pub fn prompt_entry_bg_color(base: Color, t: f32) -> Color
+- prompt_entry_shimmer_color · function · L241-L249 — pub fn prompt_entry_shimmer_color(base: Color, pos: f32, t: f32) -> Color
+- animated_tool_color · function · L252-L266 — pub fn animated_tool_color(elapsed: f32, enable_decorative_animations: bool) -> Color
+- tests · module · L269-L354 — mod tests
+- default_spinner_child · function · L272-L290 — fn default_spinner_child(test: &str) -> bool
+- spinner_frames_are_circular_braille_sequence · function · L293-L304 — fn spinner_frames_are_circular_braille_sequence()
+- spinner_frame_wraps_at_sequence_length · function · L307-L315 — fn spinner_frame_wraps_at_sequence_length()
+- activity_indicator_still_advances_without_decorative_animations · function · L318-L332 — fn activity_indicator_still_advances_without_decorative_animations()
+- liveness_spinner_advances_smoothly_within_a_few_frames · function · L335-L353 — fn liveness_spinner_advances_smoothly_within_a_few_frames()

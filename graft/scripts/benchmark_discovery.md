@@ -1,0 +1,29 @@
+# scripts/benchmark_discovery.py
+
+- BenchmarkCase · class · L57-L62 — class BenchmarkCase
+- DiscoveryCall · class · L66-L72 — class DiscoveryCall
+- AttemptResult · class · L76-L85 — class AttemptResult
+- BenchmarkError · class · L88-L89 — class BenchmarkError(RuntimeError)
+- parse_args · function · L92-L120 — def parse_args() -> argparse.Namespace
+- load_categories · function · L123-L131 — def load_categories(path: Path = CATEGORY_SOURCE) -> list[str]
+- load_cases · function · L134-L183 — def load_cases(path: Path) -> list[BenchmarkCase]
+- load_catalog_file · function · L186-L199 — def load_catalog_file(path: Path, categories: list[str]) -> dict[str, list[dict[str, Any]]]
+- catalog_targets · function · L202-L210 — def catalog_targets(catalog: dict[str, list[dict[str, Any]]]) -> set[tuple[str, str]]
+- validate_catalog_coverage · function · L213-L227 — def validate_catalog_coverage(cases: list[BenchmarkCase], catalog: dict[str, list[dict[str, Any]]]) -> dict[str, Any]
+- filter_cases · function · L230-L243 — def filter_cases(cases: list[BenchmarkCase], filters: list[str] | None) -> list[BenchmarkCase]
+- parse_discovery_output · function · L246-L288 — def parse_discovery_output(output: str, elapsed: float) -> DiscoveryCall
+- discovery_call_decision · function · L291-L306 — def discovery_call_decision(case: BenchmarkCase, call: DiscoveryCall) -> str
+- should_retry · function · L309-L311 — def should_retry(case: BenchmarkCase, attempt: AttemptResult) -> bool
+- _pump · function · L314-L319 — def _pump(stream: Any, source: str, messages: queue.Queue[tuple[str, str | None]]) -> None
+- terminate_process · function · L322-L336 — def terminate_process(process: subprocess.Popen[str]) -> None
+- benchmark_environment · function · L339-L344 — def benchmark_environment(socket_path: Path) -> dict[str, str]
+- run_debug_command · function · L347-L370 — def run_debug_command( args: argparse.Namespace, socket_path: Path, command: str, argument: str | None = None, session_id: str | None = None, timeout: float = 30, ) -> str
+- fetch_catalog_via_jcode · function · L373-L434 — def fetch_catalog_via_jcode( args: argparse.Namespace, socket_path: Path, workdir: Path, categories: list[str], ) -> dict[str, list[dict[str, Any]]]
+- run_attempt · function · L437-L542 — def run_attempt(args: argparse.Namespace, case: BenchmarkCase, attempt: int, socket_path: Path, workdir: Path) -> AttemptResult
+- progress · function · L545-L558 — def progress(current: int, total: int, unit: str, message: str) -> None
+- start_server · function · L561-L605 — def start_server(args: argparse.Namespace, socket_path: Path) -> subprocess.Popen[str]
+- stop_server · function · L608-L622 — def stop_server(args: argparse.Namespace, socket_path: Path, process: subprocess.Popen[str]) -> None
+- summarize_case · function · L625-L677 — def summarize_case(case: BenchmarkCase, trials: list[dict[str, Any]]) -> dict[str, Any]
+- run_benchmark · function · L680-L731 — def run_benchmark(args: argparse.Namespace, cases: list[BenchmarkCase], socket_path: Path, workdir: Path) -> list[dict[str, Any]]
+- write_report · function · L734-L738 — def write_report(path: Path, report: dict[str, Any]) -> None
+- main · function · L741-L831 — def main() -> int

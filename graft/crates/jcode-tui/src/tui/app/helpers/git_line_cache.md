@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/app/helpers/git_line_cache.rs
+
+- Fingerprint · struct · L9-L14 — struct Fingerprint
+- from_metadata · function · L17-L40 — fn from_metadata(meta: &Metadata) -> Option<Self>
+- Entry · struct · L43-L47 — struct Entry
+- GitLineCache · struct · L50-L52 — pub(super) struct GitLineCache
+- begin_scan · function · L55-L59 — pub(super) fn begin_scan(&mut self)
+- count · function · L61-L63 — pub(super) fn count(&mut self, path: &Path, meta: &Metadata) -> Option<usize>
+- count_with · function · L65-L94 — fn count_with(
+- finish_scan · function · L96-L100 — pub(super) fn finish_scan(&mut self)
+- count_text_lines · function · L103-L133 — fn count_text_lines(path: &Path) -> Option<usize>
+- tests · module · L136-L389 — mod tests
+- git_probe_preserves_counts_across_refresh_and_edit · function · L140-L168 — fn git_probe_preserves_counts_across_refresh_and_edit()
+- unchanged_untracked_files_are_not_reread · function · L171-L193 — fn unchanged_untracked_files_are_not_reread()
+- changed_untracked_files_refresh_counts · function · L196-L210 — fn changed_untracked_files_refresh_counts()
+- binary_and_large_files_are_cached_without_repeated_reads · function · L213-L236 — fn binary_and_large_files_are_cached_without_repeated_reads()
+- text_line_counts_preserve_empty_and_unterminated_behavior · function · L239-L246 — fn text_line_counts_preserve_empty_and_unterminated_behavior()
+- same_size_replacement_with_restored_mtime_refreshes_counts · function · L250-L270 — fn same_size_replacement_with_restored_mtime_refreshes_counts()
+- finished_scan_prunes_no_longer_untracked_paths · function · L273-L282 — fn finished_scan_prunes_no_longer_untracked_paths()
+- benchmark_14000_untracked_files · function · L288-L347 — fn benchmark_14000_untracked_files()
+- same_size_edit_with_restored_mtime_refreshes_counts · function · L351-L371 — fn same_size_edit_with_restored_mtime_refreshes_counts()
+- symlinks_are_not_followed · function · L375-L388 — fn symlinks_are_not_followed()

@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/app/observe.rs
+
+- OBSERVE_PAGE_ID · constant · L7-L7 — pub(super) const OBSERVE_PAGE_ID: &str = "observe";
+- OBSERVE_PAGE_TITLE · constant · L8-L8 — const OBSERVE_PAGE_TITLE: &str = "Observe";
+- agent_edited_paths · function · L14-L36 — pub(super) fn agent_edited_paths(
+- observe_mode_enabled · function · L38-L40 — pub(super) fn observe_mode_enabled(&self) -> bool
+- should_observe_tool · function · L42-L44 — fn should_observe_tool(&self, tool_call: &ToolCall) -> bool
+- set_observe_mode_enabled · function · L46-L67 — pub(super) fn set_observe_mode_enabled(&mut self, enabled: bool, focus: bool)
+- observe_tool_call · function · L69-L76 — pub(super) fn observe_tool_call(&mut self, tool_call: &ToolCall)
+- observe_tool_result · function · L78-L92 — pub(super) fn observe_tool_result(
+- note_tool_completed · function · L109-L160 — pub(super) fn note_tool_completed(&mut self, tool_call: &ToolCall, is_error: bool)
+- note_todo_gate_result · function · L164-L173 — pub(super) fn note_todo_gate_result(
+- decorate_side_panel_with_observe · function · L175-L191 — pub(super) fn decorate_side_panel_with_observe(
+- snapshot_without_observe · function · L193-L200 — pub(super) fn snapshot_without_observe(&self) -> SidePanelSnapshot
+- refresh_observe_page · function · L202-L211 — fn refresh_observe_page(&mut self)
+- observe_page · function · L213-L228 — fn observe_page(&self) -> SidePanelPage
+- todo_gate_notice · function · L231-L246 — fn todo_gate_notice(name: &str, output: &str, is_error: bool) -> Option<&'static str>
+- observe_placeholder_markdown · function · L248-L250 — fn observe_placeholder_markdown() -> String
+- build_observe_tool_call_markdown · function · L252-L258 — fn build_observe_tool_call_markdown(tool_call: &ToolCall) -> String
+- build_observe_tool_result_markdown · function · L260-L294 — fn build_observe_tool_result_markdown(
+- pretty_json · function · L296-L298 — fn pretty_json(value: &serde_json::Value) -> String
+- fenced_block · function · L300-L313 — fn fenced_block(language: &str, text: &str) -> String
+- is_noise_tool · function · L315-L320 — fn is_noise_tool(name: &str) -> bool
+- now_ms · function · L322-L327 — fn now_ms() -> u64
+- tests · module · L330-L364 — mod tests
+- todo_gate_notices_are_user_visible_without_private_thresholds · function · L334-L363 — fn todo_gate_notices_are_user_visible_without_private_thresholds()

@@ -1,0 +1,25 @@
+# crates/jcode-tui-messages/src/cache.rs
+
+- MessageCacheKey · struct · L9-L23 — struct MessageCacheKey
+- MessageCacheState · struct · L26-L29 — struct MessageCacheState
+- get · function · L33-L35 — fn get(&self, key: &MessageCacheKey) -> Option<Vec<Line<'static>>>
+- insert · function · L37-L54 — fn insert(&mut self, key: MessageCacheKey, lines: Vec<Line<'static>>)
+- MESSAGE_CACHE · constant · L57-L57 — static MESSAGE_CACHE: OnceLock<Mutex<MessageCacheState>> = OnceLock::new();
+- message_cache · function · L59-L61 — fn message_cache() -> &'static Mutex<MessageCacheState>
+- clear_message_cache · function · L65-L73 — pub fn clear_message_cache()
+- MESSAGE_CACHE_LIMIT · constant · L75-L75 — const MESSAGE_CACHE_LIMIT: usize = 2048;
+- MessageCacheContext · struct · L79-L89 — pub struct MessageCacheContext
+- left_pad_lines_for_centered_mode · function · L91-L103 — pub fn left_pad_lines_for_centered_mode(lines: &mut [Line<'static>], width: u16)
+- centered_wrap_width · function · L105-L112 — pub fn centered_wrap_width(width: u16, centered: bool, centered_max_width: usize) -> usize
+- get_cached_message_lines · function · L114-L132 — pub fn get_cached_message_lines<F>(
+- project_cached_message_lines · function · L137-L159 — pub fn project_cached_message_lines<F, P, R>(
+- message_cache_key · function · L161-L182 — fn message_cache_key(
+- project_with_cache · function · L184-L197 — fn project_with_cache<R>(
+- tests · module · L200-L393 — mod tests
+- context · function · L203-L215 — fn context() -> MessageCacheContext
+- projection_borrows_same_lines_on_miss_and_hit_and_caches_empty_results · function · L218-L249 — fn projection_borrows_same_lines_on_miss_and_hit_and_caches_empty_results()
+- projection_uses_every_message_key_and_render_context_input · function · L252-L332 — fn projection_uses_every_message_key_and_render_context_input()
+- changed_context · function · L263-L275 — macro_rules! changed_context
+- clearing_message_cache_releases_owned_lines_and_capacity · function · L335-L377 — fn clearing_message_cache_releases_owned_lines_and_capacity()
+- centered_wrap_width_caps_centered_width · function · L380-L384 — fn centered_wrap_width_caps_centered_width()
+- left_pad_lines_aligns_to_centered_block · function · L387-L392 — fn left_pad_lines_aligns_to_centered_block()

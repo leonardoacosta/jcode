@@ -1,0 +1,21 @@
+# scripts/reload_recovery_audit.py
+
+- Event · class · L77-L97 — class Event
+- compact · method · L87-L97 — def compact(self) -> dict[str, Any]
+- IntentRecord · class · L101-L188 — class IntentRecord
+- has_client_queue_evidence · method · L121-L129 — def has_client_queue_evidence(self) -> bool
+- has_server_acceptance_evidence · method · L131-L139 — def has_server_acceptance_evidence(self) -> bool
+- verdict · method · L141-L154 — def verdict(self) -> str
+- compact · method · L156-L188 — def compact(self, show_lines: bool = False) -> dict[str, Any]
+- jcode_home · function · L191-L192 — def jcode_home() -> pathlib.Path
+- log_files · function · L195-L197 — def log_files(log_dir: pathlib.Path, max_log_files: int) -> list[pathlib.Path]
+- normalize_reload_id · function · L200-L203 — def normalize_reload_id(value: str | None) -> str | None
+- add_event · function · L206-L241 — def add_event(records: dict[tuple[str, str], IntentRecord], event: Event) -> None
+- parse_logs · function · L244-L412 — def parse_logs(files: list[pathlib.Path]) -> tuple[dict[tuple[str, str], IntentRecord], list[Event]]
+- parse_trace_files · function · L415-L461 — def parse_trace_files(records: dict[tuple[str, str], IntentRecord], trace_dir: pathlib.Path) -> None
+- merge_durable_records · function · L464-L485 — def merge_durable_records(records: dict[tuple[str, str], IntentRecord], recovery_dir: pathlib.Path) -> None
+- add_transcript_markers · function · L488-L509 — def add_transcript_markers(records: list[IntentRecord], sessions_dir: pathlib.Path) -> None
+- short_session · function · L512-L515 — def short_session(session_id: str) -> str
+- render_table · function · L518-L594 — def render_table(records: list[IntentRecord], hidden_sends: list[Event], show_lines: bool) -> str
+- fmt · function · L567-L568 — def fmt(row: list[str]) -> str
+- main · function · L597-L637 — def main() -> int

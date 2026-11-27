@@ -1,0 +1,114 @@
+# crates/jcode-base/src/mcp/notifications.rs
+
+- LEGACY_VERSION · constant · L56-L56 — pub const LEGACY_VERSION: &str = "2025-11-25";
+- MODERN_VERSION · constant · L58-L58 — pub const MODERN_VERSION: &str = "2026-07-28";
+- SUBSCRIPTION_ID_KEY · constant · L60-L60 — const SUBSCRIPTION_ID_KEY: &str = "io.modelcontextprotocol/subscriptionId";
+- ACK_METHOD · constant · L61-L61 — const ACK_METHOD: &str = "notifications/subscriptions/acknowledged";
+- MAX_URI_BYTES · constant · L62-L62 — const MAX_URI_BYTES: usize = 2048;
+- MAX_LIST_PAGES · constant · L63-L63 — const MAX_LIST_PAGES: usize = 64;
+- MAX_LIST_ITEMS · constant · L64-L64 — const MAX_LIST_ITEMS: usize = 5_000;
+- MAX_RESOURCE_TEXT_BYTES · constant · L65-L65 — const MAX_RESOURCE_TEXT_BYTES: usize = 256 * 1024;
+- MAX_ERROR_CHARS · constant · L66-L66 — const MAX_ERROR_CHARS: usize = 300;
+- INBOUND_CAPACITY · constant · L68-L68 — const INBOUND_CAPACITY: usize = 256;
+- DEFAULT_MAX_PENDING · constant · L70-L70 — pub const DEFAULT_MAX_PENDING: usize = 64;
+- DEFAULT_MAX_PER_MINUTE · constant · L72-L72 — pub const DEFAULT_MAX_PER_MINUTE: u32 = 120;
+- DEFAULT_WAKE_COOLDOWN_SECS · constant · L74-L74 — pub const DEFAULT_WAKE_COOLDOWN_SECS: u64 = 60;
+- MAX_WAKE_NAME_CHARS · constant · L76-L76 — pub const MAX_WAKE_NAME_CHARS: usize = 64;
+- NotificationClass · enum · L85-L90 — pub enum NotificationClass
+- method · function · L93-L100 — pub const fn method(self) -> &'static str
+- from_method · function · L102-L111 — pub fn from_method(method: &str) -> Option<Self>
+- as_str · function · L113-L120 — pub const fn as_str(self) -> &'static str
+- filter_key · function · L123-L130 — const fn filter_key(self) -> &'static str
+- McpNotificationConfig · struct · L140-L163 — pub struct McpNotificationConfig
+- refreshes · function · L166-L168 — pub fn refreshes(&self, class: NotificationClass) -> bool
+- wakes · function · L170-L172 — pub fn wakes(&self, class: NotificationClass) -> bool
+- wants · function · L174-L176 — pub fn wants(&self, class: NotificationClass) -> bool
+- is_active · function · L179-L181 — pub fn is_active(&self) -> bool
+- resource_allowed · function · L183-L185 — fn resource_allowed(&self, uri: &str) -> bool
+- wake_cooldown · function · L187-L192 — fn wake_cooldown(&self) -> Duration
+- limits · function · L194-L199 — fn limits(&self) -> Limits
+- Rejection · enum · L208-L219 — pub enum Rejection
+- NotificationEvent · struct · L223-L227 — pub struct NotificationEvent
+- key · function · L231-L236 — pub fn key(&self) -> String
+- valid_uri · function · L239-L241 — fn valid_uri(uri: &str) -> bool
+- parse · function · L245-L279 — pub fn parse(msg: &Value) -> std::result::Result<(NotificationEvent, Option<Value>), Rejection>
+- Era · enum · L287-L292 — pub enum Era
+- from_version · function · L295-L301 — pub fn from_version(version: &str) -> Option<Self>
+- Inactive · struct · L306-L309 — pub struct Inactive
+- NotificationPlan · struct · L314-L323 — pub struct NotificationPlan
+- LIST_CLASSES · constant · L325-L329 — const LIST_CLASSES: [NotificationClass; 3] = [
+- list_changed_advertised · function · L331-L342 — fn list_changed_advertised(caps: &ServerCapabilities, class: NotificationClass) -> bool
+- negotiate · function · L345-L422 — pub fn negotiate(
+- NotificationSession · struct · L427-L434 — pub struct NotificationSession
+- new · function · L437-L450 — pub fn new(plan: &NotificationPlan) -> Self
+- mark_subscribed · function · L453-L459 — pub fn mark_subscribed(&mut self, uri: &str)
+- begin_listen · function · L463-L468 — pub fn begin_listen(&mut self, id: u64)
+- is_active · function · L470-L472 — pub fn is_active(&self, class: NotificationClass) -> bool
+- uri_active · function · L475-L477 — pub fn uri_active(&self, uri: &str) -> bool
+- subscription_matches · function · L479-L484 — fn subscription_matches(&self, value: Option<&Value>) -> bool
+- handle_ack · function · L489-L553 — pub fn handle_ack(&mut self, msg: &Value) -> std::result::Result<Vec<Inactive>, Rejection>
+- accept · function · L556-L579 — pub fn accept(&self, msg: &Value) -> std::result::Result<NotificationEvent, Rejection>
+- Limits · struct · L587-L590 — pub struct Limits
+- Offer · enum · L594-L602 — pub enum Offer
+- Dispatcher · struct · L610-L616 — pub struct Dispatcher
+- new · function · L619-L627 — pub fn new(limits: Limits) -> Self
+- offer · function · L629-L653 — pub fn offer(&mut self, event: NotificationEvent, now: Instant) -> Offer
+- pop · function · L655-L659 — pub fn pop(&mut self) -> Option<NotificationEvent>
+- len · function · L661-L663 — pub fn len(&self) -> usize
+- is_empty · function · L665-L667 — pub fn is_empty(&self) -> bool
+- take_needs_reconcile · function · L670-L672 — pub fn take_needs_reconcile(&mut self) -> bool
+- InboundDrops · struct · L682-L685 — pub(super) struct InboundDrops
+- record · function · L688-L691 — pub(super) fn record(&self)
+- take · function · L693-L695 — pub(super) fn take(&self) -> usize
+- get · function · L698-L700 — pub(super) fn get(&self) -> usize
+- InboundSink · struct · L705-L708 — pub(super) struct InboundSink
+- InboundSlot · struct · L713-L713 — pub(super) struct InboundSlot(Arc<RwLock<Option<InboundSink>>>);
+- offer · function · L718-L725 — pub(super) fn offer(&self, msg: Value)
+- install · function · L727-L735 — pub(super) fn install(&self) -> (mpsc::Receiver<Value>, Arc<InboundDrops>)
+- McpBackend · interface · L740-L745 — pub trait McpBackend: Send + Sync
+- request · function · L742-L742 — async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse>;
+- refresh_tools · function · L744-L744 — async fn refresh_tools(&self) -> Result<()>;
+- ListenTransport · interface · L749-L760 — pub trait ListenTransport: Send + Sync
+- open_listen · function · L753-L757 — async fn open_listen(
+- cancel_listen · function · L759-L759 — async fn cancel_listen(&self, id: u64);
+- ListenEnd · enum · L764-L775 — pub enum ListenEnd
+- WakeRequest · struct · L783-L788 — pub struct WakeRequest
+- WakeOutcome · enum · L792-L798 — pub enum WakeOutcome
+- WakeHandler · interface · L801-L803 — pub trait WakeHandler: Send + Sync
+- wake · function · L802-L802 — fn wake(&self, request: WakeRequest) -> WakeOutcome;
+- sanitize_server_name · function · L808-L825 — pub fn sanitize_server_name(name: &str) -> String
+- CATALOG_CHANGES · constant · L831-L832 — static CATALOG_CHANGES: std::sync::OnceLock<tokio::sync::broadcast::Sender<String>> =
+- subscribe_tool_catalog_changes · function · L834-L838 — pub fn subscribe_tool_catalog_changes() -> tokio::sync::broadcast::Receiver<String>
+- publish_tool_catalog_change · function · L840-L844 — fn publish_tool_catalog_change(server: &str)
+- WAKE_HANDLER · constant · L846-L846 — static WAKE_HANDLER: RwLock<Option<Arc<dyn WakeHandler>>> = RwLock::new(None);
+- set_wake_handler · function · L850-L852 — pub fn set_wake_handler(handler: Option<Arc<dyn WakeHandler>>)
+- global_wake_handler · function · L854-L859 — fn global_wake_handler() -> Option<Arc<dyn WakeHandler>>
+- NotificationCounters · struct · L866-L882 — pub struct NotificationCounters
+- ResourceSnapshot · struct · L886-L891 — pub struct ResourceSnapshot
+- NotificationStatus · struct · L896-L905 — pub struct NotificationStatus
+- SharedNotificationStatus · type · L907-L907 — pub type SharedNotificationStatus = Arc<Mutex<NotificationStatus>>;
+- truncate_error · function · L909-L912 — fn truncate_error(error: &anyhow::Error) -> String
+- Ingest · enum · L920-L927 — pub enum Ingest
+- NotificationEngine · struct · L929-L943 — pub struct NotificationEngine<B: McpBackend>
+- new · function · L946-L979 — pub fn new(
+- with_wake_handler · function · L982-L985 — pub fn with_wake_handler(mut self, handler: Arc<dyn WakeHandler>) -> Self
+- with_wake_cooldown · function · L988-L991 — pub fn with_wake_cooldown(mut self, cooldown: Duration) -> Self
+- plan · function · L993-L995 — pub fn plan(&self) -> &NotificationPlan
+- with_status · function · L997-L999 — fn with_status<T>(&self, f: impl FnOnce(&mut NotificationStatus) -> T) -> T
+- establish · function · L1004-L1023 — pub async fn establish(&mut self)
+- reconcile · function · L1028-L1046 — pub async fn reconcile(&mut self)
+- ingest · function · L1049-L1076 — pub fn ingest(&mut self, msg: Value, now: Instant) -> Ingest
+- reject · function · L1078-L1094 — fn reject(&self, reason: Rejection, msg: &Value) -> Ingest
+- policy · function · L1097-L1106 — fn policy(&self, event: &NotificationEvent) -> (bool, bool)
+- drain · function · L1111-L1113 — pub async fn drain(&mut self)
+- drain_at · function · L1116-L1130 — pub async fn drain_at(&mut self, now: Instant)
+- wake_delay · function · L1133-L1139 — fn wake_delay(&self, now: Instant) -> Option<Duration>
+- flush_wakes · function · L1144-L1157 — fn flush_wakes(&mut self, now: Instant)
+- emit_wake · function · L1159-L1187 — fn emit_wake(&self, class: NotificationClass)
+- refresh · function · L1189-L1240 — async fn refresh(&self, event: &NotificationEvent)
+- run_listen · function · L1243-L1307 — pub async fn run_listen(
+- run_pump · function · L1312-L1338 — pub(super) async fn run_pump(
+- wake_sleep · function · L1342-L1347 — async fn wake_sleep(delay: Option<Duration>)
+- list_paged · function · L1355-L1387 — async fn list_paged<B: McpBackend + ?Sized>(
+- read_resource · function · L1389-L1426 — async fn read_resource<B: McpBackend + ?Sized>(backend: &B, uri: &str) -> Result<ResourceSnapshot>
+- notifications_tests · module · L1430-L1430 — mod notifications_tests;

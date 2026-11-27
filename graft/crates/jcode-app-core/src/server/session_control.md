@@ -1,0 +1,102 @@
+# crates/jcode-app-core/src/server/session_control.rs
+
+- SHELL_CHILDREN · constant · L12-L12 — pub(crate) const SHELL_CHILDREN: &str = "shell_children";
+- GenerationToken · struct · L15-L19 — pub(crate) struct GenerationToken
+- reserve · function · L22-L24 — pub(crate) fn reserve(&self) -> Result<WorkGuard>
+- mark_external_effect · function · L26-L28 — pub(crate) fn mark_external_effect(&self, category: &str) -> Result<()>
+- own_shell_child · function · L33-L35 — pub(crate) fn own_shell_child(&self) -> Result<OwnedChild>
+- CHILD_POLL_WINDOW · constant · L39-L39 — const CHILD_POLL_WINDOW: std::time::Duration = std::time::Duration::from_secs(600);
+- OwnedChild · struct · L43-L46 — pub(crate) struct OwnedChild
+- set_pid · function · L49-L52 — pub(crate) fn set_pid(&mut self, pid: u32)
+- drop · function · L56-L90 — fn drop(&mut self)
+- process_gone · function · L96-L124 — fn process_gone(process: &OwnedProcess) -> bool
+- group_has_live_member · function · L127-L147 — fn group_has_live_member(pgid: u32) -> bool
+- ControlEntry · struct · L152-L165 — struct ControlEntry
+- ENTRIES · constant · L168-L169 — static ENTRIES: LazyLock<Mutex<HashMap<PathBuf, Arc<Mutex<ControlEntry>>>>> =
+- WorkGuard · struct · L171-L174 — pub(crate) struct WorkGuard
+- drop · function · L177-L186 — fn drop(&mut self)
+- ControlStore · struct · L190-L192 — pub(crate) struct ControlStore
+- new · function · L195-L197 — pub(crate) fn new(root: PathBuf) -> Self
+- path · function · L199-L208 — pub(super) fn path(&self, id: &str) -> Result<PathBuf>
+- entry · function · L210-L216 — fn entry(&self, id: &str) -> Result<Arc<Mutex<ControlEntry>>>
+- inspect · function · L218-L228 — pub(crate) fn inspect(&self, id: &str) -> Result<Option<ControlRecord>>
+- incompatible_records · function · L233-L247 — pub(crate) fn incompatible_records(&self) -> Vec<(String, String)>
+- owned_records · function · L252-L279 — pub(crate) fn owned_records(&self, root: &str) -> Vec<ControlRecord>
+- required_reader_floor · function · L284-L309 — pub(crate) fn required_reader_floor(&self) -> Result<Option<u32>>
+- required · function · L311-L314 — fn required(&self, id: &str) -> Result<ControlRecord>
+- register · function · L316-L338 — pub(crate) fn register(&self, id: &str, owner: Option<&str>) -> Result<ControlRecord>
+- save_next · function · L340-L350 — fn save_next(&self, record: &mut ControlRecord) -> Result<()>
+- replace · function · L353-L361 — fn replace(&self, expected_revision: u64, record: ControlRecord) -> Result<()>
+- allocate · function · L363-L375 — fn allocate(&self, record: &mut ControlRecord) -> Result<GenerationToken>
+- admit · function · L377-L407 — pub(crate) fn admit(&self, id: &str) -> Result<GenerationToken>
+- predecessor_unsettled · function · L412-L425 — pub(crate) fn predecessor_unsettled(&self, id: &str) -> bool
+- wake_revoked · function · L432-L445 — pub(crate) fn wake_revoked(&self, id: &str, generation: u64) -> bool
+- retain_reattached_child · function · L455-L489 — pub(crate) fn retain_reattached_child(
+- runnable · function · L491-L505 — pub(crate) fn runnable(&self, id: &str) -> Result<()>
+- reserve · function · L507-L531 — pub(crate) fn reserve(&self, token: &GenerationToken) -> Result<WorkGuard>
+- authorized · function · L533-L552 — pub(crate) fn authorized(&self, requester: &str, target: &str, force: bool) -> Result<()>
+- request_stop · function · L554-L594 — pub(crate) fn request_stop(
+- project · function · L597-L604 — pub(crate) fn project<T>(
+- project_report · function · L610-L669 — pub(crate) fn project_report<T>(
+- awaited_generation · function · L676-L695 — pub(crate) fn awaited_generation(&self, id: &str) -> Option<u64>
+- work_observation · function · L697-L703 — pub(crate) fn work_observation(&self, id: &str) -> Result<(usize, Arc<tokio::sync::Notify>)>
+- mark_external_effect · function · L705-L732 — pub(crate) fn mark_external_effect(
+- own_shell_child · function · L734-L761 — fn own_shell_child(&self, token: &GenerationToken) -> Result<OwnedChild>
+- record_child · function · L764-L784 — fn record_child(&self, token: &GenerationToken, pid: u32)
+- release_pending_child · function · L786-L793 — fn release_pending_child(&self, id: &str)
+- child_listed · function · L795-L800 — fn child_listed(&self, id: &str, pid: u32) -> bool
+- reconcile_children · function · L804-L825 — pub(crate) fn reconcile_children(&self, id: &str) -> Result<()>
+- stop_state · function · L827-L846 — fn stop_state(&self, id: &str, state: ControlState) -> Result<ControlRecord>
+- drain · function · L848-L895 — pub(crate) async fn drain(
+- settle_rereading · function · L900-L914 — fn settle_rereading(&self, id: &str, mut revision: u64) -> Result<ControlRecord>
+- settle · function · L918-L947 — pub(crate) fn settle(&self, id: &str, expected_revision: u64) -> Result<ControlRecord>
+- resume · function · L950-L966 — pub(crate) fn resume(&self, id: &str, expected_revision: u64) -> Result<GenerationToken>
+- admit_new_work · function · L974-L1004 — pub(crate) fn admit_new_work(
+- NewWorkAdmission · enum · L1009-L1012 — pub(crate) enum NewWorkAdmission
+- import_identity · function · L1014-L1032 — pub(crate) fn import_identity(id: &str, owner_hint: Option<&str>) -> Result<ControlRecord>
+- ensure_reader_floor · function · L1038-L1051 — pub(crate) fn ensure_reader_floor(floor: Option<u32>, candidate: Option<u32>) -> Result<()>
+- store · function · L1053-L1055 — pub(crate) fn store() -> ControlStore
+- with_reported_generation · function · L1063-L1068 — pub(crate) async fn with_reported_generation<F: Future>(
+- current_generation · function · L1071-L1075 — pub(crate) fn current_generation(session_id: &str) -> Option<u64>
+- current_token · function · L1077-L1079 — pub(crate) fn current_token() -> Option<GenerationToken>
+- scope · function · L1081-L1090 — pub(crate) async fn scope<F: Future>(token: Option<GenerationToken>, future: F) -> F::Output
+- run · function · L1092-L1099 — pub(crate) async fn run<F: Future>(id: &str, owner: Option<&str>, future: F) -> Result<F::Output>
+- reserve_current · function · L1101-L1117 — pub(crate) fn reserve_current(id: &str) -> Result<Option<WorkGuard>>
+- tests · module · L1120-L2163 — mod tests
+- revoked_projection_cannot_publish_ready_or_release_claims · function · L1124-L1155 — fn revoked_projection_cannot_publish_ready_or_release_claims()
+- stop_signals_active_turn_and_waits_for_reserved_work · function · L1158-L1195 — async fn stop_signals_active_turn_and_waits_for_reserved_work()
+- settlement_deadline_and_unknown_effect_preserve_revocation · function · L1198-L1243 — async fn settlement_deadline_and_unknown_effect_preserve_revocation()
+- UnusedProvider · struct · L1245-L1245 — struct UnusedProvider;
+- complete · function · L1249-L1257 — async fn complete(
+- name · function · L1258-L1260 — fn name(&self) -> &str
+- fork · function · L1261-L1263 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- native_write_without_token_or_after_revocation_is_denied · function · L1267-L1323 — fn native_write_without_token_or_after_revocation_is_denied()
+- Restore · struct · L1270-L1270 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L1272-L1277 — fn drop(&mut self)
+- every_native_mutation_tool_is_denied_after_revocation_with_bytes_unchanged · function · L1326-L1410 — fn every_native_mutation_tool_is_denied_after_revocation_with_bytes_unchanged()
+- Restore · struct · L1329-L1329 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L1331-L1336 — fn drop(&mut self)
+- explicit_detached_token_scope_does_not_borrow_new_generation · function · L1413-L1431 — async fn explicit_detached_token_scope_does_not_borrow_new_generation()
+- moved_blocking_reservation_notifies_only_after_real_work_drops · function · L1434-L1462 — async fn moved_blocking_reservation_notifies_only_after_real_work_drops()
+- simultaneous_stop_and_admission_serialize_at_record_lock · function · L1465-L1485 — fn simultaneous_stop_and_admission_serialize_at_record_lock()
+- stop_survives_restart_and_identity_registration · function · L1488-L1510 — fn stop_survives_restart_and_identity_registration()
+- retained_owner_is_immutable_and_transitive · function · L1513-L1532 — fn retained_owner_is_immutable_and_transitive()
+- corrupt_unsupported_and_stale_records_fail_closed_without_overwrite · function · L1535-L1555 — fn corrupt_unsupported_and_stale_records_fail_closed_without_overwrite()
+- newer_reader_floor_fails_closed_preserves_bytes_and_legacy_records_upgrade_on_write · function · L1558-L1607 — fn newer_reader_floor_fails_closed_preserves_bytes_and_legacy_records_upgrade_on_write()
+- settle_rereads_after_a_concurrent_revision_bump_but_keeps_other_refusals · function · L1610-L1632 — async fn settle_rereads_after_a_concurrent_revision_bump_but_keeps_other_refusals()
+- unauthorized_or_unknown_stop_installs_no_barrier · function · L1635-L1659 — fn unauthorized_or_unknown_stop_installs_no_barrier()
+- failed_stop_persistence_retains_local_barrier · function · L1662-L1680 — fn failed_stop_persistence_retains_local_barrier()
+- stopped_generation_cannot_borrow_resumed_authority_or_settle_live_work · function · L1683-L1702 — fn stopped_generation_cannot_borrow_resumed_authority_or_settle_live_work()
+- spawn_group_leader · function · L1704-L1709 — fn spawn_group_leader(script: &str) -> std::process::Child
+- shell_child_clears_only_after_proven_exit_and_then_stop_settles · function · L1712-L1752 — async fn shell_child_clears_only_after_proven_exit_and_then_stop_settles()
+- surviving_grandchild_or_unreaped_child_keeps_stop_unresolved · function · L1755-L1777 — async fn surviving_grandchild_or_unreaped_child_keeps_stop_unresolved()
+- explicit_new_work_allocates_one_fresh_generation_and_refuses_unsettled_or_unauthorized · function · L1780-L1839 — fn explicit_new_work_allocates_one_fresh_generation_and_refuses_unsettled_or_unauthorized()
+- stale_generation_report_cannot_project_onto_the_resumed_generation · function · L1842-L1881 — async fn stale_generation_report_cannot_project_onto_the_resumed_generation()
+- report_stamps_only_the_producing_generation_and_binds_waits · function · L1884-L1925 — async fn report_stamps_only_the_producing_generation_and_binds_waits()
+- resume_then_turn_admission_allocates_one_generation_that_waits_bind_to · function · L1928-L1970 — async fn resume_then_turn_admission_allocates_one_generation_that_waits_bind_to()
+- report_generation_is_the_works_own_never_ambient_admitted_state · function · L1973-L2030 — async fn report_generation_is_the_works_own_never_ambient_admitted_state()
+- multi_attachment_stop_cancels_every_active_turn_and_settles_only_when_all_end · function · L2033-L2071 — async fn multi_attachment_stop_cancels_every_active_turn_and_settles_only_when_all_end()
+- wake_is_revoked_only_for_stopped_generations · function · L2074-L2097 — fn wake_is_revoked_only_for_stopped_generations()
+- reattached_child_keeps_pending_stop_unresolved_and_is_idempotent · function · L2100-L2140 — fn reattached_child_keeps_pending_stop_unresolved_and_is_idempotent()
+- reattached_child_of_runnable_session_is_not_marked · function · L2143-L2152 — fn reattached_child_of_runnable_session_is_not_marked()
+- traversal_and_owner_cycles_are_rejected · function · L2155-L2162 — fn traversal_and_owner_cycles_are_rejected()

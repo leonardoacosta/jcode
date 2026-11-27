@@ -1,0 +1,27 @@
+# crates/jcode-tui/src/tui/backend/event_state.rs
+
+- finish_local_tools_request · function · L4-L6 — fn finish_local_tools_request(&mut self, id: u64, accepted: bool) -> bool
+- finish_runtime_command · function · L7-L9 — fn finish_runtime_command(&mut self, id: u64) -> bool
+- handle_tool_start · function · L11-L13 — fn handle_tool_start(&mut self, id: &str, name: &str)
+- handle_tool_input · function · L15-L17 — fn handle_tool_input(&mut self, id: Option<&str>, delta: &str)
+- get_tool_input · function · L19-L21 — fn get_tool_input(&self, id: &str) -> serde_json::Value
+- handle_tool_exec · function · L23-L25 — fn handle_tool_exec(&mut self, id: &str, name: &str)
+- handle_tool_done · function · L27-L29 — fn handle_tool_done(&mut self, id: &str, name: &str, output: &str) -> String
+- take_tool_duration · function · L31-L33 — fn take_tool_duration(&mut self, id: &str) -> Option<f32>
+- clear_pending · function · L35-L37 — fn clear_pending(&mut self)
+- call_output_tokens_seen · function · L39-L41 — fn call_output_tokens_seen(&mut self) -> &mut u64
+- reset_call_output_tokens_seen · function · L43-L45 — fn reset_call_output_tokens_seen(&mut self)
+- set_session_id · function · L47-L49 — fn set_session_id(&mut self, id: String)
+- has_loaded_history · function · L51-L53 — fn has_loaded_history(&self) -> bool
+- mark_history_loaded · function · L55-L57 — fn mark_history_loaded(&mut self)
+- handle_tool_start · function · L61-L63 — fn handle_tool_start(&mut self, id: &str, name: &str)
+- handle_tool_input · function · L65-L67 — fn handle_tool_input(&mut self, id: Option<&str>, delta: &str)
+- get_tool_input · function · L69-L71 — fn get_tool_input(&self, id: &str) -> serde_json::Value
+- handle_tool_exec · function · L73-L75 — fn handle_tool_exec(&mut self, id: &str, name: &str)
+- handle_tool_done · function · L77-L79 — fn handle_tool_done(&mut self, id: &str, name: &str, output: &str) -> String
+- clear_pending · function · L81-L83 — fn clear_pending(&mut self)
+- call_output_tokens_seen · function · L85-L87 — fn call_output_tokens_seen(&mut self) -> &mut u64
+- reset_call_output_tokens_seen · function · L89-L91 — fn reset_call_output_tokens_seen(&mut self)
+- set_session_id · function · L93-L93 — fn set_session_id(&mut self, _id: String) {}
+- has_loaded_history · function · L95-L97 — fn has_loaded_history(&self) -> bool
+- mark_history_loaded · function · L99-L99 — fn mark_history_loaded(&mut self) {}

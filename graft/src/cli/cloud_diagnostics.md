@@ -1,0 +1,25 @@
+# src/cli/cloud_diagnostics.rs
+
+- MAX_PROBLEMS · constant · L11-L11 — const MAX_PROBLEMS: usize = 100;
+- MAX_LOG_BYTES · constant · L12-L12 — const MAX_LOG_BYTES: u64 = 2 * 1024 * 1024;
+- MAX_LINE_BYTES · constant · L13-L13 — const MAX_LINE_BYTES: usize = 32 * 1024;
+- LoggedProblem · struct · L16-L24 — struct LoggedProblem
+- Problem · struct · L27-L34 — struct Problem
+- Problems · struct · L37-L45 — struct Problems
+- failure_kind · function · L47-L60 — fn failure_kind(stderr: &str) -> &'static str
+- safe_problem · function · L62-L89 — fn safe_problem(raw: LoggedProblem) -> Problem
+- read_problems · function · L91-L155 — fn read_problems(path: &Path, limit: usize) -> Problems
+- problems · function · L157-L181 — pub(super) fn problems(limit: usize, json: bool) -> Result<()>
+- Doctor · struct · L184-L196 — struct Doctor
+- lease_counts · function · L198-L224 — fn lease_counts(root: &Path) -> (usize, usize, usize)
+- stop_probe · function · L229-L236 — fn stop_probe(child: &mut std::process::Child)
+- version_probe · function · L238-L290 — fn version_probe(host: &str, binary: &str) -> (&'static str, Option<String>)
+- safe_version · function · L292-L309 — fn safe_version(bytes: &[u8]) -> Option<String>
+- doctor · function · L311-L391 — pub(super) fn doctor(target: &super::Target, json: bool) -> Result<()>
+- tests · module · L394-L488 — mod tests
+- line · function · L397-L404 — fn line(exit: i32) -> String
+- reads_real_tui_schema_newest_first_and_skips_bad_lines · function · L407-L421 — fn reads_real_tui_schema_newest_first_and_skips_bad_lines()
+- missing_zero_and_extreme_limits_are_safe · function · L424-L434 — fn missing_zero_and_extreme_limits_are_safe()
+- oversized_and_partial_lines_are_tolerated · function · L437-L453 — fn oversized_and_partial_lines_are_tolerated()
+- arbitrary_metadata_and_remote_output_are_not_echoed · function · L456-L469 — fn arbitrary_metadata_and_remote_output_are_not_echoed()
+- lease_summary_is_local_only_and_does_not_create_directories · function · L472-L487 — fn lease_summary_is_local_only_and_does_not_create_directories()

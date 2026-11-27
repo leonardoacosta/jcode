@@ -1,0 +1,23 @@
+# crates/jcode-base/src/config/sparse_save.rs
+
+- Op · enum · L16-L19 — enum Op
+- dotted · function · L21-L23 — fn dotted(path: &[String]) -> String
+- diff_tables · function · L25-L52 — fn diff_tables(prefix: &[String], base: &toml::Table, req: &toml::Table, ops: &mut Vec<Op>)
+- lookup · function · L54-L61 — fn lookup<'a>(table: &'a toml::Table, path: &[String]) -> Option<&'a toml::Value>
+- to_edit_value · function · L63-L68 — fn to_edit_value(value: &toml::Value) -> anyhow::Result<toml_edit::Value>
+- table_at · function · L70-L98 — fn table_at<'a>(
+- apply_set · function · L100-L114 — fn apply_set(
+- apply_remove · function · L116-L156 — fn apply_remove(
+- TestFault · enum · L159-L168 — pub(super) enum TestFault
+- TEST_FAULT · constant · L171-L171 — pub(super) static TEST_FAULT: std::sync::Mutex<Option<TestFault>> = std::sync::Mutex::new(None);
+- take_fault · function · L174-L176 — fn take_fault() -> Option<TestFault>
+- TEMP_COUNTER · constant · L178-L178 — static TEMP_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- TempFile · struct · L180-L180 — struct TempFile(std::path::PathBuf);
+- drop · function · L183-L185 — fn drop(&mut self)
+- replace_atomically · function · L189-L263 — fn replace_atomically(
+- keep_line_endings · function · L271-L278 — fn keep_line_endings(original: &str, rendered: String) -> String
+- resolve_root_target · function · L281-L295 — fn resolve_root_target(root_path: &Path) -> anyhow::Result<std::path::PathBuf>
+- patch_root_document · function · L303-L324 — pub(super) fn patch_root_document(
+- save_sparse · function · L327-L380 — pub(super) fn save_sparse(&self) -> anyhow::Result<()>
+- unit_tests · module · L384-L404 — mod unit_tests
+- diff_sets_changed_leaves_and_keeps_arrays_whole · function · L388-L403 — fn diff_sets_changed_leaves_and_keeps_arrays_whole()

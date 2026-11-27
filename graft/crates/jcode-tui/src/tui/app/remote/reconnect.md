@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/app/remote/reconnect.rs
+
+- RELOAD_MARKER_MAX_AGE · constant · L15-L15 — const RELOAD_MARKER_MAX_AGE: Duration = Duration::from_secs(30);
+- RemoteRunState · struct · L18-L30 — pub(in crate::tui::app) struct RemoteRunState
+- DEAD_SERVER_RESPAWN_MIN_ATTEMPTS · constant · L33-L33 — const DEAD_SERVER_RESPAWN_MIN_ATTEMPTS: u32 = 3;
+- DEAD_SERVER_RESPAWN_INTERVAL · constant · L35-L35 — const DEAD_SERVER_RESPAWN_INTERVAL: Duration = Duration::from_secs(60);
+- LONG_DISCONNECT_THRESHOLD · constant · L39-L39 — const LONG_DISCONNECT_THRESHOLD: Duration = Duration::from_secs(30);
+- LONG_DISCONNECT_REDRAW · constant · L40-L40 — const LONG_DISCONNECT_REDRAW: Duration = Duration::from_secs(5);
+- should_respawn_dead_server · function · L42-L54 — pub(in crate::tui::app) fn should_respawn_dead_server(
+- ConnectOutcome · enum · L60-L64 — pub(in crate::tui::app) enum ConnectOutcome
+- PostConnectOutcome · enum · L66-L69 — pub(in crate::tui::app) enum PostConnectOutcome
+- ReloadReconnectHints · struct · L72-L75 — pub(in crate::tui::app) struct ReloadReconnectHints
+- format_disconnect_reason · function · L77-L96 — pub(super) fn format_disconnect_reason(reason: &RemoteDisconnectReason) -> String
+- should_allow_reconnect_takeover · function · L98-L115 — pub(in crate::tui::app) fn should_allow_reconnect_takeover(
+- reconnect_status_message · function · L117-L157 — pub(super) fn reconnect_status_message(app: &App, state: &RemoteRunState, detail: &str) -> String
+- reload_wait_status_message · function · L159-L200 — pub(super) fn reload_wait_status_message(
+- set_disconnect_status_message · function · L202-L216 — fn set_disconnect_status_message(app: &mut App, state: &mut RemoteRunState, content: String)
+- disconnected_redraw_period · function · L218-L229 — pub(in crate::tui::app) fn disconnected_redraw_period(
+- disconnected_redraw_interval · function · L231-L242 — fn disconnected_redraw_interval(
+- reload_handoff_active · function · L244-L247 — pub(in crate::tui::app) fn reload_handoff_active(state: &RemoteRunState) -> bool
+- should_use_same_session_fast_path · function · L249-L263 — pub(in crate::tui::app) fn should_use_same_session_fast_path(
+- wait_for_reload_handoff_before_reconnect · function · L265-L371 — async fn wait_for_reload_handoff_before_reconnect(
+- recover_reloading_server · function · L373-L423 — async fn recover_reloading_server(
+- respawn_dead_server · function · L431-L474 — async fn respawn_dead_server(
+- connect_with_retry · function · L476-L715 — pub(in crate::tui::app) async fn connect_with_retry(
+- submitted_during_backoff · function · L717-L719 — pub(super) fn submitted_during_backoff(before: usize, after: usize) -> bool
+- handle_post_connect · function · L721-L907 — pub(in crate::tui::app) async fn handle_post_connect<B: ratatui::backend::Backend>(
+- load_reload_reconnect_hints · function · L909-L956 — pub(super) fn load_reload_reconnect_hints(
+- queue_reload_continuation_once · function · L961-L1019 — pub(in crate::tui::app) fn queue_reload_continuation_once(
+- finalize_reload_reconnect · function · L1021-L1143 — pub(in crate::tui::app) fn finalize_reload_reconnect(
+- reconnect_context_tests · module · L1146-L1178 — mod reconnect_context_tests
+- reconnect_preserves_peeked_context_after_file_is_consumed · function · L1151-L1177 — fn reconnect_preserves_peeked_context_after_file_is_consumed()

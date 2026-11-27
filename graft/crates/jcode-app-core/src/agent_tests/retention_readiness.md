@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/agent_tests/retention_readiness.rs
+
+- RetentionReadinessProvider · struct · L16-L19 — struct RetentionReadinessProvider
+- RetentionHomeRestore · struct · L21-L21 — struct RetentionHomeRestore(Option<std::ffi::OsString>);
+- drop · function · L24-L30 — fn drop(&mut self)
+- RetentionFactorStatus · enum · L34-L38 — enum RetentionFactorStatus
+- RetentionFactor · struct · L40-L44 — struct RetentionFactor
+- retention_factor_registry · function · L48-L97 — fn retention_factor_registry() -> [RetentionFactor; 9]
+- new · function · L100-L105 — fn new() -> Self
+- transcript_snapshots · function · L107-L112 — fn transcript_snapshots(&self) -> Vec<Vec<String>>
+- complete · function · L117-L168 — async fn complete(
+- name · function · L170-L172 — fn name(&self) -> &str
+- model · function · L174-L176 — fn model(&self) -> String
+- fork · function · L178-L180 — fn fork(&self) -> std::sync::Arc<dyn Provider>
+- RetentionDimensionScores · struct · L184-L191 — struct RetentionDimensionScores
+- values · function · L194-L203 — fn values(self) -> [(&'static str, f64, f64); 6]
+- behavioral_score · function · L208-L217 — fn behavioral_score(self) -> f64
+- RetentionJourneyEvidence · struct · L221-L235 — struct RetentionJourneyEvidence
+- retention_dimension_scores · function · L237-L275 — fn retention_dimension_scores(e: &RetentionJourneyEvidence) -> RetentionDimensionScores
+- retention_readiness_scorecard · function · L278-L496 — async fn retention_readiness_scorecard()
+- retention_readiness_scoring_is_monotonic_and_non_compensating · function · L499-L593 — fn retention_readiness_scoring_is_monotonic_and_non_compensating()
+- retention_readiness_factor_registry_has_explicit_scope_and_rationales · function · L596-L633 — fn retention_readiness_factor_registry_has_explicit_scope_and_rationales()

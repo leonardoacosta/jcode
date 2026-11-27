@@ -1,0 +1,72 @@
+# crates/jcode-base/src/subscription_catalog.rs
+
+- JCODE_API_KEY_ENV · constant · L3-L3 — pub const JCODE_API_KEY_ENV: &str = "JCODE_API_KEY";
+- JCODE_API_BASE_ENV · constant · L4-L4 — pub const JCODE_API_BASE_ENV: &str = "JCODE_API_BASE";
+- JCODE_ACCOUNT_ID_ENV · constant · L5-L5 — pub const JCODE_ACCOUNT_ID_ENV: &str = "JCODE_ACCOUNT_ID";
+- JCODE_ACCOUNT_EMAIL_ENV · constant · L6-L6 — pub const JCODE_ACCOUNT_EMAIL_ENV: &str = "JCODE_ACCOUNT_EMAIL";
+- JCODE_TIER_ENV · constant · L7-L7 — pub const JCODE_TIER_ENV: &str = "JCODE_TIER";
+- JCODE_ENV_FILE · constant · L8-L8 — pub const JCODE_ENV_FILE: &str = "jcode-subscription.env";
+- JCODE_CACHE_NAMESPACE · constant · L9-L9 — pub const JCODE_CACHE_NAMESPACE: &str = "jcode-subscription";
+- JCODE_SUBSCRIPTION_ACTIVE_ENV · constant · L10-L10 — pub const JCODE_SUBSCRIPTION_ACTIVE_ENV: &str = "JCODE_SUBSCRIPTION_ACTIVE";
+- DEFAULT_JCODE_API_BASE · constant · L11-L11 — pub const DEFAULT_JCODE_API_BASE: &str = "https://api.jcode.sh/v1";
+- JCODE_PRICING_URL · constant · L12-L12 — pub const JCODE_PRICING_URL: &str = "https://jcode.sh/pricing";
+- JCODE_ACCOUNT_URL · constant · L13-L13 — pub const JCODE_ACCOUNT_URL: &str = "https://jcode.sh/account";
+- CLOUD_ACCOUNT_REQUIRED · constant · L18-L18 — pub const CLOUD_ACCOUNT_REQUIRED: &str = "Jcode Cloud needs a Jcode account.";
+- CLOUD_SIGN_IN_EXPIRED · constant · L19-L19 — pub const CLOUD_SIGN_IN_EXPIRED: &str = "Your Jcode sign-in expired.";
+- CLOUD_NOT_ENTITLED · constant · L20-L20 — pub const CLOUD_NOT_ENTITLED: &str = "Jcode Cloud requires an active paid Jcode subscription.";
+- cloud_account_required_message · function · L23-L27 — pub fn cloud_account_required_message() -> String
+- cloud_sign_in_expired_message · function · L30-L32 — pub fn cloud_sign_in_expired_message() -> String
+- cloud_not_entitled_message · function · L35-L39 — pub fn cloud_not_entitled_message() -> String
+- JCODE_PROVIDER_DISPLAY_NAME · constant · L42-L42 — pub const JCODE_PROVIDER_DISPLAY_NAME: &str = "Jcode Subscription";
+- JCODE_ROUTE_API_METHOD · constant · L43-L43 — pub const JCODE_ROUTE_API_METHOD: &str = "jcode-subscription";
+- JcodeTier · enum · L46-L52 — pub enum JcodeTier
+- ALL · constant · L55-L61 — pub const ALL: &'static [JcodeTier] = &[
+- retail_price_usd · function · L63-L71 — pub fn retail_price_usd(self) -> u32
+- usable_budget_usd · function · L73-L75 — pub fn usable_budget_usd(self) -> f64
+- included_inference_usd · function · L80-L82 — pub fn included_inference_usd(self) -> f64
+- overage_api_price_multiplier · function · L84-L86 — pub fn overage_api_price_multiplier(self) -> f64
+- display_name · function · L88-L96 — pub fn display_name(self) -> &'static str
+- as_str · function · L99-L107 — pub fn as_str(self) -> &'static str
+- parse · function · L110-L119 — pub fn parse(value: &str) -> Option<Self>
+- allows · function · L122-L124 — pub fn allows(self, required: JcodeTier) -> bool
+- UpstreamRoutingPolicy · enum · L128-L133 — pub enum UpstreamRoutingPolicy
+- CuratedModel · struct · L136-L145 — pub struct CuratedModel
+- CURATED_MODELS · constant · L147-L209 — pub const CURATED_MODELS: &[CuratedModel] = &[
+- curated_models · function · L211-L213 — pub fn curated_models() -> &'static [CuratedModel]
+- default_model · function · L220-L229 — pub fn default_model() -> &'static CuratedModel
+- DEFAULT · constant · L221-L221 — static DEFAULT: std::sync::OnceLock<&'static CuratedModel> = std::sync::OnceLock::new();
+- normalize_model_key · function · L233-L236 — fn normalize_model_key(model: &str) -> String
+- find_curated_model · function · L238-L247 — pub fn find_curated_model(model: &str) -> Option<&'static CuratedModel>
+- canonical_model_id · function · L249-L251 — pub fn canonical_model_id(model: &str) -> Option<&'static str>
+- is_curated_model · function · L253-L255 — pub fn is_curated_model(model: &str) -> bool
+- effective_tier · function · L260-L262 — pub fn effective_tier() -> JcodeTier
+- cached_tier · function · L265-L269 — pub fn cached_tier() -> Option<JcodeTier>
+- store_cached_tier · function · L272-L278 — pub fn store_cached_tier(tier: Option<JcodeTier>) -> anyhow::Result<()>
+- is_model_allowed_for_current_tier · function · L283-L285 — pub fn is_model_allowed_for_current_tier(model: &str) -> bool
+- routing_policy_detail · function · L287-L293 — pub fn routing_policy_detail(model: &CuratedModel) -> String
+- configured_api_key · function · L295-L297 — pub fn configured_api_key() -> Option<String>
+- configured_api_base · function · L299-L301 — pub fn configured_api_base() -> Option<String>
+- has_credentials · function · L303-L305 — pub fn has_credentials() -> bool
+- persist_account_credentials · function · L309-L329 — pub fn persist_account_credentials(
+- clear_account_credentials · function · L334-L345 — pub fn clear_account_credentials() -> anyhow::Result<()>
+- nonempty · function · L347-L349 — fn nonempty(value: Option<&str>) -> Option<&str>
+- account_credential_path · function · L351-L353 — pub fn account_credential_path() -> anyhow::Result<std::path::PathBuf>
+- ensure_account_credential_permissions · function · L358-L377 — pub fn ensure_account_credential_permissions() -> anyhow::Result<()>
+- has_router_base · function · L379-L381 — pub fn has_router_base() -> bool
+- is_runtime_mode_enabled · function · L383-L393 — pub fn is_runtime_mode_enabled() -> bool
+- apply_runtime_env · function · L395-L409 — pub fn apply_runtime_env()
+- clear_runtime_env · function · L411-L422 — pub fn clear_runtime_env()
+- tests · module · L425-L698 — mod tests
+- EXPECTED_PLUS_MODELS · constant · L428-L434 — const EXPECTED_PLUS_MODELS: &[&str] = &[
+- curated_model_aliases_resolve_to_canonical_ids · function · L437-L456 — fn curated_model_aliases_resolve_to_canonical_ids()
+- deployed_sonnet_id_is_preserved_for_managed_selection · function · L459-L488 — fn deployed_sonnet_id_is_preserved_for_managed_selection()
+- retired_models_and_unsupported_generations_are_not_curated · function · L491-L527 — fn retired_models_and_unsupported_generations_are_not_curated()
+- curated_model_lookup_ignores_provider_pin_suffix · function · L530-L539 — fn curated_model_lookup_ignores_provider_pin_suffix()
+- default_model_is_newest_curated_flagship · function · L542-L548 — fn default_model_is_newest_curated_flagship()
+- curated_catalog_has_exact_hosted_set_without_legacy_model_gates · function · L551-L579 — fn curated_catalog_has_exact_hosted_set_without_legacy_model_gates()
+- tier_pricing_matches_launched_plans · function · L582-L600 — fn tier_pricing_matches_launched_plans()
+- tier_parse_round_trips · function · L603-L614 — fn tier_parse_round_trips()
+- tier_gating_follows_catalog_order · function · L617-L629 — fn tier_gating_follows_catalog_order()
+- every_hosted_model_is_available_from_the_base_subscription · function · L632-L642 — fn every_hosted_model_is_available_from_the_base_subscription()
+- hosted_catalog_access_does_not_depend_on_legacy_cached_tier · function · L645-L684 — fn hosted_catalog_access_does_not_depend_on_legacy_cached_tier()
+- runtime_mode_flag_tracks_subscription_activation · function · L687-L697 — fn runtime_mode_flag_tracks_subscription_activation()

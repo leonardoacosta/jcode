@@ -1,0 +1,6 @@
+# crates/jcode-app-core/src/server/provider_control_tests/account_invalidation.rs
+
+- invalidate_openai_usage_acknowledges_after_clearing_pinned_daemon_cooldown · function · L4-L29 — async fn invalidate_openai_usage_acknowledges_after_clearing_pinned_daemon_cooldown()
+- invalidate_anthropic_usage_acknowledges_after_clearing_only_pinned_claude_cooldown · function · L32-L55 — async fn invalidate_anthropic_usage_acknowledges_after_clearing_only_pinned_claude_cooldown()
+- account_switch_clears_only_selected_login_failure_even_when_agent_is_busy · function · L58-L112 — async fn account_switch_clears_only_selected_login_failure_even_when_agent_is_busy()
+- notify_auth_changed_clears_renewed_claude_login_failure · function · L115-L150 — async fn notify_auth_changed_clears_renewed_claude_login_failure()

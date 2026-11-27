@@ -1,0 +1,96 @@
+# src/cli/cloud_move.rs
+
+- transport · module · L40-L40 — mod transport;
+- group · module · L45-L45 — mod group;
+- repo_tests · module · L50-L50 — mod repo_tests;
+- replace · module · L53-L53 — mod replace;
+- ops · module · L56-L56 — mod ops;
+- diagnostics · module · L59-L59 — mod diagnostics;
+- environment · module · L62-L62 — pub(super) mod environment;
+- latency_tests · module · L66-L66 — mod latency_tests;
+- FORMAT_VERSION · constant · L68-L68 — const FORMAT_VERSION: u32 = 1;
+- REQUIRED_REMOTE_COMMANDS · constant · L73-L80 — const REQUIRED_REMOTE_COMMANDS: [&str; 6] = [
+- SNAPSHOT_REF_PREFIX · constant · L81-L81 — const SNAPSHOT_REF_PREFIX: &str = "refs/jcode-cloud";
+- ENV_ALLOWLIST · constant · L84-L97 — const ENV_ALLOWLIST: &[&str] = &[
+- IGNORED_ALLOWLIST · constant · L100-L100 — const IGNORED_ALLOWLIST: &[&str] = &[".env", ".env.local", ".env.development", ".envrc"];
+- MAX_IGNORED_FILE_BYTES · constant · L101-L101 — const MAX_IGNORED_FILE_BYTES: u64 = 256 * 1024;
+- MoveManifest · struct · L108-L126 — pub(crate) struct MoveManifest
+- CloudAccount · struct · L129-L132 — pub(crate) struct CloudAccount
+- CloudAuthBaseline · struct · L137-L140 — struct CloudAuthBaseline
+- credential_fingerprint · function · L142-L144 — fn credential_fingerprint(payload: &CloudCredentialTransfer) -> String
+- baseline_path · function · L146-L158 — fn baseline_path(session_id: &str) -> Result<PathBuf>
+- import_return_credentials · function · L160-L201 — fn import_return_credentials(session_id: &str, account: &CloudAccount, bytes: &[u8]) -> Result<()>
+- route · function · L204-L210 — fn route(&self) -> String
+- oauth_selection · function · L214-L232 — fn oauth_selection(sess: &session::Session) -> Result<Option<(TransferProvider, Option<&str>)>>
+- session_credentials · function · L234-L243 — fn session_credentials(sess: &session::Session) -> Result<Option<CloudCredentialTransfer>>
+- export_router_credentials · function · L247-L257 — fn export_router_credentials() -> Result<router_transfer::RouterBundle>
+- run_router_credentials · function · L259-L267 — fn run_router_credentials() -> Result<()>
+- notify_daemon_auth_changed · function · L273-L304 — fn notify_daemon_auth_changed()
+- cloud_accounts · function · L306-L311 — fn cloud_accounts() -> Result<Vec<CloudAccount>>
+- transferred_accounts_path · function · L313-L315 — fn transferred_accounts_path(session_id: &str) -> Result<PathBuf>
+- run_credentials · function · L317-L332 — fn run_credentials(provider: &str, account: &str, export: bool) -> Result<()>
+- RepoManifest · struct · L335-L350 — pub(crate) struct RepoManifest
+- MoveReport · struct · L357-L371 — pub(crate) struct MoveReport
+- PREFLIGHT_FRESH_SECS · constant · L375-L375 — const PREFLIGHT_FRESH_SECS: u64 = 120;
+- preflight_marker · function · L377-L381 — fn preflight_marker() -> Option<PathBuf>
+- now_secs · function · L383-L388 — fn now_secs() -> u64
+- preflight_is_fresh · function · L390-L401 — fn preflight_is_fresh(key: &str) -> bool
+- record_preflight · function · L403-L407 — fn record_preflight(key: &str)
+- memory_marker · function · L409-L419 — fn memory_marker(host: &str, memory: &Path) -> Option<PathBuf>
+- memory_already_sent · function · L423-L428 — fn memory_already_sent(host: &str, memory: &Path, bytes: &[u8]) -> bool
+- mark_memory_sent · function · L430-L437 — fn mark_memory_sent(host: &str, memory: &Path, bytes: &[u8])
+- timing · module · L439-L439 — mod timing;
+- run_move · function · L442-L798 — pub(crate) fn run_move(
+- ReturnReport · struct · L801-L807 — pub(crate) struct ReturnReport
+- MergeOutcome · enum · L811-L826 — pub(crate) enum MergeOutcome
+- run_return · function · L828-L1025 — pub(crate) fn run_return(
+- return_state_path · function · L1027-L1040 — fn return_state_path(session_id: &str, epoch: u64, name: &str) -> Result<PathBuf>
+- write_return_state · function · L1042-L1056 — fn write_return_state(path: &Path, bytes: &[u8]) -> Result<()>
+- complete_remote_return · function · L1058-L1069 — fn complete_remote_return(target: &Target, report: &ReturnReport) -> Result<()>
+- complete_return · function · L1071-L1087 — fn complete_return(session_id: &str, epoch: u64) -> Result<()>
+- ReceiveReport · struct · L1094-L1100 — struct ReceiveReport
+- run_receive · function · L1103-L1163 — pub(crate) fn run_receive() -> Result<()>
+- run_activate · function · L1166-L1218 — pub(crate) fn run_activate(session_id: &str, epoch: u64) -> Result<()>
+- run_export · function · L1221-L1226 — pub(crate) fn run_export(session_id: &str, epoch: u64, require_completion: bool) -> Result<()>
+- export_return_archive · function · L1228-L1373 — fn export_return_archive(
+- WhereEntry · struct · L1380-L1386 — pub(crate) struct WhereEntry
+- run_where · function · L1388-L1428 — pub(crate) fn run_where(session_ref: Option<&str>) -> Result<Vec<WhereEntry>>
+- away_host · function · L1430-L1443 — pub(crate) fn away_host(session_ref: Option<&str>) -> Result<(String, String)>
+- git · function · L1449-L1451 — fn git(dir: &Path, args: &[&str]) -> Result<String>
+- git_env · function · L1453-L1468 — fn git_env(dir: &Path, args: &[&str], env: &[(&str, &std::ffi::OsStr)]) -> Result<String>
+- snapshot_repo · function · L1472-L1482 — fn snapshot_repo(
+- common_remote_commit · function · L1486-L1563 — fn common_remote_commit(target: &Target, host: &str, repo: &RepoManifest) -> Option<String>
+- create_repo_bundle · function · L1565-L1607 — fn create_repo_bundle(
+- prepare_repo_snapshot · function · L1609-L1687 — fn prepare_repo_snapshot(
+- identity_env · function · L1689-L1707 — fn identity_env(root: &Path) -> Vec<(&'static str, &'static std::ffi::OsStr)>
+- restore_repo · function · L1710-L1808 — fn restore_repo(
+- refuse_unreturned · function · L1810-L1840 — fn refuse_unreturned(root: &Path, repo: &RepoManifest) -> Result<()>
+- restore_repo_contents · function · L1842-L1907 — fn restore_repo_contents(
+- merge_back · function · L1911-L2074 — fn merge_back(
+- snapshot_worktree_tree · function · L2077-L2088 — fn snapshot_worktree_tree(root: &Path, scratch: &Path) -> Result<String>
+- prepare_host · function · L2097-L2109 — fn prepare_host(target: &Target) -> Result<String>
+- run_cli · function · L2111-L2368 — pub(crate) fn run_cli(command: super::args::CloudCommand) -> Result<()>
+- exec_attach · function · L2371-L2391 — fn exec_attach(
+- resolve_session_id · function · L2397-L2412 — fn resolve_session_id(session_ref: Option<&str>) -> Result<String>
+- install_session · function · L2414-L2448 — fn install_session(sess: &session::Session, stage: &Path) -> Result<()>
+- arrival · module · L2451-L2451 — mod arrival;
+- toolchain_hints · function · L2453-L2475 — fn toolchain_hints(root: Option<&Path>) -> Vec<String>
+- configured_mcp_servers · function · L2477-L2492 — fn configured_mcp_servers() -> Vec<String>
+- local_host_label · function · L2494-L2505 — fn local_host_label() -> String
+- todo_file · function · L2507-L2511 — fn todo_file(session_id: &str) -> Result<PathBuf>
+- inbox_dir · function · L2513-L2515 — fn inbox_dir() -> Result<PathBuf>
+- copy_if_exists · function · L2517-L2522 — fn copy_if_exists(from: &Path, to: &Path) -> Result<()>
+- read_json · function · L2524-L2527 — fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T>
+- tar_dir · function · L2529-L2545 — fn tar_dir(dir: &Path, out: &Path, names: &[&str]) -> Result<()>
+- untar · function · L2547-L2556 — fn untar(tarball: &Path, dir: &Path) -> Result<()>
+- run_ok · function · L2558-L2569 — fn run_ok(mut command: Command, what: &str) -> Result<()>
+- shell_quote · function · L2571-L2573 — fn shell_quote(value: &str) -> String
+- step · function · L2575-L2579 — fn step(phase: &str, detail: &str)
+- STASHED_HANDOFF · constant · L2585-L2586 — static STASHED_HANDOFF: std::sync::Mutex<Option<crate::tui::CloudHandoff>> =
+- stash_handoff · function · L2588-L2592 — pub(crate) fn stash_handoff(handoff: crate::tui::CloudHandoff)
+- take_stashed_handoff · function · L2594-L2599 — pub(crate) fn take_stashed_handoff() -> Option<crate::tui::CloudHandoff>
+- exec_handoff · function · L2602-L2606 — pub(crate) fn exec_handoff(handoff: crate::tui::CloudHandoff) -> Result<()>
+- handoff_command · function · L2608-L2667 — fn handoff_command(handoff: crate::tui::CloudHandoff) -> Result<Command>
+- resume_handoff_tests · module · L2670-L2717 — mod resume_handoff_tests
+- cloud_resume_handoff_does_not_continue_or_grant_local_resources · function · L2674-L2701 — fn cloud_resume_handoff_does_not_continue_or_grant_local_resources()
+- cloud_migration_handoff_still_continues_the_moved_task · function · L2704-L2716 — fn cloud_migration_handoff_still_continues_the_moved_task()

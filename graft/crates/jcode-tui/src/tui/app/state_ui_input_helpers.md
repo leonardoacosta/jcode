@@ -1,0 +1,45 @@
+# crates/jcode-tui/src/tui/app/state_ui_input_helpers.rs
+
+- onboarding · module · L3-L3 — mod onboarding;
+- CommandCandidateKind · enum · L6-L11 — pub enum CommandCandidateKind
+- CommandCandidate · struct · L14-L19 — pub struct CommandCandidate
+- from · function · L22-L29 — fn from((name, description): (String, &'static str)) -> Self
+- skill · function · L33-L40 — pub fn skill(name: String, description: &str) -> Self
+- RegisteredCommand · struct · L44-L48 — struct RegisteredCommand
+- public · function · L51-L57 — const fn public(name: &'static str, help: &'static str) -> Self
+- remote · function · L59-L65 — const fn remote(name: &'static str, help: &'static str) -> Self
+- hidden · function · L67-L73 — const fn hidden(name: &'static str, help: &'static str) -> Self
+- REGISTERED_COMMANDS · constant · L76-L307 — const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
+- registered_command_entries · function · L313-L318 — pub(crate) fn registered_command_entries() -> impl Iterator<Item = (&'static str, &'static str)>
+- registered_command_names · function · L320-L322 — pub(crate) fn registered_command_names() -> impl Iterator<Item = &'static str>
+- input · function · L325-L327 — pub fn input(&self) -> &str
+- set_input_for_test · function · L330-L334 — pub(crate) fn set_input_for_test(&mut self, input: impl Into<String>)
+- fuzzy_score · function · L339-L341 — pub(super) fn fuzzy_score(needle: &str, haystack: &str) -> Option<i32>
+- rank_suggestions · function · L343-L369 — pub(super) fn rank_suggestions<T: Into<CommandCandidate>>(
+- command_candidates · function · L371-L432 — fn command_candidates(&self) -> Vec<CommandCandidate>
+- invalidate_command_candidates_cache · function · L434-L436 — pub(super) fn invalidate_command_candidates_cache(&self)
+- model_suggestion_candidates · function · L438-L481 — fn model_suggestion_candidates(&self) -> Vec<(String, &'static str)>
+- push_unique · function · L439-L447 — fn push_unique(
+- model_provider_suggestion_candidates · function · L483-L546 — fn model_provider_suggestion_candidates(&self, model: &str) -> Vec<(String, &'static str)>
+- push_unique · function · L484-L493 — fn push_unique(
+- get_suggestions_for · function · L549-L1359 — pub(super) fn get_suggestions_for(&self, input: &str) -> Vec<CommandCandidate>
+- command_suggestions · function · L1362-L1385 — pub fn command_suggestions(&self) -> Vec<CommandCandidate>
+- advance_command_suggestions_epoch · function · L1390-L1393 — pub(crate) fn advance_command_suggestions_epoch(&self)
+- command_suggestions_signature · function · L1397-L1408 — pub(super) fn command_suggestions_signature(&self) -> CommandSuggestionsSignature
+- command_suggestions_uncached · function · L1411-L1453 — pub(super) fn command_suggestions_uncached(
+- clamp_command_suggestion_selection · function · L1455-L1465 — fn clamp_command_suggestion_selection(&mut self) -> Vec<CommandCandidate>
+- move_command_suggestion_selection · function · L1467-L1477 — pub(super) fn move_command_suggestion_selection(&mut self, delta: i32) -> bool
+- arrow_modifiers_allow_command_suggestion_navigation · function · L1479-L1483 — fn arrow_modifiers_allow_command_suggestion_navigation(modifiers: KeyModifiers) -> bool
+- handle_command_suggestion_key · function · L1485-L1512 — pub(super) fn handle_command_suggestion_key(
+- accept_selected_command_suggestion · function · L1514-L1531 — pub(super) fn accept_selected_command_suggestion(&mut self) -> bool
+- onboarding_welcome_active · function · L1539-L1560 — pub fn onboarding_welcome_active(&self) -> bool
+- onboarding_flow_drives_welcome · function · L1566-L1574 — fn onboarding_flow_drives_welcome(&self) -> bool
+- suggestion_prompts · function · L1578-L1598 — pub fn suggestion_prompts(&self) -> Vec<(String, String)>
+- autocomplete · function · L1601-L1668 — pub fn autocomplete(&mut self) -> bool
+- autocomplete_active_slash_token · function · L1670-L1729 — fn autocomplete_active_slash_token(
+- reset_tab_completion · function · L1732-L1735 — pub fn reset_tab_completion(&mut self)
+- remember_input_undo_state · function · L1737-L1747 — pub(super) fn remember_input_undo_state(&mut self)
+- clear_input_undo_history · function · L1749-L1753 — pub(super) fn clear_input_undo_history(&mut self)
+- undo_input_change · function · L1755-L1769 — pub(super) fn undo_input_change(&mut self)
+- command_accepts_args · function · L1771-L1832 — pub(super) fn command_accepts_args(cmd: &str) -> bool
+- command_registry_tests · module · L1837-L1837 — mod command_registry_tests;

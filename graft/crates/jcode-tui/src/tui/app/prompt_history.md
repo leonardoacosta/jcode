@@ -1,0 +1,23 @@
+# crates/jcode-tui/src/tui/app/prompt_history.rs
+
+- MAX_PERSISTED_PROMPTS · constant · L18-L18 — pub(crate) const MAX_PERSISTED_PROMPTS: usize = 1000;
+- MAX_RECORDED_PROMPT_LEN · constant · L21-L21 — const MAX_RECORDED_PROMPT_LEN: usize = 10_000;
+- COMPACT_THRESHOLD_LINES · constant · L24-L24 — const COMPACT_THRESHOLD_LINES: usize = MAX_PERSISTED_PROMPTS * 2;
+- MAX_SEARCH_MATCHES · constant · L26-L26 — const MAX_SEARCH_MATCHES: usize = 50;
+- PromptHistorySearchState · struct · L30-L44 — pub(crate) struct PromptHistorySearchState
+- history_file_path · function · L46-L54 — pub(crate) fn history_file_path() -> Option<PathBuf>
+- load_from_path · function · L58-L73 — pub(crate) fn load_from_path(path: &Path) -> Vec<String>
+- append_to_path · function · L79-L119 — pub(crate) fn append_to_path(path: &Path, text: &str)
+- maybe_compact · function · L121-L144 — fn maybe_compact(path: &Path)
+- dedupe_keep_last · function · L147-L157 — fn dedupe_keep_last(entries: Vec<String>) -> Vec<String>
+- single_line_preview · function · L160-L172 — fn single_line_preview(text: &str) -> String
+- ensure_persisted_prompt_history_loaded · function · L178-L190 — fn ensure_persisted_prompt_history_loaded(&mut self)
+- merged_prompt_history · function · L195-L210 — pub(super) fn merged_prompt_history(&mut self) -> Vec<String>
+- record_prompt_history · function · L217-L253 — pub(super) fn record_prompt_history(&mut self, text: &str)
+- open_prompt_history_search · function · L258-L264 — pub(super) fn open_prompt_history_search(&mut self)
+- refresh_prompt_history_search_matches · function · L266-L295 — fn refresh_prompt_history_search_matches(&mut self)
+- apply_prompt_history_search_preview · function · L299-L313 — fn apply_prompt_history_search_preview(&mut self)
+- cancel_prompt_history_search · function · L317-L322 — fn cancel_prompt_history_search(&mut self)
+- handle_prompt_history_search_key · function · L326-L372 — pub(super) fn handle_prompt_history_search_key(
+- step_prompt_history_search · function · L374-L384 — fn step_prompt_history_search(&mut self, delta: i64)
+- prompt_history_search_view · function · L387-L398 — pub(crate) fn prompt_history_search_view(&self) -> Option<crate::tui::PromptHistorySearchView>

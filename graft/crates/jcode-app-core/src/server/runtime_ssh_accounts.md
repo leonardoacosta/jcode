@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/server/runtime_ssh_accounts.rs
+
+- handles · function · L12-L14 — pub(super) fn handles(command: &str) -> bool
+- Pending · enum · L16-L19 — enum Pending
+- provider · function · L21-L26 — fn provider(&self) -> &'static str
+- message · function · L27-L36 — fn message(&self) -> String
+- Review · struct · L39-L41 — struct Review
+- Reviews · type · L42-L42 — type Reviews = HashMap<String, (Instant, Arc<Mutex<Review>>)>;
+- REVIEWS · constant · L43-L43 — static REVIEWS: OnceLock<Mutex<Reviews>> = OnceLock::new();
+- Removals · type · L44-L44 — type Removals = HashMap<String, (Instant, String, String)>;
+- REMOVALS · constant · L45-L45 — static REMOVALS: OnceLock<Mutex<Removals>> = OnceLock::new();
+- remove_account · function · L47-L91 — async fn remove_account(
+- reset · function · L93-L231 — async fn reset(agent: &Agent, args: &[String]) -> Result<String>
+- clear · function · L233-L235 — fn clear(value: &str) -> Option<&str>
+- doctor · function · L237-L263 — fn doctor(provider: Option<&str>) -> Result<String>
+- settings · function · L265-L321 — fn settings(provider: &str) -> Result<String>
+- save_compat · function · L323-L378 — fn save_compat(setting: &str, raw: &str) -> Result<String>
+- execute · function · L380-L528 — pub(super) async fn execute(
+- tests · module · L531-L670 — mod tests
+- NoInference · struct · L533-L533 — struct NoInference;
+- complete · function · L536-L544 — async fn complete(
+- name · function · L545-L547 — fn name(&self) -> &str
+- fork · function · L548-L550 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- host_account_defaults_and_reset_confirmation_do_not_invoke_inference · function · L554-L626 — async fn host_account_defaults_and_reset_confirmation_do_not_invoke_inference()
+- Restore · struct · L558-L558 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L560-L565 — fn drop(&mut self)
+- string_handler_is_narrow · function · L629-L634 — fn string_handler_is_narrow()
+- removal_requires_matching_session_provider_and_label_review · function · L636-L663 — async fn removal_requires_matching_session_provider_and_label_review()
+- clearing_settings_preserves_explicit_none_effort · function · L665-L669 — fn clearing_settings_preserves_explicit_none_effort()

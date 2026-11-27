@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/server/runtime_upgrade_tests.rs
+
+- TestHome · struct · L4-L4 — struct TestHome(Option<std::ffi::OsString>, tempfile::TempDir);
+- new · function · L6-L11 — fn new() -> Self
+- drop · function · L14-L19 — fn drop(&mut self)
+- IdleProvider · struct · L22-L22 — struct IdleProvider;
+- complete · function · L25-L33 — async fn complete(
+- name · function · L34-L36 — fn name(&self) -> &str
+- fork · function · L37-L39 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- idle_agent · function · L42-L44 — fn idle_agent() -> crate::agent::Agent
+- checkpoint_preserves_blank_session_ids_overrides_and_queued_input · function · L47-L84 — fn checkpoint_preserves_blank_session_ids_overrides_and_queued_input()
+- checkpoint_refuses_queue_write_failure_instead_of_losing_accepted_input · function · L87-L109 — fn checkpoint_refuses_queue_write_failure_instead_of_losing_accepted_input()
+- busy_agent_checkpoint_never_waits_and_idle_index_stays_reserved · function · L112-L138 — fn busy_agent_checkpoint_never_waits_and_idle_index_stays_reserved()
+- candidate · function · L140-L147 — fn candidate() -> (tempfile::TempDir, PathBuf, FileIdentity)
+- idle_upgrade_reserves_explicit_candidate_and_blocks_racing_turn · function · L150-L163 — fn idle_upgrade_reserves_explicit_candidate_and_blocks_racing_turn()
+- changed_candidate_after_progress_refuses_exec_and_releases_idle_gate · function · L166-L180 — fn changed_candidate_after_progress_refuses_exec_and_releases_idle_gate()
+- failed_exec_releases_publication_fence_without_reentrant_logging · function · L183-L201 — fn failed_exec_releases_publication_fence_without_reentrant_logging()
+- active_turn_or_tool_refuses_upgrade_without_firing_cancel · function · L204-L223 — fn active_turn_or_tool_refuses_upgrade_without_firing_cancel()
+- no_downgrade_or_same_version_reload_even_when_candidate_has_new_mtime · function · L226-L239 — fn no_downgrade_or_same_version_reload_even_when_candidate_has_new_mtime()
+- rejects_invalid_candidate_paths_scripts_permissions_and_changes · function · L242-L264 — fn rejects_invalid_candidate_paths_scripts_permissions_and_changes()
+- version_probe_rejects_non_jcode_executable · function · L267-L269 — async fn version_probe_rejects_non_jcode_executable()
+- invalid_native_upgrade_returns_status_without_exec_or_agent · function · L272-L291 — async fn invalid_native_upgrade_returns_status_without_exec_or_agent()
+- upgrade_wire_request_is_lightweight_and_never_legacy_reload · function · L294-L305 — fn upgrade_wire_request_is_lightweight_and_never_legacy_reload()

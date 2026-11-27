@@ -1,0 +1,131 @@
+# crates/jcode-base/src/jev.rs
+
+- laya · module · L15-L15 — mod laya;
+- PROVIDER_ENV · constant · L18-L18 — const PROVIDER_ENV: &str = "JCODE_MEMORY_JEV_PROVIDER";
+- BROWSER_PROVIDER_ENV · constant · L19-L19 — const BROWSER_PROVIDER_ENV: &str = "JCODE_BROWSER_JEV_PROVIDER";
+- VOICE_PROVIDER_ENV · constant · L20-L20 — const VOICE_PROVIDER_ENV: &str = "JCODE_VOICE_JEV_PROVIDER";
+- SUPERVISION_PURPOSE_HEADER · constant · L21-L21 — const SUPERVISION_PURPOSE_HEADER: &str = "X-Jcode-Jev-Purpose";
+- LAYA_BASE_URL_ENV · constant · L22-L22 — const LAYA_BASE_URL_ENV: &str = "JCODE_LAYA_BASE_URL";
+- LAYA_DEFAULT_BASE · constant · L23-L23 — const LAYA_DEFAULT_BASE: &str = "http://127.0.0.1:8080";
+- DEFAULT_MEMORY_JEV_MODEL · constant · L24-L24 — pub const DEFAULT_MEMORY_JEV_MODEL: &str = "typesafe/jev-1.13";
+- MAX_REQUEST_BYTES · constant · L25-L25 — const MAX_REQUEST_BYTES: usize = 80 * 1024;
+- MAX_RESPONSE_BYTES · constant · L26-L26 — const MAX_RESPONSE_BYTES: usize = 256 * 1024;
+- MAX_ME_BYTES · constant · L27-L27 — const MAX_ME_BYTES: usize = 16 * 1024;
+- MAX_QUESTIONS · constant · L28-L28 — pub(crate) const MAX_QUESTIONS: usize = 24;
+- TYPESAFE_MAX_QUESTIONS · constant · L31-L31 — const TYPESAFE_MAX_QUESTIONS: usize = 64;
+- VOICE_HEDGE_DELAYS · constant · L38-L42 — const VOICE_HEDGE_DELAYS: [Duration; 3] = [
+- VOICE_HEDGE_DELAYS · constant · L44-L48 — const VOICE_HEDGE_DELAYS: [Duration; 3] = [
+- JevPurpose · enum · L51-L56 — enum JevPurpose
+- name · function · L59-L66 — fn name(self) -> &'static str
+- capability · function · L68-L76 — fn capability(self) -> &'static str
+- selector_with · function · L78-L103 — fn selector_with(
+- JevProvider · enum · L107-L114 — enum JevProvider
+- name · function · L117-L126 — fn name(self) -> &'static str
+- credentials · function · L128-L140 — fn credentials(self) -> (&'static str, &'static str)
+- max_questions · function · L142-L147 — fn max_questions(self) -> usize
+- model · function · L149-L157 — fn model(self) -> &'static str
+- endpoint · function · L159-L178 — fn endpoint(self, gateway_base: &str) -> Result<String>
+- configured_model_override · function · L181-L198 — fn configured_model_override(purpose: JevPurpose) -> Option<String>
+- resolve_model_override · function · L200-L208 — fn resolve_model_override(
+- resolve_jev_model · function · L210-L212 — fn resolve_jev_model(purpose: JevPurpose, provider: JevProvider) -> String
+- browser_jev_model_label · function · L215-L217 — pub fn browser_jev_model_label() -> String
+- NotConfigured · struct · L221-L223 — pub struct NotConfigured
+- fmt · function · L226-L228 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- JevClient · struct · L235-L246 — pub struct JevClient
+- available · function · L251-L253 — pub fn available() -> bool
+- new · function · L255-L257 — pub fn new() -> Result<Self>
+- for_browser · function · L261-L263 — pub fn for_browser() -> Result<Self>
+- for_voice · function · L269-L271 — pub fn for_voice() -> Result<Self>
+- from_supervision_config · function · L275-L296 — pub fn from_supervision_config(
+- for_supervision · function · L300-L325 — pub fn for_supervision(provider: &str, model: &str) -> Result<Self>
+- for_purpose · function · L327-L354 — fn for_purpose(purpose: JevPurpose) -> Result<Self>
+- resolve · function · L356-L383 — fn resolve(purpose: JevPurpose) -> Result<(JevProvider, String, String, Option<String>)>
+- provider_name · function · L385-L387 — pub fn provider_name(&self) -> &str
+- model_id · function · L389-L391 — pub fn model_id(&self) -> &str
+- max_questions · function · L394-L396 — pub(crate) fn max_questions(&self) -> usize
+- evaluate · function · L401-L411 — pub async fn evaluate(&self, state: Value, questions: Map<String, Value>) -> Result<Value>
+- evaluate_once · function · L415-L421 — pub async fn evaluate_once(
+- evaluate_inner · function · L423-L501 — async fn evaluate_inner(
+- send_hedged · function · L508-L548 — async fn send_hedged(&self, body: Vec<u8>, questions: &Map<String, Value>) -> Result<Value>
+- send · function · L550-L552 — async fn send(&self, endpoint: &str, body: Vec<u8>) -> Result<Value>
+- send_with · function · L558-L596 — async fn send_with(
+- send_once · function · L598-L649 — async fn send_once(
+- SHADOW_MAX_REQUESTS · constant · L652-L652 — const SHADOW_MAX_REQUESTS: usize = 48;
+- SHADOW_MAX_RUN · constant · L653-L653 — const SHADOW_MAX_RUN: Duration = Duration::from_secs(600);
+- JevShadowAdvice · enum · L656-L661 — pub enum JevShadowAdvice
+- JevShadowObservation · struct · L664-L669 — pub struct JevShadowObservation
+- matches · function · L673-L675 — pub fn matches(&self, case_id: &str, state_revision: &str) -> bool
+- accept · function · L679-L688 — pub fn accept(self, pending: &mut Option<(String, String)>) -> Option<Self>
+- JevShadowCase · struct · L691-L697 — pub struct JevShadowCase
+- JevShadowEvaluator · struct · L701-L705 — pub struct JevShadowEvaluator
+- new · function · L708-L718 — pub fn new(client: JevClient) -> Result<Self>
+- requests_started · function · L720-L722 — pub fn requests_started(&self) -> usize
+- observe · function · L724-L809 — pub async fn observe(&self, case: JevShadowCase) -> Result<JevShadowObservation>
+- TRANSIENT_RETRY_DELAYS · constant · L813-L814 — const TRANSIENT_RETRY_DELAYS: [Duration; 2] =
+- TRANSIENT_RETRY_DELAYS · constant · L816-L816 — const TRANSIENT_RETRY_DELAYS: [Duration; 2] = [Duration::from_millis(1), Duration::from_millis(1)];
+- MAX_RETRY_AFTER · constant · L817-L817 — const MAX_RETRY_AFTER: Duration = Duration::from_secs(5);
+- is_transient_status · function · L819-L821 — fn is_transient_status(status: u16) -> bool
+- retry_after · function · L825-L839 — fn retry_after(response: &Response) -> Option<Duration>
+- client_builder · function · L842-L844 — fn client_builder() -> reqwest::ClientBuilder
+- client_builder_for · function · L846-L856 — fn client_builder_for(bypass_proxy: bool) -> reqwest::ClientBuilder
+- resolve_explicit_supervision · function · L858-L881 — fn resolve_explicit_supervision(
+- route_resolution · module · L884-L884 — mod route_resolution;
+- request_body · function · L888-L894 — fn request_body(
+- request_body_for · function · L897-L904 — fn request_body_for(
+- request_body_with_model · function · L906-L1013 — fn request_body_with_model(
+- read_quota_exceeded · function · L1018-L1046 — async fn read_quota_exceeded(
+- read_response · function · L1048-L1050 — async fn read_response(response: Response, limit: usize, provider: JevProvider) -> Result<Value>
+- read_response_for_purpose · function · L1052-L1103 — async fn read_response_for_purpose(
+- validate_answers · function · L1105-L1131 — fn validate_answers(value: &Value, questions: &Map<String, Value>) -> Result<()>
+- tests · module · L1134-L2681 — mod tests
+- questions · function · L1138-L1141 — pub(super) fn questions() -> Map<String, Value>
+- response · function · L1143-L1145 — pub(super) fn response() -> Value
+- browser_questions · function · L1147-L1150 — pub(super) fn browser_questions() -> Map<String, Value>
+- voice_routes_independently_to_subscription_or_typesafe_only · function · L1153-L1231 — fn voice_routes_independently_to_subscription_or_typesafe_only()
+- purpose_selectors_are_independent_and_browser_defaults_to_subscription_first · function · L1234-L1286 — fn purpose_selectors_are_independent_and_browser_defaults_to_subscription_first()
+- browser_choice_contract_is_distinct_from_memory_noul · function · L1289-L1338 — fn browser_choice_contract_is_distinct_from_memory_noul()
+- resolver_keeps_provider_credentials_and_endpoints_isolated · function · L1341-L1437 — fn resolver_keeps_provider_credentials_and_endpoints_isolated()
+- explicit_missing_provider_never_uses_another_key · function · L1440-L1456 — fn explicit_missing_provider_never_uses_another_key()
+- auto_prefers_included_subscription_without_shared_slot · function · L1459-L1507 — fn auto_prefers_included_subscription_without_shared_slot()
+- empty_and_malformed_credentials_are_rejected_without_echoing · function · L1510-L1517 — fn empty_and_malformed_credentials_are_rejected_without_echoing()
+- gateway_requires_secure_trusted_base · function · L1520-L1540 — fn gateway_requires_secure_trusted_base()
+- request_uses_decisions_not_chat_and_preserves_provider_models · function · L1543-L1558 — fn request_uses_decisions_not_chat_and_preserves_provider_models()
+- request_bounds_and_gateway_contract_are_checked_before_network · function · L1561-L1587 — fn request_bounds_and_gateway_contract_are_checked_before_network()
+- answers_must_match_questions_and_have_valid_noul_probabilities · function · L1590-L1601 — fn answers_must_match_questions_and_have_valid_noul_probabilities()
+- MockReply · type · L1605-L1605 — pub(super) type MockReply = (u16, String, Vec<(String, String)>);
+- mock_server · function · L1607-L1613 — pub(super) fn mock_server(
+- mock_server_with · function · L1617-L1721 — pub(super) fn mock_server_with(
+- mock_client · function · L1723-L1737 — pub(super) fn mock_client(base: &str, provider: JevProvider) -> JevClient
+- mock_supervision_client · function · L1739-L1761 — fn mock_supervision_client(base: &str, provider: JevProvider) -> JevClient
+- shadow_choice · function · L1763-L1765 — fn shadow_choice(advice: &str) -> String
+- shadow_case · function · L1767-L1775 — fn shadow_case() -> JevShadowCase
+- shadow_chat_choice · function · L1777-L1779 — fn shadow_chat_choice(advice: &str) -> String
+- shadow_omniroute_preserves_model_state_usage_and_one_client_send · function · L1782-L1817 — async fn shadow_omniroute_preserves_model_state_usage_and_one_client_send()
+- shadow_omniroute_invalid_responses_never_retry · function · L1820-L1835 — async fn shadow_omniroute_invalid_responses_never_retry()
+- shadow_adversarial_responses_never_retry_or_return_advice · function · L1838-L1861 — async fn shadow_adversarial_responses_never_retry_or_return_advice()
+- shadow_missing_scope_checks_and_oversized_input_send_nothing · function · L1864-L1891 — async fn shadow_missing_scope_checks_and_oversized_input_send_nothing()
+- shadow_caps_and_remaining_run_deadline_are_enforced · function · L1894-L1938 — async fn shadow_caps_and_remaining_run_deadline_are_enforced()
+- shadow_timeout_and_cancellation_consume_one_slot_without_retries · function · L1941-L1968 — async fn shadow_timeout_and_cancellation_consume_one_slot_without_retries()
+- shadow_advice_is_consumed_once_and_replaced_state_rejects_old_results · function · L1971-L1987 — fn shadow_advice_is_consumed_once_and_replaced_state_rejects_old_results()
+- shadow_route_is_explicit_typed_bounded_and_observational · function · L1990-L2016 — async fn shadow_route_is_explicit_typed_bounded_and_observational()
+- shadow_missing_identity_abstains_and_failure_does_not_retry · function · L2019-L2047 — async fn shadow_missing_identity_abstains_and_failure_does_not_retry()
+- shadow_does_not_borrow_other_purpose_entitlements · function · L2050-L2062 — async fn shadow_does_not_borrow_other_purpose_entitlements()
+- shadow_gateway_uses_its_own_capability_and_header · function · L2065-L2103 — async fn shadow_gateway_uses_its_own_capability_and_header()
+- model_override_precedence_and_provider_defaults · function · L2106-L2124 — fn model_override_precedence_and_provider_defaults()
+- supervision_selector_refuses_other_purposes_without_panicking · function · L2127-L2133 — fn supervision_selector_refuses_other_purposes_without_panicking()
+- supervision_config_resolves_only_its_explicit_route · function · L2136-L2156 — fn supervision_config_resolves_only_its_explicit_route()
+- supervision_config_invalid_values_are_typed_and_do_not_fallback · function · L2159-L2200 — fn supervision_config_invalid_values_are_typed_and_do_not_fallback()
+- supervision_requires_explicit_provider_and_model · function · L2203-L2212 — fn supervision_requires_explicit_provider_and_model()
+- request_body_uses_explicit_model_override · function · L2215-L2226 — fn request_body_uses_explicit_model_override()
+- client_reports_and_sends_the_same_configured_model · function · L2229-L2239 — async fn client_reports_and_sends_the_same_configured_model()
+- rejected_model_returns_bounded_error_without_fallback · function · L2242-L2255 — async fn rejected_model_returns_bounded_error_without_fallback()
+- voice_subscription_uses_existing_noul_entitlement_without_bypassing_it · function · L2258-L2300 — async fn voice_subscription_uses_existing_noul_entitlement_without_bypassing_it()
+- concurrent_mock · function · L2304-L2352 — pub(super) fn concurrent_mock(
+- concurrent_mock_waits_for_complete_request_body · function · L2355-L2377 — fn concurrent_mock_waits_for_complete_request_body()
+- voice_hedges_a_slow_request_and_takes_the_first_valid_answer · function · L2380-L2393 — async fn voice_hedges_a_slow_request_and_takes_the_first_valid_answer()
+- voice_hedge_failure_waits_for_primary_and_memory_never_hedges · function · L2396-L2415 — async fn voice_hedge_failure_waits_for_primary_and_memory_never_hedges()
+- voice_typesafe_errors_never_retry_or_return_a_partial_report · function · L2418-L2437 — async fn voice_typesafe_errors_never_retry_or_return_a_partial_report()
+- voice_direct_transport_preserves_typed_state_and_never_sends_openrouter_headers · function · L2440-L2487 — async fn voice_direct_transport_preserves_typed_state_and_never_sends_openrouter_headers()
+- voice_twenty_candidates_cross_real_transport_in_bounded_same_state_batches · function · L2490-L2620 — async fn voice_twenty_candidates_cross_real_transport_in_bounded_same_state_batches()
+- voice_later_batch_errors_never_return_partial_classification · function · L2623-L2680 — async fn voice_later_batch_errors_never_return_partial_classification()
+- transport_tests · module · L2684-L2684 — mod transport_tests;

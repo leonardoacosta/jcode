@@ -1,0 +1,49 @@
+# crates/jcode-base/src/auth/external.rs
+
+- OPENCODE_AUTH_JSON_SOURCE_ID · constant · L6-L6 — pub const OPENCODE_AUTH_JSON_SOURCE_ID: &str = "opencode_auth_json";
+- PI_AUTH_JSON_SOURCE_ID · constant · L7-L7 — pub const PI_AUTH_JSON_SOURCE_ID: &str = "pi_auth_json";
+- OPENCLAW_AUTH_JSON_SOURCE_ID · constant · L8-L8 — pub const OPENCLAW_AUTH_JSON_SOURCE_ID: &str = "openclaw_auth_json";
+- HERMES_AUTH_JSON_SOURCE_ID · constant · L9-L9 — pub const HERMES_AUTH_JSON_SOURCE_ID: &str = "hermes_auth_json";
+- ExternalAuthSource · enum · L12-L17 — pub enum ExternalAuthSource
+- ExternalOAuthTokens · struct · L20-L24 — pub struct ExternalOAuthTokens
+- source_id · function · L27-L34 — pub fn source_id(self) -> &'static str
+- display_name · function · L36-L43 — pub fn display_name(self) -> &'static str
+- path · function · L45-L52 — pub fn path(self) -> Result<PathBuf>
+- openclaw_auth_path · function · L66-L106 — fn openclaw_auth_path() -> Result<PathBuf>
+- SOURCES · constant · L108-L113 — const SOURCES: [ExternalAuthSource; 4] = [
+- trust_external_auth_source · function · L115-L122 — pub fn trust_external_auth_source(source: ExternalAuthSource) -> Result<()>
+- has_any_unconsented_external_auth · function · L124-L129 — pub fn has_any_unconsented_external_auth() -> bool
+- unconsented_sources · function · L131-L136 — pub fn unconsented_sources() -> Vec<ExternalAuthSource>
+- detected_sources · function · L140-L146 — pub fn detected_sources() -> Vec<ExternalAuthSource>
+- source_provider_labels · function · L148-L175 — pub fn source_provider_labels(source: ExternalAuthSource) -> Vec<&'static str>
+- preferred_unconsented_api_key_source · function · L177-L184 — pub fn preferred_unconsented_api_key_source() -> Option<ExternalAuthSource>
+- preferred_unconsented_api_key_source_for_env · function · L186-L196 — pub fn preferred_unconsented_api_key_source_for_env(env_key: &str) -> Option<ExternalAuthSource>
+- preferred_unconsented_openai_oauth_source · function · L198-L200 — pub fn preferred_unconsented_openai_oauth_source() -> Option<ExternalAuthSource>
+- preferred_unconsented_anthropic_oauth_source · function · L202-L204 — pub fn preferred_unconsented_anthropic_oauth_source() -> Option<ExternalAuthSource>
+- preferred_unconsented_gemini_oauth_source · function · L206-L212 — pub fn preferred_unconsented_gemini_oauth_source() -> Option<ExternalAuthSource>
+- preferred_unconsented_antigravity_oauth_source · function · L214-L216 — pub fn preferred_unconsented_antigravity_oauth_source() -> Option<ExternalAuthSource>
+- load_api_key_for_env · function · L218-L228 — pub fn load_api_key_for_env(env_key: &str) -> Option<String>
+- load_openai_oauth_tokens · function · L230-L232 — pub fn load_openai_oauth_tokens() -> Option<ExternalOAuthTokens>
+- load_copilot_oauth_token · function · L234-L237 — pub fn load_copilot_oauth_token() -> Option<String>
+- source_has_copilot_oauth · function · L239-L241 — pub fn source_has_copilot_oauth(source: ExternalAuthSource) -> bool
+- load_gemini_oauth_tokens · function · L243-L245 — pub fn load_gemini_oauth_tokens() -> Option<ExternalOAuthTokens>
+- load_antigravity_oauth_tokens · function · L247-L249 — pub fn load_antigravity_oauth_tokens() -> Option<ExternalOAuthTokens>
+- load_anthropic_oauth_tokens · function · L251-L253 — pub fn load_anthropic_oauth_tokens() -> Option<ExternalOAuthTokens>
+- source_allowed · function · L255-L273 — pub fn source_allowed(source: ExternalAuthSource) -> bool
+- load_oauth_tokens_for_candidates · function · L275-L302 — fn load_oauth_tokens_for_candidates(provider_keys: &[&str]) -> Option<ExternalOAuthTokens>
+- preferred_unconsented_oauth_source_for_candidates · function · L304-L314 — fn preferred_unconsented_oauth_source_for_candidates(
+- source_has_supported_auth · function · L316-L336 — fn source_has_supported_auth(source: ExternalAuthSource) -> bool
+- source_contains_supported_api_key · function · L338-L343 — fn source_contains_supported_api_key(source: ExternalAuthSource) -> Result<bool>
+- source_contains_oauth_provider · function · L345-L355 — fn source_contains_oauth_provider(
+- load_api_key_from_source · function · L357-L368 — fn load_api_key_from_source(source: ExternalAuthSource, env_key: &str) -> Option<String>
+- load_auth_map · function · L370-L392 — fn load_auth_map(source: ExternalAuthSource) -> Result<HashMap<String, Value>>
+- flatten_openclaw_auth_store · function · L411-L437 — fn flatten_openclaw_auth_store(value: &Value) -> HashMap<String, Value>
+- flatten_hermes_auth_store · function · L454-L473 — fn flatten_hermes_auth_store(value: &Value) -> HashMap<String, Value>
+- extract_api_key · function · L475-L510 — fn extract_api_key(source: ExternalAuthSource, entry: &Value) -> Option<String>
+- resolve_pi_api_key_value · function · L512-L526 — fn resolve_pi_api_key_value(raw: &str) -> Option<String>
+- extract_oauth_tokens · function · L528-L535 — fn extract_oauth_tokens(source: ExternalAuthSource, entry: &Value) -> Option<ExternalOAuthTokens>
+- extract_oauth_tokens_pi_style · function · L539-L561 — fn extract_oauth_tokens_pi_style(entry: &Value) -> Option<ExternalOAuthTokens>
+- extract_oauth_tokens_hermes_style · function · L567-L593 — fn extract_oauth_tokens_hermes_style(entry: &Value) -> Option<ExternalOAuthTokens>
+- hermes_expires_at_ms · function · L595-L605 — fn hermes_expires_at_ms(object: &serde_json::Map<String, Value>) -> Option<i64>
+- provider_keys_for_env · function · L607-L646 — fn provider_keys_for_env(env_key: &str) -> &'static [&'static str]
+- external_tests · module · L650-L650 — mod external_tests;

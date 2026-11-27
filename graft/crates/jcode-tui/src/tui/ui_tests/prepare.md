@@ -1,0 +1,34 @@
+# crates/jcode-tui/src/tui/ui_tests/prepare.rs
+
+- chat_swarm_member · function · L3-L54 — fn chat_swarm_member(session_id: &str) -> crate::protocol::SwarmMemberStatus
+- nested_chat_swarm_member · function · L56-L74 — fn nested_chat_swarm_member(
+- test_prepare_messages_keeps_transcript_card_stable_with_nested_descendants · function · L77-L160 — fn test_prepare_messages_keeps_transcript_card_stable_with_nested_descendants()
+- test_prepare_messages_uses_exact_spawn_member_outside_gallery_subtree · function · L163-L197 — fn test_prepare_messages_uses_exact_spawn_member_outside_gallery_subtree()
+- test_prepare_messages_matches_real_prefixed_spawn_result_without_input_metadata · function · L200-L231 — fn test_prepare_messages_matches_real_prefixed_spawn_result_without_input_metadata()
+- test_prepare_messages_does_not_attach_member_to_unmatched_spawn_result · function · L234-L264 — fn test_prepare_messages_does_not_attach_member_to_unmatched_spawn_result()
+- test_prepare_messages_matches_spawn_member_by_unique_label_when_result_is_reformatted · function · L267-L299 — fn test_prepare_messages_matches_spawn_member_by_unique_label_when_result_is_reformatted()
+- test_prepare_messages_does_not_guess_when_spawn_label_is_ambiguous · function · L302-L336 — fn test_prepare_messages_does_not_guess_when_spawn_label_is_ambiguous()
+- test_prepare_messages_live_batch_rows_do_not_soft_wrap_on_narrow_width · function · L339-L400 — fn test_prepare_messages_live_batch_rows_do_not_soft_wrap_on_narrow_width()
+- test_prepare_messages_centered_live_batch_rows_keep_dedicated_padding_span · function · L403-L467 — fn test_prepare_messages_centered_live_batch_rows_keep_dedicated_padding_span()
+- test_prepare_messages_shows_live_batch_progress_in_chat_history · function · L470-L560 — fn test_prepare_messages_shows_live_batch_progress_in_chat_history()
+- test_prepare_messages_places_live_batch_after_committed_assistant_text · function · L563-L622 — fn test_prepare_messages_places_live_batch_after_committed_assistant_text()
+- test_prepare_messages_live_batch_spinner_advances_between_frames · function · L625-L694 — fn test_prepare_messages_live_batch_spinner_advances_between_frames()
+- test_prepare_messages_live_batch_centered_mode_uses_left_aligned_padding · function · L697-L754 — fn test_prepare_messages_live_batch_centered_mode_uses_left_aligned_padding()
+- test_prepare_messages_centers_meta_footer_in_centered_mode · function · L757-L786 — fn test_prepare_messages_centers_meta_footer_in_centered_mode()
+- test_prepare_messages_recomputes_when_streaming_text_changes_same_length · function · L789-L828 — fn test_prepare_messages_recomputes_when_streaming_text_changes_same_length()
+- test_prepare_messages_tool_row_refreshes_after_message_version_bump · function · L831-L895 — fn test_prepare_messages_tool_row_refreshes_after_message_version_bump()
+- test_prepare_messages_centered_streaming_uses_center_alignment_without_left_padding · function · L898-L939 — fn test_prepare_messages_centered_streaming_uses_center_alignment_without_left_padding()
+- test_prepare_messages_centered_streaming_recenters_structured_markdown_like_final_render · function · L942-L995 — fn test_prepare_messages_centered_streaming_recenters_structured_markdown_like_final_render()
+- test_render_tool_message_batch_nested_subcall_params_still_render · function · L998-L1032 — fn test_render_tool_message_batch_nested_subcall_params_still_render()
+- test_render_tool_message_batch_flat_grep_subcall_uses_pattern_and_path · function · L1035-L1069 — fn test_render_tool_message_batch_flat_grep_subcall_uses_pattern_and_path()
+- test_render_tool_message_batch_subcall_lines_alignment_unset · function · L1072-L1119 — fn test_render_tool_message_batch_subcall_lines_alignment_unset()
+- test_prepare_messages_thinking_and_tools_have_no_blank_rows · function · L1122-L1129 — fn test_prepare_messages_thinking_and_tools_have_no_blank_rows()
+- with_compact_thinking_config · function · L1131-L1161 — fn with_compact_thinking_config(compact: bool, f: impl FnOnce())
+- RestoreHome · struct · L1135-L1135 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L1137-L1144 — fn drop(&mut self)
+- assert_thinking_tool_adjacency · function · L1163-L1221 — fn assert_thinking_tool_adjacency(embedded_assistant: bool, compact: bool)
+- test_prepare_messages_streaming_thinking_has_no_blank_prefix · function · L1224-L1228 — fn test_prepare_messages_streaming_thinking_has_no_blank_prefix()
+- assert_streaming_thinking_spacing · function · L1230-L1269 — fn assert_streaming_thinking_spacing(compact: bool)
+- reasoning_history · module · L1272-L1272 — mod reasoning_history;
+- error_rows · module · L1275-L1275 — mod error_rows;
+- additional_streaming_hash_default_fallback_invalidates_same_length_frame · module · L1278-L1278 — mod additional_streaming_hash_default_fallback_invalidates_same_length_frame;

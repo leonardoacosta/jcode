@@ -1,0 +1,35 @@
+# crates/jcode-todo-policy/src/followup.rs
+
+- MAX_GATE_ATTEMPTS · constant · L24-L24 — pub const MAX_GATE_ATTEMPTS: u8 = 5;
+- INCOMPLETE_TODO_MAX_ATTEMPTS · constant · L27-L27 — pub const INCOMPLETE_TODO_MAX_ATTEMPTS: u8 = 3;
+- IncompleteTodoBudget · struct · L31-L34 — pub struct IncompleteTodoBudget
+- allow_follow_up · function · L39-L68 — pub fn allow_follow_up(&mut self, todos: &[TodoItem]) -> bool
+- TodoSnapshot · struct · L73-L90 — pub struct TodoSnapshot
+- todo_waits_on_running_task · function · L95-L100 — pub fn todo_waits_on_running_task(
+- goal_cannot_complete · function · L103-L108 — pub fn goal_cannot_complete(goal: &TodoGoal) -> Option<&str>
+- todo_goal_cannot_complete · function · L112-L114 — pub fn todo_goal_cannot_complete(todo: &TodoItem, goals: &[TodoGoal]) -> bool
+- todo_cannot_complete_reason · function · L116-L122 — pub fn todo_cannot_complete_reason<'a>(todo: &TodoItem, goals: &'a [TodoGoal]) -> Option<&'a str>
+- todo_requires_user_auth · function · L126-L132 — pub fn todo_requires_user_auth(todo: &TodoItem) -> bool
+- TodoEffects · struct · L137-L142 — pub struct TodoEffects
+- is_empty · function · L145-L147 — pub fn is_empty(&self) -> bool
+- FollowUpKind · enum · L152-L160 — pub enum FollowUpKind
+- FollowUp · struct · L164-L171 — pub struct FollowUp
+- Decision · struct · L174-L179 — pub struct Decision
+- send · function · L182-L191 — fn send(kind: FollowUpKind, message: String, notice: impl Into<String>) -> Self
+- with_effects · function · L193-L196 — fn with_effects(mut self, effects: TodoEffects) -> Self
+- FollowUpPolicy · struct · L201-L212 — pub struct FollowUpPolicy
+- is_incomplete_todo · function · L214-L216 — pub fn is_incomplete_todo(todo: &TodoItem) -> bool
+- new · function · L220-L226 — pub fn new(enabled: bool) -> Self
+- is_enabled · function · L228-L230 — pub fn is_enabled(&self) -> bool
+- set_gate_digest_enabled · function · L236-L238 — pub fn set_gate_digest_enabled(&mut self, enabled: bool)
+- enable · function · L241-L245 — pub fn enable(&mut self)
+- disable · function · L248-L252 — pub fn disable(&mut self)
+- reset_cycle · function · L256-L263 — pub fn reset_cycle(&mut self)
+- decide · function · L267-L269 — pub fn decide(&mut self, snapshot: &TodoSnapshot) -> Decision
+- decide_after_turn · function · L274-L458 — pub fn decide_after_turn(
+- poke_incomplete · function · L460-L485 — fn poke_incomplete(&mut self, incomplete: &[&TodoItem]) -> Decision
+- ConfidenceSummary · struct · L490-L495 — pub struct ConfidenceSummary
+- priority_weight · function · L497-L503 — fn priority_weight(priority: &str) -> u32
+- of · function · L506-L530 — pub fn of(todos: &[TodoItem]) -> Self
+- label · function · L532-L537 — pub fn label(&self) -> String
+- tests · module · L542-L542 — mod tests;

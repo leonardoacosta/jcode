@@ -1,0 +1,59 @@
+# crates/jcode-tui/src/tui/app/tests/onboarding_flow.rs
+
+- QualityFirstOpenAiProvider · struct · L6-L8 — struct QualityFirstOpenAiProvider
+- complete · function · L12-L20 — async fn complete(
+- name · function · L22-L24 — fn name(&self) -> &str
+- model · function · L26-L28 — fn model(&self) -> String
+- model_routes · function · L30-L60 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L62-L66 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L68-L70 — fn fork(&self) -> Arc<dyn Provider>
+- quality_first_openai_test_app · function · L73-L80 — fn quality_first_openai_test_app() -> App
+- onboarding_test_app · function · L82-L87 — fn onboarding_test_app() -> App
+- direct_api_key_login_does_not_advertise_a_static_model_default · function · L90-L116 — fn direct_api_key_login_does_not_advertise_a_static_model_default()
+- onboarding_strongest_model_only_runs_without_explicit_defaults · function · L119-L157 — fn onboarding_strongest_model_only_runs_without_explicit_defaults()
+- onboarding_begins_and_advances_past_model_select · function · L160-L176 — fn onboarding_begins_and_advances_past_model_select()
+- onboarding_can_begin_at_login_phase · function · L179-L196 — fn onboarding_can_begin_at_login_phase()
+- login_welcome_kind_shows_import_checkbox_list · function · L199-L231 — fn login_welcome_kind_shows_import_checkbox_list()
+- import_review_collects_checked_logins · function · L234-L261 — fn import_review_collects_checked_logins()
+- import_review_cursor_navigation_wraps · function · L264-L303 — fn import_review_cursor_navigation_wraps()
+- login_phase_advances_to_model_select_without_telemetry_prompt · function · L306-L332 — fn login_phase_advances_to_model_select_without_telemetry_prompt()
+- login_openai_phase_is_default_when_no_imports · function · L335-L356 — fn login_openai_phase_is_default_when_no_imports()
+- login_openai_no_finishes_onboarding_with_login_hint · function · L359-L389 — fn login_openai_no_finishes_onboarding_with_login_hint()
+- login_openai_arrows_toggle_highlight · function · L392-L419 — fn login_openai_arrows_toggle_highlight()
+- import_review_decision_timer_counts_down_and_times_out · function · L422-L436 — fn import_review_decision_timer_counts_down_and_times_out()
+- login_phase_enter_opens_login_picker · function · L439-L458 — fn login_phase_enter_opens_login_picker()
+- pending_login_entry_is_not_intercepted_by_onboarding_login_phase · function · L461-L490 — fn pending_login_entry_is_not_intercepted_by_onboarding_login_phase()
+- openrouter_key_typed_through_full_key_path_does_not_reopen_picker · function · L493-L574 — fn openrouter_key_typed_through_full_key_path_does_not_reopen_picker()
+- import_failure_resets_login_to_manual_prompt · function · L577-L608 — fn import_failure_resets_login_to_manual_prompt()
+- import_review_decline_all_falls_back_to_manual_login · function · L611-L644 — fn import_review_decline_all_falls_back_to_manual_login()
+- answering_no_on_continue_prompt_lands_on_regular_session · function · L647-L672 — fn answering_no_on_continue_prompt_lands_on_regular_session()
+- continue_prompt_key_y_consumes_and_advances · function · L675-L695 — fn continue_prompt_key_y_consumes_and_advances()
+- continue_prompt_key_ignored_when_not_in_phase · function · L698-L702 — fn continue_prompt_key_ignored_when_not_in_phase()
+- onboarding_start_choice_is_action_only_and_defaults_to_review · function · L705-L726 — fn onboarding_start_choice_is_action_only_and_defaults_to_review()
+- startup_check_skips_when_session_already_has_activity · function · L729-L743 — fn startup_check_skips_when_session_already_has_activity()
+- startup_check_ignores_synthetic_scaffolding_messages · function · L746-L777 — fn startup_check_ignores_synthetic_scaffolding_messages()
+- startup_check_skips_when_input_is_present · function · L780-L792 — fn startup_check_skips_when_input_is_present()
+- startup_check_is_noop_once_committed · function · L795-L806 — fn startup_check_is_noop_once_committed()
+- startup_check_skips_selfdev_canary_session · function · L809-L827 — fn startup_check_skips_selfdev_canary_session()
+- model_validation_success_appends_single_ready_line · function · L830-L856 — fn model_validation_success_appends_single_ready_line()
+- model_validation_failure_appends_single_warning_line_with_detail · function · L859-L890 — fn model_validation_failure_appends_single_warning_line_with_detail()
+- model_validation_auth_failure_offers_login_fix · function · L893-L915 — fn model_validation_auth_failure_offers_login_fix()
+- model_validation_ignores_stale_session_result · function · L918-L936 — fn model_validation_ignores_stale_session_result()
+- remote_post_login_validation_waits_for_catalog_refresh · function · L939-L959 — fn remote_post_login_validation_waits_for_catalog_refresh()
+- local_post_import_validation_waits_for_model_activation · function · L962-L983 — fn local_post_import_validation_waits_for_model_activation()
+- startup_check_skips_user_with_established_session_history · function · L986-L1016 — fn startup_check_skips_user_with_established_session_history()
+- startup_check_imported_transcripts_do_not_count_as_history · function · L1019-L1047 — fn startup_check_imported_transcripts_do_not_count_as_history()
+- onboarding_state_is_escapable · function · L1063-L1075 — fn onboarding_state_is_escapable(app: &App) -> bool
+- liveness_every_login_phase_has_a_single_keypress_exit · function · L1078-L1119 — fn liveness_every_login_phase_has_a_single_keypress_exit()
+- liveness_import_review_decline_all_then_enter_escapes · function · L1122-L1165 — fn liveness_import_review_decline_all_then_enter_escapes()
+- liveness_stuck_import_is_recovered_by_the_tick_watchdog · function · L1168-L1212 — fn liveness_stuck_import_is_recovered_by_the_tick_watchdog()
+- liveness_esc_always_exits_onboarding_from_every_guided_phase · function · L1215-L1296 — fn liveness_esc_always_exits_onboarding_from_every_guided_phase()
+- import_failure_reason_is_cleaned_and_capitalized · function · L1299-L1332 — fn import_failure_reason_is_cleaned_and_capitalized()
+- import_failure_h_key_prepares_agent_repair_brief · function · L1335-L1376 — fn import_failure_h_key_prepares_agent_repair_brief()
+- import_failure_h_key_is_inert_without_a_recorded_error · function · L1379-L1393 — fn import_failure_h_key_is_inert_without_a_recorded_error()
+- import_summary_defaults_to_continue_and_enter_imports_all · function · L1396-L1433 — fn import_summary_defaults_to_continue_and_enter_imports_all()
+- import_continue_reaches_ready_quality_first_openai_model · function · L1436-L1526 — fn import_continue_reaches_ready_quality_first_openai_model()
+- import_summary_choose_pill_opens_checkbox_list · function · L1529-L1575 — fn import_summary_choose_pill_opens_checkbox_list()
+- starting_recent_project_review_queues_remote_turn_without_stuck_sending · function · L1584-L1608 — fn starting_recent_project_review_queues_remote_turn_without_stuck_sending()
+- recent_project_review_falls_back_cleanly_when_no_repo_is_known · function · L1611-L1624 — fn recent_project_review_falls_back_cleanly_when_no_repo_is_known()
+- import_less_enter_on_row_toggles_instead_of_committing · function · L1629-L1672 — fn import_less_enter_on_row_toggles_instead_of_committing()

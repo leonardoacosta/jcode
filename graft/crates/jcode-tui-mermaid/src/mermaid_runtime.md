@@ -1,0 +1,55 @@
+# crates/jcode-tui-mermaid/src/mermaid_runtime.rs
+
+- images_disabled · function · L3-L10 — pub(super) fn images_disabled() -> bool
+- PickerInitMode · enum · L13-L16 — pub(super) enum PickerInitMode
+- Multiplexer · enum · L25-L34 — pub(super) enum Multiplexer
+- label · function · L37-L45 — fn label(self) -> &'static str
+- env_is_set · function · L48-L50 — fn env_is_set(value: Option<&str>) -> bool
+- detect_multiplexer · function · L54-L80 — pub(super) fn detect_multiplexer(
+- detect_multiplexer_from_env · function · L82-L90 — fn detect_multiplexer_from_env() -> Multiplexer
+- adjust_protocol_for_multiplexer · function · L97-L110 — pub(super) fn adjust_protocol_for_multiplexer(
+- zellij_kitty_images_enabled · function · L112-L118 — fn zellij_kitty_images_enabled() -> bool
+- use_classic_kitty · function · L120-L129 — pub(super) fn use_classic_kitty() -> bool
+- with_classic_kitty_for_test · function · L135-L144 — pub(super) fn with_classic_kitty_for_test<T>(f: impl FnOnce() -> T) -> T
+- Reset · struct · L136-L136 — struct Reset(bool);
+- drop · function · L138-L140 — fn drop(&mut self)
+- apply_multiplexer_protocol_limits · function · L146-L159 — fn apply_multiplexer_protocol_limits(picker: &mut Picker, multiplexer: Multiplexer)
+- tmux_reports_native_sixel · function · L161-L166 — fn tmux_reports_native_sixel(sixel_support: &str, client_termfeatures: &str) -> bool
+- tmux_has_native_sixel · function · L168-L188 — fn tmux_has_native_sixel() -> bool
+- new_resize_protocol · function · L193-L209 — pub(super) fn new_resize_protocol(picker: &Picker, image: DynamicImage) -> StatefulProtocol
+- parse_env_bool · function · L211-L217 — fn parse_env_bool(raw: &str) -> Option<bool>
+- decide_picker_init_mode · function · L229-L243 — pub(super) fn decide_picker_init_mode(
+- picker_init_mode_from_probe_env · function · L250-L255 — pub(super) fn picker_init_mode_from_probe_env(raw: Option<&str>) -> PickerInitMode
+- infer_protocol_from_env · function · L257-L314 — pub(super) fn infer_protocol_from_env(
+- real_iterm2_without_opt_in · function · L318-L335 — pub(super) fn real_iterm2_without_opt_in() -> bool
+- iterm2_images_opt_in · function · L338-L344 — pub(super) fn iterm2_images_opt_in() -> bool
+- query_font_size · function · L346-L363 — fn query_font_size() -> (u16, u16)
+- fast_picker · function · L365-L388 — fn fast_picker() -> Picker
+- probe_picker · function · L400-L438 — fn probe_picker() -> Picker
+- prewarm_svg_font_db_async · function · L450-L458 — pub(crate) fn prewarm_svg_font_db_async()
+- init_picker · function · L467-L511 — pub fn init_picker()
+- force_test_kitty_picker · function · L516-L522 — pub fn force_test_kitty_picker()
+- protocol_type · function · L525-L540 — pub fn protocol_type() -> Option<ProtocolType>
+- with_image_protocol_override · function · L553-L565 — pub fn with_image_protocol_override<T>(enabled: Option<bool>, f: impl FnOnce() -> T) -> T
+- Reset · struct · L556-L556 — struct Reset<'a>(&'a std::cell::Cell<Option<bool>>, Option<bool>);
+- drop · function · L558-L560 — fn drop(&mut self)
+- image_protocol_available · function · L567-L575 — pub fn image_protocol_available() -> bool
+- protocol_supports_native_images · function · L577-L586 — fn protocol_supports_native_images(
+- native_image_protocol_available · function · L592-L600 — pub fn native_image_protocol_available() -> bool
+- protocol_uses_text_image_fallback · function · L602-L607 — fn protocol_uses_text_image_fallback(
+- uses_text_image_fallback · function · L611-L613 — pub fn uses_text_image_fallback() -> bool
+- set_video_export_mode · function · L617-L619 — pub fn set_video_export_mode(enabled: bool)
+- is_video_export_mode · function · L622-L624 — pub fn is_video_export_mode() -> bool
+- get_cached_png · function · L628-L631 — pub fn get_cached_png(hash: u64) -> Option<(PathBuf, u32, u32)>
+- register_markdown_image · function · L635-L712 — pub fn register_markdown_image(path: &Path) -> Option<u64>
+- register_external_image · function · L717-L736 — pub fn register_external_image(path: &Path, width: u32, height: u32) -> u64
+- EXTERNAL_IMAGE_PATHS_MAX · constant · L741-L741 — const EXTERNAL_IMAGE_PATHS_MAX: usize = 8192;
+- ExternalImagePaths · type · L754-L754 — type ExternalImagePaths = (HashMap<u64, PathBuf>, VecDeque<u64>);
+- EXTERNAL_IMAGE_PATHS · constant · L756-L757 — static EXTERNAL_IMAGE_PATHS: LazyLock<Mutex<ExternalImagePaths>> =
+- remember_external_image_path · function · L759-L772 — fn remember_external_image_path(hash: u64, path: &Path)
+- rediscover_external_image · function · L777-L803 — pub fn rediscover_external_image(hash: u64) -> Option<(u64, u32, u32)>
+- register_inline_image · function · L805-L844 — pub fn register_inline_image(media_type: &str, data_b64: &str) -> Option<(u64, u32, u32)>
+- inline_image_extension · function · L846-L856 — fn inline_image_extension(media_type: &str) -> &'static str
+- error_lines_for · function · L858-L864 — pub fn error_lines_for(hash: u64) -> Option<Vec<Line<'static>>>
+- get_font_size · function · L867-L871 — pub fn get_font_size() -> Option<(u16, u16)>
+- protocol_tests · module · L875-L875 — mod protocol_tests;

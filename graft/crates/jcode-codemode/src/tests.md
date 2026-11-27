@@ -1,0 +1,26 @@
+# crates/jcode-codemode/src/tests.rs
+
+- EchoHost · struct · L6-L8 — struct EchoHost
+- call_tool · function · L11-L28 — fn call_tool(&self, name: String, args: Value) -> BoxFuture<'static, Result<Value, String>>
+- tools · function · L31-L40 — fn tools() -> Vec<ToolInfo>
+- exec · function · L42-L44 — async fn exec(code: &str) -> RunOutput
+- exec_with · function · L46-L51 — async fn exec_with(code: &str, store: Map<String, Value>, limits: Limits) -> RunOutput
+- returns_json_value · function · L54-L58 — async fn returns_json_value()
+- undefined_return_is_none · function · L61-L65 — async fn undefined_return_is_none()
+- calls_tools_via_proxy_and_call_tool · function · L68-L83 — async fn calls_tools_via_proxy_and_call_tool()
+- parallel_tool_calls_run_concurrently · function · L86-L103 — async fn parallel_tool_calls_run_concurrently()
+- tool_errors_throw_and_can_be_caught · function · L106-L116 — async fn tool_errors_throw_and_can_be_caught()
+- uncaught_errors_are_reported · function · L119-L126 — async fn uncaught_errors_are_reported()
+- syntax_errors_are_reported · function · L129-L132 — async fn syntax_errors_are_reported()
+- unknown_tools_suggest_alternatives · function · L135-L141 — async fn unknown_tools_suggest_alternatives()
+- console_output_is_captured · function · L144-L150 — async fn console_output_is_captured()
+- log_capture_is_bounded · function · L153-L166 — async fn log_capture_is_bounded()
+- store_persists_across_runs · function · L169-L182 — async fn store_persists_across_runs()
+- discovery_helpers_work · function · L185-L206 — async fn discovery_helpers_work()
+- busy_loops_time_out · function · L209-L220 — async fn busy_loops_time_out()
+- hung_tool_calls_time_out · function · L223-L236 — async fn hung_tool_calls_time_out()
+- memory_limit_is_enforced · function · L239-L251 — async fn memory_limit_is_enforced()
+- tool_call_limit_is_enforced · function · L254-L270 — async fn tool_call_limit_is_enforced()
+- no_host_apis_are_exposed · function · L273-L291 — async fn no_host_apis_are_exposed()
+- dropping_the_future_cancels · function · L294-L309 — async fn dropping_the_future_cancels()
+- decode_tool_output_parses_json_only_when_structured · function · L312-L317 — fn decode_tool_output_parses_json_only_when_structured()

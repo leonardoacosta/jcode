@@ -1,0 +1,41 @@
+# crates/jcode-app-core/src/tool/skill.rs
+
+- SkillTool · struct · L12-L14 — pub struct SkillTool
+- new · function · L17-L19 — pub fn new(registry: Arc<RwLock<SkillRegistry>>) -> Self
+- effective_registry · function · L25-L28 — async fn effective_registry(&self, working_dir: Option<&std::path::Path>) -> SkillRegistry
+- SkillInput · struct · L32-L45 — struct SkillInput
+- default_action · function · L47-L49 — fn default_action() -> String
+- skill_load_errors_section · function · L53-L66 — fn skill_load_errors_section(registry: &SkillRegistry) -> String
+- name · function · L70-L72 — fn name(&self) -> &str
+- description · function · L74-L76 — fn description(&self) -> &str
+- parameters_schema · function · L78-L94 — fn parameters_schema(&self) -> Value
+- execute · function · L96-L139 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- load_skill · function · L143-L190 — async fn load_skill(
+- list_skills · function · L192-L235 — async fn list_skills(&self, working_dir: Option<&std::path::Path>) -> Result<ToolOutput>
+- reload_skill · function · L237-L274 — async fn reload_skill(&self, name: Option<String>) -> Result<ToolOutput>
+- reload_all_skills · function · L276-L315 — async fn reload_all_skills(&self, working_dir: Option<&std::path::Path>) -> Result<ToolOutput>
+- read_skill · function · L317-L344 — async fn read_skill(
+- append_endorsed_skills · function · L350-L400 — fn append_endorsed_skills(output: &mut String, installed: &std::collections::HashSet<&str>)
+- normalize_skill_name · function · L402-L409 — fn normalize_skill_name(name: Option<String>, action: &str) -> Result<String>
+- tests · module · L412-L770 — mod tests
+- create_test_tool · function · L415-L418 — fn create_test_tool() -> SkillTool
+- create_test_tool_with_skill · function · L420-L435 — fn create_test_tool_with_skill(name: &str) -> (SkillTool, tempfile::TempDir)
+- create_test_context · function · L437-L447 — fn create_test_context() -> ToolContext
+- test_tool_name · function · L450-L453 — fn test_tool_name()
+- test_tool_description · function · L456-L459 — fn test_tool_description()
+- test_parameters_schema · function · L462-L468 — fn test_parameters_schema()
+- info_is_read_only_and_reports_project_provenance · function · L471-L501 — async fn info_is_read_only_and_reports_project_provenance()
+- test_list_empty · function · L504-L518 — async fn test_list_empty()
+- test_list_name_mismatch_warnings_and_load · function · L521-L566 — async fn test_list_name_mismatch_warnings_and_load()
+- test_list_includes_endorsed_skills · function · L569-L586 — async fn test_list_includes_endorsed_skills()
+- test_load_missing_name · function · L589-L597 — async fn test_load_missing_name()
+- test_load_accepts_skill_alias_and_args · function · L600-L608 — async fn test_load_accepts_skill_alias_and_args()
+- test_load_strips_leading_slash_from_name · function · L611-L618 — async fn test_load_strips_leading_slash_from_name()
+- test_reload_missing_name · function · L621-L629 — async fn test_reload_missing_name()
+- test_read_missing_name · function · L632-L640 — async fn test_read_missing_name()
+- test_reload_nonexistent · function · L643-L650 — async fn test_reload_nonexistent()
+- test_unknown_action · function · L653-L660 — async fn test_unknown_action()
+- test_reload_all · function · L663-L681 — async fn test_reload_all()
+- context_with_working_dir · function · L683-L688 — fn context_with_working_dir(dir: &std::path::Path) -> ToolContext
+- write_project_skill · function · L690-L698 — fn write_project_skill(root: &std::path::Path, name: &str)
+- test_project_skills_are_scoped_to_tool_context_working_dir · function · L704-L769 — async fn test_project_skills_are_scoped_to_tool_context_working_dir()

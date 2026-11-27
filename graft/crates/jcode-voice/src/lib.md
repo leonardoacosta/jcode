@@ -1,0 +1,65 @@
+# crates/jcode-voice/src/lib.rs
+
+- continuous · module · L20-L20 — pub mod continuous;
+- dictation · module · L22-L22 — pub mod dictation;
+- global · module · L24-L24 — pub mod global;
+- nari · module · L25-L25 — mod nari;
+- speech · module · L26-L26 — pub mod speech;
+- timing · module · L27-L27 — pub mod timing;
+- command_capture · module · L33-L33 — mod command_capture;
+- resample · module · L35-L35 — mod resample;
+- streaming_capture · module · L37-L37 — mod streaming_capture;
+- NATIVE_CAPTURE · constant · L45-L45 — pub const NATIVE_CAPTURE: bool = cfg!(feature = "voice-capture");
+- MAX_AUDIO_BYTES · constant · L46-L46 — pub const MAX_AUDIO_BYTES: usize = 10 * 1024 * 1024;
+- MAX_RECORDING_DURATION · constant · L47-L47 — pub const MAX_RECORDING_DURATION: Duration = Duration::from_secs(5 * 60);
+- TRANSCRIPTION_TIMEOUT · constant · L48-L48 — pub const TRANSCRIPTION_TIMEOUT: Duration = Duration::from_secs(120);
+- MAX_RESPONSE_BYTES · constant · L49-L49 — const MAX_RESPONSE_BYTES: usize = 256 * 1024;
+- VoiceError · enum · L53-L69 — pub enum VoiceError
+- fmt · function · L71-L103 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- network_error · function · L108-L114 — fn network_error(error: reqwest::Error) -> VoiceError
+- client · function · L117-L124 — fn client() -> Result<reqwest::Client, VoiceError>
+- response_bytes · function · L127-L149 — async fn response_bytes(mut response: reqwest::Response) -> Result<Vec<u8>, VoiceError>
+- CapabilityResponse · struct · L153-L156 — struct CapabilityResponse
+- subscription_voice_available · function · L161-L170 — pub async fn subscription_voice_available() -> bool
+- voice_available_with · function · L173-L188 — async fn voice_available_with(
+- transcribe_wav · function · L195-L208 — pub async fn transcribe_wav(wav: Vec<u8>, language: Option<&str>) -> Result<String, VoiceError>
+- transcribe_with · function · L211-L251 — async fn transcribe_with(
+- Transcript · struct · L245-L247 — struct Transcript
+- validate_wav · function · L255-L311 — fn validate_wav(bytes: &[u8]) -> Result<(), VoiceError>
+- encode_wav · function · L314-L338 — fn encode_wav(samples: &[i16], sample_rate: u32) -> Result<Vec<u8>, VoiceError>
+- capture · module · L344-L672 — mod capture
+- Command · enum · L353-L356 — enum Command
+- MicrophoneRecording · struct · L360-L364 — pub struct MicrophoneRecording
+- start · function · L366-L368 — pub fn start() -> Result<Self, VoiceError>
+- start_cancellable · function · L372-L410 — pub fn start_cancellable(cancel: Arc<AtomicBool>) -> Result<Self, VoiceError>
+- is_finished · function · L411-L415 — pub fn is_finished(&self) -> bool
+- stop · function · L418-L427 — pub fn stop(mut self) -> Result<Vec<u8>, VoiceError>
+- cancel · function · L428-L430 — pub fn cancel(self)
+- drop · function · L433-L447 — fn drop(&mut self)
+- Buffer · struct · L450-L454 — struct Buffer
+- run · function · L455-L539 — fn run(
+- build · function · L482-L486 — macro_rules! build
+- append_samples · function · L541-L560 — fn append_samples<T>(state: &mut Buffer, data: &[T], channels: usize, max_samples: usize)
+- build · function · L562-L589 — fn build<T>(
+- tests · module · L592-L671 — mod tests
+- downmix_and_cap_without_microphone_access · function · L596-L607 — fn downmix_and_cap_without_microphone_access()
+- fake_recording · function · L609-L635 — fn fake_recording(
+- cancelled_start_never_opens_a_device · function · L638-L643 — fn cancelled_start_never_opens_a_device()
+- stop_joins_and_returns_audio · function · L646-L655 — fn stop_joins_and_returns_audio()
+- cancel_and_drop_signal_worker_and_join · function · L658-L670 — fn cancel_and_drop_signal_worker_and_join()
+- tests · module · L675-L998 — mod tests
+- mock · function · L679-L724 — fn mock(
+- wav · function · L725-L727 — fn wav() -> Vec<u8>
+- test_client · function · L728-L734 — fn test_client() -> reqwest::Client
+- upload · function · L735-L749 — async fn upload(
+- configured_public_api_requires_key_and_uses_configured_base · function · L753-L808 — async fn configured_public_api_requires_key_and_uses_configured_base()
+- Restore · struct · L755-L755 — struct Restore(Vec<(&'static str, Option<String>)>);
+- drop · function · L757-L764 — fn drop(&mut self)
+- multipart_and_bearer_auth_match_backend_contract · function · L811-L835 — async fn multipart_and_bearer_auth_match_backend_contract()
+- language_is_optional · function · L838-L845 — async fn language_is_optional()
+- capabilities_default_false_and_use_bearer_header · function · L848-L869 — async fn capabilities_default_false_and_use_bearer_header()
+- failures_never_expose_credentials_or_server_bodies · function · L872-L891 — async fn failures_never_expose_credentials_or_server_bodies()
+- requests_time_out_and_redirects_are_not_followed · function · L894-L921 — async fn requests_time_out_and_redirects_are_not_followed()
+- oversized_response_is_rejected · function · L924-L933 — async fn oversized_response_is_rejected()
+- invalid_input_is_rejected_before_network · function · L936-L968 — async fn invalid_input_is_rejected_before_network()
+- wav_encoding_and_bounds · function · L971-L997 — fn wav_encoding_and_bounds()

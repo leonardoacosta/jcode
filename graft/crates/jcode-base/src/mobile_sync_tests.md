@@ -1,0 +1,36 @@
+# crates/jcode-base/src/mobile_sync_tests.rs
+
+- uncached_mobile_state · function · L6-L12 — fn uncached_mobile_state() -> MobileSyncState
+- generated_images_are_bounded_private_thumbnails · function · L15-L57 — fn generated_images_are_bounded_private_thumbnails()
+- attachment_block · function · L59-L69 — fn attachment_block() -> ContentBlock
+- gif_and_webp_attachments_are_decoded_into_bounded_wire_thumbnails · function · L72-L108 — fn gif_and_webp_attachments_are_decoded_into_bounded_wire_thumbnails()
+- visible_user_tool_and_image_only_attachments_survive_wire_serialization · function · L111-L155 — fn visible_user_tool_and_image_only_attachments_survive_wire_serialization()
+- hidden_visual_context_and_invalid_attachments_are_not_uploaded · function · L158-L190 — fn hidden_visual_context_and_invalid_attachments_are_not_uploaded()
+- attachment_wire_upgrade_replays_previously_uploaded_sessions · function · L193-L213 — fn attachment_wire_upgrade_replays_previously_uploaded_sessions()
+- image_upload_chunks_obey_byte_budget · function · L216-L237 — fn image_upload_chunks_obey_byte_budget()
+- parsed_state_reuse_matches_old_output_and_reads_current_bytes · function · L240-L297 — fn parsed_state_reuse_matches_old_output_and_reads_current_bytes()
+- parsed_state_reuse_scopes_path_caps_retention_and_preserves_backup_recovery · function · L300-L333 — fn parsed_state_reuse_scopes_path_caps_retention_and_preserves_backup_recovery()
+- benchmark_exact_state_reuse · function · L337-L400 — fn benchmark_exact_state_reuse()
+- TestEnv · struct · L402-L402 — struct TestEnv(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- set · function · L405-L416 — fn set(values: &[(&'static str, &std::ffi::OsStr)]) -> Self
+- drop · function · L420-L428 — fn drop(&mut self)
+- mock_listing · function · L431-L453 — async fn mock_listing(status: &str, body: &str) -> (String, tokio::task::JoinHandle<String>)
+- cloud_session_listing_rejects_http_and_schema_errors · function · L456-L480 — async fn cloud_session_listing_rejects_http_and_schema_errors()
+- msg · function · L482-L492 — fn msg(role: Role, content: Vec<ContentBlock>) -> StoredMessage
+- wire_messages_keep_visible_text_and_skip_hidden · function · L495-L546 — fn wire_messages_keep_visible_text_and_skip_hidden()
+- session_ids_are_validated · function · L549-L553 — fn session_ids_are_validated()
+- structured_wire_matches_mobile_cloud_card_fixture_and_hides_reasoning · function · L556-L620 — fn structured_wire_matches_mobile_cloud_card_fixture_and_hides_reasoning()
+- structured_wire_bounds_inputs_counts_ids_and_total_bytes · function · L623-L674 — fn structured_wire_bounds_inputs_counts_ids_and_total_bytes()
+- structured_wire_epoch_invalidates_image_only_progress_once · function · L677-L694 — fn structured_wire_epoch_invalidates_image_only_progress_once()
+- structured_wire_version_replays_unchanged_snapshots_once · function · L697-L798 — async fn structured_wire_version_replays_unchanged_snapshots_once()
+- structured_input_changes_invalidate_synced_fingerprint_without_changing_legacy_summary · function · L801-L815 — fn structured_input_changes_invalidate_synced_fingerprint_without_changing_legacy_summary()
+- old_wire_messages · function · L819-L890 — fn old_wire_messages(session: &Session, start: usize) -> Vec<WireMessage>
+- old_truncate · function · L820-L827 — fn old_truncate(text: &str, max: usize) -> String
+- text_block · function · L892-L897 — fn text_block(text: String) -> ContentBlock
+- result_block · function · L899-L905 — fn result_block(content: String) -> ContentBlock
+- bounded_wire_conversion_matches_original_unicode_and_boundaries · function · L908-L1020 — fn bounded_wire_conversion_matches_original_unicode_and_boundaries()
+- bounded_text_matches_join_then_truncate · function · L1023-L1050 — fn bounded_text_matches_join_then_truncate()
+- benchmark_bounded_wire_conversion · function · L1054-L1092 — fn benchmark_bounded_wire_conversion()
+- incremental_updates_replay_rewritten_and_shrunk_prefixes · function · L1095-L1135 — fn incremental_updates_replay_rewritten_and_shrunk_prefixes()
+- phone_message_opt_out_survives_sync_saves_and_disable · function · L1138-L1160 — fn phone_message_opt_out_survives_sync_saves_and_disable()
+- additional_benchmark_unchanged_reconciliation · module · L1163-L1163 — mod additional_benchmark_unchanged_reconciliation;

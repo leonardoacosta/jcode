@@ -1,0 +1,81 @@
+# crates/jcode-tui/src/tui/ui_inline_image.rs
+
+- InlineImageItem · struct · L29-L36 — pub(crate) struct InlineImageItem
+- MAX_VIEWPORT_FRACTION_PERCENT · constant · L40-L40 — const MAX_VIEWPORT_FRACTION_PERCENT: u16 = 55;
+- MIN_IMAGE_ROWS · constant · L42-L42 — const MIN_IMAGE_ROWS: u16 = 3;
+- ANCHORED_MAX_ROWS · constant · L47-L47 — const ANCHORED_MAX_ROWS: u16 = 16;
+- ImageExpandLevel · enum · L55-L64 — pub enum ImageExpandLevel
+- next · function · L72-L78 — pub(crate) fn next(self) -> Self
+- from_index · function · L80-L86 — pub(crate) fn from_index(index: u8) -> Self
+- anchored_cap_rows · function · L92-L98 — fn anchored_cap_rows(self) -> u16
+- ImageExpandLevels · interface · L103-L105 — pub(crate) trait ImageExpandLevels
+- expand_level · function · L104-L104 — fn expand_level(&self, id: u64) -> ImageExpandLevel;
+- AllFit · struct · L110-L110 — pub(crate) struct AllFit;
+- expand_level · function · L113-L115 — fn expand_level(&self, _id: u64) -> ImageExpandLevel
+- AppExpandLevels · struct · L120-L120 — pub(crate) struct AppExpandLevels<'a>(pub &'a dyn crate::tui::TuiState);
+- expand_level · function · L122-L124 — fn expand_level(&self, id: u64) -> ImageExpandLevel
+- PAYLOAD_REGISTRY · constant · L130-L131 — static PAYLOAD_REGISTRY: LazyLock<Mutex<PayloadRegistry>> =
+- PAYLOAD_RESTAGE_IDS · constant · L137-L138 — static PAYLOAD_RESTAGE_IDS: LazyLock<Mutex<HashSet<u64>>> =
+- PAYLOAD_RESTAGE_PENDING · constant · L139-L139 — static PAYLOAD_RESTAGE_PENDING: AtomicBool = AtomicBool::new(false);
+- PAYLOAD_RESTAGE_ALL · constant · L140-L140 — static PAYLOAD_RESTAGE_ALL: AtomicBool = AtomicBool::new(false);
+- PAYLOAD_RESTAGE_MAX · constant · L141-L141 — const PAYLOAD_RESTAGE_MAX: usize = 512;
+- payload_for_copy · function · L143-L148 — pub(crate) fn payload_for_copy(id: u64) -> Option<(String, String)>
+- PAYLOAD_REGISTRY_MAX · constant · L150-L150 — const PAYLOAD_REGISTRY_MAX: usize = 512;
+- PAYLOAD_REGISTRY_MAX_BYTES · constant · L156-L156 — const PAYLOAD_REGISTRY_MAX_BYTES: usize = 64 * 1024 * 1024;
+- PayloadRegistry · struct · L158-L162 — struct PayloadRegistry
+- new · function · L165-L171 — fn new() -> Self
+- insert · function · L175-L201 — fn insert(&mut self, id: u64, media_type: &str, data_b64: &str) -> bool
+- get · function · L203-L205 — fn get(&self, id: u64) -> Option<(String, String)>
+- remove · function · L207-L216 — fn remove(&mut self, id: u64)
+- clear · function · L218-L222 — fn clear(&mut self)
+- register_payload · function · L231-L253 — pub(crate) fn register_payload(id: u64, media_type: &str, data_b64: &str)
+- release_payload · function · L257-L261 — fn release_payload(id: u64)
+- clear_staged_payloads · function · L263-L279 — pub(super) fn clear_staged_payloads()
+- request_payload_restage · function · L281-L299 — fn request_payload_restage(id: u64)
+- restage_requested_payloads · function · L304-L337 — pub(crate) fn restage_requested_payloads(app: &dyn crate::tui::TuiState)
+- materialize_visible · function · L345-L378 — pub(crate) fn materialize_visible(id: u64) -> bool
+- PrewarmRequest · struct · L384-L388 — struct PrewarmRequest
+- PREWARM_QUEUE_CAPACITY · constant · L390-L390 — const PREWARM_QUEUE_CAPACITY: usize = 32;
+- PREWARM_TX · constant · L391-L391 — static PREWARM_TX: OnceLock<mpsc::SyncSender<PrewarmRequest>> = OnceLock::new();
+- PREWARM_INFLIGHT · constant · L396-L397 — static PREWARM_INFLIGHT: LazyLock<Mutex<HashSet<u64>>> =
+- PREWARM_OVERFLOW · constant · L400-L401 — static PREWARM_OVERFLOW: LazyLock<Mutex<Option<PrewarmRequest>>> =
+- PREWARM_RETRY_NEEDED · constant · L402-L402 — static PREWARM_RETRY_NEEDED: AtomicBool = AtomicBool::new(false);
+- PREWARM_MATERIALIZE_FAILURES · constant · L410-L411 — static PREWARM_MATERIALIZE_FAILURES: LazyLock<Mutex<HashMap<u64, u8>>> =
+- PREWARM_FIT_FAILURES · constant · L412-L413 — static PREWARM_FIT_FAILURES: LazyLock<Mutex<HashMap<PrewarmRequest, u8>>> =
+- PREWARM_FAILURE_MAX_ATTEMPTS · constant · L414-L414 — const PREWARM_FAILURE_MAX_ATTEMPTS: u8 = 3;
+- PREWARM_FAILURES_MAX · constant · L417-L417 — const PREWARM_FAILURES_MAX: usize = 512;
+- prewarm_failures_exhausted · function · L419-L431 — fn prewarm_failures_exhausted(req: PrewarmRequest) -> bool
+- record_materialize_failure · function · L433-L448 — fn record_materialize_failure(id: u64)
+- record_fit_failure · function · L450-L465 — fn record_fit_failure(req: PrewarmRequest)
+- prewarm_sender · function · L467-L481 — fn prewarm_sender() -> &'static mpsc::SyncSender<PrewarmRequest>
+- PrewarmOutcome · enum · L484-L489 — enum PrewarmOutcome
+- payload_restage_requested · function · L491-L497 — fn payload_restage_requested(id: u64) -> bool
+- prepare_prewarm_request · function · L499-L519 — fn prepare_prewarm_request(req: PrewarmRequest) -> PrewarmOutcome
+- finish_prewarm_request · function · L521-L542 — fn finish_prewarm_request(req: PrewarmRequest)
+- prewarm_worker · function · L544-L563 — fn prewarm_worker(rx: mpsc::Receiver<PrewarmRequest>)
+- coalesce_overflow · function · L565-L577 — fn coalesce_overflow(req: PrewarmRequest)
+- ensure_drawable · function · L586-L613 — pub(crate) fn ensure_drawable(id: u64, target_cols: u16, target_rows: u16) -> bool
+- schedule_prewarm · function · L615-L654 — fn schedule_prewarm(id: u64, target_cols: u16, target_rows: u16)
+- prefetch · function · L665-L678 — pub(crate) fn prefetch(id: u64, target_cols: u16, target_rows: u16)
+- resolve_item · function · L680-L703 — fn resolve_item(
+- AnchoredInlineImages · struct · L708-L715 — pub(crate) struct AnchoredInlineImages
+- has_anchored · function · L719-L721 — pub(crate) fn has_anchored(&self) -> bool
+- unplaced_items · function · L728-L767 — pub(crate) fn unplaced_items(
+- resolve_anchored_items · function · L773-L777 — pub(crate) fn resolve_anchored_items(
+- resolve_anchored_items_inner · function · L779-L799 — fn resolve_anchored_items_inner(
+- AnchoredCacheKey · type · L805-L805 — type AnchoredCacheKey = ((usize, u64), bool);
+- AnchoredCache · type · L806-L806 — type AnchoredCache = Mutex<Option<(AnchoredCacheKey, std::sync::Arc<AnchoredInlineImages>)>>;
+- ANCHORED_CACHE · constant · L807-L807 — static ANCHORED_CACHE: LazyLock<AnchoredCache> = LazyLock::new(|| Mutex::new(None));
+- resolve_anchored_items_cached · function · L812-L843 — pub(crate) fn resolve_anchored_items_cached(
+- fit_geometry_with_cap · function · L849-L854 — fn fit_geometry_with_cap(width: u32, height: u32, chat_width: u16, cap_rows: u16) -> (u16, u16)
+- fit_geometry · function · L858-L862 — fn fit_geometry(width: u32, height: u32, chat_width: u16, viewport_height: u16) -> (u16, u16)
+- fit_geometry_anchored · function · L868-L885 — pub(crate) fn fit_geometry_anchored(
+- register_level_geometries · function · L887-L906 — fn register_level_geometries(item: &InlineImageItem, width: u16, fit: (u16, u16))
+- fit_rows · function · L911-L913 — fn fit_rows(width: u32, height: u32, chat_width: u16, viewport_height: u16) -> u16
+- image_label_line · function · L922-L959 — pub(crate) fn image_label_line(
+- image_fallback_note_line · function · L961-L966 — fn image_fallback_note_line(width: u16) -> Line<'static>
+- collapsed_image_marker · function · L968-L970 — fn collapsed_image_marker(id: u64) -> Line<'static>
+- anchored_image_lines · function · L978-L1008 — pub(crate) fn anchored_image_lines(
+- build_section · function · L1014-L1109 — pub(crate) fn build_section(
+- empty · function · L1111-L1129 — fn empty() -> PreparedMessages
+- tests · module · L1133-L1133 — mod tests;

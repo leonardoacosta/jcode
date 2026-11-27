@@ -1,0 +1,53 @@
+# crates/jcode-app-core/src/tool/edit.rs
+
+- FILE_TOUCH_PREVIEW_MAX_LINES · constant · L10-L10 — const FILE_TOUCH_PREVIEW_MAX_LINES: usize = 6;
+- FILE_TOUCH_PREVIEW_MAX_BYTES · constant · L11-L11 — const FILE_TOUCH_PREVIEW_MAX_BYTES: usize = 240;
+- EditTool · struct · L13-L13 — pub struct EditTool;
+- new · function · L16-L18 — pub fn new() -> Self
+- EditInput · struct · L22-L34 — struct EditInput
+- EditOperation · struct · L37-L42 — struct EditOperation
+- operations · function · L46-L69 — fn operations(&self) -> Result<Vec<EditOperation>>
+- AppliedEdit · struct · L72-L75 — struct AppliedEdit
+- apply_edits · function · L79-L151 — fn apply_edits(
+- name · function · L155-L157 — fn name(&self) -> &str
+- description · function · L159-L161 — fn description(&self) -> &str
+- parameters_schema · function · L163-L189 — fn parameters_schema(&self) -> Value
+- execute · function · L191-L290 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- find_line_number · function · L294-L300 — fn find_line_number(content: &str, substring: &str) -> usize
+- generate_diff · function · L303-L345 — fn generate_diff(old: &str, new: &str, start_line: usize) -> String
+- build_file_touch_preview · function · L347-L373 — fn build_file_touch_preview(diff: &str) -> Option<String>
+- extract_context · function · L376-L396 — fn extract_context(
+- flexible_match_hint · function · L398-L431 — fn flexible_match_hint(content: &str, old_string: &str, file_path: &str) -> String
+- NEAREST_MAX_FILE_BYTES · constant · L433-L433 — const NEAREST_MAX_FILE_BYTES: usize = 2 * 1024 * 1024;
+- NEAREST_PAD_LINES · constant · L434-L434 — const NEAREST_PAD_LINES: usize = 2;
+- NEAREST_MAX_LINES · constant · L435-L435 — const NEAREST_MAX_LINES: usize = 20;
+- NEAREST_MAX_CHARS · constant · L436-L436 — const NEAREST_MAX_CHARS: usize = 2000;
+- nearest_context · function · L441-L484 — pub(crate) fn nearest_context<S: AsRef<str>>(content: &str, needle_lines: &[S]) -> Option<String>
+- generate_diff_summary · function · L487-L524 — fn generate_diff_summary(old: &str, new: &str) -> String
+- MAX_LINES · constant · L488-L488 — const MAX_LINES: usize = 30;
+- tests · module · L527-L867 — mod tests
+- nearest_context_picks_best_window · function · L531-L537 — fn nearest_context_picks_best_window()
+- nearest_context_tie_prefers_earliest · function · L540-L544 — fn nearest_context_tie_prefers_earliest()
+- nearest_context_below_threshold_is_none · function · L547-L550 — fn nearest_context_below_threshold_is_none()
+- nearest_context_skips_huge_file · function · L553-L556 — fn nearest_context_skips_huge_file()
+- flexible_match_hint_shows_closest_region · function · L559-L568 — fn flexible_match_hint_shows_closest_region()
+- schema_requires_canonical_nonempty_edits · function · L571-L588 — fn schema_requires_canonical_nonempty_edits()
+- legacy_single_edit_remains_executable_without_advertising_it · function · L591-L600 — fn legacy_single_edit_remains_executable_without_advertising_it()
+- schema_normalization_preserves_required_edit_operations · function · L603-L633 — fn schema_normalization_preserves_required_edit_operations()
+- input_rejects_empty_or_incomplete_canonical_edits · function · L636-L649 — fn input_rejects_empty_or_incomplete_canonical_edits()
+- test_generate_diff_single_line_change · function · L652-L660 — fn test_generate_diff_single_line_change()
+- test_generate_diff_multi_line · function · L663-L680 — fn test_generate_diff_multi_line()
+- test_generate_diff_addition_only · function · L683-L689 — fn test_generate_diff_addition_only()
+- test_generate_diff_deletion_only · function · L692-L698 — fn test_generate_diff_deletion_only()
+- test_generate_diff_no_changes · function · L701-L707 — fn test_generate_diff_no_changes()
+- test_generate_diff_line_number_format · function · L710-L724 — fn test_generate_diff_line_number_format()
+- op · function · L726-L732 — fn op(old: &str, new: &str) -> EditOperation
+- apply_edits_is_all_or_nothing · function · L735-L747 — fn apply_edits_is_all_or_nothing()
+- apply_edits_applies_sequentially · function · L750-L760 — fn apply_edits_applies_sequentially()
+- apply_edits_rejects_ambiguous_match_without_replace_all · function · L763-L770 — fn apply_edits_rejects_ambiguous_match_without_replace_all()
+- input_accepts_single_or_array_but_not_both · function · L773-L800 — fn input_accepts_single_or_array_but_not_both()
+- test_find_line_number · function · L803-L812 — fn test_find_line_number()
+- test_extract_context · function · L815-L829 — fn test_extract_context()
+- test_extract_context_at_start · function · L832-L841 — fn test_extract_context_at_start()
+- test_extract_context_at_end · function · L844-L853 — fn test_extract_context_at_end()
+- test_extract_context_range_past_end · function · L856-L866 — fn test_extract_context_range_past_end()

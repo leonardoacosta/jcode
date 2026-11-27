@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/app/replay.rs
+
+- run_replay · function · L14-L98 — pub(super) async fn run_replay(
+- run_swarm_replay · function · L100-L175 — pub(super) async fn run_swarm_replay(
+- handle_replay_input · function · L177-L222 — fn handle_replay_input(
+- handle_swarm_replay_input · function · L224-L263 — fn handle_swarm_replay_input(
+- SwarmReplayPane · struct · L265-L271 — struct SwarmReplayPane
+- new · function · L274-L287 — fn new(input: PaneReplayInput, centered_override: Option<bool>) -> Self
+- total_duration_ms · function · L289-L291 — fn total_duration_ms(&self) -> f64
+- is_done · function · L293-L295 — fn is_done(&self) -> bool
+- advance_to · function · L297-L318 — fn advance_to(&mut self, sim_time_ms: f64)
+- render_buffer · function · L320-L327 — fn render_buffer(&self, width: u16, height: u16) -> Result<Buffer>
+- schedule_replay_events · function · L330-L339 — fn schedule_replay_events(timeline: &[TimelineEvent]) -> Vec<(f64, ReplayEvent)>
+- draw_swarm_replay_frame · function · L341-L347 — fn draw_swarm_replay_frame(frame: &mut Frame<'_>, panes: &mut [SwarmReplayPane], sim_time_ms: f64)
+- draw_swarm_replay_panes · function · L349-L392 — fn draw_swarm_replay_panes(frame: &mut Frame<'_>, panes: &mut [SwarmReplayPane], sim_time_ms: f64)
+- blit_buffer · function · L394-L404 — fn blit_buffer(dst: &mut Buffer, area: Rect, src: &Buffer)
+- apply_replay_event · function · L406-L505 — pub(super) fn apply_replay_event(
+- update_replay_elapsed_override · function · L507-L514 — pub(super) fn update_replay_elapsed_override(app: &mut App, sim_time_ms: f64)
+- tests · module · L517-L690 — mod tests
+- swarm_replay_composes_classic_images_into_distinct_panes · function · L522-L655 — fn swarm_replay_composes_classic_images_into_distinct_panes()
+- CHILD · constant · L523-L523 — const CHILD: &str = "JCODE_TEST_SWARM_REPLAY_CLASSIC_CHILD";
+- schedule_replay_events_accumulates_relative_delays · function · L658-L689 — fn schedule_replay_events_accumulates_relative_delays()

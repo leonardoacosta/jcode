@@ -1,0 +1,26 @@
+# crates/jcode-base/src/session_metrics.rs
+
+- SAMPLE_WINDOW · constant · L21-L21 — const SAMPLE_WINDOW: Duration = Duration::from_secs(60);
+- MAX_SAMPLES · constant · L25-L25 — const MAX_SAMPLES: usize = 256;
+- TokenSample · struct · L28-L34 — struct TokenSample
+- SessionMetrics · struct · L37-L49 — struct SessionMetrics
+- prune · function · L52-L62 — fn prune(&mut self, now: Instant)
+- REGISTRY · constant · L65-L65 — static REGISTRY: Mutex<Option<HashMap<String, SessionMetrics>>> = Mutex::new(None);
+- with_registry · function · L67-L71 — fn with_registry<R>(f: impl FnOnce(&mut HashMap<String, SessionMetrics>) -> R) -> Option<R>
+- record_token_usage · function · L75-L94 — pub fn record_token_usage(session_id: &str, total_tokens: u64, output_tokens: u64)
+- record_turn · function · L97-L106 — pub fn record_turn(session_id: &str)
+- record_activity · function · L112-L120 — pub fn record_activity(session_id: &str)
+- last_activity_age_secs · function · L124-L131 — pub fn last_activity_age_secs(session_id: &str) -> Option<u64>
+- token_totals · function · L134-L141 — pub fn token_totals(session_id: &str) -> Option<(u64, u64)>
+- SessionMetricsSnapshot · struct · L145-L159 — pub struct SessionMetricsSnapshot
+- has_activity · function · L162-L164 — pub fn has_activity(&self) -> bool
+- snapshot · function · L170-L200 — pub fn snapshot(session_id: &str, lookback: Duration) -> Option<SessionMetricsSnapshot>
+- forget · function · L204-L208 — pub fn forget(session_id: &str)
+- tests · module · L211-L291 — mod tests
+- records_and_snapshots_token_usage · function · L215-L226 — fn records_and_snapshots_token_usage()
+- counts_turns · function · L229-L238 — fn counts_turns()
+- ignores_empty_and_zero · function · L241-L248 — fn ignores_empty_and_zero()
+- forget_clears_state · function · L251-L258 — fn forget_clears_state()
+- records_last_activity_age · function · L261-L272 — fn records_last_activity_age()
+- token_usage_and_turns_mark_activity · function · L275-L284 — fn token_usage_and_turns_mark_activity()
+- record_activity_ignores_empty_session · function · L287-L290 — fn record_activity_ignores_empty_session()

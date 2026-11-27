@@ -1,0 +1,52 @@
+# crates/jcode-provider-metadata/src/lib.rs
+
+- LoginProviderAuthKind · enum · L2-L9 — pub enum LoginProviderAuthKind
+- label · function · L12-L21 — pub fn label(self) -> &'static str
+- LoginProviderTarget · enum · L25-L42 — pub enum LoginProviderTarget
+- LoginProviderAuthStateKey · enum · L45-L59 — pub enum LoginProviderAuthStateKey
+- LoginProviderSurface · enum · L62-L68 — pub enum LoginProviderSurface
+- LoginProviderSurfaceOrder · struct · L71-L77 — pub struct LoginProviderSurfaceOrder
+- new · function · L80-L94 — pub const fn new(
+- for_surface · function · L96-L104 — pub const fn for_surface(self, surface: LoginProviderSurface) -> Option<u8>
+- LoginProviderDescriptor · struct · L108-L119 — pub struct LoginProviderDescriptor
+- OpenAiCompatibleProfile · struct · L122-L131 — pub struct OpenAiCompatibleProfile
+- ResolvedOpenAiCompatibleProfile · struct · L134-L143 — pub struct ResolvedOpenAiCompatibleProfile
+- catalog · module · L145-L145 — mod catalog;
+- muse · module · L146-L146 — mod muse;
+- openai_compatible_profiles · function · L155-L157 — pub fn openai_compatible_profiles() -> &'static [OpenAiCompatibleProfile]
+- login_providers · function · L159-L161 — pub fn login_providers() -> &'static [LoginProviderDescriptor]
+- login_providers_for_surface · function · L163-L171 — fn login_providers_for_surface(surface: LoginProviderSurface) -> Vec<LoginProviderDescriptor>
+- cli_login_providers · function · L173-L175 — pub fn cli_login_providers() -> Vec<LoginProviderDescriptor>
+- tui_login_providers · function · L177-L179 — pub fn tui_login_providers() -> Vec<LoginProviderDescriptor>
+- server_bootstrap_login_providers · function · L181-L183 — pub fn server_bootstrap_login_providers() -> Vec<LoginProviderDescriptor>
+- auto_init_login_providers · function · L185-L187 — pub fn auto_init_login_providers() -> Vec<LoginProviderDescriptor>
+- auth_status_login_providers · function · L189-L191 — pub fn auth_status_login_providers() -> Vec<LoginProviderDescriptor>
+- resolve_login_provider · function · L193-L198 — pub fn resolve_login_provider(input: &str) -> Option<LoginProviderDescriptor>
+- resolve_login_provider_loose · function · L207-L216 — pub fn resolve_login_provider_loose(input: &str) -> Option<LoginProviderDescriptor>
+- resolve_login_selection · function · L218-L235 — pub fn resolve_login_selection(
+- is_safe_env_key_name · function · L237-L242 — pub fn is_safe_env_key_name(name: &str) -> bool
+- is_safe_env_file_name · function · L244-L251 — pub fn is_safe_env_file_name(name: &str) -> bool
+- normalize_api_base · function · L253-L273 — pub fn normalize_api_base(raw: &str) -> Option<String>
+- allows_insecure_http_host · function · L275-L292 — fn allows_insecure_http_host(host: &str) -> bool
+- ip_addr_from_host · function · L296-L311 — pub fn ip_addr_from_host(host: &str) -> Option<std::net::IpAddr>
+- normalize_provider_input · function · L313-L319 — fn normalize_provider_input(input: &str) -> Option<String>
+- tests · module · L322-L832 — mod tests
+- matrix_profiles_have_unique_ids_and_safe_metadata · function · L327-L342 — fn matrix_profiles_have_unique_ids_and_safe_metadata()
+- zai_login_identifies_coding_plan_subscription_key · function · L345-L355 — fn zai_login_identifies_coding_plan_subscription_key()
+- orcarouter_login_identifies_openai_compatible_endpoint · function · L358-L369 — fn orcarouter_login_identifies_openai_compatible_endpoint()
+- normalize_api_base_accepts_private_http_hosts · function · L372-L393 — fn normalize_api_base_accepts_private_http_hosts()
+- normalize_api_base_accepts_any_ip_http_host · function · L396-L417 — fn normalize_api_base_accepts_any_ip_http_host()
+- alibaba_coding_plan_uses_current_international_endpoint · function · L420-L425 — fn alibaba_coding_plan_uses_current_international_endpoint()
+- resolve_login_provider_loose_matches_id_alias_and_display_name · function · L428-L451 — fn resolve_login_provider_loose_matches_id_alias_and_display_name()
+- resolve_login_provider_loose_resolves_every_descriptor_by_id_and_display_name · function · L454-L475 — fn resolve_login_provider_loose_resolves_every_descriptor_by_id_and_display_name()
+- muse_subscription_login_is_device_code_without_stealing_muse_alias · function · L478-L515 — fn muse_subscription_login_is_device_code_without_stealing_muse_alias()
+- minimax_profile_uses_official_openai_compatible_configuration · function · L518-L521 — fn minimax_profile_uses_official_openai_compatible_configuration()
+- novita_profile_and_login_are_available_on_all_surfaces · function · L524-L558 — fn novita_profile_and_login_are_available_on_all_surfaces()
+- nvidia_nim_profile_uses_hosted_openai_compatible_configuration · function · L561-L576 — fn nvidia_nim_profile_uses_hosted_openai_compatible_configuration()
+- cerebras_profile_uses_official_openai_compatible_configuration · function · L579-L603 — fn cerebras_profile_uses_official_openai_compatible_configuration()
+- belvedir_profile_uses_official_inference_router_configuration · function · L606-L624 — fn belvedir_profile_uses_official_inference_router_configuration()
+- ollama_profile_is_local_openai_compatible_without_required_api_key · function · L627-L650 — fn ollama_profile_is_local_openai_compatible_without_required_api_key()
+- matrix_login_provider_aliases_resolve_to_canonical_ids · function · L653-L746 — fn matrix_login_provider_aliases_resolve_to_canonical_ids()
+- matrix_login_provider_ids_and_aliases_are_unique · function · L749-L765 — fn matrix_login_provider_ids_and_aliases_are_unique()
+- matrix_tui_login_selection_supports_numbers_and_names · function · L768-L793 — fn matrix_tui_login_selection_supports_numbers_and_names()
+- matrix_cli_login_selection_preserves_existing_order · function · L796-L831 — fn matrix_cli_login_selection_preserves_existing_order()

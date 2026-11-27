@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/server/state_turn_delivery_tests.rs
+
+- legacy_send_for_probe · function · L7-L21 — fn legacy_send_for_probe<'a>(
+- legacy_session_fanout_for_probe · function · L23-L50 — async fn legacy_session_fanout_for_probe(
+- legacy_clone_fallback_vs_recover_fallback_microprobe · function · L54-L128 — async fn legacy_clone_fallback_vs_recover_fallback_microprobe()
+- EVENTS · constant · L55-L55 — const EVENTS: usize = 4_000;
+- ROUNDS · constant · L56-L56 — const ROUNDS: usize = 8;
+- wrapped · function · L130-L138 — fn wrapped(text: String) -> ServerEvent
+- payload · function · L140-L152 — fn payload(event: &ServerEvent) -> &str
+- large_event · function · L154-L156 — fn large_event() -> ServerEvent
+- recover_zero_and_closed_targets_returns_original_wrapped_payload · function · L159-L174 — fn recover_zero_and_closed_targets_returns_original_wrapped_payload()
+- recover_live_targets_preserves_count_order_and_final_recipient_ownership · function · L177-L212 — fn recover_live_targets_preserves_count_order_and_final_recipient_ownership()
+- recover_returns_original_when_final_target_closes_after_liveness_check · function · L215-L235 — fn recover_returns_original_when_final_target_closes_after_liveness_check()
+- recover_partial_success_does_not_trigger_fallback_after_final_send_races_closed · function · L238-L260 — fn recover_partial_success_does_not_trigger_fallback_after_final_send_races_closed()
+- missing_session_recover_returns_original_wrapped_payload · function · L263-L272 — async fn missing_session_recover_returns_original_wrapped_payload()
+- thousand_wrapped_events_move_original_backing_instead_of_legacy_clone · function · L275-L300 — fn thousand_wrapped_events_move_original_backing_instead_of_legacy_clone()
+- UnusedProvider · struct · L303-L303 — struct UnusedProvider;
+- complete · function · L307-L315 — async fn complete(
+- name · function · L317-L319 — fn name(&self) -> &str
+- fork · function · L321-L323 — fn fork(&self) -> Arc<dyn Provider>
+- IsolatedHome · struct · L328-L331 — struct IsolatedHome
+- new · function · L334-L342 — fn new() -> Self
+- drop · function · L346-L352 — fn drop(&mut self)
+- member · function · L355-L378 — fn member(session_id: &str, event_tx: mpsc::UnboundedSender<ServerEvent>) -> SwarmMember
+- turn_channel_fallback_and_attached_delivery_move_live_and_drained_payloads_once · function · L381-L489 — async fn turn_channel_fallback_and_attached_delivery_move_live_and_drained_payloads_once()

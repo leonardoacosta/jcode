@@ -1,0 +1,34 @@
+# crates/jcode-setup-hints/src/cli_launch_hints.rs
+
+- HOOK_COMMAND_MARKER · constant · L15-L15 — const HOOK_COMMAND_MARKER: &str = "setup-hotkey --notify-cli-launch ";
+- REMINDER_COOLDOWN_SECS · constant · L16-L16 — const REMINDER_COOLDOWN_SECS: u64 = 7 * 24 * 60 * 60;
+- MAX_REMINDERS_PER_SOURCE · constant · L17-L17 — const MAX_REMINDERS_PER_SOURCE: u64 = 3;
+- CliSource · enum · L20-L23 — enum CliSource
+- parse · function · L26-L32 — fn parse(value: &str) -> Option<Self>
+- id · function · L34-L39 — fn id(self) -> &'static str
+- label · function · L41-L46 — fn label(self) -> &'static str
+- binary · function · L48-L53 — fn binary(self) -> &'static str
+- install_available · function · L56-L79 — pub(super) fn install_available() -> Result<Vec<String>>
+- maybe_notify · function · L81-L115 — pub(super) fn maybe_notify(source: &str) -> Result<()>
+- should_show · function · L117-L144 — fn should_show(state: &SetupHintsState, source: CliSource, primary_chord: &str, now: u64) -> bool
+- hook_path · function · L146-L162 — fn hook_path(source: CliSource) -> Option<PathBuf>
+- binary_on_path · function · L164-L181 — fn binary_on_path(binary: &str) -> bool
+- install_hook · function · L183-L206 — fn install_hook(path: &Path, source: CliSource) -> Result<()>
+- upsert_hook · function · L208-L264 — fn upsert_hook(root: &mut Value, command: &str) -> Result<bool>
+- hook_command · function · L266-L273 — fn hook_command(source: CliSource) -> Result<String>
+- trusted_jcode_executable · function · L279-L304 — fn trusted_jcode_executable() -> Result<PathBuf>
+- quote_hook_executable · function · L306-L316 — fn quote_hook_executable(path: &Path) -> String
+- reap_notification_child · function · L320-L326 — fn reap_notification_child(mut child: std::process::Child)
+- send_desktop_notification · function · L328-L408 — fn send_desktop_notification(title: &str, body: &str)
+- escape · function · L331-L333 — fn escape(value: &str) -> String
+- CREATE_NO_WINDOW · constant · L383-L383 — const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+- ps_quote · function · L384-L386 — fn ps_quote(value: &str) -> String
+- tests · module · L411-L555 — mod tests
+- inserts_session_start_hook_without_replacing_existing_hooks · function · L415-L433 — fn inserts_session_start_hook_without_replacing_existing_hooks()
+- managed_hook_update_is_idempotent · function · L436-L442 — fn managed_hook_update_is_idempotent()
+- updating_managed_hook_preserves_neighboring_user_handler · function · L445-L468 — fn updating_managed_hook_preserves_neighboring_user_handler()
+- reminder_policy_spaces_repetitions_and_stops_after_learning · function · L471-L504 — fn reminder_policy_spaces_repetitions_and_stops_after_learning()
+- rejects_malformed_hook_shape_instead_of_clobbering_it · function · L507-L516 — fn rejects_malformed_hook_shape_instead_of_clobbering_it()
+- install_hook_preserves_file_content_and_is_idempotent · function · L519-L545 — fn install_hook_preserves_file_content_and_is_idempotent()
+- unix_hook_executable_quoting_handles_spaces_and_single_quotes · function · L549-L554 — fn unix_hook_executable_quoting_handles_spaces_and_single_quotes()
+- notification_process_tests · module · L558-L563 — mod notification_process_tests

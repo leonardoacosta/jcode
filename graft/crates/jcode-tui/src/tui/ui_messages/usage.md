@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/ui_messages/usage.rs
+
+- render_usage_message · function · L4-L58 — pub(crate) fn render_usage_message(
+- CARD_MAX_WIDTH · constant · L62-L62 — const CARD_MAX_WIDTH: usize = 64;
+- LABEL_STYLE · constant · L63-L63 — const LABEL_STYLE: (u8, u8, u8) = (140, 140, 150);
+- VALUE_STYLE · constant · L64-L64 — const VALUE_STYLE: (u8, u8, u8) = (215, 215, 225);
+- ACCENT_STYLE · constant · L65-L65 — const ACCENT_STYLE: (u8, u8, u8) = (140, 180, 255);
+- ProviderCard · struct · L71-L74 — struct ProviderCard<'a>
+- CardStatus · enum · L76-L80 — enum CardStatus<'a>
+- CardRow · enum · L82-L96 — enum CardRow<'a>
+- parse_card_percent · function · L98-L108 — fn parse_card_percent(text: &str) -> Option<f32>
+- activity_pair_tests · module · L112-L112 — mod activity_pair_tests;
+- card_parse_error_tests · module · L115-L178 — mod card_parse_error_tests
+- activity_table_aligns_metrics_and_preserves_caveats · function · L119-L149 — fn activity_table_aligns_metrics_and_preserves_caveats()
+- narrow_activity_stacks_periods_and_keeps_cache_creation · function · L152-L167 — fn narrow_activity_stacks_periods_and_keeps_cache_creation()
+- invalid_header_falls_back_and_invalid_gauge_remains_visible · function · L170-L177 — fn invalid_header_falls_back_and_invalid_gauge_remains_visible()
+- parse · function · L181-L229 — fn parse(content: &'a str) -> Option<Self>
+- status_spans · function · L231-L262 — fn status_spans(&self, display_used: bool) -> Vec<Span<'static>>
+- render · function · L264-L302 — fn render(&self, title: &str, width: usize) -> Vec<Line<'static>>
+- body_lines · function · L304-L492 — fn body_lines(&self, inner: usize, display_used: bool) -> Vec<Line<'static>>
+- MIN_BAR · constant · L306-L306 — const MIN_BAR: usize = 6;
+- PERCENT · constant · L307-L307 — const PERCENT: usize = 10; // " 100% left"
+- activity_summary_lines · function · L496-L667 — fn activity_summary_lines(today: &str, lifetime: &str, width: usize) -> Vec<Line<'static>>
+- card_title_spans · function · L671-L684 — fn card_title_spans(title: &str) -> Vec<Span<'static>>
+- card_top_border · function · L689-L729 — fn card_top_border(
+- note_spans · function · L733-L746 — fn note_spans(text: &str) -> Vec<Span<'static>>
+- clip_to_width · function · L748-L766 — fn clip_to_width(text: &str, width: usize) -> String
+- wrap_words · function · L769-L797 — fn wrap_words(text: &str, width: usize) -> Vec<String>
+- usage_report_lines · function · L798-L850 — pub(crate) fn usage_report_lines(raw: &str, width: usize) -> Vec<Line<'static>>
+- usage_utilization_style · function · L852-L860 — pub(crate) fn usage_utilization_style(percent: f32) -> Style
+- usage_styled_line · function · L862-L942 — pub(crate) fn usage_styled_line(raw: &str) -> Line<'static>
+- usage_wrap_lines · function · L947-L983 — pub(crate) fn usage_wrap_lines(lines: Vec<Line<'static>>, width: usize) -> Vec<Line<'static>>

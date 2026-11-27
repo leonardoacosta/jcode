@@ -1,0 +1,37 @@
+# crates/jcode-provider-openai/src/websocket_health.rs
+
+- WEBSOCKET_FALLBACK_NOTICE · constant · L3-L3 — pub const WEBSOCKET_FALLBACK_NOTICE: &str = "falling back from websockets to https transport";
+- WEBSOCKET_FIRST_EVENT_TIMEOUT_SECS · constant · L4-L4 — pub const WEBSOCKET_FIRST_EVENT_TIMEOUT_SECS: u64 = 8;
+- WEBSOCKET_COMPLETION_TIMEOUT_SECS · constant · L5-L5 — pub const WEBSOCKET_COMPLETION_TIMEOUT_SECS: u64 = 300;
+- WEBSOCKET_MODEL_COOLDOWN_BASE_SECS · constant · L6-L6 — pub const WEBSOCKET_MODEL_COOLDOWN_BASE_SECS: u64 = 60;
+- WEBSOCKET_MODEL_COOLDOWN_MAX_SECS · constant · L7-L7 — pub const WEBSOCKET_MODEL_COOLDOWN_MAX_SECS: u64 = 600;
+- tests · module · L15-L15 — mod tests;
+- WebsocketFallbackReason · enum · L18-L26 — pub enum WebsocketFallbackReason
+- summary · function · L29-L39 — pub fn summary(self) -> &'static str
+- is_websocket_fallback_notice · function · L42-L52 — pub fn is_websocket_fallback_notice(data: &str) -> bool
+- WebsocketEventClassification · struct · L58-L60 — pub struct WebsocketEventClassification
+- parse · function · L63-L75 — pub fn parse(data: &str) -> Self
+- value · function · L77-L79 — pub fn value(&self) -> Option<&serde_json::Value>
+- kind · function · L81-L83 — pub fn kind(&self) -> Option<&str>
+- is_activity · function · L85-L88 — pub fn is_activity(&self) -> bool
+- is_first_activity · function · L90-L92 — pub fn is_first_activity(&self) -> bool
+- is_fallback_notice · function · L94-L96 — pub fn is_fallback_notice(&self, data: &str) -> bool
+- is_stream_activity_event · function · L99-L101 — pub fn is_stream_activity_event(_event: &StreamEvent) -> bool
+- is_structured_response_event · function · L107-L109 — pub fn is_structured_response_event(data: &str) -> bool
+- is_websocket_activity_payload · function · L111-L113 — pub fn is_websocket_activity_payload(data: &str) -> bool
+- is_websocket_first_activity_payload · function · L115-L117 — pub fn is_websocket_first_activity_payload(data: &str) -> bool
+- websocket_remaining_timeout_secs · function · L119-L127 — pub fn websocket_remaining_timeout_secs(since: Instant, timeout_secs: u64) -> Option<u64>
+- websocket_next_activity_timeout_secs · function · L129-L140 — pub fn websocket_next_activity_timeout_secs(
+- websocket_next_activity_timeout_secs_with_completion · function · L145-L156 — pub fn websocket_next_activity_timeout_secs_with_completion(
+- websocket_activity_timeout_kind · function · L158-L160 — pub fn websocket_activity_timeout_kind(saw_api_activity: bool) -> &'static str
+- classify_websocket_fallback_reason · function · L162-L188 — pub fn classify_websocket_fallback_reason(error: &str) -> WebsocketFallbackReason
+- summarize_websocket_fallback_reason · function · L190-L192 — pub fn summarize_websocket_fallback_reason(error: &str) -> &'static str
+- websocket_cooldown_bounds_for_reason · function · L194-L213 — fn websocket_cooldown_bounds_for_reason(reason: WebsocketFallbackReason) -> (u64, u64)
+- normalize_transport_model · function · L215-L222 — pub fn normalize_transport_model(model: &str) -> Option<String>
+- websocket_cooldown_remaining · function · L224-L250 — pub async fn websocket_cooldown_remaining(
+- set_websocket_cooldown · function · L252-L264 — pub async fn set_websocket_cooldown(
+- set_websocket_cooldown_for · function · L266-L278 — pub async fn set_websocket_cooldown_for(
+- clear_websocket_cooldown · function · L280-L290 — pub async fn clear_websocket_cooldown(
+- websocket_cooldown_for_streak · function · L292-L299 — pub fn websocket_cooldown_for_streak(streak: u32, reason: WebsocketFallbackReason) -> Duration
+- record_websocket_fallback · function · L301-L321 — pub async fn record_websocket_fallback(
+- record_websocket_success · function · L323-L342 — pub async fn record_websocket_success(

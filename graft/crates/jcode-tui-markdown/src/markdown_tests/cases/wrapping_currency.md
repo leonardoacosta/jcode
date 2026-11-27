@@ -1,0 +1,15 @@
+# crates/jcode-tui-markdown/src/markdown_tests/cases/wrapping_currency.rs
+
+- test_center_aligned_wrap_balances_lines · function · L2-L11 — fn test_center_aligned_wrap_balances_lines()
+- test_lazy_rendering_visible_range · function · L14-L26 — fn test_lazy_rendering_visible_range()
+- test_lazy_rendering_matches_full_latex_output · function · L29-L39 — fn test_lazy_rendering_matches_full_latex_output()
+- test_ranges_overlap · function · L42-L49 — fn test_ranges_overlap()
+- test_highlight_cache_performance · function · L52-L61 — fn test_highlight_cache_performance()
+- test_bold_with_dollar_signs · function · L64-L75 — fn test_bold_with_dollar_signs()
+- test_escape_currency_preserves_math · function · L78-L90 — fn test_escape_currency_preserves_math()
+- test_currency_dollars_in_indented_code_block · function · L93-L108 — fn test_currency_dollars_in_indented_code_block()
+- test_fence_closing_not_triggered_mid_line · function · L111-L117 — fn test_fence_closing_not_triggered_mid_line()
+- test_line_oriented_tool_transcript_softbreaks_are_preserved · function · L120-L164 — fn test_line_oriented_tool_transcript_softbreaks_are_preserved()
+- test_line_oriented_tool_transcript_followed_by_prose_gets_blank_line · function · L167-L197 — fn test_line_oriented_tool_transcript_followed_by_prose_gets_blank_line()
+- test_prose_before_line_oriented_tool_transcript_gets_blank_line · function · L200-L230 — fn test_prose_before_line_oriented_tool_transcript_gets_blank_line()
+- wrap_keeps_word_intact_across_span_boundary · function · L233-L267 — fn wrap_keeps_word_intact_across_span_boundary()

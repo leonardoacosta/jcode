@@ -1,0 +1,61 @@
+# crates/jcode-tui-core/src/stream_buffer.rs
+
+- BASE_REVEAL_CPS · constant · L32-L32 — const BASE_REVEAL_CPS: f32 = 180.0;
+- REVEAL_BACKLOG_GAIN · constant · L37-L37 — const REVEAL_BACKLOG_GAIN: f32 = 3.0;
+- MAX_REVEAL_CPS · constant · L46-L46 — const MAX_REVEAL_CPS: f32 = 960.0;
+- MAX_REVEAL_STEP · constant · L51-L51 — const MAX_REVEAL_STEP: Duration = Duration::from_millis(50);
+- JITTER_EVENT_CAP · constant · L54-L54 — const JITTER_EVENT_CAP: usize = 4096;
+- StreamKind · enum · L58-L63 — pub enum StreamKind
+- StreamOp · enum · L70-L74 — pub enum StreamOp
+- QueuedOp · enum · L78-L81 — enum QueuedOp
+- StreamBuffer · struct · L86-L105 — pub struct StreamBuffer
+- StreamBufferMemoryProfile · struct · L108-L111 — pub struct StreamBufferMemoryProfile
+- default · function · L114-L116 — fn default() -> Self
+- new · function · L120-L133 — pub fn new() -> Self
+- push_text · function · L139-L149 — pub fn push_text(&mut self, text: &str) -> Vec<StreamOp>
+- push_reasoning · function · L153-L160 — pub fn push_reasoning(&mut self, text: &str) -> Vec<StreamOp>
+- push_close_reasoning · function · L165-L171 — pub fn push_close_reasoning(&mut self) -> Vec<StreamOp>
+- flush · function · L175-L184 — pub fn flush(&mut self) -> Vec<StreamOp>
+- flush_smooth_frame · function · L190-L192 — pub fn flush_smooth_frame(&mut self) -> Vec<StreamOp>
+- is_empty · function · L195-L197 — pub fn is_empty(&self) -> bool
+- clear · function · L200-L207 — pub fn clear(&mut self)
+- debug_memory_profile · function · L209-L222 — pub fn debug_memory_profile(&self) -> StreamBufferMemoryProfile
+- jitter_profile · function · L225-L227 — pub fn jitter_profile(&self) -> StreamJitterProfile
+- reset_jitter · function · L230-L232 — pub fn reset_jitter(&mut self)
+- push_chunk · function · L236-L252 — fn push_chunk(&mut self, kind: StreamKind, text: &str)
+- reveal_now · function · L257-L297 — fn reveal_now(&mut self, now: Instant) -> Vec<StreamOp>
+- drain_ops · function · L303-L351 — fn drain_ops(&mut self, mut char_count: usize, drain_all_markers: bool) -> Vec<StreamOp>
+- JitterEvent · struct · L360-L364 — struct JitterEvent
+- JitterRecorder · struct · L370-L373 — struct JitterRecorder
+- record_arrival · function · L376-L378 — fn record_arrival(&mut self, kind: StreamKind, chars: usize)
+- record_reveal · function · L380-L382 — fn record_reveal(&mut self, kind: StreamKind, chars: usize)
+- record · function · L384-L396 — fn record(series: &mut VecDeque<JitterEvent>, kind: StreamKind, chars: usize)
+- profile · function · L398-L407 — fn profile(&self) -> StreamJitterProfile
+- SeriesStats · struct · L416-L431 — pub struct SeriesStats
+- compute · function · L434-L485 — fn compute(series: &VecDeque<JitterEvent>, kind: Option<StreamKind>) -> Self
+- StreamJitterProfile · struct · L491-L498 — pub struct StreamJitterProfile
+- mean · function · L500-L505 — fn mean(values: &[f64]) -> f64
+- coefficient_of_variation · function · L507-L514 — fn coefficient_of_variation(values: &[f64]) -> f64
+- percentile_f64 · function · L516-L524 — fn percentile_f64(values: &[f64], p: f64) -> f64
+- percentile_usize · function · L526-L534 — fn percentile_usize(values: impl Iterator<Item = usize>, p: f64) -> usize
+- tests · module · L537-L928 — mod tests
+- op_chars · function · L541-L548 — fn op_chars(ops: &[StreamOp]) -> usize
+- drain_frames · function · L552-L567 — fn drain_frames(buf: &mut StreamBuffer, start: Instant, frame: Duration) -> Vec<usize>
+- flatten · function · L571-L589 — fn flatten(ops: impl IntoIterator<Item = StreamOp>) -> Vec<(char, String)>
+- flush_drains_everything · function · L592-L598 — fn flush_drains_everything()
+- empty_push_reveals_nothing · function · L601-L606 — fn empty_push_reveals_nothing()
+- paced_reveal_spreads_a_burst_over_multiple_frames · function · L609-L627 — fn paced_reveal_spreads_a_burst_over_multiple_frames()
+- large_single_burst_is_bounded_by_wall_clock_reveal_rate · function · L630-L647 — fn large_single_burst_is_bounded_by_wall_clock_reveal_rate()
+- reveal_ceiling_is_independent_of_redraw_cadence · function · L650-L662 — fn reveal_ceiling_is_independent_of_redraw_cadence()
+- frequent_push_calls_cannot_bypass_the_wall_clock_ceiling · function · L665-L682 — fn frequent_push_calls_cannot_bypass_the_wall_clock_ceiling()
+- reasoning_burst_is_paced_like_text · function · L685-L697 — fn reasoning_burst_is_paced_like_text()
+- idle_gap_does_not_dump_the_next_burst · function · L700-L715 — fn idle_gap_does_not_dump_the_next_burst()
+- bursty_and_steady_feeds_reveal_at_similar_smoothness · function · L718-L760 — fn bursty_and_steady_feeds_reveal_at_similar_smoothness()
+- bursty_reasoning_feed_is_smoothed · function · L763-L786 — fn bursty_reasoning_feed_is_smoothed()
+- ordering_is_preserved_across_kinds_and_markers · function · L789-L813 — fn ordering_is_preserved_across_kinds_and_markers()
+- close_marker_waits_for_buffered_reasoning · function · L816-L851 — fn close_marker_waits_for_buffered_reasoning()
+- whitespace_text_does_not_close_reasoning · function · L854-L865 — fn whitespace_text_does_not_close_reasoning()
+- marker_only_queue_emits_immediately · function · L868-L874 — fn marker_only_queue_emits_immediately()
+- reveal_respects_utf8_boundaries · function · L877-L885 — fn reveal_respects_utf8_boundaries()
+- small_trailing_text_eventually_drains · function · L888-L895 — fn small_trailing_text_eventually_drains()
+- jitter_profile_shows_reveals_smoother_than_arrivals · function · L898-L927 — fn jitter_profile_shows_reveals_smoother_than_arrivals()

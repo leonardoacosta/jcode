@@ -1,0 +1,87 @@
+# crates/jcode-tui-mermaid/src/mermaid_cache_render.rs
+
+- RENDER_CACHE_MAX · constant · L12-L12 — pub(super) const RENDER_CACHE_MAX: usize = 512;
+- CACHE_WIDTH_MATCH_PERCENT · constant · L15-L15 — pub(super) const CACHE_WIDTH_MATCH_PERCENT: u32 = 85;
+- RENDER_WIDTH_BUCKET_CELLS · constant · L18-L18 — pub(super) const RENDER_WIDTH_BUCKET_CELLS: u32 = 4;
+- LAYOUT_CACHE_MAX · constant · L30-L30 — pub(super) const LAYOUT_CACHE_MAX: usize = 32;
+- MermaidCache · struct · L33-L45 — pub(super) struct MermaidCache
+- CachedDiagram · struct · L48-L52 — pub(super) struct CachedDiagram
+- new · function · L55-L69 — pub(super) fn new() -> Self
+- touch · function · L71-L76 — fn touch(&mut self, key: (u64, RenderProfile))
+- get · function · L78-L115 — pub(super) fn get(
+- get_exact_profile · function · L117-L142 — fn get_exact_profile(
+- get_in_memory · function · L148-L153 — fn get_in_memory(&mut self, hash: u64, profile: RenderProfile) -> Option<CachedDiagram>
+- get_in_memory_any_profile · function · L160-L162 — fn get_in_memory_any_profile(&mut self, hash: u64) -> Option<CachedDiagram>
+- get_in_memory_any_profile_for_width · function · L164-L184 — fn get_in_memory_any_profile_for_width(
+- get_preferred_width_or_any_in_memory · function · L186-L222 — fn get_preferred_width_or_any_in_memory(
+- insert · function · L224-L239 — pub(super) fn insert(&mut self, hash: u64, profile: RenderProfile, diagram: CachedDiagram)
+- cache_path · function · L242-L252 — pub(super) fn cache_path(
+- discover_on_disk · function · L254-L300 — pub(super) fn discover_on_disk(
+- cached_width_satisfies · function · L303-L311 — pub(super) fn cached_width_satisfies(width: u32, min_width: Option<u32>) -> bool
+- parse_cache_filename · function · L313-L330 — pub(super) fn parse_cache_filename(path: &Path) -> Option<(u64, u32, RenderProfile)>
+- LayoutCacheKey · struct · L338-L345 — pub(super) struct LayoutCacheKey
+- LayoutCache · struct · L352-L359 — pub(super) struct LayoutCache
+- new · function · L363-L369 — pub(super) fn new() -> Self
+- enforce_theme · function · L372-L378 — fn enforce_theme(&mut self, theme_fingerprint: u64)
+- touch · function · L380-L385 — fn touch(&mut self, key: LayoutCacheKey)
+- get · function · L387-L392 — pub(super) fn get(&mut self, key: &LayoutCacheKey) -> Option<Arc<Layout>>
+- insert · function · L394-L408 — pub(super) fn insert(&mut self, key: LayoutCacheKey, layout: Arc<Layout>)
+- clear · function · L410-L414 — pub(super) fn clear(&mut self)
+- LAYOUT_CACHE · constant · L419-L420 — pub(super) static LAYOUT_CACHE: LazyLock<Mutex<LayoutCache>> =
+- serialize_fingerprint · function · L425-L432 — fn serialize_fingerprint<T: serde::Serialize>(value: &T) -> u64
+- build_layout_config · function · L437-L451 — pub(super) fn build_layout_config(
+- layout_cache_key · function · L454-L466 — pub(super) fn layout_cache_key(
+- layout_cache_get · function · L469-L482 — fn layout_cache_get(key: &LayoutCacheKey) -> Option<Arc<Layout>>
+- layout_cache_insert · function · L485-L490 — fn layout_cache_insert(key: LayoutCacheKey, layout: Arc<Layout>)
+- clear_layout_cache · function · L493-L499 — pub(super) fn clear_layout_cache()
+- layout_cache_usage · function · L502-L519 — pub(super) fn layout_cache_usage() -> (usize, u64)
+- text_block_bytes · function · L522-L529 — fn text_block_bytes(block: &mermaid_rs_renderer::layout::TextBlock) -> u64
+- approx_layout_bytes · function · L540-L572 — pub(super) fn approx_layout_bytes(layout: &Layout) -> u64
+- LAYOUT_COMPUTATIONS · constant · L578-L579 — pub(super) static LAYOUT_COMPUTATIONS: LazyLock<Mutex<HashMap<u64, u64>>> =
+- record_layout_computation_for_test · function · L582-L586 — fn record_layout_computation_for_test(hash: u64)
+- layout_computations_for_test · function · L589-L594 — pub(super) fn layout_computations_for_test(hash: u64) -> u64
+- evict_render_cache_for_content · function · L601-L603 — pub fn evict_render_cache_for_content(content: &str)
+- evict_render_cache_for_test · function · L609-L611 — pub(super) fn evict_render_cache_for_test(hash: u64)
+- insert_render_cache_entry_for_test · function · L616-L633 — pub(super) fn insert_render_cache_entry_for_test(
+- get_cached_diagram_in_memory_for_test · function · L637-L639 — pub(super) fn get_cached_diagram_in_memory_for_test(hash: u64) -> Option<CachedDiagram>
+- evict_render_cache_by_hash · function · L641-L671 — fn evict_render_cache_by_hash(hash: u64)
+- get_cached_diagram · function · L673-L680 — pub(super) fn get_cached_diagram(hash: u64, min_width: Option<u32>) -> Option<CachedDiagram>
+- get_cached_diagram_in_memory · function · L693-L703 — pub(super) fn get_cached_diagram_in_memory(hash: u64) -> Option<CachedDiagram>
+- get_cached_diagram_prefer_width · function · L705-L713 — pub(super) fn get_cached_diagram_prefer_width(
+- get_cached_diagram_for_profile · function · L715-L722 — fn get_cached_diagram_for_profile(
+- get_cached_path · function · L724-L726 — pub fn get_cached_path(hash: u64) -> Option<PathBuf>
+- invalidate_cached_image · function · L729-L742 — fn invalidate_cached_image(hash: u64)
+- RenderResult · enum · L745-L755 — pub enum RenderResult
+- is_mermaid_lang · function · L758-L770 — pub fn is_mermaid_lang(lang: &str) -> bool
+- MAX_NODES · constant · L773-L773 — const MAX_NODES: usize = 100;
+- MAX_EDGES · constant · L775-L775 — const MAX_EDGES: usize = 200;
+- estimate_diagram_size · function · L778-L780 — pub(super) fn estimate_diagram_size(content: &str) -> (usize, usize)
+- calculate_render_size · function · L783-L795 — pub(super) fn calculate_render_size(
+- svg_dimension_to_u32 · function · L798-L804 — fn svg_dimension_to_u32(value: f32) -> u32
+- write_output_png_cached_fonts · function · L807-L814 — fn write_output_png_cached_fonts(
+- render_mermaid · function · L818-L820 — pub fn render_mermaid(content: &str) -> RenderResult
+- render_mermaid_sized · function · L823-L825 — pub fn render_mermaid_sized(content: &str, terminal_width: Option<u16>) -> RenderResult
+- render_mermaid_untracked · function · L830-L832 — pub fn render_mermaid_untracked(content: &str, terminal_width: Option<u16>) -> RenderResult
+- bump_deferred_render_epoch · function · L834-L839 — pub(super) fn bump_deferred_render_epoch()
+- deferred_render_epoch · function · L841-L843 — pub fn deferred_render_epoch() -> u64
+- debug_bump_deferred_render_epoch_for_tests · function · L848-L850 — pub fn debug_bump_deferred_render_epoch_for_tests()
+- notify_deferred_render_completed · function · L855-L858 — pub fn notify_deferred_render_completed()
+- deferred_render_sender · function · L860-L874 — fn deferred_render_sender() -> &'static mpsc::Sender<DeferredRenderTask>
+- deferred_batch_tests · module · L877-L926 — mod deferred_batch_tests
+- deferred_worker_batches_mixed_tasks_and_skips_empty_batches · function · L881-L907 — fn deferred_worker_batches_mixed_tasks_and_skips_empty_batches()
+- abandoned_mermaid_task_does_not_notify · function · L910-L925 — fn abandoned_mermaid_task_does_not_notify()
+- deferred_render_worker · function · L928-L933 — fn deferred_render_worker(rx: mpsc::Receiver<DeferredRenderTask>)
+- deferred_render_worker_with · function · L935-L958 — fn deferred_render_worker_with<T>(
+- render_deferred_task · function · L963-L994 — fn render_deferred_task(task: DeferredRenderTask) -> bool
+- is_likely_stream_update · function · L996-L1003 — pub(crate) fn is_likely_stream_update(previous: &str, next: &str) -> bool
+- render_mermaid_deferred · function · L1010-L1012 — pub fn render_mermaid_deferred(content: &str, terminal_width: Option<u16>) -> Option<RenderResult>
+- render_mermaid_deferred_with_registration · function · L1014-L1020 — pub fn render_mermaid_deferred_with_registration(
+- render_mermaid_deferred_with_stream_scope · function · L1022-L1028 — pub fn render_mermaid_deferred_with_stream_scope(
+- render_mermaid_deferred_inner · function · L1030-L1171 — fn render_mermaid_deferred_inner(
+- render_mermaid_sized_internal · function · L1173-L1480 — fn render_mermaid_sized_internal(
+- font_prewarm_tests · module · L1483-L1499 — mod font_prewarm_tests
+- mermaid_detection_triggers_font_db_prewarm · function · L1488-L1498 — fn mermaid_detection_triggers_font_db_prewarm()
+- width_selection_tests · module · L1502-L1561 — mod width_selection_tests
+- test_cache · function · L1505-L1519 — fn test_cache(name: &str) -> MermaidCache
+- pane_expansion_prefers_wider_disk_rendition_then_memoizes_misses · function · L1522-L1560 — fn pane_expansion_prefers_wider_disk_rendition_then_memoizes_misses()
+- HASH · constant · L1523-L1523 — const HASH: u64 = 0xA11C_E55D_1A6A_0001;

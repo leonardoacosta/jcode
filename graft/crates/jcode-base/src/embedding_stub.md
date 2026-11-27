@@ -1,0 +1,21 @@
+# crates/jcode-base/src/embedding_stub.rs
+
+- EmbeddingVec · type · L13-L13 — pub type EmbeddingVec = Vec<f32>;
+- TopKItem · struct · L16-L20 — struct TopKItem<T>
+- eq · function · L23-L25 — fn eq(&self, other: &Self) -> bool
+- partial_cmp · function · L31-L33 — fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering>
+- cmp · function · L37-L41 — fn cmp(&self, other: &Self) -> std::cmp::Ordering
+- top_k_scored · function · L44-L85 — fn top_k_scored<T, I>(items: I, limit: usize) -> Vec<(T, f32)>
+- EmbedderStats · struct · L88-L105 — pub struct EmbedderStats
+- Embedder · struct · L107-L107 — pub struct Embedder;
+- load · function · L110-L113 — pub fn load() -> Result<Self>
+- get_embedder · function · L116-L119 — pub fn get_embedder() -> Result<std::sync::Arc<Embedder>>
+- embed · function · L121-L127 — pub fn embed(text: &str) -> Result<EmbeddingVec>
+- maybe_unload_if_idle · function · L129-L135 — pub fn maybe_unload_if_idle(idle_for: Duration) -> bool
+- unload_now · function · L137-L140 — pub fn unload_now() -> bool
+- stats · function · L142-L162 — pub fn stats() -> EmbedderStats
+- cosine_similarity · function · L164-L181 — pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32
+- batch_cosine_similarity · function · L183-L203 — pub fn batch_cosine_similarity(query: &[f32], candidates: &[&[f32]]) -> Vec<f32>
+- find_similar · function · L205-L224 — pub fn find_similar(
+- is_model_available · function · L226-L229 — pub fn is_model_available() -> bool
+- embedding_dim · function · L231-L233 — pub const fn embedding_dim() -> usize

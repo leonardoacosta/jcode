@@ -1,0 +1,27 @@
+# crates/jcode-agent-runtime/src/lib.rs
+
+- SoftInterruptMessage · struct · L5-L14 — pub struct SoftInterruptMessage
+- SoftInterruptSource · enum · L17-L24 — pub enum SoftInterruptSource
+- SoftInterruptQueue · type · L27-L27 — pub type SoftInterruptQueue = Arc<std::sync::Mutex<Vec<SoftInterruptMessage>>>;
+- BackgroundToolSignal · type · L31-L31 — pub type BackgroundToolSignal = Arc<std::sync::atomic::AtomicBool>;
+- GracefulShutdownSignal · type · L34-L34 — pub type GracefulShutdownSignal = Arc<std::sync::atomic::AtomicBool>;
+- InterruptSignal · struct · L39-L46 — pub struct InterruptSignal
+- new · function · L49-L55 — pub fn new() -> Self
+- fire · function · L57-L61 — pub fn fire(&self)
+- is_set · function · L63-L65 — pub fn is_set(&self) -> bool
+- reset · function · L67-L69 — pub fn reset(&self)
+- epoch · function · L74-L76 — pub fn epoch(&self) -> u64
+- reset_if_epoch · function · L84-L96 — pub fn reset_if_epoch(&self, epoch: u64) -> bool
+- notified · function · L98-L112 — pub async fn notified(&self)
+- as_atomic · function · L114-L116 — pub fn as_atomic(&self) -> Arc<std::sync::atomic::AtomicBool>
+- same_instance · function · L121-L123 — pub fn same_instance(&self, other: &Self) -> bool
+- default · function · L127-L129 — fn default() -> Self
+- StreamError · struct · L134-L137 — pub struct StreamError
+- new · function · L140-L145 — pub fn new(message: String, retry_after_secs: Option<u64>) -> Self
+- tests · module · L149-L289 — mod tests
+- notified_future_receives_notify_waiters_from_creation · function · L160-L179 — async fn notified_future_receives_notify_waiters_from_creation()
+- fire_never_loses_wakeup_while_notified_races · function · L187-L213 — fn fire_never_loses_wakeup_while_notified_races()
+- notified_returns_immediately_when_already_fired · function · L217-L223 — async fn notified_returns_immediately_when_already_fired()
+- reset_clears_fired_state · function · L227-L235 — async fn reset_clears_fired_state()
+- reset_if_epoch_skips_when_newer_fire_landed · function · L242-L265 — fn reset_if_epoch_skips_when_newer_fire_landed()
+- reset_if_epoch_never_erases_concurrent_fire · function · L270-L288 — fn reset_if_epoch_never_erases_concurrent_fire()

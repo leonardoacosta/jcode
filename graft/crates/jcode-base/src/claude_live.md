@@ -1,0 +1,27 @@
+# crates/jcode-base/src/claude_live.rs
+
+- ClaudeSessionRegistryRecord · struct · L20-L35 — struct ClaudeSessionRegistryRecord
+- LiveClaudeSession · struct · L39-L48 — pub struct LiveClaudeSession
+- StopLiveClaudeOutcome · enum · L52-L57 — pub enum StopLiveClaudeOutcome
+- from_record · function · L60-L71 — fn from_record(record: ClaudeSessionRegistryRecord, registry_path: PathBuf) -> Self
+- live_claude_sessions · function · L78-L81 — pub fn live_claude_sessions() -> Result<Vec<LiveClaudeSession>>
+- find_live_claude_session · function · L83-L87 — pub fn find_live_claude_session(session_id: &str) -> Result<Option<LiveClaudeSession>>
+- live_claude_sessions_in · function · L89-L123 — fn live_claude_sessions_in(root: &Path) -> Result<Vec<LiveClaudeSession>>
+- registry_record_is_takeover_candidate · function · L125-L150 — fn registry_record_is_takeover_candidate(
+- linux_process_identity · function · L153-L173 — fn linux_process_identity(pid: u32) -> std::io::Result<(String, char)>
+- process_identity_matches · function · L176-L180 — fn process_identity_matches(pid: u32, expected_start: &str) -> bool
+- process_identity_matches · function · L183-L185 — fn process_identity_matches(_pid: u32, _expected_start: &str) -> bool
+- open_pidfd · function · L188-L194 — fn open_pidfd(pid: u32) -> std::io::Result<OwnedFd>
+- send_sigterm_via_pidfd · function · L197-L215 — fn send_sigterm_via_pidfd(pidfd: &OwnedFd) -> std::io::Result<bool>
+- wait_for_pidfd_exit · function · L218-L238 — fn wait_for_pidfd_exit(pidfd: &OwnedFd, timeout: Duration) -> std::io::Result<bool>
+- registry_still_matches · function · L240-L249 — fn registry_still_matches(session: &LiveClaudeSession) -> bool
+- remove_registry_if_same · function · L252-L256 — fn remove_registry_if_same(session: &LiveClaudeSession)
+- stop_live_claude_session · function · L263-L321 — pub fn stop_live_claude_session(
+- tests · module · L324-L461 — mod tests
+- spawn_sleep · function · L328-L336 — fn spawn_sleep() -> Child
+- write_record · function · L338-L358 — fn write_record(root: &Path, child: &Child, session_id: &str, start: &str) -> PathBuf
+- discovery_requires_matching_process_start_token · function · L361-L375 — fn discovery_requires_matching_process_start_token()
+- stop_signals_only_the_identity_verified_process · function · L378-L396 — fn stop_signals_only_the_identity_verified_process()
+- pidfd_never_retargets_after_the_original_process_exits · function · L399-L411 — fn pidfd_never_retargets_after_the_original_process_exits()
+- mismatched_identity_is_never_signaled · function · L414-L433 — fn mismatched_identity_is_never_signaled()
+- changed_registry_session_is_never_signaled · function · L436-L460 — fn changed_registry_session_is_never_signaled()

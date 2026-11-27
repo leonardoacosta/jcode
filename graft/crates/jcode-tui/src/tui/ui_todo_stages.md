@@ -1,0 +1,45 @@
+# crates/jcode-tui/src/tui/ui_todo_stages.rs
+
+- stage_lines · module · L18-L18 — mod stage_lines;
+- TodoCardAgent · struct · L25-L51 — pub(crate) struct TodoCardAgent
+- from_member · function · L54-L117 — pub(crate) fn from_member(member: &crate::protocol::SwarmMemberStatus) -> Self
+- matches · function · L119-L125 — fn matches(&self, key: &str) -> bool
+- icon · function · L127-L139 — fn icon(&self) -> String
+- fallback_icon · function · L143-L154 — fn fallback_icon(assigned_to: &str) -> String
+- agent_roster_spans · function · L161-L244 — pub(crate) fn agent_roster_spans(
+- agent_state_mark · function · L246-L254 — fn agent_state_mark(status: &str) -> Option<(&'static str, Color)>
+- stage_color · function · L256-L258 — fn stage_color() -> Color
+- is_done · function · L260-L262 — fn is_done(todo: &crate::todo::TodoItem) -> bool
+- width_of · function · L264-L266 — fn width_of(spans: &[Span<'static>]) -> usize
+- ordered_layout · function · L270-L289 — fn ordered_layout(todos: &[&crate::todo::TodoItem]) -> Vec<crate::todo::stages::TodoStage>
+- current_stage · function · L292-L299 — fn current_stage(
+- todo_pip_status · function · L301-L311 — fn todo_pip_status(todo: &crate::todo::TodoItem) -> &str
+- pip_span · function · L313-L315 — fn pip_span(todo: &crate::todo::TodoItem) -> Span<'static>
+- status_pip_span · function · L317-L327 — fn status_pip_span(status: &str) -> Span<'static>
+- LIVE_DOT_SENTINEL · constant · L333-L333 — pub(crate) const LIVE_DOT_SENTINEL: &str = "\u{25CD}";
+- is_live_status · function · L336-L338 — fn is_live_status(status: &str) -> bool
+- QUIET_AFTER_SECS · constant · L341-L341 — const QUIET_AFTER_SECS: u64 = 120;
+- animate_lane_spinners · function · L345-L358 — pub(crate) fn animate_lane_spinners(lines: &mut [Line<'static>])
+- push_stage_pips · function · L365-L430 — pub(crate) fn push_stage_pips(
+- lane_agent_chip · function · L434-L480 — fn lane_agent_chip(
+- activity_matches_title · function · L482-L488 — fn activity_matches_title(activity: &str, todos: &[&crate::todo::TodoItem]) -> bool
+- agent_note · function · L490-L516 — fn agent_note(agent: &TodoCardAgent, todos: &[&crate::todo::TodoItem]) -> String
+- phase_style · function · L521-L527 — fn phase_style(index: usize, current: Option<usize>) -> Style
+- later_phase_color · function · L529-L531 — fn later_phase_color() -> Color
+- lane_name_spans · function · L534-L552 — fn lane_name_spans(
+- lane_item_statuses · function · L554-L588 — fn lane_item_statuses<'a>(
+- lane_strip_spans · function · L591-L608 — fn lane_strip_spans(statuses: &[(&str, bool)], strip_width: usize) -> Vec<Span<'static>>
+- lane_live_agent · function · L611-L621 — fn lane_live_agent<'a>(
+- lane_note_spans · function · L626-L730 — fn lane_note_spans(
+- render_group_header · function · L733-L767 — pub(crate) fn render_group_header(
+- MIN_TITLE_CELLS · constant · L771-L771 — const MIN_TITLE_CELLS: usize = 8;
+- lane_titles_spans · function · L775-L841 — fn lane_titles_spans(lane_todos: &[&crate::todo::TodoItem], width: usize) -> Vec<Span<'static>>
+- lane_prerequisite_progress · function · L844-L867 — fn lane_prerequisite_progress(
+- push_lane_status_lines · function · L871-L879 — pub(super) fn push_lane_status_lines(
+- push_lane_status_lines_below_rows · function · L884-L892 — pub(super) fn push_lane_status_lines_below_rows(
+- todo_wait_note · function · L895-L919 — pub(crate) fn todo_wait_note(
+- push_lane_status_lines_inner · function · L921-L1009 — fn push_lane_status_lines_inner(
+- dim_span · function · L1012-L1015 — fn dim_span(span: Span<'static>) -> Span<'static>
+- item_rows · module · L1018-L1018 — mod item_rows;
+- tests · module · L1024-L1024 — mod tests;
+- blocked · module · L1029-L1029 — mod blocked;

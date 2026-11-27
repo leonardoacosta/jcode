@@ -1,0 +1,45 @@
+# crates/jcode-provider-openrouter-runtime/src/openrouter_sse_stream.rs
+
+- GATEWAY_RETRY_BUDGET · constant · L6-L6 — const GATEWAY_RETRY_BUDGET: std::time::Duration = std::time::Duration::from_secs(120);
+- GatewayEligibilityError · struct · L9-L12 — struct GatewayEligibilityError
+- remaining · function · L15-L18 — fn remaining(&self) -> Option<std::time::Duration>
+- fmt · function · L22-L34 — fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- ErrorBodyReadTimeout · struct · L40-L46 — struct ErrorBodyReadTimeout
+- fmt · function · L49-L65 — fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- read_http_error_body · function · L70-L92 — async fn read_http_error_body(
+- gateway_retry_delay_within_budget · function · L94-L99 — fn gateway_retry_delay_within_budget(
+- retryable_attempt_allowed · function · L101-L108 — fn retryable_attempt_allowed(attempt: u32, max_retries: u32, gateway_retry: bool) -> bool
+- gateway_retry_allowed · function · L110-L120 — fn gateway_retry_allowed(
+- wait_for_retry_or_close · function · L122-L130 — async fn wait_for_retry_or_close(
+- is_gateway_eligibility_failure · function · L131-L145 — fn is_gateway_eligibility_failure(status: u16, body: &str) -> bool
+- local_endpoint_troubleshooting_hint · function · L147-L163 — fn local_endpoint_troubleshooting_hint(api_base: &str, model: &str) -> &'static str
+- http_status_hint · function · L168-L190 — fn http_status_hint(status: u16, api_base: &str, model: &str) -> &'static str
+- run_stream_with_retries · function · L200-L388 — pub(super) async fn run_stream_with_retries(
+- gateway_route_event · function · L392-L407 — fn gateway_route_event(headers: &reqwest::header::HeaderMap) -> Option<StreamEvent>
+- stream_response · function · L413-L666 — async fn stream_response(
+- AzureResponseFailure · struct · L672-L675 — struct AzureResponseFailure
+- fmt · function · L678-L680 — fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- source · function · L684-L686 — fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+- retryable_stream_failure · function · L689-L696 — fn retryable_stream_failure(error: &anyhow::Error) -> bool
+- azure_response_failure · function · L698-L744 — fn azure_response_failure(message: &str, retry_after_secs: Option<u64>) -> anyhow::Error
+- azure_retry_tests · module · L748-L748 — mod azure_retry_tests;
+- parsed_http_status · function · L755-L765 — fn parsed_http_status(error_str: &str) -> Option<u16>
+- is_exhausted_quota_error · function · L769-L780 — fn is_exhausted_quota_error(error_str: &str) -> bool
+- is_retryable_error · function · L782-L811 — fn is_retryable_error(error_str: &str) -> bool
+- tests · module · L814-L1072 — mod tests
+- generic_failure_after_gateway_eligibility_keeps_eight_attempt_limit · function · L818-L836 — fn generic_failure_after_gateway_eligibility_keeps_eight_attempt_limit()
+- gateway_eligibility_requires_matching_503_response · function · L838-L843 — fn gateway_eligibility_requires_matching_503_response()
+- gateway_retry_waits_until_full_hint_and_stays_inside_120_second_budget · function · L846-L873 — fn gateway_retry_waits_until_full_hint_and_stays_inside_120_second_budget()
+- gateway_retry_wait_is_cancelled_when_consumer_closes · function · L876-L880 — async fn gateway_retry_wait_is_cancelled_when_consumer_closes()
+- local_endpoint_hint_mentions_ollama_actions · function · L882-L887 — fn local_endpoint_hint_mentions_ollama_actions()
+- local_endpoint_hint_mentions_lm_studio_server · function · L890-L895 — fn local_endpoint_hint_mentions_lm_studio_server()
+- every_5xx_status_including_529_is_retryable · function · L900-L915 — fn every_5xx_status_including_529_is_retryable()
+- server_error_hint_points_at_provider_not_network · function · L918-L922 — fn server_error_hint_points_at_provider_not_network()
+- parsed_http_status_extracts_code · function · L925-L934 — fn parsed_http_status_extracts_code()
+- payment_required_is_not_retryable · function · L937-L944 — fn payment_required_is_not_retryable()
+- exhausted_quota_429_fails_fast_but_rate_limit_429_retries · function · L949-L957 — fn exhausted_quota_429_fails_fast_but_rate_limit_429_retries()
+- client_errors_are_not_retryable · function · L960-L968 — fn client_errors_are_not_retryable()
+- server_errors_remain_retryable · function · L971-L980 — fn server_errors_remain_retryable()
+- http_429_is_retryable_without_rate_limit_words_in_body · function · L983-L987 — fn http_429_is_retryable_without_rate_limit_words_in_body()
+- status_hint_names_billing_for_402_not_network · function · L992-L1012 — fn status_hint_names_billing_for_402_not_network()
+- stalled_http_error_body_is_bounded_by_deadline · function · L1015-L1071 — async fn stalled_http_error_body_is_bounded_by_deadline()

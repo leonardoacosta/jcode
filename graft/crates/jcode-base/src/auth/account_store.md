@@ -1,0 +1,40 @@
+# crates/jcode-base/src/auth/account_store.rs
+
+- LockOwner · struct · L7-L11 — struct LockOwner
+- StoreLock · struct · L14-L17 — struct StoreLock
+- STORE_LOCKS · constant · L19-L20 — static STORE_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<StoreLock>>>> =
+- StoreLockGuard · struct · L25-L28 — pub(crate) struct StoreLockGuard
+- drop · function · L31-L40 — fn drop(&mut self)
+- lock_store · function · L47-L89 — pub(crate) fn lock_store(home: &Path, store_name: &str) -> Result<StoreLockGuard>
+- open_store_lock · function · L92-L137 — fn open_store_lock(home: &Path, path: &Path) -> Result<std::fs::File>
+- open_store_lock · function · L140-L153 — fn open_store_lock(_home: &Path, path: &Path) -> Result<std::fs::File>
+- RUNTIME_ACTIVE_OVERRIDES · constant · L161-L162 — static RUNTIME_ACTIVE_OVERRIDES: LazyLock<RwLock<HashMap<&'static str, String>>> =
+- set_runtime_active_override · function · L164-L175 — pub fn set_runtime_active_override(prefix: &'static str, label: Option<String>)
+- runtime_active_override · function · L177-L182 — pub fn runtime_active_override(prefix: &str) -> Option<String>
+- ACCOUNT_ANIMALS · constant · L187-L192 — const ACCOUNT_ANIMALS: &[&str] = &[
+- canonical_account_label · function · L194-L204 — pub fn canonical_account_label(prefix: &str, index: usize) -> String
+- legacy_account_ordinal · function · L206-L216 — fn legacy_account_ordinal(prefix: &str, label: &str) -> Option<usize>
+- account_ordinal · function · L218-L226 — fn account_ordinal(prefix: &str, label: &str) -> Option<usize>
+- parse_account_ordinal · function · L229-L239 — fn parse_account_ordinal(suffix: &str) -> Option<usize>
+- next_account_label · function · L241-L256 — pub fn next_account_label<'a>(prefix: &str, labels: impl IntoIterator<Item = &'a str>) -> String
+- login_target_label · function · L258-L288 — pub fn login_target_label<T, F>(
+- active_account_label · function · L290-L304 — pub fn active_account_label<T, F>(
+- set_active_account · function · L306-L321 — pub fn set_active_account<T, F>(
+- upsert_account · function · L323-L354 — pub fn upsert_account<T, FGet, FSet>(
+- RelabelOutcome · struct · L356-L359 — pub struct RelabelOutcome
+- relabel_accounts · function · L361-L443 — pub fn relabel_accounts<T, FGet, FSet>(
+- tests · module · L446-L794 — mod tests
+- increment_store · function · L449-L464 — fn increment_store(home: &Path)
+- store_lock_subprocess_worker · function · L467-L471 — fn store_lock_subprocess_worker()
+- store_lock_serializes_threads_and_nested_transactions · function · L474-L486 — fn store_lock_serializes_threads_and_nested_transactions()
+- store_lock_serializes_process_transactions · function · L490-L513 — fn store_lock_serializes_process_transactions()
+- store_lock_provider_transactions_preserve_concurrent_accounts · function · L516-L570 — fn store_lock_provider_transactions_preserve_concurrent_accounts()
+- store_lock_rejects_invalid_names · function · L573-L587 — fn store_lock_rejects_invalid_names()
+- store_lock_rejects_unsafe_paths · function · L591-L616 — fn store_lock_rejects_unsafe_paths()
+- Account · struct · L619-L621 — struct Account
+- relabel_accounts_canonicalizes_labels_and_active_label · function · L624-L652 — fn relabel_accounts_canonicalizes_labels_and_active_label()
+- upsert_account_assigns_next_label_and_sets_initial_active · function · L655-L673 — fn upsert_account_assigns_next_label_and_sets_initial_active()
+- account_labels_use_animals_and_stay_unique_after_the_named_pool · function · L676-L681 — fn account_labels_use_animals_and_stay_unique_after_the_named_pool()
+- deleting_first_account_keeps_survivor_identity_and_allocates_unique_label · function · L684-L733 — fn deleting_first_account_keeps_survivor_identity_and_allocates_unique_label()
+- legacy_primary_aliases_migrate_without_renaming_named_accounts · function · L736-L759 — fn legacy_primary_aliases_migrate_without_renaming_named_accounts()
+- numeric_migration_never_steals_existing_canonical_or_named_identity · function · L762-L793 — fn numeric_migration_never_steals_existing_canonical_or_named_identity()

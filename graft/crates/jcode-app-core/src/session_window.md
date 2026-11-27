@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/session_window.rs
+
+- OpenElsewhereOutcome · enum · L13-L20 — pub enum OpenElsewhereOutcome
+- apply_resume_open_elsewhere · function · L23-L36 — pub fn apply_resume_open_elsewhere(session_id: &str) -> OpenElsewhereOutcome
+- CLIENT_REPLACED_SIGNAL · constant · L41-L41 — pub const CLIENT_REPLACED_SIGNAL: i32 = libc::SIGUSR1;
+- close_clients · function · L44-L55 — fn close_clients(pids: &[u32]) -> usize
+- close_clients · function · L58-L60 — fn close_clients(_pids: &[u32]) -> usize
+- niri_json · function · L62-L87 — fn niri_json(args: &[&str]) -> Option<serde_json::Value>
+- niri_action · function · L89-L98 — fn niri_action(args: &[String]) -> bool
+- process_ancestry · function · L101-L127 — fn process_ancestry(pid: u32) -> Vec<u32>
+- NiriMove · struct · L131-L140 — struct NiriMove
+- NiriColumnMove · struct · L145-L152 — struct NiriColumnMove
+- scrolling_column · function · L155-L161 — fn scrolling_column(window: &serde_json::Value) -> Option<u64>
+- plan_column_move · function · L166-L204 — fn plan_column_move(
+- plan_niri_move · function · L210-L264 — fn plan_niri_move(
+- bring_client_window_here · function · L269-L321 — fn bring_client_window_here(client_pids: &[u32]) -> bool
+- tests · module · L324-L473 — mod tests
+- workspaces · function · L328-L334 — fn workspaces() -> serde_json::Value
+- moves_window_from_another_workspace_on_the_same_monitor · function · L337-L353 — fn moves_window_from_another_workspace_on_the_same_monitor()
+- window_on_another_monitor_changes_output_first · function · L356-L361 — fn window_on_another_monitor_changes_output_first()
+- window_already_here_is_only_focused · function · L364-L370 — fn window_already_here_is_only_focused()
+- tiled · function · L372-L377 — fn tiled(id: u64, pid: u64, column: u64, focused: bool) -> serde_json::Value
+- column_plan · function · L379-L383 — fn column_plan(windows: serde_json::Value) -> Option<NiriColumnMove>
+- far_column_on_the_same_workspace_is_brought_beside_the_focused_one · function · L386-L406 — fn far_column_on_the_same_workspace_is_brought_beside_the_focused_one()
+- adjacent_or_floating_windows_are_only_focused · function · L409-L418 — fn adjacent_or_floating_windows_are_only_focused()
+- window_sharing_a_column_is_expelled_before_moving · function · L421-L445 — fn window_sharing_a_column_is_expelled_before_moving()
+- ambiguous_or_missing_windows_are_not_moved · function · L448-L463 — fn ambiguous_or_missing_windows_are_not_moved()
+- ancestry_starts_at_the_process_and_reaches_its_parent · function · L466-L472 — fn ancestry_starts_at_the_process_and_reaches_its_parent()

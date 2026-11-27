@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/tool/bridge_reload.rs
+
+- BRIDGE_START_TIMEOUT · constant · L25-L25 — const BRIDGE_START_TIMEOUT: Duration = Duration::from_secs(10);
+- BRIDGE_STOP_TIMEOUT · constant · L26-L26 — const BRIDGE_STOP_TIMEOUT: Duration = Duration::from_secs(3);
+- BridgeLaunch · struct · L30-L33 — pub(crate) struct BridgeLaunch
+- display · function · L36-L41 — fn display(&self) -> String
+- parse_cmdline · function · L47-L62 — pub(crate) fn parse_cmdline(raw: &[u8], exe: Option<PathBuf>) -> Option<BridgeLaunch>
+- cli_bridge_launch · function · L65-L75 — pub(crate) fn cli_bridge_launch() -> Result<BridgeLaunch>
+- desktop_bridge_launch · function · L79-L100 — pub(crate) fn desktop_bridge_launch(desktop_root: &Path) -> Result<BridgeLaunch>
+- socket_accepts · function · L102-L104 — fn socket_accepts(path: &Path) -> bool
+- listener_pid · function · L109-L147 — fn listener_pid(socket: &Path) -> Option<i32>
+- running_launch · function · L150-L154 — fn running_launch(pid: i32) -> Option<BridgeLaunch>
+- running_launch · function · L157-L159 — fn running_launch(_pid: i32) -> Option<BridgeLaunch>
+- process_alive · function · L161-L163 — fn process_alive(pid: i32) -> bool
+- stop_process · function · L165-L179 — async fn stop_process(pid: i32)
+- spawn_bridge · function · L186-L219 — fn spawn_bridge(launch: &BridgeLaunch, log: &Path) -> Result<SpawnedBridge>
+- SpawnedBridge · struct · L221-L224 — struct SpawnedBridge
+- has_exited · function · L227-L229 — fn has_exited(&self) -> bool
+- wait_for_socket · function · L233-L245 — async fn wait_for_socket(socket: &Path, timeout: Duration, bridge: Option<&SpawnedBridge>) -> bool
+- preflight · function · L247-L269 — async fn preflight(launch: &BridgeLaunch) -> Result<()>
+- restart_bridge · function · L273-L364 — async fn restart_bridge(
+- say · function · L280-L286 — macro_rules! say
+- spawn_bridge_reload · function · L367-L398 — pub(crate) async fn spawn_bridge_reload(session_id: &str, new_launch: BridgeLaunch) -> ToolOutput
+- tests · module · L401-L507 — mod tests
+- cmdline_prefers_resolved_exe_and_strips_deleted_suffix · function · L405-L410 — fn cmdline_prefers_resolved_exe_and_strips_deleted_suffix()
+- cmdline_falls_back_to_argv0 · function · L413-L418 — fn cmdline_falls_back_to_argv0()
+- desktop_launch_picks_newest_profile_build · function · L421-L436 — fn desktop_launch_picks_newest_profile_build()
+- restart_replaces_bridge_and_rolls_back_on_failure · function · L442-L506 — async fn restart_replaces_bridge_and_rolls_back_on_failure()

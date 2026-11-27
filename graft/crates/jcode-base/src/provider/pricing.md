@@ -1,0 +1,32 @@
+# crates/jcode-base/src/provider/pricing.rs
+
+- AUTH_PRICING_MEMO_TTL · constant · L15-L15 — const AUTH_PRICING_MEMO_TTL: Duration = Duration::from_secs(5);
+- SUBSCRIPTION_TYPE_MEMO · constant · L17-L17 — static SUBSCRIPTION_TYPE_MEMO: Mutex<Option<(Instant, Option<String>)>> = Mutex::new(None);
+- OPENAI_AUTH_MODE_MEMO · constant · L18-L18 — static OPENAI_AUTH_MODE_MEMO: Mutex<Option<(Instant, &'static str)>> = Mutex::new(None);
+- AUTH_PRICING_GENERATION · constant · L23-L23 — static AUTH_PRICING_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- auth_pricing_generation · function · L25-L27 — pub(crate) fn auth_pricing_generation() -> u64
+- invalidate_auth_pricing_memos · function · L32-L40 — pub(crate) fn invalidate_auth_pricing_memos()
+- anthropic_api_pricing · function · L43-L45 — pub(crate) fn anthropic_api_pricing(model: &str) -> Option<RouteCheapnessEstimate>
+- auth_pricing_memos_enabled · function · L52-L54 — fn auth_pricing_memos_enabled() -> bool
+- anthropic_oauth_subscription_type · function · L56-L70 — fn anthropic_oauth_subscription_type() -> Option<String>
+- anthropic_oauth_pricing · function · L72-L75 — pub(crate) fn anthropic_oauth_pricing(model: &str) -> RouteCheapnessEstimate
+- openai_effective_auth_mode · function · L77-L105 — pub(crate) fn openai_effective_auth_mode() -> &'static str
+- openai_oauth_pricing · function · L107-L109 — pub(crate) fn openai_oauth_pricing(model: &str) -> RouteCheapnessEstimate
+- copilot_pricing · function · L111-L117 — pub(crate) fn copilot_pricing(model: &str) -> RouteCheapnessEstimate
+- openrouter_pricing_from_model_pricing · function · L119-L133 — pub(crate) fn openrouter_pricing_from_model_pricing(
+- openrouter_route_pricing · function · L135-L177 — pub(crate) fn openrouter_route_pricing(
+- usd_to_micros · function · L179-L181 — fn usd_to_micros(usd: f64) -> u64
+- metered_pricing_for_source · function · L197-L199 — pub fn metered_pricing_for_source(source_key: &str, model: &str) -> Option<RouteCheapnessEstimate>
+- metered_pricing_for_source_with_tier · function · L204-L248 — pub fn metered_pricing_for_source_with_tier(
+- metered_usage_cost_usd · function · L260-L302 — pub fn metered_usage_cost_usd(
+- cheapness_for_route · function · L304-L366 — pub(crate) fn cheapness_for_route(
+- tests · module · L369-L590 — mod tests
+- metered_usage_cost_prices_split_and_subset_accounting · function · L375-L389 — fn metered_usage_cost_prices_split_and_subset_accounting()
+- with_clean_provider_test_env · function · L391-L423 — fn with_clean_provider_test_env<T>(f: impl FnOnce() -> T) -> T
+- anthropic_api_pricing_long_context_uses_standard_rates · function · L426-L435 — fn anthropic_api_pricing_long_context_uses_standard_rates()
+- openrouter_pricing_from_model_pricing_parses_token_prices · function · L438-L456 — fn openrouter_pricing_from_model_pricing_parses_token_prices()
+- openrouter_pinned_endpoint_pricing_strips_pin_and_uses_endpoint_price · function · L459-L503 — fn openrouter_pinned_endpoint_pricing_strips_pin_and_uses_endpoint_price()
+- cheapness_for_openai_route_falls_back_to_subscription_for_unpriced_api_key_models · function · L506-L514 — fn cheapness_for_openai_route_falls_back_to_subscription_for_unpriced_api_key_models()
+- cheapness_for_openai_route_prefers_metered_api_prices_when_available · function · L517-L525 — fn cheapness_for_openai_route_prefers_metered_api_prices_when_available()
+- copilot_zero_mode_marks_estimate_high_confidence_and_zero_reference_cost · function · L528-L536 — fn copilot_zero_mode_marks_estimate_high_confidence_and_zero_reference_cost()
+- unified_resolver_prefers_static_tables_then_models_dev_catalog · function · L539-L589 — fn unified_resolver_prefers_static_tables_then_models_dev_catalog()

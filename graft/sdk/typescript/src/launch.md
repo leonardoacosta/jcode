@@ -1,0 +1,22 @@
+# sdk/typescript/src/launch.ts
+
+- ensureInstanceDirectory · function · L102-L129 — function ensureInstanceDirectory(root: string, relative: string): string
+- linkCredentialFile · function · L132-L150 — function linkCredentialFile(source: string, root: string, relative: string): boolean
+- WakeMode · type · L152-L152 — type WakeMode = "internal" | "external";
+- LaunchOptions · interface · L154-L200 — interface LaunchOptions
+- LaunchedInstance · interface · L203-L212 — interface LaunchedInstance
+- userJcodeHome · function · L215-L217 — function userJcodeHome(): string
+- userAppConfigDir · function · L220-L230 — function userAppConfigDir(): string
+- inheritCredentials · function · L242-L332 — function inheritCredentials(fromHome: string, toHome: string): string[]
+- readDaemonPidSync · function · L343-L363 — function readDaemonPidSync(jcodeHome: string, runtimeDir: string): number | undefined
+- waitForDaemonPid · function · L366-L378 — async function waitForDaemonPid( jcodeHome: string, runtimeDir: string, timeoutMs = 2000, ): Promise<number | undefined>
+- waitForDaemonPidForTest · function · L380-L386 — async function waitForDaemonPidForTest( jcodeHome: string, runtimeDir: string, timeoutMs?: number, ): Promise<number | undefined>
+- stopInstanceDaemon · function · L397-L444 — async function stopInstanceDaemon( _binary: string, jcodeHome: string, runtimeDir: string, ): Promise<void>
+- signal · function · L408-L420 — signal = (sig: NodeJS.Signals)
+- processExists · function · L447-L455 — function processExists(pid: number): boolean
+- removeInstanceHomeForTest · function · L466-L468 — function removeInstanceHomeForTest(home: string): void
+- removeInstanceHome · function · L470-L515 — function removeInstanceHome(home: string): void
+- walk · function · L484-L508 — walk = (target: string): void
+- launchInstance · function · L522-L766 — async function launchInstance(options: LaunchOptions = {}): Promise<LaunchedInstance>
+- shutdown · function · L610-L671 — shutdown = async (): Promise<void>
+- reapOnExit · function · L678-L715 — reapOnExit = ()

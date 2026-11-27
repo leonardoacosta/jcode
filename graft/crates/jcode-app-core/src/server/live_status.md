@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/server/live_status.rs
+
+- LIVE · constant · L9-L9 — static LIVE: LazyLock<Mutex<HashMap<String, Projection>>> = LazyLock::new(Mutex::default);
+- CHANGED · constant · L10-L11 — static CHANGED: LazyLock<tokio::sync::watch::Sender<u64>> =
+- subscribe_changes · function · L13-L15 — pub(super) fn subscribe_changes() -> tokio::sync::watch::Receiver<u64>
+- Projection · struct · L17-L29 — struct Projection
+- new · function · L32-L49 — fn new(now: Instant) -> Self
+- pause · function · L51-L55 — fn pause(&mut self, now: Instant)
+- observe · function · L57-L178 — fn observe(&mut self, event: &ServerEvent, now: Instant)
+- snapshot · function · L180-L189 — fn snapshot(&self, now: Instant) -> SwarmLiveStatus
+- begin · function · L192-L196 — pub(super) fn begin(session_id: &str)
+- observe · function · L198-L217 — pub(super) fn observe(session_id: &str, event: &ServerEvent)
+- finish · function · L219-L248 — pub(super) fn finish(session_id: &str, status: &str, reason: Option<&str>)
+- snapshot · function · L250-L255 — pub(super) fn snapshot(session_id: &str) -> Option<SwarmLiveStatus>
+- forget · function · L257-L261 — pub(super) fn forget(session_id: &str)
+- tests · module · L264-L476 — mod tests
+- request · function · L267-L273 — fn request() -> ServerEvent
+- live_status_lifecycle_reasons_do_not_leak_provider_stop_tokens · function · L276-L310 — fn live_status_lifecycle_reasons_do_not_leak_provider_stop_tokens()
+- live_status_usage_resets_only_on_request_or_retry · function · L313-L351 — fn live_status_usage_resets_only_on_request_or_retry()
+- live_status_projects_counts_and_excludes_tool_time_from_tps · function · L354-L465 — fn live_status_projects_counts_and_excludes_tool_time_from_tps()
+- live_status_new_turn_has_no_invented_or_stale_telemetry · function · L468-L475 — fn live_status_new_turn_has_no_invented_or_stale_telemetry()

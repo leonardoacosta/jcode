@@ -1,0 +1,27 @@
+# crates/jcode-provider-env/src/lib.rs
+
+- ApiKeyFallbackResolver · type · L8-L8 — type ApiKeyFallbackResolver = fn(&str) -> Option<String>;
+- API_KEY_FALLBACK_RESOLVERS · constant · L10-L11 — static API_KEY_FALLBACK_RESOLVERS: LazyLock<RwLock<Vec<ApiKeyFallbackResolver>>> =
+- register_api_key_fallback_resolver · function · L14-L19 — pub fn register_api_key_fallback_resolver(resolver: ApiKeyFallbackResolver)
+- resolve_api_key_fallback · function · L21-L31 — fn resolve_api_key_fallback(env_key: &str) -> Option<String>
+- is_invisible_boundary_char · function · L40-L50 — fn is_invisible_boundary_char(c: char) -> bool
+- sanitize_secret_value · function · L58-L63 — pub fn sanitize_secret_value(raw: &str) -> &str
+- clean_loaded_value · function · L68-L83 — fn clean_loaded_value(raw: &str, env_key: &str) -> Option<String>
+- load_api_key_from_env_or_config · function · L85-L142 — pub fn load_api_key_from_env_or_config(env_key: &str, file_name: &str) -> Option<String>
+- load_env_value_from_env_or_config · function · L144-L167 — pub fn load_env_value_from_env_or_config(env_key: &str, file_name: &str) -> Option<String>
+- load_env_value_from_config_file · function · L177-L207 — pub fn load_env_value_from_config_file(env_key: &str, file_name: &str) -> Option<String>
+- save_env_value_to_env_file · function · L209-L232 — pub fn save_env_value_to_env_file(
+- save_named_api_key · function · L239-L250 — pub fn save_named_api_key(env_file: &str, key_name: &str, key: &str) -> anyhow::Result<()>
+- tests · module · L253-L474 — mod tests
+- ENV_LOCK · constant · L258-L258 — static ENV_LOCK: Mutex<()> = Mutex::new(());
+- EnvGuard · struct · L260-L263 — struct EnvGuard
+- new · function · L266-L278 — fn new(keys: &[&'static str]) -> Self
+- drop · function · L282-L289 — fn drop(&mut self)
+- loads_api_key_from_env_before_config_file · function · L293-L311 — fn loads_api_key_from_env_before_config_file()
+- loads_and_removes_values_from_sandboxed_config_file · function · L314-L349 — fn loads_and_removes_values_from_sandboxed_config_file()
+- accepts_legacy_zai_key_for_zhipu · function · L352-L365 — fn accepts_legacy_zai_key_for_zhipu()
+- save_named_api_key_writes_file_without_poisoning_process_env · function · L368-L384 — fn save_named_api_key_writes_file_without_poisoning_process_env()
+- corrected_env_file_wins_after_a_saved_key · function · L390-L413 — fn corrected_env_file_wins_after_a_saved_key()
+- sanitize_strips_unicode_invisible_characters · function · L416-L435 — fn sanitize_strips_unicode_invisible_characters()
+- loads_api_key_with_zero_width_space_from_config_file · function · L438-L458 — fn loads_api_key_with_zero_width_space_from_config_file()
+- loads_api_key_with_invisible_chars_from_env_var · function · L461-L473 — fn loads_api_key_with_invisible_chars_from_env_var()

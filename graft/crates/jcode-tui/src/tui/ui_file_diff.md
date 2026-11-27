@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/ui_file_diff.rs
+
+- apply_side_selection_highlight · function · L5-L41 — fn apply_side_selection_highlight(
+- FileContentSignature · struct · L44-L47 — pub(super) struct FileContentSignature
+- FileDiffCacheKey · struct · L50-L53 — pub(super) struct FileDiffCacheKey
+- FileDiffDisplayRowKind · enum · L56-L61 — pub(super) enum FileDiffDisplayRowKind
+- FileDiffDisplayRow · struct · L64-L68 — pub(super) struct FileDiffDisplayRow
+- FileDiffViewCacheEntry · struct · L70-L78 — pub(super) struct FileDiffViewCacheEntry
+- FileDiffViewCacheState · struct · L81-L84 — pub(super) struct FileDiffViewCacheState
+- insert · function · L87-L98 — pub(super) fn insert(&mut self, key: FileDiffCacheKey, entry: FileDiffViewCacheEntry)
+- FILE_DIFF_CACHE_LIMIT · constant · L101-L101 — const FILE_DIFF_CACHE_LIMIT: usize = 8;
+- FILE_DIFF_CACHE · constant · L103-L103 — static FILE_DIFF_CACHE: OnceLock<Mutex<FileDiffViewCacheState>> = OnceLock::new();
+- file_diff_cache · function · L105-L107 — pub(super) fn file_diff_cache() -> &'static Mutex<FileDiffViewCacheState>
+- file_content_signature · function · L109-L115 — pub(super) fn file_content_signature(file_path: &str) -> Option<FileContentSignature>
+- render_file_diff_row · function · L117-L152 — fn render_file_diff_row(row: &FileDiffDisplayRow, file_ext: Option<&str>) -> Line<'static>
+- materialize_visible_file_diff_lines · function · L154-L177 — fn materialize_visible_file_diff_lines(
+- diff_lines_for_message · function · L179-L193 — fn diff_lines_for_message(msg: Option<&DisplayMessage>) -> Vec<ParsedDiffLine>
+- build_file_diff_cache_entry · function · L195-L354 — fn build_file_diff_cache_entry(
+- DiffHunk · struct · L207-L210 — struct DiffHunk
+- find_visible_edit_tool · function · L356-L411 — fn find_visible_edit_tool(
+- active_file_diff_context · function · L413-L427 — pub(super) fn active_file_diff_context(
+- draw_file_diff_view · function · L429-L615 — pub(super) fn draw_file_diff_view(

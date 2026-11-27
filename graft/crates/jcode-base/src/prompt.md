@@ -1,0 +1,82 @@
+# crates/jcode-base/src/prompt.rs
+
+- DEFAULT_SYSTEM_PROMPT · constant · L7-L7 — pub const DEFAULT_SYSTEM_PROMPT: &str = include_str!("prompt/system_prompt.md");
+- load_base_system_prompt · function · L15-L32 — pub fn load_base_system_prompt(working_dir: Option<&Path>) -> String
+- MERMAID_PROMPT · constant · L35-L35 — pub const MERMAID_PROMPT: &str = "# Mermaid\n\nRender fenced `mermaid` blocks inline.";
+- PromptCapabilities · struct · L39-L41 — pub struct PromptCapabilities
+- default · function · L44-L46 — fn default() -> Self
+- current · function · L50-L54 — fn current() -> Self
+- base_system_prompt_parts · function · L57-L66 — fn base_system_prompt_parts(
+- DEFAULT_SWARM_PROMPT · constant · L72-L72 — pub const DEFAULT_SWARM_PROMPT: &str = include_str!("prompt/swarm_prompt.md");
+- load_swarm_prompt · function · L77-L94 — pub fn load_swarm_prompt(working_dir: Option<&Path>) -> String
+- SWARM_EFFORT · constant · L100-L100 — pub const SWARM_EFFORT: &str = "swarm";
+- SWARM_USER_MESSAGE_REMINDER · constant · L103-L103 — pub const SWARM_USER_MESSAGE_REMINDER: &str = "Use swarms to get things done in parallel.";
+- is_swarm_effort · function · L106-L108 — pub fn is_swarm_effort(effort: &str) -> bool
+- swarm_root_reasoning_effort · function · L113-L115 — pub fn swarm_root_reasoning_effort(effort: &str) -> Option<&'static str>
+- is_swarm_mode_effort · function · L119-L121 — pub fn is_swarm_mode_effort(effort: &str) -> bool
+- with_swarm_user_message_reminder · function · L125-L133 — pub fn with_swarm_user_message_reminder(message: &str, effort: Option<&str>) -> String
+- MISSION_CONTINUATION_TEMPLATE · constant · L138-L138 — pub const MISSION_CONTINUATION_TEMPLATE: &str = include_str!("prompt/mission_continuation.md");
+- SELFDEV_MODE_PROMPT · constant · L139-L139 — const SELFDEV_MODE_PROMPT: &str = include_str!("prompt/selfdev_mode.txt");
+- DESKTOP_SELFDEV_MODE_PROMPT · constant · L140-L140 — const DESKTOP_SELFDEV_MODE_PROMPT: &str = include_str!("prompt/desktop_selfdev_mode.txt");
+- SELFDEV_FOCUS_TUI_PROMPT · constant · L141-L141 — const SELFDEV_FOCUS_TUI_PROMPT: &str = include_str!("prompt/selfdev_focus_tui.txt");
+- SplitSystemPrompt · struct · L145-L150 — pub struct SplitSystemPrompt
+- chars · function · L153-L160 — pub fn chars(&self) -> usize
+- estimated_tokens · function · L162-L170 — pub fn estimated_tokens(&self) -> usize
+- SkillInfo · struct · L175-L178 — pub struct SkillInfo
+- SKILL_DESC_MAX_CHARS · constant · L180-L180 — const SKILL_DESC_MAX_CHARS: usize = 120;
+- clip_skill_description · function · L182-L194 — fn clip_skill_description(description: &str) -> String
+- build_available_skills_section · function · L196-L213 — fn build_available_skills_section(available_skills: &[SkillInfo]) -> Option<String>
+- ContextInfo · struct · L217-L269 — pub struct ContextInfo
+- estimated_tokens · function · L273-L275 — pub fn estimated_tokens(&self) -> usize
+- prompt_prefix_chars · function · L277-L289 — pub fn prompt_prefix_chars(&self) -> usize
+- prompt_prefix_tokens · function · L291-L293 — pub fn prompt_prefix_tokens(&self) -> usize
+- tool_definition_tokens · function · L295-L297 — pub fn tool_definition_tokens(&self) -> usize
+- breakdown · function · L300-L330 — pub fn breakdown(&self) -> Vec<(&'static str, usize, &'static str)>
+- build_system_prompt · function · L334-L336 — pub fn build_system_prompt(skill_prompt: Option<&str>, available_skills: &[SkillInfo]) -> String
+- build_system_prompt_with_selfdev · function · L339-L346 — pub fn build_system_prompt_with_selfdev(
+- build_system_prompt_with_context · function · L349-L355 — pub fn build_system_prompt_with_context(
+- build_system_prompt_with_context_and_memory · function · L358-L371 — pub fn build_system_prompt_with_context_and_memory(
+- build_system_prompt_full · function · L374-L389 — pub fn build_system_prompt_full(
+- build_system_prompt_full_with_capabilities · function · L391-L463 — pub fn build_system_prompt_full_with_capabilities(
+- build_system_prompt_split · function · L467-L482 — pub fn build_system_prompt_split(
+- build_system_prompt_split_with_capabilities · function · L484-L502 — pub fn build_system_prompt_split_with_capabilities(
+- build_system_prompt_split_with_agents_md · function · L509-L526 — pub fn build_system_prompt_split_with_agents_md(
+- build_system_prompt_split_with_capabilities_and_agents_md · function · L528-L613 — fn build_system_prompt_split_with_capabilities_and_agents_md(
+- is_desktop_working_dir · function · L616-L620 — fn is_desktop_working_dir(working_dir: Option<&Path>) -> bool
+- build_selfdev_prompt_static · function · L624-L626 — fn build_selfdev_prompt_static() -> String
+- build_selfdev_prompt · function · L630-L632 — fn build_selfdev_prompt() -> String
+- SelfDevProductContext · enum · L635-L637 — enum SelfDevProductContext
+- from_working_dir · function · L640-L643 — fn from_working_dir(working_dir: Option<&Path>) -> Self
+- prompt_block · function · L645-L649 — fn prompt_block(self) -> &'static str
+- build_selfdev_prompt_static_for_working_dir · function · L652-L654 — fn build_selfdev_prompt_static_for_working_dir(working_dir: Option<&Path>) -> String
+- build_selfdev_prompt_for_working_dir · function · L656-L658 — fn build_selfdev_prompt_for_working_dir(working_dir: Option<&Path>) -> String
+- build_selfdev_prompt_static_for_context · function · L660-L662 — fn build_selfdev_prompt_static_for_context(context: SelfDevProductContext) -> String
+- build_selfdev_prompt_for_context · function · L664-L666 — fn build_selfdev_prompt_for_context(context: SelfDevProductContext) -> String
+- build_session_context · function · L669-L698 — pub fn build_session_context(working_dir: Option<&Path>) -> String
+- session_datetime_lines · function · L700-L703 — fn session_datetime_lines() -> [String; 3]
+- format_session_datetime · function · L705-L715 — fn format_session_datetime<Tz>(now: chrono::DateTime<Tz>) -> [String; 3]
+- get_git_info · function · L724-L753 — fn get_git_info(working_dir: Option<&Path>) -> Option<String>
+- TTL · constant · L729-L729 — const TTL: Duration = Duration::from_secs(3);
+- Slot · type · L730-L730 — type Slot = Arc<Mutex<Option<(Instant, Option<String>)>>>;
+- CACHE · constant · L731-L732 — static CACHE: LazyLock<Mutex<HashMap<Option<std::path::PathBuf>, Slot>>> =
+- get_git_info_uncached · function · L755-L814 — fn get_git_info_uncached(working_dir: Option<&Path>) -> Option<String>
+- hardware_context · function · L816-L824 — fn hardware_context() -> Option<String>
+- HARDWARE_CONTEXT · constant · L820-L820 — static HARDWARE_CONTEXT: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+- hardware_context_uncached · function · L826-L849 — fn hardware_context_uncached() -> Option<String>
+- read_trimmed_file · function · L851-L856 — fn read_trimmed_file(path: impl Into<PathBuf>) -> Option<String>
+- machine_model · function · L858-L868 — fn machine_model() -> Option<String>
+- cpu_model · function · L870-L885 — fn cpu_model() -> Option<String>
+- memory_summary · function · L887-L895 — fn memory_summary() -> Option<String>
+- gpu_summary · function · L897-L921 — fn gpu_summary() -> Option<String>
+- same_canonical_path · function · L923-L928 — fn same_canonical_path(first: &Path, second: &Path) -> bool
+- load_agents_md_files_from_dirs · function · L931-L936 — fn load_agents_md_files_from_dirs(
+- InstructionStatus · enum · L940-L945 — pub enum InstructionStatus
+- as_str · function · L948-L955 — pub fn as_str(self) -> &'static str
+- InstructionSource · struct · L960-L965 — pub struct InstructionSource
+- is_agents_md_pointer · function · L968-L974 — fn is_agents_md_pointer(content: &str) -> bool
+- load_instruction_layers · function · L976-L1081 — fn load_instruction_layers(
+- instruction_source_rows · function · L1084-L1097 — pub fn instruction_source_rows(sources: &[InstructionSource]) -> Vec<String>
+- load_agents_md_files_from_dir · function · L1100-L1109 — pub fn load_agents_md_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, ContextInfo)
+- load_prompt_overlay_files_from_dir · function · L1112-L1154 — fn load_prompt_overlay_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, usize)
+- load_preferred_tools_files_from_dir · function · L1157-L1200 — fn load_preferred_tools_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, usize)
+- prompt_tests · module · L1204-L1204 — mod prompt_tests;

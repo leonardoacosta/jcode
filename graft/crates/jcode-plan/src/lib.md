@@ -1,0 +1,65 @@
+# crates/jcode-plan/src/lib.rs
+
+- MAX_PLAN_ITEMS · constant · L9-L9 — pub const MAX_PLAN_ITEMS: usize = 1024;
+- mermaid · module · L11-L11 — pub mod mermaid;
+- PlanItem · struct · L18-L31 — pub struct PlanItem
+- SwarmTaskProgress · struct · L35-L67 — pub struct SwarmTaskProgress
+- SwarmPlanItemSpec · struct · L70-L80 — pub struct SwarmPlanItemSpec
+- SwarmPlanDefinition · struct · L83-L87 — pub struct SwarmPlanDefinition
+- SwarmExecutionItemState · struct · L90-L97 — pub struct SwarmExecutionItemState
+- SwarmExecutionState · struct · L100-L102 — pub struct SwarmExecutionState
+- VersionedPlan · struct · L106-L113 — pub struct VersionedPlan
+- new · function · L116-L123 — pub fn new() -> Self
+- replace_items · function · L129-L132 — pub fn replace_items(&mut self, items: Vec<PlanItem>)
+- prune_side_maps · function · L135-L139 — pub fn prune_side_maps(&mut self)
+- rename_session · function · L144-L158 — pub fn rename_session(&mut self, old_session_id: &str, new_session_id: &str)
+- plan_definition · function · L160-L179 — pub fn plan_definition(&self) -> SwarmPlanDefinition
+- execution_state · function · L181-L194 — pub fn execution_state(&self) -> SwarmExecutionState
+- default · function · L198-L200 — fn default() -> Self
+- PlanGraphSummary · struct · L204-L215 — pub struct PlanGraphSummary
+- is_completed_status · function · L217-L219 — pub fn is_completed_status(status: &str) -> bool
+- is_terminal_status · function · L221-L226 — pub fn is_terminal_status(status: &str) -> bool
+- is_active_status · function · L228-L230 — pub fn is_active_status(status: &str) -> bool
+- is_failed_status · function · L234-L236 — pub fn is_failed_status(status: &str) -> bool
+- is_runnable_status · function · L238-L240 — pub fn is_runnable_status(status: &str) -> bool
+- TaskControlAction · enum · L243-L251 — pub enum TaskControlAction
+- parse · function · L254-L265 — pub fn parse(action: &str) -> Option<Self>
+- as_str · function · L267-L277 — pub fn as_str(self) -> &'static str
+- combine_assignment_text · function · L280-L289 — pub fn combine_assignment_text(content: &str, message: Option<&str>) -> String
+- restart_instruction_prefix · function · L291-L301 — fn restart_instruction_prefix(action: TaskControlAction) -> Option<&'static str>
+- build_control_assignment_text · function · L303-L317 — pub fn build_control_assignment_text(
+- task_control_action_allows_status · function · L319-L329 — pub fn task_control_action_allows_status(action: TaskControlAction, status: &str) -> bool
+- task_control_status_error · function · L331-L362 — pub fn task_control_status_error(action: TaskControlAction, status: &str, task_id: &str) -> String
+- priority_rank · function · L364-L371 — pub fn priority_rank(priority: &str) -> u8
+- completed_item_ids · function · L373-L379 — pub fn completed_item_ids(items: &[PlanItem]) -> HashSet<String>
+- unresolved_dependencies · function · L381-L391 — pub fn unresolved_dependencies<'a>(
+- missing_dependencies · function · L393-L399 — pub fn missing_dependencies<'a>(item: &'a PlanItem, known_ids: &HashSet<&'a str>) -> Vec<String>
+- is_unblocked · function · L401-L408 — pub fn is_unblocked<'a>(
+- cycle_item_ids · function · L410-L461 — pub fn cycle_item_ids(items: &[PlanItem]) -> Vec<String>
+- summarize_plan_graph · function · L463-L523 — pub fn summarize_plan_graph(items: &[PlanItem]) -> PlanGraphSummary
+- next_runnable_item_ids · function · L525-L543 — pub fn next_runnable_item_ids(items: &[PlanItem], limit: Option<usize>) -> Vec<String>
+- assignment_loads · function · L545-L556 — pub fn assignment_loads(plan: &VersionedPlan) -> HashMap<String, usize>
+- next_unassigned_runnable_item_id · function · L558-L568 — pub fn next_unassigned_runnable_item_id(plan: &VersionedPlan) -> Option<String>
+- MAX_DEAD_ASSIGNEE_RECLAIMS · constant · L573-L573 — pub const MAX_DEAD_ASSIGNEE_RECLAIMS: u32 = 3;
+- next_stranded_runnable_item_id · function · L583-L605 — pub fn next_stranded_runnable_item_id(
+- reclaim_stranded_assignment · function · L612-L629 — pub fn reclaim_stranded_assignment(plan: &mut VersionedPlan, task_id: &str) -> bool
+- task_control_target_item_id · function · L631-L669 — pub fn task_control_target_item_id(
+- explicit_task_blocked_reason · function · L671-L704 — pub fn explicit_task_blocked_reason(plan: &VersionedPlan, task_id: &str) -> Option<String>
+- AssignmentAffinities · struct · L707-L711 — pub struct AssignmentAffinities
+- assignment_affinities_for_task · function · L713-L770 — pub fn assignment_affinities_for_task(
+- newly_ready_item_ids · function · L772-L778 — pub fn newly_ready_item_ids(before: &[PlanItem], after: &[PlanItem]) -> Vec<String>
+- tests · module · L781-L1141 — mod tests
+- item · function · L784-L795 — fn item(id: &str, status: &str, blocked_by: &[&str]) -> PlanItem
+- summarize_plan_graph_reports_ready_and_blocked_items · function · L798-L810 — fn summarize_plan_graph_reports_ready_and_blocked_items()
+- summarize_plan_graph_reports_missing_dependencies · function · L813-L827 — fn summarize_plan_graph_reports_missing_dependencies()
+- newly_ready_item_ids_reports_tasks_unblocked_by_completion · function · L830-L843 — fn newly_ready_item_ids_reports_tasks_unblocked_by_completion()
+- summarize_plan_graph_reports_failed_items_separately_from_completed · function · L846-L876 — fn summarize_plan_graph_reports_failed_items_separately_from_completed()
+- summarize_plan_graph_reports_cycles · function · L879-L896 — fn summarize_plan_graph_reports_cycles()
+- status_helpers_match_runtime_expectations · function · L899-L905 — fn status_helpers_match_runtime_expectations()
+- next_runnable_items_prefers_higher_priority · function · L908-L924 — fn next_runnable_items_prefers_higher_priority()
+- assignment_loads_ignore_terminal_tasks · function · L927-L948 — fn assignment_loads_ignore_terminal_tasks()
+- task_control_target_prefers_active_assignment_and_rejects_ambiguous_matches · function · L951-L983 — fn task_control_target_prefers_active_assignment_and_rejects_ambiguous_matches()
+- assignment_helpers_report_blocked_and_next_unassigned_tasks · function · L986-L1008 — fn assignment_helpers_report_blocked_and_next_unassigned_tasks()
+- assignment_affinities_count_dependency_and_metadata_carryover · function · L1011-L1046 — fn assignment_affinities_count_dependency_and_metadata_carryover()
+- stranded_runnable_item_requires_dead_assignee_and_respects_reclaim_cap · function · L1049-L1090 — fn stranded_runnable_item_requires_dead_assignee_and_respects_reclaim_cap()
+- reclaim_stranded_assignment_releases_owner_and_counts_reclaims · function · L1093-L1140 — fn reclaim_stranded_assignment_releases_owner_and_counts_reclaims()

@@ -1,0 +1,58 @@
+# crates/jcode-setup-hints/src/linux_env.rs
+
+- HASH_BLOCK_BEGIN · constant · L31-L31 — pub(crate) const HASH_BLOCK_BEGIN: &str = "# >>> jcode launch hotkeys (managed) >>>";
+- HASH_BLOCK_END · constant · L33-L33 — pub(crate) const HASH_BLOCK_END: &str = "# <<< jcode launch hotkeys (managed) <<<";
+- LinuxCompositor · enum · L38-L58 — pub(crate) enum LinuxCompositor
+- name · function · L62-L75 — pub(crate) fn name(&self) -> &'static str
+- detect_compositor_from · function · L85-L131 — pub(crate) fn detect_compositor_from(
+- ScriptBind · struct · L135-L142 — pub(crate) struct ScriptBind
+- xkb_key_name · function · L147-L189 — pub(crate) fn xkb_key_name(key: &str) -> Option<String>
+- sh_single_quote · function · L192-L194 — pub(crate) fn sh_single_quote(input: &str) -> String
+- render_hyprland_bind_line · function · L201-L208 — pub(crate) fn render_hyprland_bind_line(bind: &ScriptBind) -> Option<String>
+- hyprland_mods · function · L212-L227 — fn hyprland_mods(chord: &KeyChord) -> String
+- render_sway_bind_line · function · L236-L255 — pub(crate) fn render_sway_bind_line(bind: &ScriptBind) -> Option<String>
+- render_flat_block · function · L262-L285 — pub(crate) fn render_flat_block(
+- render_hyprland_block · function · L288-L290 — pub(crate) fn render_hyprland_block(binds: &[ScriptBind]) -> Option<String>
+- render_sway_block · function · L293-L295 — pub(crate) fn render_sway_block(binds: &[ScriptBind]) -> Option<String>
+- render_sxhkd_stanza · function · L300-L321 — pub(crate) fn render_sxhkd_stanza(bind: &ScriptBind) -> Option<String>
+- render_sxhkd_block · function · L325-L327 — pub(crate) fn render_sxhkd_block(binds: &[ScriptBind]) -> Option<String>
+- gnome_binding · function · L332-L349 — pub(crate) fn gnome_binding(chord: &KeyChord) -> Option<String>
+- gnome_keybinding_path · function · L353-L357 — pub(crate) fn gnome_keybinding_path(index: usize) -> String
+- GnomeKeybinding · struct · L361-L370 — pub(crate) struct GnomeKeybinding
+- gnome_keybindings · function · L374-L392 — pub(crate) fn gnome_keybindings(binds: &[ScriptBind]) -> Vec<GnomeKeybinding>
+- merge_gnome_keybinding_list · function · L399-L415 — pub(crate) fn merge_gnome_keybinding_list(current: &str, ours: &[String]) -> String
+- dconf_slot_name · function · L418-L420 — pub(crate) fn dconf_slot_name(index: usize) -> String
+- DconfKeybinding · struct · L426-L433 — pub(crate) struct DconfKeybinding
+- dconf_keybindings · function · L437-L455 — pub(crate) fn dconf_keybindings(binds: &[ScriptBind]) -> Vec<DconfKeybinding>
+- kde_shortcut · function · L460-L503 — pub(crate) fn kde_shortcut(chord: &KeyChord) -> Option<String>
+- kde_desktop_file_name · function · L506-L508 — pub(crate) fn kde_desktop_file_name(index: usize) -> String
+- KdeShortcut · struct · L513-L518 — pub(crate) struct KdeShortcut
+- kde_shortcuts · function · L522-L540 — pub(crate) fn kde_shortcuts(binds: &[ScriptBind]) -> Vec<KdeShortcut>
+- upsert_kde_shortcut_sections · function · L546-L569 — pub(crate) fn upsert_kde_shortcut_sections(current: &str, shortcuts: &[KdeShortcut]) -> String
+- FlatSpliceResult · struct · L574-L577 — pub(crate) struct FlatSpliceResult
+- splice_flat_managed_block · function · L585-L610 — pub(crate) fn splice_flat_managed_block(config: &str, block: &str) -> FlatSpliceResult
+- find_flat_managed_region · function · L615-L624 — fn find_flat_managed_region(config: &str) -> Option<(usize, usize)>
+- terminal_exec_command · function · L629-L657 — pub(crate) fn terminal_exec_command(
+- tests · module · L660-L1044 — mod tests
+- chord · function · L663-L665 — fn chord(s: &str) -> KeyChord
+- bind · function · L667-L674 — fn bind(chord_str: &str, script: &str, label: &str, self_dev: bool) -> ScriptBind
+- env · function · L676-L683 — fn env<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&str) -> Option<String> + 'a
+- detects_compositors_from_sockets_and_desktop_names · function · L686-L761 — fn detects_compositors_from_sockets_and_desktop_names()
+- Case · type · L687-L687 — type Case<'a> = (Vec<(&'a str, &'a str)>, Option<LinuxCompositor>);
+- tiling_socket_beats_gnome_kde_desktop_names · function · L764-L780 — fn tiling_socket_beats_gnome_kde_desktop_names()
+- sxhkd_stanza_renders_super_combo_and_indented_command · function · L783-L789 — fn sxhkd_stanza_renders_super_combo_and_indented_command()
+- gnome_bindings_use_angle_bracket_modifiers_and_stable_slots · function · L792-L808 — fn gnome_bindings_use_angle_bracket_modifiers_and_stable_slots()
+- gnome_list_merge_preserves_foreign_entries_and_replaces_ours · function · L811-L835 — fn gnome_list_merge_preserves_foreign_entries_and_replaces_ours()
+- dconf_keybindings_share_gnome_accelerators_with_slot_names · function · L838-L850 — fn dconf_keybindings_share_gnome_accelerators_with_slot_names()
+- gnome_list_merge_also_handles_cinnamon_slot_names · function · L853-L863 — fn gnome_list_merge_also_handles_cinnamon_slot_names()
+- kde_shortcuts_use_meta_and_literal_keys · function · L866-L881 — fn kde_shortcuts_use_meta_and_literal_keys()
+- kde_ini_upsert_replaces_our_sections_and_keeps_others · function · L884-L901 — fn kde_ini_upsert_replaces_our_sections_and_keeps_others()
+- live_socket_beats_stale_desktop_name · function · L904-L915 — fn live_socket_beats_stale_desktop_name()
+- hyprland_bind_line_maps_cmd_to_super · function · L918-L933 — fn hyprland_bind_line_maps_cmd_to_super()
+- sway_bind_line_maps_cmd_to_mod4_and_alt_to_mod1 · function · L936-L948 — fn sway_bind_line_maps_cmd_to_mod4_and_alt_to_mod1()
+- unmappable_keys_are_skipped_not_fatal · function · L951-L960 — fn unmappable_keys_are_skipped_not_fatal()
+- blocks_wrap_sentinels_and_carry_labels · function · L963-L977 — fn blocks_wrap_sentinels_and_carry_labels()
+- render_returns_none_when_nothing_renderable · function · L980-L983 — fn render_returns_none_when_nothing_renderable()
+- splice_appends_then_replaces_idempotently · function · L986-L1008 — fn splice_appends_then_replaces_idempotently()
+- splice_handles_file_without_trailing_newline · function · L1011-L1018 — fn splice_handles_file_without_trailing_newline()
+- terminal_exec_command_varies_by_terminal · function · L1021-L1043 — fn terminal_exec_command_varies_by_terminal()

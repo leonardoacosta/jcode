@@ -1,0 +1,25 @@
+# crates/jcode-todo-policy/src/store.rs
+
+- LONG_SESSION_REVIEW_AFTER_SECS · constant · L12-L12 — pub const LONG_SESSION_REVIEW_AFTER_SECS: i64 = 30 * 60;
+- TodoFile · enum · L15-L24 — pub enum TodoFile
+- suffix · function · L27-L36 — fn suffix(self) -> &'static str
+- is_safe_session_id · function · L40-L46 — pub fn is_safe_session_id(session_id: &str) -> bool
+- todo_file_path · function · L48-L51 — pub fn todo_file_path(home: &Path, session_id: &str, file: TodoFile) -> PathBuf
+- TodoReviewState · struct · L55-L59 — pub struct TodoReviewState
+- is_due · function · L62-L66 — pub fn is_due(&self, now: chrono::DateTime<chrono::Utc>) -> bool
+- read_or_default · function · L69-L78 — fn read_or_default<T: DeserializeOwned + Default>(path: &Path) -> T
+- read_optional · function · L80-L89 — fn read_optional<T: DeserializeOwned>(path: &Path) -> std::io::Result<Option<T>>
+- warn_state_read_failure · function · L91-L98 — fn warn_state_read_failure()
+- WARNING · constant · L94-L94 — static WARNING: std::sync::Once = std::sync::Once::new();
+- canonicalize_worker_todos · function · L103-L122 — pub fn canonicalize_worker_todos(
+- validate_session_lane_dependencies · function · L125-L150 — pub fn validate_session_lane_dependencies(
+- load_snapshot · function · L154-L160 — pub fn load_snapshot(home: &Path, session_id: &str) -> TodoSnapshot
+- load_snapshot_with_background_dir · function · L162-L185 — fn load_snapshot_with_background_dir(
+- running_dependencies · function · L190-L236 — fn running_dependencies(
+- apply_effects · function · L239-L257 — pub fn apply_effects(home: &Path, session_id: &str, effects: TodoEffects) -> std::io::Result<()>
+- tests · module · L260-L522 — mod tests
+- review_acknowledgement_propagates_corrupt_or_unreadable_state · function · L265-L281 — fn review_acknowledgement_propagates_corrupt_or_unreadable_state()
+- worker_replacement_persists_coordinator_lane_and_phase_on_both_sides · function · L284-L378 — fn worker_replacement_persists_coordinator_lane_and_phase_on_both_sides()
+- snapshots_include_only_referenced_running_tasks_in_the_same_session · function · L381-L446 — fn snapshots_include_only_referenced_running_tasks_in_the_same_session()
+- layout_matches_runtime_file_names · function · L449-L461 — fn layout_matches_runtime_file_names()
+- snapshot_reads_state_and_effects_consume_it · function · L464-L521 — fn snapshot_reads_state_and_effects_consume_it()

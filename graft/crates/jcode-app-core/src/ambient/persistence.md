@@ -1,0 +1,43 @@
+# crates/jcode-app-core/src/ambient/persistence.rs
+
+- queue_transaction_tests · module · L14-L14 — mod queue_transaction_tests;
+- scheduled_recovery_tests · module · L18-L18 — mod scheduled_recovery_tests;
+- load · function · L25-L32 — pub fn load() -> Result<Self>
+- save · function · L34-L36 — pub fn save(&self) -> Result<()>
+- record_cycle · function · L38-L61 — pub fn record_cycle(&mut self, result: &AmbientCycleResult)
+- read_queue · function · L72-L87 — fn read_queue(path: &std::path::Path) -> Result<Vec<ScheduledItem>>
+- CLAIM_STALE_AFTER · constant · L91-L91 — const CLAIM_STALE_AFTER: chrono::Duration = chrono::Duration::hours(1);
+- process_owner · function · L97-L106 — fn process_owner() -> &'static str
+- OWNER · constant · L98-L104 — static OWNER: std::sync::LazyLock<String> = std::sync::LazyLock::new(||
+- owner_alive · function · L112-L131 — fn owner_alive(owner: &str, dispatched_at: DateTime<Utc>) -> bool
+- claim_stuck · function · L134-L140 — fn claim_stuck(record: &DeliveryRecord) -> bool
+- release_stuck · function · L143-L152 — fn release_stuck(items: &mut [ScheduledItem], id: &str)
+- mark_uncertain · function · L154-L160 — fn mark_uncertain(record: &mut DeliveryRecord, note: &str)
+- HISTORY_LIMIT · constant · L164-L164 — const HISTORY_LIMIT: usize = 100;
+- Settlement · enum · L168-L179 — pub enum Settlement
+- RecoveryReport · struct · L183-L186 — pub struct RecoveryReport
+- ScheduledQueue · struct · L204-L209 — pub struct ScheduledQueue
+- load · function · L212-L226 — pub fn load(path: PathBuf) -> Self
+- set · function · L228-L239 — fn set(&mut self, items: Vec<ScheduledItem>)
+- transact · function · L245-L272 — pub(super) fn transact<T>(
+- try_push · function · L274-L279 — pub fn try_push(&mut self, item: ScheduledItem) -> Result<()>
+- push · function · L281-L285 — pub fn push(&mut self, item: ScheduledItem)
+- cancel · function · L292-L314 — pub fn cancel(&mut self, id: &str) -> Result<Option<ScheduledItem>>
+- claim_ready · function · L318-L348 — fn claim_ready(&mut self, direct_only: bool) -> Result<Vec<ScheduledItem>>
+- pop_ready · function · L351-L356 — pub fn pop_ready(&mut self) -> Vec<ScheduledItem>
+- take_ready_direct_items · function · L360-L367 — pub fn take_ready_direct_items(&mut self) -> Vec<ScheduledItem>
+- settle · function · L371-L407 — pub fn settle(&mut self, id: &str, outcome: Settlement) -> Result<bool>
+- recover_startup · function · L418-L449 — pub fn recover_startup(&mut self, grace: chrono::Duration) -> Result<RecoveryReport>
+- retry · function · L456-L473 — pub fn retry(&mut self, id: &str) -> Result<Option<ScheduledItem>>
+- peek_next · function · L475-L477 — pub fn peek_next(&self) -> Option<&ScheduledItem>
+- len · function · L480-L482 — pub fn len(&self) -> usize
+- is_empty · function · L484-L486 — pub fn is_empty(&self) -> bool
+- items · function · L489-L491 — pub fn items(&self) -> &[ScheduledItem]
+- in_flight · function · L494-L496 — pub fn in_flight(&self) -> &[ScheduledItem]
+- recent_history · function · L500-L510 — pub fn recent_history(&self, limit: usize) -> Vec<&ScheduledItem>
+- prune_history · function · L514-L538 — fn prune_history(items: &mut Vec<ScheduledItem>)
+- AmbientLock · struct · L544-L546 — pub struct AmbientLock
+- try_acquire · function · L552-L574 — pub fn try_acquire() -> Result<Option<Self>>
+- release · function · L576-L581 — pub fn release(self) -> Result<()>
+- drop · function · L585-L587 — fn drop(&mut self)
+- is_pid_alive · function · L590-L592 — fn is_pid_alive(pid: u32) -> bool

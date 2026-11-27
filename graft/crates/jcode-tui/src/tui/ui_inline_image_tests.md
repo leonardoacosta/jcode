@@ -1,0 +1,49 @@
+# crates/jcode-tui/src/tui/ui_inline_image_tests.rs
+
+- item · function · L3-L12 — fn item(width: u32, height: u32) -> InlineImageItem
+- tool_images_start_as_clickable_labels_and_expand_on_demand · function · L15-L47 — fn tool_images_start_as_clickable_labels_and_expand_on_demand()
+- Large · struct · L16-L16 — struct Large;
+- expand_level · function · L18-L20 — fn expand_level(&self, _: u64) -> ImageExpandLevel
+- MATERIALIZE_PNG_B64 · constant · L50-L50 — const MATERIALIZE_PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+- materialize_with_retry · function · L57-L66 — fn materialize_with_retry<F: Fn() -> bool>(id: u64, check: F)
+- materialize_visible_probe_is_cheap_after_first_call · function · L69-L76 — fn materialize_visible_probe_is_cheap_after_first_call()
+- prefetch_is_noop_for_materialized_image_without_kitty · function · L79-L88 — fn prefetch_is_noop_for_materialized_image_without_kitty()
+- ensure_drawable_true_for_materialized_image_without_kitty · function · L91-L97 — fn ensure_drawable_true_for_materialized_image_without_kitty()
+- fit_rows_caps_tall_image_to_viewport_fraction · function · L100-L106 — fn fit_rows_caps_tall_image_to_viewport_fraction()
+- fit_rows_never_below_minimum · function · L109-L112 — fn fit_rows_never_below_minimum()
+- fit_geometry_height_bound_image_narrows_proportionally · function · L115-L124 — fn fit_geometry_height_bound_image_narrows_proportionally()
+- fit_geometry_small_window_never_exceeds_chat_width · function · L127-L138 — fn fit_geometry_small_window_never_exceeds_chat_width()
+- fit_geometry_zero_dims_safe · function · L141-L145 — fn fit_geometry_zero_dims_safe()
+- build_section_records_region_width · function · L148-L158 — fn build_section_records_region_width()
+- build_section_emits_one_fit_region_per_image_with_label · function · L161-L186 — fn build_section_emits_one_fit_region_per_image_with_label()
+- build_section_is_empty_for_no_items · function · L189-L193 — fn build_section_is_empty_for_no_items()
+- build_section_hidden_collapses_to_label_stub_with_show_badge · function · L196-L214 — fn build_section_hidden_collapses_to_label_stub_with_show_badge()
+- visible_label_line_advertises_hide_badge · function · L217-L222 — fn visible_label_line_advertises_hide_badge()
+- fallback_image_has_an_attached_terminal_capability_note · function · L225-L245 — fn fallback_image_has_an_attached_terminal_capability_note()
+- native_image_render_does_not_show_the_fallback_note · function · L248-L258 — fn native_image_render_does_not_show_the_fallback_note()
+- generated_image_label_is_truncated_to_one_terminal_row · function · L261-L281 — fn generated_image_label_is_truncated_to_one_terminal_row()
+- expand_level_cycle_visits_every_level_and_wraps · function · L284-L288 — fn expand_level_cycle_visits_every_level_and_wraps()
+- expand_level_caps_grow_monotonically · function · L291-L301 — fn expand_level_caps_grow_monotonically()
+- expanded_level_upscales_a_small_mermaid_render · function · L304-L315 — fn expanded_level_upscales_a_small_mermaid_render()
+- visible_label_line_stays_single_purpose_without_expand_badge · function · L318-L326 — fn visible_label_line_stays_single_purpose_without_expand_badge()
+- hidden_label_line_omits_expand_badge · function · L329-L337 — fn hidden_label_line_omits_expand_badge()
+- expanded_level_makes_anchored_image_taller · function · L340-L346 — fn expanded_level_makes_anchored_image_taller()
+- anchored_image_lines_hidden_emit_no_placeholder_markers · function · L349-L366 — fn anchored_image_lines_hidden_emit_no_placeholder_markers()
+- payload_registry_roundtrips · function · L369-L373 — fn payload_registry_roundtrips()
+- payload_registry_evicts_by_byte_budget · function · L380-L407 — fn payload_registry_evicts_by_byte_budget()
+- reregistering_payload_resets_fit_failures · function · L412-L432 — fn reregistering_payload_resets_fit_failures()
+- ID · constant · L413-L413 — const ID: u64 = 0xFA11_ED01;
+- prewarm_failures_are_scoped_to_geometry · function · L435-L454 — fn prewarm_failures_are_scoped_to_geometry()
+- materialize_failures_apply_across_resize_geometries · function · L457-L486 — fn materialize_failures_apply_across_resize_geometries()
+- overflow_slot_keeps_the_newest_request · function · L489-L504 — fn overflow_slot_keeps_the_newest_request()
+- materialize_releases_payload_and_blocks_restaging · function · L511-L535 — fn materialize_releases_payload_and_blocks_restaging()
+- MATERIALIZE_PNG_B64_RELEASE · constant · L539-L539 — const MATERIALIZE_PNG_B64_RELEASE: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+- payload_registry_remove_keeps_accounting_consistent · function · L544-L560 — fn payload_registry_remove_keeps_accounting_consistent()
+- TINY_PNG_B64 · constant · L563-L563 — const TINY_PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+- rendered_image · function · L565-L578 — fn rendered_image(
+- resolve_anchored_items_buckets_by_anchor · function · L581-L596 — fn resolve_anchored_items_buckets_by_anchor()
+- resolving_hidden_images_does_not_stage_payload_bytes · function · L599-L636 — fn resolving_hidden_images_does_not_stage_payload_bytes()
+- clearing_staged_payloads_invalidates_resolved_image_cache · function · L639-L654 — fn clearing_staged_payloads_invalidates_resolved_image_cache()
+- unplaced_items_falls_back_for_missing_anchor_targets · function · L657-L693 — fn unplaced_items_falls_back_for_missing_anchor_targets()
+- anchored_image_lines_round_trip_through_region_scan · function · L696-L722 — fn anchored_image_lines_round_trip_through_region_scan()
+- anchored_geometry_is_viewport_independent · function · L725-L732 — fn anchored_geometry_is_viewport_independent()

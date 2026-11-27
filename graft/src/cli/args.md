@@ -1,0 +1,25 @@
+# src/cli/args.rs
+
+- cloud_env · module · L5-L5 — mod cloud_env;
+- cloud_ephemeral · module · L7-L7 — mod cloud_ephemeral;
+- cloud_runtime · module · L8-L8 — mod cloud_runtime;
+- google · module · L9-L9 — mod google;
+- mcp · module · L10-L10 — mod mcp;
+- TranscriptModeArg · enum · L18-L23 — pub(crate) enum TranscriptModeArg
+- ProviderAuthArg · enum · L26-L33 — pub(crate) enum ProviderAuthArg
+- Args · struct · L39-L167 — pub(crate) struct Args
+- Command · enum · L170-L704 — pub(crate) enum Command
+- TelemetryCommand · enum · L707-L718 — pub(crate) enum TelemetryCommand
+- MobileMessagesState · enum · L721-L724 — pub(crate) enum MobileMessagesState
+- MobileCommand · enum · L727-L749 — pub(crate) enum MobileCommand
+- AccountCommand · enum · L752-L769 — pub(crate) enum AccountCommand
+- ServerCommand · enum · L772-L839 — pub(crate) enum ServerCommand
+- CloudCommand · enum · L842-L1131 — pub(crate) enum CloudCommand
+- CloudMachineAction · enum · L1134-L1141 — pub(crate) enum CloudMachineAction
+- CloudMoveTarget · struct · L1144-L1157 — pub(crate) struct CloudMoveTarget
+- cloud_sessions · module · L1159-L1159 — mod cloud_sessions;
+- restart · module · L1163-L1163 — mod restart;
+- management · module · L1166-L1166 — mod management;
+- tests · module · L1175-L1175 — mod tests;
+- semantic_poke_replay_tests · module · L1178-L1188 — mod semantic_poke_replay_tests
+- semantic_poke_replay_is_a_public_offline_command · function · L1182-L1187 — fn semantic_poke_replay_is_a_public_offline_command()

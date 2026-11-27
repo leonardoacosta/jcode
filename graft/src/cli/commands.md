@@ -1,0 +1,117 @@
+# src/cli/commands.rs
+
+- menubar · module · L14-L14 — mod menubar;
+- provider_setup · module · L15-L15 — mod provider_setup;
+- report_info · module · L16-L16 — mod report_info;
+- restart · module · L17-L17 — mod restart;
+- AmbientSubcommand · enum · L35-L41 — pub enum AmbientSubcommand
+- CloudSubcommand · enum · L43-L45 — pub enum CloudSubcommand
+- CloudSessionsSubcommand · enum · L47-L126 — pub enum CloudSessionsSubcommand
+- CloudSessionsConfig · struct · L129-L135 — struct CloudSessionsConfig
+- CloudSessionsConfigStatus · struct · L138-L146 — struct CloudSessionsConfigStatus
+- run_cloud_command · function · L148-L152 — pub fn run_cloud_command(cmd: CloudSubcommand) -> Result<()>
+- run_cloud_sessions_command · function · L154-L224 — fn run_cloud_sessions_command(action: CloudSessionsSubcommand) -> Result<()>
+- run_cloud_sessions_helper_command · function · L226-L247 — fn run_cloud_sessions_helper_command(action: CloudSessionsSubcommand) -> Result<()>
+- cloud_sessions_config_path · function · L249-L251 — fn cloud_sessions_config_path() -> Result<PathBuf>
+- load_cloud_sessions_config · function · L253-L263 — fn load_cloud_sessions_config() -> Result<Option<CloudSessionsConfig>>
+- save_cloud_sessions_config · function · L265-L288 — fn save_cloud_sessions_config(config: &CloudSessionsConfig) -> Result<PathBuf>
+- run_cloud_sessions_configure · function · L290-L365 — fn run_cloud_sessions_configure(
+- run_cloud_sessions_status · function · L367-L401 — fn run_cloud_sessions_status(json: bool) -> Result<()>
+- non_empty · function · L403-L407 — fn non_empty(value: Option<String>) -> Option<String>
+- CloudSessionsSyncRequest · struct · L409-L423 — struct CloudSessionsSyncRequest
+- CloudSessionsSyncState · struct · L426-L431 — struct CloudSessionsSyncState
+- CloudSessionsSyncRecord · struct · L434-L440 — struct CloudSessionsSyncRecord
+- CloudSessionsSyncEntry · struct · L443-L449 — struct CloudSessionsSyncEntry
+- CloudSessionsSyncReport · struct · L452-L463 — struct CloudSessionsSyncReport
+- SyncCandidate · struct · L465-L470 — struct SyncCandidate
+- cloud_sessions_sync_state_path · function · L472-L474 — fn cloud_sessions_sync_state_path() -> Result<PathBuf>
+- load_cloud_sessions_sync_state · function · L476-L485 — fn load_cloud_sessions_sync_state() -> Result<CloudSessionsSyncState>
+- save_cloud_sessions_sync_state · function · L487-L510 — fn save_cloud_sessions_sync_state(state: &CloudSessionsSyncState) -> Result<PathBuf>
+- resolve_sync_sessions_dir · function · L512-L517 — fn resolve_sync_sessions_dir(override_path: Option<&str>) -> Result<PathBuf>
+- expand_home_path · function · L519-L531 — fn expand_home_path(path: &str) -> PathBuf
+- is_syncable_session_stem · function · L533-L535 — fn is_syncable_session_stem(stem: &str) -> bool
+- sha256_file · function · L537-L545 — fn sha256_file(path: &Path) -> Result<String>
+- collect_sync_candidates · function · L547-L583 — fn collect_sync_candidates(dir: &Path) -> Result<Vec<SyncCandidate>>
+- run_jade_upload · function · L585-L623 — fn run_jade_upload(
+- run_cloud_sessions_sync · function · L625-L814 — fn run_cloud_sessions_sync(request: CloudSessionsSyncRequest) -> Result<()>
+- CloudSessionsDashboardRequest · struct · L816-L825 — struct CloudSessionsDashboardRequest
+- CloudSessionListItem · struct · L828-L839 — struct CloudSessionListItem
+- fetch_cloud_session_list_json · function · L841-L880 — fn fetch_cloud_session_list_json(
+- parse_cloud_session_list_json · function · L887-L916 — fn parse_cloud_session_list_json(raw: &str) -> Result<Vec<CloudSessionListItem>>
+- json_value_kind · function · L918-L927 — fn json_value_kind(value: &serde_json::Value) -> &'static str
+- html_escape · function · L929-L936 — fn html_escape(value: &str) -> String
+- message_count_label · function · L938-L944 — fn message_count_label(value: Option<&serde_json::Value>) -> String
+- render_cloud_sessions_dashboard_html · function · L946-L1001 — fn render_cloud_sessions_dashboard_html(
+- run_cloud_sessions_dashboard · function · L1003-L1091 — fn run_cloud_sessions_dashboard(request: CloudSessionsDashboardRequest) -> Result<()>
+- dashboard_views_dir · function · L1094-L1101 — fn dashboard_views_dir(dashboard_path: &Path) -> PathBuf
+- sanitize_filename · function · L1104-L1115 — fn sanitize_filename(value: &str) -> String
+- relative_link · function · L1119-L1123 — fn relative_link(dashboard_path: &Path, view_file: &Path) -> Option<String>
+- generate_cloud_session_view_html · function · L1126-L1168 — fn generate_cloud_session_view_html(
+- configured_label · function · L1170-L1174 — fn configured_label(value: Option<&str>) -> &str
+- config_or_default_user_id · function · L1176-L1182 — fn config_or_default_user_id(user_id: String, config: &CloudSessionsConfig) -> String
+- cloud_sessions_helper_env · function · L1184-L1196 — fn cloud_sessions_helper_env(config: &CloudSessionsConfig) -> Vec<(&'static str, String)>
+- cloud_sessions_helper_override · function · L1198-L1210 — fn cloud_sessions_helper_override(action: &CloudSessionsSubcommand) -> Option<String>
+- append_common_jade_args · function · L1212-L1225 — fn append_common_jade_args(
+- build_jade_sessions_args · function · L1228-L1230 — fn build_jade_sessions_args(action: CloudSessionsSubcommand) -> Vec<String>
+- build_jade_sessions_args_with_config · function · L1232-L1353 — fn build_jade_sessions_args_with_config(
+- resolve_jade_sessions_helper · function · L1355-L1385 — fn resolve_jade_sessions_helper(override_path: Option<&str>) -> Result<PathBuf>
+- is_executable_file · function · L1388-L1395 — fn is_executable_file(path: &Path) -> bool
+- is_executable_file · function · L1398-L1400 — fn is_executable_file(path: &Path) -> bool
+- run_ambient_command · function · L1402-L1416 — pub async fn run_ambient_command(cmd: AmbientSubcommand) -> Result<()>
+- run_transcript_command · function · L1418-L1455 — pub async fn run_transcript_command(
+- CompanionFlags · struct · L1460-L1468 — pub struct CompanionFlags
+- apply · function · L1471-L1479 — pub fn apply(self, options: &mut jcode_companion::CompanionOptions)
+- run_companion_command · function · L1482-L1501 — pub async fn run_companion_command(status: bool, flags: CompanionFlags) -> Result<()>
+- run_dictate_command · function · L1503-L1511 — pub async fn run_dictate_command(type_output: bool) -> Result<()>
+- SessionRenameOutput · struct · L1514-L1519 — struct SessionRenameOutput
+- run_session_rename_command · function · L1521-L1564 — pub fn run_session_rename_command(
+- run_sessions_gc_command · function · L1566-L1606 — pub fn run_sessions_gc_command(apply: bool, json: bool) -> Result<()>
+- run_ambient_visible · function · L1608-L1651 — async fn run_ambient_visible() -> Result<()>
+- MemorySubcommand · enum · L1653-L1673 — pub enum MemorySubcommand
+- run_memory_command · function · L1675-L1677 — pub async fn run_memory_command(cmd: MemorySubcommand) -> Result<()>
+- run_memory_command_for_dir · function · L1679-L1926 — async fn run_memory_command_for_dir(
+- run_pair_command · function · L1928-L2023 — pub fn run_pair_command(list: bool, revoke: Option<String>) -> Result<()>
+- run_browser · function · L2027-L2155 — pub async fn run_browser(action: &str, requested: Option<&str>) -> Result<()>
+- ModelListReport · struct · L2158-L2163 — struct ModelListReport
+- ModelListRouteReport · struct · L2166-L2171 — struct ModelListRouteReport
+- RunCommandReport · struct · L2174-L2180 — struct RunCommandReport
+- NdjsonRunState · struct · L2183-L2193 — struct NdjsonRunState
+- service_tier_report_status · function · L2198-L2219 — fn service_tier_report_status(&self) -> &'static str
+- canonical · function · L2205-L2211 — fn canonical(tier: &str) -> &str
+- run_auth_status_command · function · L2222-L2224 — pub fn run_auth_status_command(emit_json: bool) -> Result<()>
+- run_auth_doctor_command · function · L2226-L2232 — pub async fn run_auth_doctor_command(
+- run_provider_list_command · function · L2234-L2236 — pub fn run_provider_list_command(emit_json: bool) -> Result<()>
+- run_provider_current_command · function · L2238-L2244 — pub async fn run_provider_current_command(
+- run_version_command · function · L2246-L2248 — pub async fn run_version_command(emit_json: bool) -> Result<()>
+- run_usage_command · function · L2250-L2252 — pub async fn run_usage_command(emit_json: bool) -> Result<()>
+- run_server_promote_command · function · L2258-L2303 — pub fn run_server_promote_command(version: Option<&str>, emit_json: bool) -> Result<()>
+- ServerPromoteReport · struct · L2260-L2266 — struct ServerPromoteReport
+- ServerReloadReport · struct · L2306-L2314 — struct ServerReloadReport
+- validate_server_reload_report · function · L2316-L2335 — fn validate_server_reload_report(report: &ServerReloadReport) -> Result<()>
+- run_server_reload_command · function · L2352-L2355 — pub async fn run_server_reload_command(force: bool, emit_json: bool) -> Result<()>
+- run_server_reload_command_to · function · L2357-L2506 — async fn run_server_reload_command_to(
+- run_server_stop_command · function · L2519-L2667 — pub async fn run_server_stop_command(force: bool, emit_json: bool) -> Result<()>
+- ServerStopReport · struct · L2546-L2553 — struct ServerStopReport
+- run_single_message_command · function · L2674-L2722 — pub async fn run_single_message_command(
+- run_report_provider_name · function · L2732-L2745 — fn run_report_provider_name(
+- run_single_message_with_agent · function · L2747-L2790 — async fn run_single_message_with_agent(
+- run_command_auto_poke_enabled · function · L2792-L2800 — fn run_command_auto_poke_enabled() -> bool
+- run_command_mcp_enabled · function · L2805-L2813 — fn run_command_mcp_enabled() -> bool
+- run_command_mcp_cold_wait · function · L2818-L2824 — fn run_command_mcp_cold_wait() -> std::time::Duration
+- cold_cache_mcp_servers · function · L2830-L2834 — fn cold_cache_mcp_servers() -> Vec<String>
+- uncached_enabled_mcp_servers · function · L2836-L2846 — fn uncached_enabled_mcp_servers(
+- mcp_startup_tests · module · L2850-L2850 — mod mcp_startup_tests;
+- wait_for_cold_cache_mcp_tools · function · L2857-L2891 — async fn wait_for_cold_cache_mcp_tools(registry: &crate::tool::Registry)
+- run_command_auto_poke_max_turns · function · L2893-L2898 — fn run_command_auto_poke_max_turns() -> Option<usize>
+- run_command_auto_poke_limit_reached · function · L2900-L2904 — fn run_command_auto_poke_limit_reached(turns_completed: usize, max_turns: Option<usize>) -> bool
+- todo_followup · module · L2906-L2906 — mod todo_followup;
+- run_single_message_command_plain_with_auto_poke · function · L2915-L3030 — async fn run_single_message_command_plain_with_auto_poke(
+- run_single_message_command_capture_with_auto_poke · function · L3032-L3141 — async fn run_single_message_command_capture_with_auto_poke(
+- restore_agent_session_if_requested · function · L3143-L3151 — fn restore_agent_session_if_requested(
+- run_single_message_command_ndjson · function · L3153-L3407 — async fn run_single_message_command_ndjson(
+- unwrap_turn_event · function · L3411-L3418 — pub(super) fn unwrap_turn_event(
+- json_output · module · L3421-L3421 — mod json_output;
+- model_listing · module · L3424-L3424 — mod model_listing;
+- turn_envelope_tests · module · L3427-L3427 — mod turn_envelope_tests;
+- model_routes · module · L3430-L3430 — mod model_routes;
+- tests · module · L3435-L3435 — mod tests;

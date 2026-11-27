@@ -1,0 +1,67 @@
+# crates/jcode-base/src/process_memory.rs
+
+- MAX_HISTORY_SAMPLES · constant · L13-L13 — const MAX_HISTORY_SAMPLES: usize = 512;
+- JemallocStatsMibs · struct · L16-L24 — struct JemallocStatsMibs
+- JemallocProfilingMibs · struct · L27-L29 — struct JemallocProfilingMibs
+- ProcessMemorySnapshot · struct · L32-L47 — pub struct ProcessMemorySnapshot
+- OsProcessMemoryInfo · struct · L50-L80 — pub struct OsProcessMemoryInfo
+- AllocatorInfo · struct · L83-L92 — pub struct AllocatorInfo
+- AllocatorStats · struct · L95-L102 — pub struct AllocatorStats
+- AllocatorProfilingInfo · struct · L105-L108 — pub struct AllocatorProfilingInfo
+- AllocatorTuningInfo · struct · L111-L122 — pub struct AllocatorTuningInfo
+- default · function · L125-L127 — fn default() -> Self
+- ProcessMemoryHistoryEntry · struct · L131-L135 — pub struct ProcessMemoryHistoryEntry
+- MEMORY_HISTORY · constant · L137-L137 — static MEMORY_HISTORY: OnceLock<Mutex<VecDeque<ProcessMemoryHistoryEntry>>> = OnceLock::new();
+- memory_history · function · L139-L141 — fn memory_history() -> &'static Mutex<VecDeque<ProcessMemoryHistoryEntry>>
+- snapshot · function · L143-L145 — pub fn snapshot() -> ProcessMemorySnapshot
+- snapshot_with_source · function · L148-L177 — pub fn snapshot_with_source(source: impl Into<String>) -> ProcessMemorySnapshot
+- snapshot_with_source · function · L180-L214 — pub fn snapshot_with_source(source: impl Into<String>) -> ProcessMemorySnapshot
+- windows_memory_snapshot · function · L217-L229 — fn windows_memory_snapshot(rss: u64, peak_rss: u64, private_commit: u64) -> ProcessMemorySnapshot
+- snapshot_with_source · function · L232-L240 — pub fn snapshot_with_source(source: impl Into<String>) -> ProcessMemorySnapshot
+- history · function · L242-L248 — pub fn history(limit: usize) -> Vec<ProcessMemoryHistoryEntry>
+- allocator_info · function · L250-L275 — pub fn allocator_info() -> AllocatorInfo
+- glibc_malloc_stats · function · L290-L335 — fn glibc_malloc_stats() -> Option<AllocatorStats>
+- Mallinfo2 · struct · L294-L305 — struct Mallinfo2
+- Mallinfo2Fn · type · L306-L306 — type Mallinfo2Fn = unsafe extern "C" fn() -> Mallinfo2;
+- MALLINFO2 · constant · L308-L308 — static MALLINFO2: std::sync::OnceLock<Option<Mallinfo2Fn>> = std::sync::OnceLock::new();
+- glibc_malloc_stats · function · L341-L343 — fn glibc_malloc_stats() -> Option<AllocatorStats>
+- purge_allocator · function · L345-L392 — pub fn purge_allocator() -> Result<AllocatorTuningInfo>
+- set_allocator_decay_ms · function · L394-L434 — pub fn set_allocator_decay_ms(dirty_ms: isize, muzzy_ms: isize) -> Result<AllocatorTuningInfo>
+- set_allocator_profiling_active · function · L436-L452 — pub fn set_allocator_profiling_active(active: bool) -> Result<()>
+- dump_allocator_profile · function · L454-L484 — pub fn dump_allocator_profile(path: Option<&Path>) -> Result<PathBuf>
+- set_allocator_profile_prefix · function · L486-L504 — pub fn set_allocator_profile_prefix(prefix: &str) -> Result<()>
+- estimate_json_bytes · function · L506-L527 — pub fn estimate_json_bytes<T: Serialize>(value: &T) -> usize
+- ByteCounter · struct · L508-L510 — struct ByteCounter
+- write · function · L513-L516 — fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize>
+- flush · function · L518-L520 — fn flush(&mut self) -> std::io::Result<()>
+- release_retained_heap · function · L536-L560 — pub fn release_retained_heap(reason: &str)
+- malloc_trim · function · L548-L549 — unsafe extern "C"
+- LAST_HEAP_RELEASE_MS · constant · L576-L576 — static LAST_HEAP_RELEASE_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- release_retained_heap_debounced · function · L580-L599 — pub fn release_retained_heap_debounced(reason: &str, min_interval: std::time::Duration) -> bool
+- DEFAULT_RETENTION_TRIM_THRESHOLD_BYTES · constant · L602-L602 — pub const DEFAULT_RETENTION_TRIM_THRESHOLD_BYTES: u64 = 64 * 1024 * 1024;
+- POST_TRIM_APPARENT_RETENTION · constant · L607-L608 — static POST_TRIM_APPARENT_RETENTION: std::sync::atomic::AtomicU64 =
+- apparent_heap_retention_bytes · function · L620-L625 — fn apparent_heap_retention_bytes() -> Option<u64>
+- apparent_heap_retention_bytes · function · L628-L630 — fn apparent_heap_retention_bytes() -> Option<u64>
+- record_post_trim_retention_baseline · function · L633-L637 — fn record_post_trim_retention_baseline()
+- retention_growth_exceeds · function · L641-L643 — fn retention_growth_exceeds(apparent: u64, baseline: u64, threshold: u64) -> bool
+- release_retained_heap_if_excessive · function · L657-L703 — pub fn release_retained_heap_if_excessive(
+- retention_trim_threshold_bytes · function · L708-L714 — pub fn retention_trim_threshold_bytes() -> u64
+- parse_retention_trim_threshold · function · L716-L722 — fn parse_retention_trim_threshold(value: Option<&str>) -> u64
+- record_snapshot · function · L724-L741 — fn record_snapshot(source: String, snapshot: ProcessMemorySnapshot)
+- read_linux_memory_info · function · L744-L799 — fn read_linux_memory_info(status: &str) -> Option<OsProcessMemoryInfo>
+- default_heap_profile_path · function · L802-L807 — fn default_heap_profile_path() -> Result<PathBuf>
+- jemalloc_stats · function · L810-L822 — fn jemalloc_stats() -> Option<AllocatorStats>
+- jemalloc_tuning_info · function · L825-L859 — fn jemalloc_tuning_info() -> Option<AllocatorTuningInfo>
+- jemalloc_read_dynamic · function · L862-L868 — fn jemalloc_read_dynamic<T: Copy>(name: &str) -> Result<T>
+- jemalloc_write_dynamic · function · L871-L877 — fn jemalloc_write_dynamic<T>(name: &str, value: T) -> Result<()>
+- jemalloc_void_ctl · function · L880-L899 — fn jemalloc_void_ctl(name: &str) -> Result<()>
+- jemalloc_stats_mibs · function · L902-L916 — fn jemalloc_stats_mibs() -> Option<&'static JemallocStatsMibs>
+- MIBS · constant · L903-L903 — static MIBS: OnceLock<Option<JemallocStatsMibs>> = OnceLock::new();
+- jemalloc_profiling_info · function · L919-L925 — fn jemalloc_profiling_info() -> Option<AllocatorProfilingInfo>
+- jemalloc_profiling_info · function · L928-L933 — fn jemalloc_profiling_info() -> Option<AllocatorProfilingInfo>
+- jemalloc_profiling_mibs · function · L936-L944 — fn jemalloc_profiling_mibs() -> Option<&'static JemallocProfilingMibs>
+- MIBS · constant · L937-L937 — static MIBS: OnceLock<Option<JemallocProfilingMibs>> = OnceLock::new();
+- parse_proc_status_value_bytes · function · L947-L949 — fn parse_proc_status_value_bytes(status: &str, key: &str) -> Option<u64>
+- parse_proc_status_count · function · L953-L958 — fn parse_proc_status_count(status: &str, key: &str) -> Option<u64>
+- parse_proc_value_bytes · function · L961-L978 — fn parse_proc_value_bytes(status: &str, key: &str) -> Option<u64>
+- tests · module · L981-L981 — mod tests;

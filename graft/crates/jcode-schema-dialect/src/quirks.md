@@ -1,0 +1,21 @@
+# crates/jcode-schema-dialect/src/quirks.rs
+
+- QuirkEntry · struct · L19-L24 — struct QuirkEntry
+- QuirkFile · struct · L27-L30 — struct QuirkFile
+- store_path · function · L32-L60 — fn store_path() -> Option<PathBuf>
+- test_override · function · L68-L70 — fn test_override() -> Option<PathBuf>
+- test_override · function · L73-L75 — fn test_override() -> Option<PathBuf>
+- use_test_path · function · L87-L90 — pub fn use_test_path(path: PathBuf)
+- cache · function · L94-L97 — fn cache() -> &'static Mutex<BTreeMap<PathBuf, QuirkFile>>
+- CACHE · constant · L95-L95 — static CACHE: OnceLock<Mutex<BTreeMap<PathBuf, QuirkFile>>> = OnceLock::new();
+- load_file · function · L99-L104 — fn load_file(path: &PathBuf) -> QuirkFile
+- with_store · function · L108-L128 — fn with_store<T>(f: impl FnOnce(&mut QuirkFile) -> (T, bool)) -> T
+- learned_for · function · L131-L143 — pub fn learned_for(dialect_id: &str) -> LearnedQuirks
+- record_keyword · function · L147-L149 — pub fn record_keyword(dialect_id: &str, keyword: &str) -> bool
+- record_format · function · L152-L154 — pub fn record_format(dialect_id: &str, format: &str) -> bool
+- record · function · L156-L174 — fn record(dialect_id: &str, keyword: Option<&str>, format: Option<&str>) -> bool
+- forget · function · L178-L183 — pub fn forget(dialect_id: &str)
+- reset_cache_for_tests · function · L189-L197 — pub fn reset_cache_for_tests()
+- tests · module · L200-L243 — mod tests
+- learns_persists_and_forgets · function · L204-L230 — fn learns_persists_and_forgets()
+- an_unwritable_store_still_reports_what_it_learned · function · L235-L242 — fn an_unwritable_store_still_reports_what_it_learned()

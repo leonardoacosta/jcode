@@ -1,0 +1,48 @@
+# crates/jcode-provider-doctor/src/lifecycle_driver.rs
+
+- AuthLifecycleAuthPath · enum · L15-L21 — pub(crate) enum AuthLifecycleAuthPath
+- auth_method · function · L24-L32 — fn auth_method(self) -> AuthMethod
+- credential_source · function · L34-L42 — fn credential_source(self) -> AuthCredentialSource
+- shows_paste_prompt · function · L44-L46 — fn shows_paste_prompt(self) -> bool
+- AuthLifecycleSpec · struct · L50-L59 — pub(crate) struct AuthLifecycleSpec
+- cerebras_fixture · function · L62-L73 — pub(crate) fn cerebras_fixture(auth_path: AuthLifecycleAuthPath) -> Self
+- openai_compatible_fixture · function · L75-L95 — pub(crate) fn openai_compatible_fixture(
+- PickerSnapshot · struct · L99-L106 — pub(crate) struct PickerSnapshot
+- build · function · L109-L150 — fn build(
+- AuthLifecycleResult · struct · L154-L161 — pub(crate) struct AuthLifecycleResult
+- result_assertions · module · L164-L164 — mod result_assertions;
+- AuthLifecycleDriver · struct · L166-L168 — pub(crate) struct AuthLifecycleDriver
+- new · function · L171-L175 — pub(crate) fn new() -> anyhow::Result<Self>
+- run_openai_compatible_fixture · function · L177-L241 — pub(crate) fn run_openai_compatible_fixture(
+- apply_credentials · function · L243-L265 — fn apply_credentials(
+- catalog_routes_for_spec · function · L267-L280 — fn catalog_routes_for_spec(&self, spec: &AuthLifecycleSpec) -> Vec<ModelRoute>
+- user_visible_transcript · function · L282-L324 — fn user_visible_transcript(
+- route_matches_spec · function · L327-L332 — fn route_matches_spec(route: &ModelRoute, spec: &AuthLifecycleSpec) -> bool
+- tests · module · L344-L1817 — mod tests
+- borrowed_lifecycle_evidence_matches_legacy_and_retains_sources · function · L348-L391 — fn borrowed_lifecycle_evidence_matches_legacy_and_retains_sources()
+- is_native_routed_compat_profile · function · L399-L404 — fn is_native_routed_compat_profile(
+- env_truthy · function · L406-L414 — fn env_truthy(key: &str) -> bool
+- LiveTestApiKey · struct · L416-L419 — struct LiveTestApiKey
+- live_cerebras_api_key · function · L421-L434 — fn live_cerebras_api_key() -> Option<LiveTestApiKey>
+- live_opencode_zen_api_key · function · L436-L467 — fn live_opencode_zen_api_key() -> Option<LiveTestApiKey>
+- live_openai_compatible_api_key · function · L469-L483 — fn live_openai_compatible_api_key(profile: OpenAiCompatibleProfile) -> Option<LiveTestApiKey>
+- live_event · function · L485-L516 — fn live_event<I, S>(
+- append_live_event · function · L518-L531 — fn append_live_event(event: &jcode_base::live_tests::LiveVerificationEvent)
+- cost_quota_safety_stage · function · L533-L546 — fn cost_quota_safety_stage(
+- covered_stage_names · function · L548-L558 — fn covered_stage_names(
+- stale_openai_route · function · L560-L570 — fn stale_openai_route(model: &str) -> ModelRoute
+- assert_rejected_success · function · L572-L589 — fn assert_rejected_success(
+- cerebras_remote_tui_paste_key_fixture_covers_catalog_picker_and_switch · function · L592-L616 — fn cerebras_remote_tui_paste_key_fixture_covers_catalog_picker_and_switch()
+- cerebras_state_space_catches_stale_openai_catalog_after_auth · function · L619-L647 — fn cerebras_state_space_catches_stale_openai_catalog_after_auth()
+- auth_lifecycle_failure_contracts_reject_degraded_success_states · function · L650-L735 — fn auth_lifecycle_failure_contracts_reject_degraded_success_states()
+- cerebras_env_file_and_process_env_paths_share_same_lifecycle_invariants · function · L738-L763 — fn cerebras_env_file_and_process_env_paths_share_same_lifecycle_invariants()
+- openai_compatible_provider_matrix_preserves_identity_catalog_and_picker · function · L766-L809 — fn openai_compatible_provider_matrix_preserves_identity_catalog_and_picker()
+- provider_switch_reauth_matrix_recovers_from_stale_previous_provider_state · function · L812-L916 — fn provider_switch_reauth_matrix_recovers_from_stale_previous_provider_state()
+- picker_switch_target_uses_profile_route_not_matching_label_only_route · function · L919-L984 — fn picker_switch_target_uses_profile_route_not_matching_label_only_route()
+- auth_lifecycle_success_rejects_static_fallback_route_sources · function · L987-L1012 — fn auth_lifecycle_success_rejects_static_fallback_route_sources()
+- auth_lifecycle_success_rejects_provider_routes_not_returned_by_live_catalog · function · L1015-L1060 — fn auth_lifecycle_success_rejects_provider_routes_not_returned_by_live_catalog()
+- auth_lifecycle_success_rejects_duplicate_or_out_of_order_transcript_markers · function · L1063-L1099 — fn auth_lifecycle_success_rejects_duplicate_or_out_of_order_transcript_markers()
+- cerebras_live_opt_in_catalog_lifecycle_uses_isolated_sandbox · function · L1102-L1317 — async fn cerebras_live_opt_in_catalog_lifecycle_uses_isolated_sandbox()
+- opencode_zen_live_opt_in_tool_call_smoke · function · L1320-L1534 — async fn opencode_zen_live_opt_in_tool_call_smoke()
+- issue_driven_openai_compatible_live_target_smoke · function · L1537-L1752 — async fn issue_driven_openai_compatible_live_target_smoke()
+- fresh_start_sandbox_is_unconfigured_then_tui_key_lifecycle_configures_provider · function · L1755-L1816 — fn fresh_start_sandbox_is_unconfigured_then_tui_key_lifecycle_configures_provider()

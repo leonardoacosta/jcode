@@ -1,0 +1,31 @@
+# crates/jcode-provider-openai-runtime/src/openai_stream_runtime.rs
+
+- openai_ws_cancel_recovery · module · L9-L9 — mod openai_ws_cancel_recovery;
+- opaque_ws_rejection · function · L15-L17 — fn opaque_ws_rejection(text: &str, response_started: &mut bool) -> bool
+- opaque_ws_rejection_event · function · L19-L77 — fn opaque_ws_rejection_event(
+- opaque_rejection_uses_validated_top_level_type · function · L80-L104 — fn opaque_rejection_uses_validated_top_level_type()
+- opaque_rejection_requires_exact_shape_and_no_response_activity · function · L107-L145 — fn opaque_rejection_requires_exact_shape_and_no_response_activity()
+- recover_opaque_ws_rejection · function · L149-L222 — pub(super) async fn recover_opaque_ws_rejection(
+- serving_account_usage · function · L227-L247 — pub(super) fn serving_account_usage(
+- serving_account_diag · function · L250-L260 — pub(super) fn serving_account_diag(credentials: &CodexCredentials) -> (String, bool)
+- bind_requested_service_tier · function · L264-L268 — fn bind_requested_service_tier(event: &mut StreamEvent, request_tier: &Option<String>)
+- service_tier_metadata_uses_serialized_request_not_later_preference · function · L271-L295 — fn service_tier_metadata_uses_serialized_request_not_later_preference()
+- openai_usage_recording · module · L298-L298 — mod openai_usage_recording;
+- openai_rate_limit_format · module · L302-L302 — mod openai_rate_limit_format;
+- openai_stream_timeout · module · L305-L305 — mod openai_stream_timeout;
+- openai_access_token · function · L311-L370 — pub(super) async fn openai_access_token(
+- force_refresh_openai_token · function · L376-L399 — pub(super) async fn force_refresh_openai_token(
+- refresh_and_commit_openai_tokens · function · L403-L413 — pub(super) async fn refresh_and_commit_openai_tokens(
+- commit_refreshed_openai_tokens · function · L415-L436 — async fn commit_refreshed_openai_tokens(
+- ws_stall_diagnostics · function · L440-L451 — fn ws_stall_diagnostics(
+- response_http_request · function · L455-L490 — fn response_http_request(
+- routing_header_log_fields · function · L492-L509 — fn routing_header_log_fields(headers: &reqwest::header::HeaderMap) -> Vec<(&'static str, String)>
+- http · module · L513-L513 — mod http;
+- is_ws_upgrade_required · function · L516-L521 — pub(super) fn is_ws_upgrade_required(err: &WsError) -> bool
+- PersistentWsResult · enum · L524-L531 — pub(super) enum PersistentWsResult
+- try_persistent_ws_continuation · function · L536-L588 — pub(super) async fn try_persistent_ws_continuation(
+- continue_persistent_ws_locked · function · L590-L1436 — async fn continue_persistent_ws_locked(
+- stream_response_websocket_persistent · function · L1440-L1465 — pub(super) async fn stream_response_websocket_persistent(
+- stream_response_websocket_authenticated · function · L1467-L1974 — async fn stream_response_websocket_authenticated(
+- model_errors · module · L1977-L1977 — mod model_errors;
+- stream_runtime_tests · module · L1982-L1982 — mod stream_runtime_tests;

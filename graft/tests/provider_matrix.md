@@ -1,0 +1,40 @@
+# tests/provider_matrix.rs
+
+- ENV_LOCK · constant · L20-L20 — static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- provider_matrix_account_switch_rebinds_real_runtime_without_changing_model · function · L23-L89 — async fn provider_matrix_account_switch_rebinds_real_runtime_without_changing_model() -> Result<()>
+- RestoreOverride · struct · L30-L30 — struct RestoreOverride(Option<String>);
+- drop · function · L32-L34 — fn drop(&mut self)
+- lock_env · function · L91-L97 — fn lock_env() -> MutexGuard<'static, ()>
+- tracked_env_vars · function · L99-L148 — fn tracked_env_vars() -> Vec<String>
+- TestEnv · struct · L150-L154 — struct TestEnv
+- new · function · L157-L186 — fn new() -> Result<Self>
+- config_dir · function · L188-L190 — fn config_dir(&self) -> PathBuf
+- config_file · function · L192-L194 — fn config_file(&self) -> PathBuf
+- clear_profile_keys · function · L196-L202 — fn clear_profile_keys(&self)
+- drop · function · L206-L219 — fn drop(&mut self)
+- OpenAiCompatibleBaseState · enum · L223-L227 — enum OpenAiCompatibleBaseState
+- expected_api_base · function · L230-L236 — fn expected_api_base(self) -> &'static str
+- label · function · L238-L244 — fn label(self) -> &'static str
+- clear_openai_compatible_runtime_env · function · L247-L272 — fn clear_openai_compatible_runtime_env()
+- CompetingCompatibleState · enum · L275-L279 — enum CompetingCompatibleState
+- openai_compatible_login_providers · function · L281-L288 — fn openai_compatible_login_providers(
+- non_compatible_login_providers · function · L290-L304 — fn non_compatible_login_providers(
+- login_provider_profile · function · L306-L311 — fn login_provider_profile(provider: LoginProviderDescriptor) -> OpenAiCompatibleProfile
+- write_profile_api_key_file · function · L313-L325 — fn write_profile_api_key_file(
+- write_profile_login_material · function · L327-L350 — fn write_profile_login_material(
+- competing_remote_profiles · function · L352-L360 — fn competing_remote_profiles(selected: OpenAiCompatibleProfile) -> Vec<OpenAiCompatibleProfile>
+- apply_competing_compatible_state · function · L362-L399 — fn apply_competing_compatible_state(
+- assert_runtime_profile_env · function · L401-L434 — fn assert_runtime_profile_env(profile: OpenAiCompatibleProfile, context: &str)
+- assert_no_compatible_runtime_profile_env · function · L436-L455 — fn assert_no_compatible_runtime_profile_env(context: &str)
+- assert_no_active_compatible_profile_lock · function · L457-L468 — fn assert_no_active_compatible_profile_lock(context: &str)
+- seed_non_compatible_auto_auth · function · L470-L494 — fn seed_non_compatible_auto_auth(provider: LoginProviderDescriptor) -> bool
+- assert_model_picker_has_profile_route · function · L496-L512 — fn assert_model_picker_has_profile_route(
+- provider_matrix_bootstrap_login_profile_survives_auto_daemon_state_space · function · L515-L556 — async fn provider_matrix_bootstrap_login_profile_survives_auto_daemon_state_space() -> Result<()>
+- provider_matrix_non_compatible_bootstrap_login_clears_stale_compatible_profile_state_space · function · L559-L606 — async fn provider_matrix_non_compatible_bootstrap_login_clears_stale_compatible_profile_state_space()
+- provider_matrix_concurrent_auto_init_preserves_bootstrap_compatible_profile · function · L609-L639 — async fn provider_matrix_concurrent_auto_init_preserves_bootstrap_compatible_profile() -> Result<()>
+- provider_matrix_explicit_compatible_choice_overrides_stale_active_profile_state_space · function · L642-L688 — async fn provider_matrix_explicit_compatible_choice_overrides_stale_active_profile_state_space()
+- provider_matrix_openai_compatible_auth_state_space_material_states_preserve_login_invariants · function · L691-L854 — fn provider_matrix_openai_compatible_auth_state_space_material_states_preserve_login_invariants()
+- provider_matrix_env_credentials_activate_openrouter_runtime · function · L857-L909 — fn provider_matrix_env_credentials_activate_openrouter_runtime() -> Result<()>
+- provider_matrix_file_credentials_activate_openrouter_runtime · function · L912-L942 — fn provider_matrix_file_credentials_activate_openrouter_runtime() -> Result<()>
+- provider_matrix_custom_compat_overrides_flow_into_runtime · function · L945-L992 — fn provider_matrix_custom_compat_overrides_flow_into_runtime() -> Result<()>
+- provider_matrix_custom_local_compat_without_api_key_activates_openrouter_runtime · function · L995-L1023 — fn provider_matrix_custom_local_compat_without_api_key_activates_openrouter_runtime() -> Result<()>

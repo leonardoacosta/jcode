@@ -1,0 +1,85 @@
+# crates/jcode-base/src/subscription_api.rs
+
+- ME_FETCH_TIMEOUT · constant · L14-L14 — pub const ME_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
+- DEVICE_REQUEST_TIMEOUT · constant · L15-L15 — pub const DEVICE_REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+- ACTIVATION_TIMEOUT · constant · L16-L16 — pub const ACTIVATION_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+- SubscriptionUsage · struct · L19-L35 — pub struct SubscriptionUsage
+- SubscriptionCapabilities · struct · L38-L47 — pub struct SubscriptionCapabilities
+- SubscriptionMe · struct · L50-L68 — pub struct SubscriptionMe
+- JevFeatureUsage · struct · L71-L76 — pub struct JevFeatureUsage
+- JevUsage · struct · L79-L90 — pub struct JevUsage
+- parsed_tier · function · L93-L95 — pub fn parsed_tier(&self) -> Option<JcodeTier>
+- has_active_paid_plan · function · L97-L100 — pub fn has_active_paid_plan(&self) -> bool
+- checkout_was_canceled · function · L102-L105 — pub fn checkout_was_canceled(&self) -> bool
+- DeviceAuthorization · struct · L109-L118 — pub struct DeviceAuthorization
+- ApprovedAccountKey · struct · L121-L127 — pub struct ApprovedAccountKey
+- TokenPollOutcome · enum · L130-L136 — pub enum TokenPollOutcome
+- ActivationOutcome · enum · L139-L145 — pub enum ActivationOutcome
+- AccountApiError · enum · L149-L156 — pub enum AccountApiError
+- is_temporary · function · L159-L162 — pub fn is_temporary(&self) -> bool
+- fmt · function · L166-L186 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- ErrorEnvelope · struct · L192-L197 — struct ErrorEnvelope
+- ErrorField · enum · L201-L204 — enum ErrorField
+- code · function · L207-L213 — fn code(&self) -> Option<String>
+- DeviceAuthorizationWire · struct · L217-L233 — struct DeviceAuthorizationWire
+- ApprovedAccountKeyWire · struct · L236-L242 — struct ApprovedAccountKeyWire
+- configured_api_base · function · L244-L249 — pub fn configured_api_base() -> String
+- endpoint_url · function · L251-L257 — fn endpoint_url(api_base: &str, path: &str) -> String
+- me_endpoint_url · function · L260-L262 — pub fn me_endpoint_url() -> String
+- offline · function · L264-L268 — fn offline(error: reqwest::Error) -> AccountApiError
+- error_code · function · L270-L275 — fn error_code(body: &str) -> Option<String>
+- DeviceAuthorizationRequest · struct · L278-L282 — struct DeviceAuthorizationRequest
+- new · function · L285-L290 — fn new(requested_tier: Option<JcodeTier>) -> Self
+- request_device_authorization · function · L293-L341 — pub async fn request_device_authorization(
+- DeviceTokenRequest · struct · L344-L346 — struct DeviceTokenRequest<'a>
+- EmailCodeStartRequest · struct · L349-L352 — struct EmailCodeStartRequest<'a>
+- new · function · L355-L360 — fn new(email: &'a str) -> Self
+- EmailCodeVerifyRequest · struct · L365-L368 — struct EmailCodeVerifyRequest<'a>
+- new · function · L371-L376 — fn new(login_token: &'a str, code: &'a str) -> Self
+- poll_device_token_once · function · L379-L442 — pub async fn poll_device_token_once(
+- EmailCodeStart · struct · L446-L450 — pub struct EmailCodeStart
+- EmailCodeStartWire · struct · L453-L457 — struct EmailCodeStartWire
+- EmailCodeVerifyOutcome · enum · L461-L469 — pub enum EmailCodeVerifyOutcome
+- request_email_code · function · L472-L506 — pub async fn request_email_code(
+- verify_email_code · function · L508-L553 — pub async fn verify_email_code(
+- fetch_subscription_me_with · function · L555-L585 — pub async fn fetch_subscription_me_with(
+- fetch_subscription_me · function · L588-L598 — pub async fn fetch_subscription_me() -> Result<SubscriptionMe>
+- revoke_current_key · function · L600-L625 — pub async fn revoke_current_key(
+- BillingStatus · struct · L629-L641 — pub struct BillingStatus
+- BillingActivation · struct · L644-L647 — pub struct BillingActivation
+- BillingCredit · struct · L650-L655 — pub struct BillingCredit
+- BillingPeriod · struct · L658-L665 — pub struct BillingPeriod
+- monthly_hard_cap_usd · function · L668-L670 — pub fn monthly_hard_cap_usd(&self) -> f64
+- billable_usd · function · L672-L674 — pub fn billable_usd(&self) -> f64
+- promotional_credit_usd · function · L676-L678 — pub fn promotional_credit_usd(&self) -> f64
+- BillingEnvelope · struct · L682-L684 — struct BillingEnvelope
+- PortalWire · struct · L687-L689 — struct PortalWire
+- account_response_body · function · L691-L707 — async fn account_response_body(
+- fetch_billing_with · function · L710-L726 — pub async fn fetch_billing_with(
+- MonthlyHardCapRequest · struct · L729-L731 — struct MonthlyHardCapRequest
+- PlanRequest · struct · L734-L736 — struct PlanRequest
+- set_monthly_hard_cap_with · function · L739-L759 — pub async fn set_monthly_hard_cap_with(
+- billing_portal_url_with · function · L763-L785 — pub async fn billing_portal_url_with(
+- start_subscription_checkout_with · function · L791-L815 — pub async fn start_subscription_checkout_with(
+- PlanChange · struct · L819-L825 — pub struct PlanChange
+- change_plan_with · function · L829-L846 — pub async fn change_plan_with(
+- SignOutOutcome · enum · L851-L857 — pub enum SignOutOutcome
+- sign_out_current_account · function · L860-L874 — pub async fn sign_out_current_account(client: &reqwest::Client) -> Result<SignOutOutcome>
+- poll_for_paid_activation · function · L878-L917 — pub async fn poll_for_paid_activation(
+- PollingBackoff · struct · L921-L924 — pub struct PollingBackoff
+- new · function · L927-L930 — pub fn new(base: Duration) -> Self
+- delay · function · L932-L934 — pub fn delay(&self) -> Duration
+- on_pending · function · L936-L938 — pub fn on_pending(&mut self)
+- on_slow_down · function · L940-L945 — pub fn on_slow_down(&mut self, retry_after: Option<Duration>)
+- on_offline_error · function · L947-L949 — pub fn on_offline_error(&mut self)
+- on_server_error · function · L951-L953 — pub fn on_server_error(&mut self)
+- on_successful_poll · function · L955-L957 — pub fn on_successful_poll(&mut self)
+- scalar_payload_tests · module · L961-L1007 — mod scalar_payload_tests
+- account_scalar_payloads_match_exact_legacy_wire · function · L965-L1006 — fn account_scalar_payloads_match_exact_legacy_wire()
+- tests · module · L1011-L1011 — mod tests;
+- login_request_tests · module · L1014-L1088 — mod login_request_tests
+- login_payloads_match_exact_legacy_wire · function · L1018-L1048 — fn login_payloads_match_exact_legacy_wire()
+- builders_own_login_bodies_after_borrowed_sources_end · function · L1051-L1087 — fn builders_own_login_bodies_after_borrowed_sources_end()
+- device_authorization_request_tests · module · L1091-L1143 — mod device_authorization_request_tests
+- metadata_matches_exact_legacy_wire_for_every_tier · function · L1095-L1112 — fn metadata_matches_exact_legacy_wire_for_every_tier()
+- builder_owns_serialized_metadata_after_source_scope_ends · function · L1115-L1142 — fn builder_owns_serialized_metadata_after_source_scope_ends()

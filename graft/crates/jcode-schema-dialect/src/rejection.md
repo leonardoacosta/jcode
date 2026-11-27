@@ -1,0 +1,23 @@
+# crates/jcode-schema-dialect/src/rejection.rs
+
+- SchemaRejection · struct · L16-L29 — pub struct SchemaRejection
+- keyword · function · L33-L35 — pub fn keyword(&self) -> Option<&str>
+- is_actionable · function · L40-L42 — pub fn is_actionable(&self) -> bool
+- classify · function · L49-L122 — pub fn classify(message: &str) -> Option<SchemaRejection>
+- is_schema_error · function · L126-L134 — pub fn is_schema_error(message: &str) -> bool
+- extract_tool · function · L136-L139 — fn extract_tool(message: &str) -> Option<String>
+- clean_token · function · L144-L147 — fn clean_token(token: &str) -> Option<String>
+- extract_quoted_after · function · L150-L158 — fn extract_quoted_after(message: &str, marker: &str) -> Option<String>
+- extract_all_quoted_after · function · L165-L178 — fn extract_all_quoted_after(message: &str, marker: &str) -> Vec<String>
+- extract_quoted_before · function · L181-L188 — fn extract_quoted_before(message: &str, marker: &str) -> Option<String>
+- schema_contains_keyword · function · L193-L201 — pub fn schema_contains_keyword(schema: &Value, keyword: &str) -> bool
+- tests · module · L204-L304 — mod tests
+- parses_the_real_gemini_unknown_name_400 · function · L208-L213 — fn parses_the_real_gemini_unknown_name_400()
+- parses_the_real_openai_unsupported_format_400 · function · L216-L224 — fn parses_the_real_openai_unsupported_format_400()
+- parses_the_real_openai_unpermitted_keyword_400 · function · L227-L231 — fn parses_the_real_openai_unpermitted_keyword_400()
+- parses_the_real_gemini_dangling_required_400 · function · L234-L237 — fn parses_the_real_gemini_dangling_required_400()
+- parses_the_real_anthropic_top_level_combiner_400 · function · L240-L243 — fn parses_the_real_anthropic_top_level_combiner_400()
+- ignores_errors_that_are_not_about_schemas · function · L246-L250 — fn ignores_errors_that_are_not_about_schemas()
+- detects_a_keyword_nested_anywhere · function · L253-L260 — fn detects_a_keyword_nested_anywhere()
+- LIVE_MULTI_VIOLATION_400 · constant · L269-L290 — const LIVE_MULTI_VIOLATION_400: &str = r#"Antigravity generateContent failed (HTTP 400 Bad Request):
+- every_keyword_in_a_multi_violation_400_is_learned_at_once · function · L293-L303 — fn every_keyword_in_a_multi_violation_400_is_learned_at_once()

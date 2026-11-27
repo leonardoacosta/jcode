@@ -1,0 +1,23 @@
+# crates/jcode-build-support/src/version_gc.rs
+
+- DEFAULT_KEEP_RECENT_VERSIONS · constant · L18-L18 — pub const DEFAULT_KEEP_RECENT_VERSIONS: usize = 5;
+- MIN_VERSION_AGE · constant · L22-L22 — const MIN_VERSION_AGE: Duration = Duration::from_secs(24 * 60 * 60);
+- KEEP_VERSIONS_ENV · constant · L25-L25 — pub const KEEP_VERSIONS_ENV: &str = "JCODE_KEEP_BUILD_VERSIONS";
+- PRUNE_INTERVAL_SECS · constant · L27-L27 — const PRUNE_INTERVAL_SECS: u64 = 24 * 60 * 60;
+- PRUNE_MARKER · constant · L28-L28 — const PRUNE_MARKER: &str = "versions-prune.stamp";
+- VersionPruneReport · struct · L31-L34 — pub struct VersionPruneReport
+- keep_recent_from_env · function · L36-L42 — fn keep_recent_from_env() -> Option<usize>
+- protected_versions · function · L46-L76 — fn protected_versions() -> HashSet<String>
+- channel_target_version · function · L79-L89 — fn channel_target_version(channel_dir: &Path) -> Option<String>
+- version_from_binary_path · function · L91-L97 — fn version_from_binary_path(path: &Path) -> Option<String>
+- running_versions · function · L101-L115 — fn running_versions() -> HashSet<String>
+- running_versions · function · L118-L120 — fn running_versions() -> HashSet<String>
+- prune_old_versions · function · L124-L143 — pub fn prune_old_versions()
+- prune_due · function · L149-L158 — fn prune_due(dir: &Path) -> bool
+- mark_pruned · function · L160-L162 — fn mark_pruned(dir: &Path)
+- prune_old_versions_in · function · L165-L214 — pub fn prune_old_versions_in(
+- tests · module · L217-L266 — mod tests
+- DAY · constant · L221-L221 — const DAY: Duration = Duration::from_secs(24 * 60 * 60);
+- make_version · function · L223-L230 — fn make_version(dir: &Path, name: &str, age: Duration)
+- keeps_protected_recent_and_fresh_versions · function · L233-L253 — fn keeps_protected_recent_and_fresh_versions()
+- parses_version_from_binary_path · function · L256-L265 — fn parses_version_from_binary_path()

@@ -1,0 +1,26 @@
+# crates/jcode-sdk/src/auth/tests.rs
+
+- installed_cli_begin_cancel_isolated · function · L7-L34 — fn installed_cli_begin_cancel_isolated()
+- catalog_is_capability_filtered_and_uses_shared_aliases · function · L37-L59 — fn catalog_is_capability_filtered_and_uses_shared_aliases()
+- legacy_validation_report_is_only_accepted_after_authenticated_completion · function · L62-L87 — fn legacy_validation_report_is_only_accepted_after_authenticated_completion()
+- processes · module · L90-L543 — mod processes
+- fixture · function · L95-L153 — fn fixture(mode: &str) -> (tempfile::TempDir, AuthClient)
+- oauth_round_trip_uses_stdin_and_scoped_flow_not_argv · function · L156-L179 — fn oauth_round_trip_uses_stdin_and_scoped_flow_not_argv()
+- saved_credentials_and_validation_failure_are_distinct · function · L182-L210 — fn saved_credentials_and_validation_failure_are_distinct()
+- legacy_cli_reports_preserve_completion_and_validation_warning · function · L213-L226 — fn legacy_cli_reports_preserve_completion_and_validation_warning()
+- errors_never_include_untrusted_output_or_callback_input · function · L229-L237 — fn errors_never_include_untrusted_output_or_callback_input()
+- wait_for_pid · function · L239-L248 — fn wait_for_pid(dir: &std::path::Path) -> i32
+- concurrent_cancel_interrupts_and_reaps_device_polling · function · L251-L269 — fn concurrent_cancel_interrupts_and_reaps_device_polling()
+- timeout_reaps_process_and_unique_ids_isolate_cancellation · function · L272-L290 — fn timeout_reaps_process_and_unique_ids_isolate_cancellation()
+- last_drop_cleans_pending_flow_without_blocking_ui · function · L293-L307 — fn last_drop_cleans_pending_flow_without_blocking_ui()
+- loopback_fixture · function · L309-L322 — fn loopback_fixture() -> (tempfile::TempDir, AuthClient, std::net::TcpListener)
+- send_callback · function · L324-L341 — fn send_callback(port: u16, target: &str) -> String
+- browser_callback_rejects_unrelated_requests_then_completes_over_stdin · function · L344-L394 — fn browser_callback_rejects_unrelated_requests_then_completes_over_stdin()
+- callback_denial_is_actionable_private_and_releases_listener · function · L397-L423 — fn callback_denial_is_actionable_private_and_releases_listener()
+- exchange_failure_reports_stage_and_releases_callback_for_retry · function · L426-L451 — fn exchange_failure_reports_stage_and_releases_callback_for_retry()
+- cancel_releases_port_even_while_another_owner_retains_listener · function · L454-L467 — fn cancel_releases_port_even_while_another_owner_retains_listener()
+- busy_callback_port_keeps_manual_completion_available · function · L470-L477 — fn busy_callback_port_keeps_manual_completion_available()
+- hosted_redirects_never_bind_local_listener · function · L480-L497 — fn hosted_redirects_never_bind_local_listener()
+- callback_wait_is_interrupted_by_cancel_and_manual_completion · function · L500-L523 — fn callback_wait_is_interrupted_by_cancel_and_manual_completion()
+- callback_timeout_keeps_manual_completion_available · function · L526-L542 — fn callback_timeout_keeps_manual_completion_available()
+- process_failure_diagnostics_never_echo_private_output · function · L546-L572 — fn process_failure_diagnostics_never_echo_private_output()

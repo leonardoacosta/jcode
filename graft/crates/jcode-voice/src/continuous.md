@@ -1,0 +1,45 @@
+# crates/jcode-voice/src/continuous.rs
+
+- ContinuousConfig · struct · L18-L30 — pub struct ContinuousConfig
+- default · function · L32-L41 — fn default() -> Self
+- VoiceState · enum · L44-L51 — pub enum VoiceState
+- ContinuousEvent · enum · L53-L60 — pub enum ContinuousEvent
+- Events · struct · L61-L64 — struct Events
+- push · function · L66-L82 — fn push(&mut self, event: ContinuousEvent)
+- emit · function · L84-L86 — fn emit(events: &Mutex<Events>, event: ContinuousEvent)
+- ContinuousRecording · struct · L89-L98 — pub struct ContinuousRecording
+- start_auto · function · L100-L195 — pub fn start_auto(
+- set_paused · function · L198-L213 — pub fn set_paused(&self, value: bool)
+- is_capturing · function · L214-L216 — pub fn is_capturing(&self) -> bool
+- stop · function · L217-L219 — pub fn stop(&self)
+- set_suppressed · function · L221-L238 — pub fn set_suppressed(&self, value: bool)
+- audio_level · function · L239-L249 — pub fn audio_level(&self) -> f32
+- try_event · function · L250-L256 — pub fn try_event(&self) -> Option<ContinuousEvent>
+- event_notify · function · L257-L263 — pub fn event_notify(&self) -> Arc<tokio::sync::Notify>
+- is_finished · function · L264-L266 — pub fn is_finished(&self) -> bool
+- drop · function · L269-L271 — fn drop(&mut self)
+- Segmenter · struct · L277-L284 — struct Segmenter
+- push · function · L286-L318 — fn push(&mut self, input: &[i16]) -> Vec<Vec<i16>>
+- rms · function · L320-L330 — fn rms(samples: &[i16]) -> f32
+- directed_transcript · function · L336-L411 — pub fn directed_transcript(text: &str, require_jev: bool) -> Option<String>
+- session_permitted · function · L413-L419 — async fn session_permitted(_config: &ContinuousConfig) -> bool
+- Budget · struct · L422-L422 — struct Budget(VecDeque<(Instant, usize)>);
+- reserve · function · L424-L440 — fn reserve(&mut self, now: Instant, samples: usize, config: &ContinuousConfig) -> bool
+- gate_answer · function · L443-L451 — fn gate_answer(response: &serde_json::Value, threshold: f64) -> Result<bool, VoiceError>
+- semantic_gate · function · L453-L473 — async fn semantic_gate(
+- open_capture · function · L475-L488 — async fn open_capture(
+- transcribe · function · L489-L505 — async fn transcribe(
+- run · function · L506-L661 — async fn run(
+- tests · module · L664-L950 — mod tests
+- real_continuous_synthetic_audio_produces_one_gated_request · function · L670-L704 — fn real_continuous_synthetic_audio_produces_one_gated_request()
+- live_semantic_gate_accepts_direct_request_and_rejects_ambient · function · L708-L721 — fn live_semantic_gate_accepts_direct_request_and_rejects_ambient()
+- rejected_start_never_opens_capture · function · L723-L742 — fn rejected_start_never_opens_capture()
+- silent_external_capture_has_heartbeat_suppresses_and_stops_without_network · function · L746-L829 — fn silent_external_capture_has_heartbeat_suppresses_and_stops_without_network()
+- rolling_budgets_reserve_before_upload_and_expire · function · L832-L850 — fn rolling_budgets_reserve_before_upload_and_expire()
+- gate_response_is_typed_and_fail_closed · function · L852-L879 — fn gate_response_is_typed_and_fail_closed()
+- silence_never_segments · function · L881-L887 — fn silence_never_segments()
+- speech_has_preroll_and_trailing_silence · function · L889-L897 — fn speech_has_preroll_and_trailing_silence()
+- brief_noise_is_not_speech · function · L899-L903 — fn brief_noise_is_not_speech()
+- maximum_utterance_is_bounded · function · L905-L910 — fn maximum_utterance_is_bounded()
+- conservative_gate · function · L912-L930 — fn conservative_gate()
+- bounded_events · function · L932-L949 — fn bounded_events()

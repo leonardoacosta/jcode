@@ -1,0 +1,62 @@
+# src/bin/memory_recall_bench.rs
+
+- EMBEDDING_SIMILARITY_THRESHOLD · constant · L31-L31 — const EMBEDDING_SIMILARITY_THRESHOLD: f32 = 0.5;
+- EMBEDDING_MAX_HITS · constant · L32-L32 — const EMBEDDING_MAX_HITS: usize = 10;
+- GAP_FACTOR · constant · L33-L33 — const GAP_FACTOR: f32 = 0.25;
+- MIN_KEEP · constant · L34-L34 — const MIN_KEEP: usize = 1;
+- LLM_CALLS · constant · L40-L40 — static LLM_CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+- LLM_PROMPT_TOK · constant · L41-L41 — static LLM_PROMPT_TOK: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+- LLM_OUTPUT_TOK · constant · L42-L42 — static LLM_OUTPUT_TOK: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+- bench_root · function · L44-L48 — fn bench_root() -> PathBuf
+- dirs_home · function · L50-L52 — fn dirs_home() -> PathBuf
+- ExtractionJob · type · L55-L55 — type ExtractionJob = (String, String, Vec<(String, String)>);
+- RecallResultRow · type · L57-L57 — type RecallResultRow = (String, Vec<(String, f32)>, usize, usize);
+- CorpusMemory · struct · L62-L77 — struct CorpusMemory
+- Corpus · struct · L79-L84 — struct Corpus
+- load_graph_file · function · L88-L144 — fn load_graph_file(path: &Path) -> Result<Corpus>
+- active · function · L146-L148 — fn active(&self) -> impl Iterator<Item = &CorpusMemory>
+- load_graph · function · L151-L156 — fn load_graph(path: &Path) -> Result<MemoryGraph>
+- dense_retrieve · function · L162-L189 — fn dense_retrieve(
+- apply_gap_filter · function · L191-L207 — fn apply_gap_filter(scored: Vec<(String, f32)>, threshold: f32) -> Vec<(String, f32)>
+- Bm25 · struct · L211-L216 — struct Bm25
+- build · function · L219-L239 — fn build(corpus: &Corpus) -> Bm25
+- search · function · L241-L271 — fn search(&self, query: &str, limit: usize) -> Vec<(String, f32)>
+- K1 · constant · L242-L242 — const K1: f32 = 1.2;
+- B · constant · L243-L243 — const B: f32 = 0.75;
+- tokenize · function · L274-L279 — fn tokenize(s: &str) -> Vec<String>
+- memory_prior · function · L283-L288 — fn memory_prior(m: &CorpusMemory) -> f32
+- focus_query · function · L294-L348 — fn focus_query(raw: &str) -> String
+- rrf · function · L351-L362 — fn rrf(lists: &[Vec<(String, f32)>], k: f32, limit: usize) -> Vec<(String, f32)>
+- dynamic_gate · function · L379-L386 — fn dynamic_gate(
+- dynamic_gate_abs · function · L392-L424 — fn dynamic_gate_abs(
+- QueryRecord · struct · L429-L437 — struct QueryRecord
+- cmd_queries · function · L439-L574 — fn cmd_queries(args: &[String]) -> Result<()>
+- PoolRecord · struct · L579-L583 — struct PoolRecord
+- PoolCandidate · struct · L586-L591 — struct PoolCandidate
+- cmd_pool · function · L593-L673 — fn cmd_pool(args: &[String]) -> Result<()>
+- JudgeInput · struct · L678-L682 — struct JudgeInput
+- JUDGE_SYSTEM · constant · L684-L689 — const JUDGE_SYSTEM: &str = "You judge whether stored MEMORIES would be genuinely useful to surface to an AI coding agent given the CURRENT conversation context. \
+- build_judge_prompt · function · L691-L702 — fn build_judge_prompt(input: &JudgeInput) -> String
+- truncate_for_judge · function · L704-L711 — fn truncate_for_judge(s: &str, max: usize) -> String
+- parse_judge_response · function · L713-L735 — fn parse_judge_response(resp: &str, n: usize) -> Vec<usize>
+- LLM_RERANK_STRICT_SYSTEM · constant · L749-L754 — const LLM_RERANK_STRICT_SYSTEM: &str = "You decide which stored MEMORIES to surface to an AI coding agent for the CURRENT request. \
+- LLM_SCORED_SYSTEM · constant · L761-L764 — const LLM_SCORED_SYSTEM: &str = "You score how useful each stored MEMORY would be to surface to an AI coding agent for the CURRENT request. \
+- LLM_SYNTH_SYSTEM · constant · L773-L778 — const LLM_SYNTH_SYSTEM: &str = "You prepare a memory context note for an AI coding agent. \
+- build_synth_prompt · function · L780-L800 — fn build_synth_prompt(query: &str, candidates: &[(String, String)]) -> String
+- parse_synth_response · function · L804-L835 — fn parse_synth_response(resp: &str, n: usize) -> (Vec<usize>, String)
+- parse_scored_response · function · L839-L865 — fn parse_scored_response(resp: &str, n: usize) -> Vec<(usize, f32)>
+- cmd_judge · function · L867-L986 — fn cmd_judge(args: &[String]) -> Result<()>
+- GoldRecord · struct · L991-L994 — struct GoldRecord
+- alt_dense_rank · function · L997-L1012 — fn alt_dense_rank(
+- recall_at · function · L2110-L2116 — fn recall_at(ranked: &[String], rel: &HashSet<&String>, k: usize) -> f32
+- precision_at · function · L2121-L2128 — fn precision_at(ranked: &[String], rel: &HashSet<&String>, k: usize) -> f32
+- reciprocal_rank · function · L2130-L2137 — fn reciprocal_rank(ranked: &[String], rel: &HashSet<&String>) -> f32
+- ndcg_at · function · L2139-L2152 — fn ndcg_at(ranked: &[String], rel: &HashSet<&String>, k: usize) -> f32
+- cmd_probe · function · L2156-L2181 — fn cmd_probe(args: &[String]) -> Result<()>
+- cmd_gate · function · L2189-L2533 — fn cmd_gate(args: &[String]) -> Result<()>
+- TOPIC_CHANGE_THRESHOLD · constant · L2249-L2249 — const TOPIC_CHANGE_THRESHOLD: f32 = 0.3;
+- read_queries · function · L2535-L2543 — fn read_queries() -> Result<Vec<QueryRecord>>
+- read_gold · function · L2545-L2556 — fn read_gold() -> Result<HashMap<String, Vec<String>>>
+- parse_kv · function · L2558-L2568 — fn parse_kv(args: &[String]) -> HashMap<String, String>
+- cmd_cosdiag · function · L2574-L2639 — fn cmd_cosdiag(args: &[String]) -> Result<()>
+- main · function · L2641-L2667 — fn main() -> Result<()>

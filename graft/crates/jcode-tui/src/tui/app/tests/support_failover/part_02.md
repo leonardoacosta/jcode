@@ -1,0 +1,95 @@
+# crates/jcode-tui/src/tui/app/tests/support_failover/part_02.rs
+
+- test_cancel_pending_provider_failover_clears_countdown · function · L2-L32 — fn test_cancel_pending_provider_failover_clears_countdown()
+- FastMockProvider · struct · L35-L37 — struct FastMockProvider
+- test_local_failover_revalidates_pool_after_countdown · function · L40-L69 — fn test_local_failover_revalidates_pool_after_countdown()
+- failover_test_payload · function · L71-L83 — fn failover_test_payload(raw_input: Option<&str>) -> FallbackResendPayload
+- test_restore_failover_payload_keeps_existing_draft_and_raw_request · function · L86-L96 — fn test_restore_failover_payload_keeps_existing_draft_and_raw_request()
+- test_restore_failover_payload_does_not_duplicate_matching_input · function · L99-L104 — fn test_restore_failover_payload_does_not_duplicate_matching_input()
+- test_cancel_dispatched_failover_restores_payload_and_clears_inflight_state · function · L107-L120 — fn test_cancel_dispatched_failover_restores_payload_and_clears_inflight_state()
+- test_restore_failover_payload_preserves_images_without_duplicates · function · L123-L133 — fn test_restore_failover_payload_preserves_images_without_duplicates()
+- test_local_failed_fallback_switch_disarms_pending_turn · function · L136-L150 — fn test_local_failed_fallback_switch_disarms_pending_turn()
+- test_manual_failover_restores_remote_payload · function · L153-L159 — fn test_manual_failover_restores_remote_payload()
+- assert_manual_failover_restores_remote_payload · function · L161-L193 — fn assert_manual_failover_restores_remote_payload(mode: &str)
+- test_provider_failure_extracts_json_message_and_retains_full_diagnostics · function · L196-L213 — fn test_provider_failure_extracts_json_message_and_retains_full_diagnostics()
+- test_local_quota_failure_records_only_exhausted_account_cooldown · function · L216-L239 — fn test_local_quota_failure_records_only_exhausted_account_cooldown()
+- test_failover_without_exact_target_is_manual_even_in_countdown_mode · function · L242-L270 — fn test_failover_without_exact_target_is_manual_even_in_countdown_mode()
+- complete · function · L274-L282 — async fn complete(
+- name · function · L284-L286 — fn name(&self) -> &str
+- fork · function · L288-L290 — fn fork(&self) -> Arc<dyn Provider>
+- service_tier · function · L292-L294 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L296-L304 — fn set_service_tier(&self, service_tier: &str) -> anyhow::Result<()>
+- SwitchableMockProvider · struct · L308-L310 — struct SwitchableMockProvider
+- complete · function · L314-L322 — async fn complete(
+- name · function · L324-L330 — fn name(&self) -> &str
+- active_resolved_credential · function · L332-L340 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- oauth_account_label · function · L342-L345 — fn oauth_account_label(&self) -> Option<String>
+- model · function · L347-L352 — fn model(&self) -> String
+- fork · function · L354-L356 — fn fork(&self) -> Arc<dyn Provider>
+- set_model · function · L358-L365 — fn set_model(&self, route: &str) -> Result<()>
+- switch_active_provider_to · function · L367-L369 — fn switch_active_provider_to(&self, _provider: &str) -> Result<()>
+- seed_failover_openai_fox · function · L372-L391 — fn seed_failover_openai_fox()
+- create_switchable_test_app · function · L393-L413 — fn create_switchable_test_app(initial_provider: &str) -> (App, StdArc<StdMutex<String>>)
+- AuthRefreshingMockProvider · struct · L416-L418 — struct AuthRefreshingMockProvider
+- complete · function · L422-L430 — async fn complete(
+- name · function · L432-L434 — fn name(&self) -> &str
+- model · function · L436-L442 — fn model(&self) -> String
+- available_models_display · function · L444-L453 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L455-L488 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- on_auth_changed · function · L490-L492 — fn on_auth_changed(&self)
+- fork · function · L494-L496 — fn fork(&self) -> Arc<dyn Provider>
+- AsyncAuthRefreshingMockProvider · struct · L500-L504 — struct AsyncAuthRefreshingMockProvider
+- complete · function · L508-L516 — async fn complete(
+- name · function · L518-L520 — fn name(&self) -> &str
+- on_auth_changed · function · L522-L526 — fn on_auth_changed(&self)
+- fork · function · L528-L530 — fn fork(&self) -> Arc<dyn Provider>
+- create_auth_refresh_test_app · function · L533-L547 — fn create_auth_refresh_test_app() -> App
+- AntigravityMockProvider · struct · L550-L552 — struct AntigravityMockProvider
+- complete · function · L556-L564 — async fn complete(
+- name · function · L566-L568 — fn name(&self) -> &str
+- model · function · L570-L572 — fn model(&self) -> String
+- set_model · function · L574-L581 — fn set_model(&self, model: &str) -> Result<()>
+- model_routes · function · L583-L604 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- available_models_display · function · L606-L611 — fn available_models_display(&self) -> Vec<String>
+- fork · function · L613-L615 — fn fork(&self) -> Arc<dyn Provider>
+- create_antigravity_picker_test_app · function · L618-L632 — fn create_antigravity_picker_test_app() -> App
+- LoginSmokeModelProvider · struct · L635-L635 — struct LoginSmokeModelProvider;
+- complete · function · L639-L647 — async fn complete(
+- name · function · L649-L651 — fn name(&self) -> &str
+- model · function · L653-L655 — fn model(&self) -> String
+- model_routes · function · L657-L732 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- fork · function · L734-L736 — fn fork(&self) -> Arc<dyn Provider>
+- create_login_smoke_model_app · function · L739-L751 — fn create_login_smoke_model_app() -> App
+- FailingModelSwitchProvider · struct · L754-L754 — struct FailingModelSwitchProvider;
+- complete · function · L758-L766 — async fn complete(
+- name · function · L768-L770 — fn name(&self) -> &str
+- model · function · L772-L774 — fn model(&self) -> String
+- model_routes · function · L776-L786 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L788-L790 — fn set_model(&self, _model: &str) -> Result<()>
+- fork · function · L792-L794 — fn fork(&self) -> Arc<dyn Provider>
+- create_failing_model_switch_test_app · function · L797-L809 — fn create_failing_model_switch_test_app() -> App
+- write_test_config · function · L811-L816 — fn write_test_config(contents: &str)
+- failover_error_message · function · L818-L823 — fn failover_error_message(prompt: &crate::provider::ProviderFailoverPrompt) -> String
+- create_fast_test_app · function · L825-L835 — fn create_fast_test_app() -> App
+- create_gemini_test_app · function · L837-L872 — fn create_gemini_test_app() -> App
+- GeminiMockProvider · struct · L838-L838 — struct GeminiMockProvider;
+- complete · function · L842-L850 — async fn complete(
+- name · function · L852-L854 — fn name(&self) -> &str
+- model · function · L856-L858 — fn model(&self) -> String
+- fork · function · L860-L862 — fn fork(&self) -> Arc<dyn Provider>
+- DualMethodMockProvider · struct · L878-L881 — struct DualMethodMockProvider
+- complete · function · L885-L893 — async fn complete(
+- name · function · L895-L897 — fn name(&self) -> &str
+- model · function · L899-L901 — fn model(&self) -> String
+- active_resolved_credential · function · L903-L906 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- model_routes · function · L908-L929 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_route_selection · function · L931-L935 — fn set_route_selection(&self, selection: &crate::provider::RouteSelection) -> Result<()>
+- fork · function · L937-L939 — fn fork(&self) -> Arc<dyn Provider>
+- create_dual_method_test_app · function · L942-L960 — fn create_dual_method_test_app() -> (App, StdArc<StdMutex<Option<String>>>)
+- test_turn_error_offers_same_model_oauth_fallback · function · L963-L982 — fn test_turn_error_offers_same_model_oauth_fallback()
+- test_apply_fallback_offer_switches_route_and_resends · function · L985-L1002 — fn test_apply_fallback_offer_switches_route_and_resends()
+- test_apply_fallback_offer_no_offer_is_noop · function · L1005-L1010 — fn test_apply_fallback_offer_no_offer_is_noop()
+- test_fallback_uses_live_local_credential_over_stale_route · function · L1013-L1033 — fn test_fallback_uses_live_local_credential_over_stale_route()
+- test_fallback_uses_remote_openai_credential_over_stale_route · function · L1036-L1104 — fn test_fallback_uses_remote_openai_credential_over_stale_route()
+- test_fallback_remote_without_credential_preserves_route_metadata · function · L1107-L1122 — fn test_fallback_remote_without_credential_preserves_route_metadata()
+- test_local_failover_revalidates_runtime_source_pool_at_expiry · function · L1125-L1168 — fn test_local_failover_revalidates_runtime_source_pool_at_expiry()

@@ -1,0 +1,30 @@
+# crates/jcode-setup-hints/src/windows_hotkeys.rs
+
+- MOD_ALT · constant · L26-L26 — const MOD_ALT: u32 = 0x0001;
+- MOD_CONTROL · constant · L27-L27 — const MOD_CONTROL: u32 = 0x0002;
+- MOD_SHIFT · constant · L28-L28 — const MOD_SHIFT: u32 = 0x0004;
+- MOD_WIN · constant · L29-L29 — const MOD_WIN: u32 = 0x0008;
+- WindowsHotkey · struct · L33-L46 — pub(crate) struct WindowsHotkey
+- raw_chord_uses_win_modifier · function · L49-L56 — pub(crate) fn raw_chord_uses_win_modifier(raw: &str) -> bool
+- chord_to_win32 · function · L63-L65 — pub(crate) fn chord_to_win32(chord: &KeyChord) -> Option<(u32, u32)>
+- hotkey_to_win32 · function · L68-L70 — pub(crate) fn hotkey_to_win32(hotkey: &WindowsHotkey) -> Option<(u32, u32)>
+- is_copilot_hotkey · function · L75-L77 — pub(crate) fn is_copilot_hotkey(hotkey: &WindowsHotkey) -> bool
+- chord_to_win32_with_super · function · L79-L101 — fn chord_to_win32_with_super(chord: &KeyChord, super_as_win: bool) -> Option<(u32, u32)>
+- key_to_vk · function · L104-L149 — fn key_to_vk(key: &str) -> Option<u32>
+- display_windows · function · L153-L160 — pub(crate) fn display_windows(chord: &KeyChord) -> String
+- display_windows_hotkey · function · L164-L188 — pub(crate) fn display_windows_hotkey(hotkey: &WindowsHotkey) -> String
+- ps_quote · function · L192-L194 — fn ps_quote(input: &str) -> String
+- ps_dir_expr · function · L199-L206 — fn ps_dir_expr(dir: &str, last_dir_file: &str, last_repo_file: &str) -> String
+- render_windows_listener_ps1 · function · L216-L334 — pub(crate) fn render_windows_listener_ps1(
+- tests · module · L337-L479 — mod tests
+- chord · function · L340-L342 — fn chord(s: &str) -> KeyChord
+- hk · function · L344-L352 — fn hk(chord_str: &str, dir: &str, label: &str, self_dev: bool) -> WindowsHotkey
+- args_for · function · L354-L361 — fn args_for(entry: &WindowsHotkey) -> String
+- cmd_maps_to_alt_and_punctuation_maps_to_oem_vks · function · L364-L378 — fn cmd_maps_to_alt_and_punctuation_maps_to_oem_vks()
+- explicit_win_shift_f23_maps_to_native_copilot_hotkey · function · L381-L395 — fn explicit_win_shift_f23_maps_to_native_copilot_hotkey()
+- rejects_unmodified_and_unmappable_chords · function · L398-L402 — fn rejects_unmodified_and_unmappable_chords()
+- display_windows_renders_cmd_as_alt · function · L405-L411 — fn display_windows_renders_cmd_as_alt()
+- listener_script_registers_each_entry_and_dispatches_dirs · function · L414-L449 — fn listener_script_registers_each_entry_and_dispatches_dirs()
+- listener_script_skips_unmappable_entries · function · L452-L463 — fn listener_script_skips_unmappable_entries()
+- listener_script_none_when_nothing_registerable · function · L466-L470 — fn listener_script_none_when_nothing_registerable()
+- ps_quoting_escapes_single_quotes · function · L473-L478 — fn ps_quoting_escapes_single_quotes()

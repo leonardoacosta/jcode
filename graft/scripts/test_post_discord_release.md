@@ -1,0 +1,28 @@
+# scripts/test_post_discord_release.py
+
+- WebhookHandler · class · L25-L46 — class WebhookHandler(BaseHTTPRequestHandler)
+- do_POST · method · L30-L43 — def do_POST(self) -> None: # noqa: N802 - stdlib callback name
+- log_message · method · L45-L46 — def log_message(self, _format: str, *_args: object) -> None
+- DiscordReleaseTests · class · L49-L359 — class DiscordReleaseTests(unittest.TestCase)
+- setUp · method · L50-L51 — def setUp(self) -> None
+- test_checked_in_announcement_validation · method · L53-L67 — def test_checked_in_announcement_validation(self) -> None
+- multipart_http · method · L69-L95 — def multipart_http(self, *, fail_receipt=False, fail_delivery=False, fail_pending=False)
+- request · function · L74-L93 — def request(req, timeout)
+- run_multipart · method · L97-L99 — def run_multipart(self)
+- test_multipart_http_receipts_and_resume · method · L101-L121 — def test_multipart_http_receipts_and_resume(self) -> None
+- test_pending_checkpoint_blocks_duplicates_after_uncertain_delivery · method · L123-L137 — def test_pending_checkpoint_blocks_duplicates_after_uncertain_delivery(self) -> None
+- test_pending_write_failure_never_sends · method · L139-L145 — def test_pending_write_failure_never_sends(self) -> None
+- test_changed_manifest_refuses_resume · method · L147-L156 — def test_changed_manifest_refuses_resume(self) -> None
+- test_preview_is_commit_list_with_single_link · method · L158-L175 — def test_preview_is_commit_list_with_single_link(self) -> None
+- test_preview_without_commits_is_header_only · method · L177-L184 — def test_preview_without_commits_is_header_only(self) -> None
+- test_preview_long_commit_list_is_truncated · method · L186-L194 — def test_preview_long_commit_list_is_truncated(self) -> None
+- test_preview_announcement_requires_public_prerelease · method · L196-L205 — def test_preview_announcement_requires_public_prerelease(self) -> None
+- test_preview_reuses_tag_specific_duplicate_prevention · method · L207-L215 — def test_preview_reuses_tag_specific_duplicate_prevention(self) -> None
+- test_formats_release_and_removes_platform_availability · method · L217-L233 — def test_formats_release_and_removes_platform_availability(self) -> None
+- test_truncates_to_discord_limit_and_keeps_release_link · method · L235-L241 — def test_truncates_to_discord_limit_and_keeps_release_link(self) -> None
+- test_marker_is_tag_specific · method · L243-L246 — def test_marker_is_tag_specific(self) -> None
+- test_posts_with_wait_and_disables_mentions · method · L248-L268 — def test_posts_with_wait_and_disables_mentions(self) -> None
+- test_rejected_webhook_raises_http_error · method · L270-L287 — def test_rejected_webhook_raises_http_error(self) -> None
+- test_announce_skips_an_existing_marker · method · L289-L308 — def test_announce_skips_an_existing_marker(self) -> None
+- test_announce_rejects_draft_release · method · L310-L329 — def test_announce_rejects_draft_release(self) -> None
+- test_announce_refetches_before_writing_marker · method · L331-L359 — def test_announce_refetches_before_writing_marker(self) -> None

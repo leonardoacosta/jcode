@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/app/helpers/git_watch.rs
+
+- HEALTHY · constant · L15-L15 — static HEALTHY: AtomicBool = AtomicBool::new(false);
+- STARTED · constant · L16-L16 — static STARTED: AtomicBool = AtomicBool::new(false);
+- is_healthy · function · L18-L20 — pub(super) fn is_healthy() -> bool
+- ensure_started · function · L31-L45 — pub(super) fn ensure_started(repo_root: &Path, on_change: fn())
+- git_dir_event_relevant · function · L50-L52 — pub(super) fn git_dir_event_relevant(name: &str) -> bool
+- skip_dir · function · L56-L58 — pub(super) fn skip_dir(name: &str) -> bool
+- imp · module · L61-L405 — mod imp
+- DEBOUNCE · constant · L71-L71 — const DEBOUNCE: Duration = Duration::from_millis(250);
+- WORKTREE_MASK · constant · L73-L79 — const WORKTREE_MASK: u32 = libc::IN_CLOSE_WRITE
+- GIT_MASK · constant · L80-L80 — const GIT_MASK: u32 = WORKTREE_MASK;
+- Watcher · struct · L82-L86 — struct Watcher
+- add · function · L89-L103 — fn add(&mut self, path: &Path, git_meta: bool) -> bool
+- add_tree · function · L105-L107 — fn add_tree(&mut self, dirs: impl IntoIterator<Item = PathBuf>) -> bool
+- drop · function · L111-L114 — fn drop(&mut self)
+- git · function · L117-L135 — fn git(root: &Path, args: &[&str]) -> Option<String>
+- worktree_dirs · function · L140-L162 — fn worktree_dirs(root: &Path) -> Option<BTreeSet<PathBuf>>
+- git_meta_dirs · function · L164-L178 — fn git_meta_dirs(git_dir: &Path) -> Vec<PathBuf>
+- is_ignored · function · L180-L194 — fn is_ignored(root: &Path, path: &Path) -> bool
+- run · function · L196-L330 — pub(super) fn run(root: &Path, on_change: fn())
+- tests · module · L333-L404 — mod tests
+- HITS · constant · L338-L338 — static HITS: AtomicUsize = AtomicUsize::new(0);
+- bump · function · L339-L341 — fn bump()
+- wait_for · function · L343-L352 — fn wait_for(target: usize) -> bool
+- fires_on_worktree_and_git_changes_but_not_ignored_dirs · function · L355-L403 — fn fires_on_worktree_and_git_changes_but_not_ignored_dirs()

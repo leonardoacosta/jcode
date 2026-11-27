@@ -1,0 +1,24 @@
+# scripts/repro_input_flicker.py
+
+- wait_for_socket · function · L88-L101 — def wait_for_socket(path: Path, timeout_s: float = 30.0) -> None
+- _recv · function · L104-L121 — def _recv(sock: socket.socket, timeout: float) -> dict
+- dbg · function · L124-L135 — def dbg(debug_sock: Path, command: str, timeout: float = 30.0) -> str
+- client_cmd · function · L138-L151 — def client_cmd(cmd_path: Path, resp_path: Path, command: str, timeout_s: float = 8.0) -> str
+- create_session · function · L154-L169 — def create_session(debug_sock: Path, working_dir: Path) -> str
+- EmulatedClient · class · L173-L290 — class EmulatedClient
+- _pump · method · L203-L209 — def _pump(self) -> None
+- _pump_inner · method · L211-L245 — def _pump_inner(self) -> None
+- start_pump · method · L247-L249 — def start_pump(self) -> None
+- send_bytes · method · L251-L252 — def send_bytes(self, data: bytes) -> None
+- lines · method · L254-L256 — def lines(self) -> list[str]
+- _composer_text_locked · method · L258-L264 — def _composer_text_locked(self) -> str | None
+- history_since · method · L266-L268 — def history_since(self, index: int) -> list[tuple[float, str | None]]
+- history_mark · method · L270-L272 — def history_mark(self) -> int
+- shutdown · method · L274-L290 — def shutdown(self) -> None
+- launch_client · function · L293-L317 — def launch_client(binary: str, env: dict, session_id: str, cmd_path: Path, resp_path: Path) -> EmulatedClient
+- settle · function · L320-L328 — def settle(cmd_path: Path, resp_path: Path, timeout_s: float = 60.0) -> bool
+- composer_text · function · L344-L354 — def composer_text(client: EmulatedClient) -> str | None
+- composer_shows · function · L357-L366 — def composer_shows(client: EmulatedClient, text: str) -> bool
+- KeystrokeObservation · class · L370-L385 — class KeystrokeObservation
+- observe_keystroke · function · L388-L461 — def observe_keystroke(client: EmulatedClient, ch: str, expect: str, cmd_path: Path | None = None, resp_path: Path | None = None, watch_s: float = 1.5, verbose: bool = False, ) -> KeystrokeObservation
+- main · function · L464-L688 — def main() -> int

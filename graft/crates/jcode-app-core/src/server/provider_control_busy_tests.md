@@ -1,0 +1,37 @@
+# crates/jcode-app-core/src/server/provider_control_busy_tests.rs
+
+- IsolatedRuntimeDir · struct · L9-L12 — struct IsolatedRuntimeDir
+- new · function · L15-L23 — fn new() -> Self
+- drop · function · L27-L33 — fn drop(&mut self)
+- TestEffortProvider · struct · L37-L42 — struct TestEffortProvider
+- complete · function · L46-L54 — async fn complete(
+- name · function · L56-L58 — fn name(&self) -> &str
+- model · function · L60-L66 — fn model(&self) -> String
+- set_model · function · L68-L71 — fn set_model(&self, model: &str) -> anyhow::Result<()>
+- available_models_for_switching · function · L73-L75 — fn available_models_for_switching(&self) -> Vec<String>
+- context_window · function · L77-L83 — fn context_window(&self) -> usize
+- reasoning_effort · function · L85-L87 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L89-L92 — fn set_reasoning_effort(&self, effort: &str) -> anyhow::Result<()>
+- service_tier · function · L94-L96 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L98-L101 — fn set_service_tier(&self, service_tier: &str) -> anyhow::Result<()>
+- transport · function · L103-L105 — fn transport(&self) -> Option<String>
+- set_transport · function · L107-L110 — fn set_transport(&self, transport: &str) -> anyhow::Result<()>
+- fork · function · L112-L119 — fn fork(&self) -> Arc<dyn Provider>
+- test_agent · function · L122-L143 — async fn test_agent(
+- set_context_cap_is_deferred_isolated_and_persisted · function · L146-L226 — async fn set_context_cap_is_deferred_isolated_and_persisted()
+- RestoreHome · struct · L150-L150 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L152-L158 — fn drop(&mut self)
+- set_reasoning_effort_does_not_wait_for_busy_agent_lock · function · L229-L260 — async fn set_reasoning_effort_does_not_wait_for_busy_agent_lock()
+- automatic_failover_revalidates_after_waiting_for_agent_lock · function · L263-L293 — async fn automatic_failover_revalidates_after_waiting_for_agent_lock()
+- automatic_failover_source_respects_current_api_pool_membership · function · L296-L350 — async fn automatic_failover_source_respects_current_api_pool_membership()
+- RestoreHome · struct · L300-L300 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L302-L308 — fn drop(&mut self)
+- ApiSource · struct · L312-L312 — struct ApiSource;
+- complete · function · L315-L323 — async fn complete(
+- name · function · L324-L326 — fn name(&self) -> &str
+- active_resolved_credential · function · L327-L329 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- fork · function · L330-L332 — fn fork(&self) -> Arc<dyn Provider>
+- set_model_does_not_wait_for_busy_agent_lock · function · L353-L387 — async fn set_model_does_not_wait_for_busy_agent_lock()
+- set_service_tier_does_not_wait_for_busy_agent_lock · function · L390-L431 — async fn set_service_tier_does_not_wait_for_busy_agent_lock()
+- set_service_tier_configures_busy_session_immediately_with_one_confirmation · function · L434-L478 — async fn set_service_tier_configures_busy_session_immediately_with_one_confirmation()
+- service_tier_control_provider_registry_tracks_rebind_and_session_lifecycle · function · L481-L521 — async fn service_tier_control_provider_registry_tracks_rebind_and_session_lifecycle()

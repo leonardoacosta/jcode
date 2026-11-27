@@ -1,0 +1,24 @@
+# crates/jcode-tui-messages/src/anchor.rs
+
+- Anchor · struct · L26-L30 — pub struct Anchor
+- message_row_ranges · function · L37-L52 — pub fn message_row_ranges(frame: &PreparedChatFrame) -> Vec<(u64, usize, usize)>
+- anchor_at_row · function · L56-L72 — pub fn anchor_at_row(frame: &PreparedChatFrame, row: usize) -> Option<Anchor>
+- resolve · function · L80-L96 — pub fn resolve(anchor: &Anchor, frame: &PreparedChatFrame, max_scroll: usize) -> Option<usize>
+- tests · module · L99-L244 — mod tests
+- frame · function · L107-L142 — fn frame(messages: &[(u64, usize)]) -> PreparedChatFrame
+- ranges_tile_the_row_vector · function · L145-L153 — fn ranges_tile_the_row_vector()
+- anchor_round_trips_within_a_message · function · L156-L168 — fn anchor_round_trips_within_a_message()
+- anchor_survives_a_reflow · function · L171-L183 — fn anchor_survives_a_reflow()
+- row_within_item_clamps_when_a_message_shrinks · function · L186-L192 — fn row_within_item_clamps_when_a_message_shrinks()
+- duplicate_hashes_are_disambiguated_by_occurrence · function · L195-L205 — fn duplicate_hashes_are_disambiguated_by_occurrence()
+- removed_message_resolves_to_none · function · L208-L213 — fn removed_message_resolves_to_none()
+- resolved_row_is_clamped_to_max_scroll · function · L216-L224 — fn resolved_row_is_clamped_to_max_scroll()
+- frames_without_boundaries_yield_no_anchor · function · L227-L243 — fn frames_without_boundaries_yield_no_anchor()
+- ContentPos · enum · L253-L262 — pub enum ContentPos
+- content_pos_at_row · function · L265-L291 — pub fn content_pos_at_row(frame: &PreparedChatFrame, row: usize) -> Option<ContentPos>
+- resolve_content_pos · function · L295-L329 — pub fn resolve_content_pos(
+- section_pos_tests · module · L332-L415 — mod section_pos_tests
+- section · function · L341-L367 — fn section(total: usize, rows: usize) -> Arc<PreparedMessages>
+- frame · function · L369-L371 — fn frame(kind: PreparedSectionKind, total: usize, rows: usize) -> PreparedChatFrame
+- section_row_keeps_its_content_through_a_rewrap · function · L374-L390 — fn section_row_keeps_its_content_through_a_rewrap()
+- rows_outside_a_section_and_ambiguous_kinds_decline · function · L393-L414 — fn rows_outside_a_section_and_ambiguous_kinds_decline()

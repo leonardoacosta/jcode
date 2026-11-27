@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/tool/read.rs
+
+- DEFAULT_LIMIT · constant · L11-L11 — const DEFAULT_LIMIT: usize = 5000;
+- MAX_LINE_LEN · constant · L12-L12 — const MAX_LINE_LEN: usize = 2000;
+- ReadTool · struct · L14-L14 — pub struct ReadTool;
+- new · function · L17-L19 — pub fn new() -> Self
+- ReadInput · struct · L23-L33 — struct ReadInput
+- ReadRangeStyle · enum · L36-L39 — enum ReadRangeStyle
+- NormalizedReadRange · struct · L42-L46 — struct NormalizedReadRange
+- next_offset · function · L49-L51 — fn next_offset(self) -> usize
+- next_start_line · function · L53-L55 — fn next_start_line(self) -> usize
+- normalize_read_range · function · L58-L116 — fn normalize_read_range(params: &ReadInput) -> Result<NormalizedReadRange>
+- name · function · L120-L122 — fn name(&self) -> &str
+- description · function · L124-L126 — fn description(&self) -> &str
+- parameters_schema · function · L128-L148 — fn parameters_schema(&self) -> Value
+- execute · function · L150-L273 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L277-L277 — mod tests;
+- is_binary_file · function · L279-L306 — fn is_binary_file(path: &Path) -> bool
+- find_similar_files · function · L308-L331 — fn find_similar_files(path: &Path) -> Vec<String>
+- is_image_file · function · L334-L344 — fn is_image_file(path: &Path) -> bool
+- handle_image_file · function · L349-L400 — fn handle_image_file(path: &Path, file_path: &str) -> Result<ToolOutput>
+- MAX_IMAGE_SIZE · constant · L367-L367 — const MAX_IMAGE_SIZE: u64 = 20 * 1024 * 1024;
+- get_image_dimensions_from_data · function · L403-L444 — fn get_image_dimensions_from_data(data: &[u8]) -> Option<(u32, u32)>
+- is_pdf_file · function · L447-L453 — fn is_pdf_file(path: &Path) -> bool
+- handle_pdf_file · function · L457-L508 — fn handle_pdf_file(path: &Path, file_path: &str) -> Result<ToolOutput>
+- handle_pdf_file · function · L512-L528 — fn handle_pdf_file(path: &Path, file_path: &str) -> Result<ToolOutput>

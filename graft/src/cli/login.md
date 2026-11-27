@@ -1,0 +1,46 @@
+# src/cli/login.rs
+
+- device_login · module · L15-L15 — mod device_login;
+- existing_key_notice · module · L16-L16 — mod existing_key_notice;
+- google · module · L17-L17 — mod google;
+- jcode_device · module · L18-L18 — mod jcode_device;
+- next_step · module · L19-L19 — mod next_step;
+- scriptable · module · L20-L20 — mod scriptable;
+- LoginOptions · struct · L25-L48 — pub struct LoginOptions
+- validate · function · L51-L63 — fn validate(&self) -> Result<()>
+- has_provided_input · function · L65-L67 — fn has_provided_input(&self) -> bool
+- resolve_provided_input · function · L69-L82 — fn resolve_provided_input(&self) -> Result<Option<ProvidedAuthInput>>
+- uses_scriptable_flow · function · L84-L91 — fn uses_scriptable_flow(&self) -> Result<bool>
+- parse_login_flow_id · function · L94-L106 — pub(crate) fn parse_login_flow_id(value: &str) -> std::result::Result<String, String>
+- ProvidedAuthInput · enum · L109-L112 — enum ProvidedAuthInput
+- LoginFlowOutcome · enum · L115-L118 — enum LoginFlowOutcome
+- PendingScriptableLogin · enum · L122-L170 — enum PendingScriptableLogin
+- PendingScriptableLoginRecord · struct · L173-L176 — struct PendingScriptableLoginRecord
+- key · function · L179-L190 — fn key(&self) -> &'static str
+- pending_path · function · L192-L194 — fn pending_path(&self, flow_id: Option<&str>) -> Result<PathBuf>
+- default_expires_at_ms · function · L196-L198 — fn default_expires_at_ms(&self) -> i64
+- ScriptableAuthPrompt · struct · L202-L211 — struct ScriptableAuthPrompt
+- ScriptableAuthSuccess · struct · L214-L220 — struct ScriptableAuthSuccess
+- run_login · function · L223-L266 — pub async fn run_login(
+- run_login_provider · function · L268-L498 — pub async fn run_login_provider(
+- login_grok_build_flow · function · L503-L518 — async fn login_grok_build_flow(no_browser: bool) -> Result<()>
+- maybe_persist_default_provider_after_login · function · L520-L558 — fn maybe_persist_default_provider_after_login(
+- notify_running_server_auth_changed_best_effort · function · L562-L582 — async fn notify_running_server_auth_changed_best_effort(provider: Option<&str>)
+- login_jcode_flow · function · L584-L588 — async fn login_jcode_flow(no_browser: bool) -> Result<()>
+- run_jcode_account_login · function · L590-L592 — pub(crate) async fn run_jcode_account_login(no_browser: bool) -> Result<()>
+- key_flows · module · L595-L595 — mod key_flows;
+- login_claude_flow · function · L597-L624 — async fn login_claude_flow(requested_label: Option<&str>, no_browser: bool) -> Result<()>
+- login_anthropic_api_key_flow · function · L626-L653 — fn login_anthropic_api_key_flow() -> Result<()>
+- login_openai_flow · function · L655-L669 — async fn login_openai_flow(requested_label: Option<&str>, no_browser: bool) -> Result<()>
+- login_openrouter_flow · function · L671-L697 — fn login_openrouter_flow() -> Result<()>
+- login_bedrock_flow · function · L699-L742 — fn login_bedrock_flow() -> Result<()>
+- login_azure_flow · function · L744-L827 — fn login_azure_flow() -> Result<()>
+- login_openai_compatible_flow · function · L829-L1006 — fn login_openai_compatible_flow(
+- presenter · module · L1010-L1010 — mod presenter;
+- save_named_env_vars · function · L1014-L1041 — fn save_named_env_vars(env_file: &str, vars: &[(&str, String)]) -> Result<()>
+- login_cursor_flow · function · L1043-L1068 — fn login_cursor_flow() -> Result<()>
+- login_antigravity_flow · function · L1070-L1098 — async fn login_antigravity_flow(no_browser: bool) -> Result<()>
+- login_gemini_flow · function · L1100-L1140 — async fn login_gemini_flow(no_browser: bool) -> Result<()>
+- login_gemini_api_key_flow · function · L1142-L1166 — fn login_gemini_api_key_flow() -> Result<()>
+- maybe_open_browser · function · L1168-L1174 — fn maybe_open_browser(target: &str, no_browser: bool) -> bool
+- tests · module · L1177-L1177 — mod tests;

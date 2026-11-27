@@ -1,0 +1,43 @@
+# crates/jcode-telemetry-core/src/concurrency.rs
+
+- TRACKING_VERSION · constant · L26-L26 — const TRACKING_VERSION: u32 = 2;
+- TRACKING_SCOPE · constant · L27-L27 — const TRACKING_SCOPE: &str = "runtime_agent_sessions";
+- Counts · struct · L30-L34 — struct Counts
+- add · function · L37-L44 — fn add(&mut self, child: bool)
+- observe · function · L46-L50 — fn observe(&mut self, other: Self)
+- Record · struct · L54-L57 — struct Record
+- read · function · L60-L85 — fn read(value: &Value) -> io::Result<Self>
+- value · function · L87-L92 — fn value(&self) -> Value
+- read_snapshot · function · L95-L101 — fn read_snapshot(dir: &Path) -> io::Result<serde_json::Map<String, Value>>
+- write_snapshot · function · L103-L105 — fn write_snapshot(dir: &Path, records: &serde_json::Map<String, Value>) -> io::Result<()>
+- atomic_private_write · function · L107-L114 — pub(super) fn atomic_private_write(path: &Path, bytes: &[u8]) -> io::Result<()>
+- private_file · function · L116-L130 — fn private_file(path: &Path, create_new: bool) -> io::Result<File>
+- lock_registry · function · L134-L137 — fn lock_registry(dir: &Path) -> io::Result<FileLock>
+- FileLock · struct · L139-L139 — pub(super) struct FileLock(File);
+- drop · function · L142-L144 — fn drop(&mut self)
+- lock_path_blocking · function · L151-L155 — pub(super) fn lock_path_blocking(path: &Path) -> io::Result<FileLock>
+- lock_path · function · L157-L175 — pub(super) fn lock_path(path: &Path) -> io::Result<FileLock>
+- live_records · function · L179-L240 — fn live_records(dir: &Path, exclude: Option<&Path>) -> io::Result<Vec<(String, Record)>>
+- Lease · struct · L243-L247 — struct Lease
+- release · function · L250-L255 — fn release(&mut self) -> io::Result<()>
+- begin · function · L257-L295 — fn begin(dir: PathBuf, incarnation: &str, child: bool) -> io::Result<(Self, Option<Counts>)>
+- finish · function · L297-L323 — fn finish(&mut self) -> io::Result<Counts>
+- drop · function · L327-L331 — fn drop(&mut self)
+- PendingLease · type · L334-L334 — type PendingLease = std::sync::Mutex<std::sync::mpsc::Receiver<Option<(Lease, Option<Counts>)>>>;
+- ConcurrencySession · struct · L340-L351 — pub struct ConcurrencySession
+- begin_concurrency_session · function · L355-L407 — pub fn begin_concurrency_session(
+- RegistrationJob · type · L409-L409 — type RegistrationJob = Box<dyn FnOnce() + Send>;
+- registration_worker · function · L414-L433 — fn registration_worker()
+- WORKER · constant · L416-L418 — static WORKER: std::sync::OnceLock<
+- wait_registered · function · L437-L439 — pub fn wait_registered(&mut self)
+- resolve_pending · function · L441-L451 — fn resolve_pending(&mut self)
+- session_id · function · L453-L455 — pub fn session_id(&self) -> &str
+- is_active · function · L457-L459 — pub fn is_active(&self) -> bool
+- finish · function · L464-L466 — pub fn finish(&mut self)
+- finish_background · function · L471-L473 — pub fn finish_background(&mut self)
+- finish_with_mode · function · L475-L492 — fn finish_with_mode(&mut self, mode: DeliveryMode)
+- emit · function · L494-L499 — fn emit(&self, phase: &str, peak: Option<Counts>, mode: DeliveryMode)
+- emit_unchecked · function · L504-L531 — fn emit_unchecked(&self, phase: &str, peak: Option<Counts>, mode: DeliveryMode)
+- drop · function · L535-L537 — fn drop(&mut self)
+- mark_legacy_concurrency_unavailable · function · L543-L563 — pub(super) fn mark_legacy_concurrency_unavailable(payload: &mut Value)
+- tests · module · L566-L566 — mod tests;

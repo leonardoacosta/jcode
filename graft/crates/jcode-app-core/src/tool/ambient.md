@@ -1,0 +1,73 @@
+# crates/jcode-app-core/src/tool/ambient.rs
+
+- AMBIENT_CYCLE_RESULT · constant · L22-L22 — static AMBIENT_CYCLE_RESULT: OnceLock<Mutex<Option<AmbientCycleResult>>> = OnceLock::new();
+- cycle_result_slot · function · L24-L26 — fn cycle_result_slot() -> &'static Mutex<Option<AmbientCycleResult>>
+- store_cycle_result · function · L29-L33 — pub fn store_cycle_result(result: AmbientCycleResult)
+- take_cycle_result · function · L36-L41 — pub fn take_cycle_result() -> Option<AmbientCycleResult>
+- SAFETY_SYSTEM · constant · L44-L44 — static SAFETY_SYSTEM: OnceLock<Arc<SafetySystem>> = OnceLock::new();
+- SCHEDULE_RUNNER · constant · L47-L47 — static SCHEDULE_RUNNER: OnceLock<Mutex<Option<AmbientRunnerHandle>>> = OnceLock::new();
+- AMBIENT_SESSION_IDS · constant · L49-L49 — static AMBIENT_SESSION_IDS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+- init_safety_system · function · L51-L53 — pub fn init_safety_system(system: Arc<SafetySystem>)
+- init_schedule_runner · function · L55-L59 — pub fn init_schedule_runner(handle: AmbientRunnerHandle)
+- get_safety_system · function · L61-L66 — fn get_safety_system() -> Arc<SafetySystem>
+- ambient_session_ids · function · L68-L70 — fn ambient_session_ids() -> &'static Mutex<HashSet<String>>
+- register_ambient_session · function · L73-L77 — pub fn register_ambient_session(session_id: impl Into<String>)
+- unregister_ambient_session · function · L80-L84 — pub fn unregister_ambient_session(session_id: &str)
+- is_ambient_session_registered · function · L86-L91 — fn is_ambient_session_registered(session_id: &str) -> bool
+- ensure_ambient_session · function · L93-L102 — fn ensure_ambient_session(ctx: &ToolContext) -> Result<()>
+- EndAmbientCycleTool · struct · L108-L108 — pub struct EndAmbientCycleTool;
+- default · function · L111-L113 — fn default() -> Self
+- new · function · L117-L119 — pub fn new() -> Self
+- EndCycleInput · struct · L123-L133 — struct EndCycleInput
+- NextScheduleInput · struct · L136-L146 — struct NextScheduleInput
+- name · function · L150-L152 — fn name(&self) -> &str
+- description · function · L154-L156 — fn description(&self) -> &str
+- parameters_schema · function · L158-L201 — fn parameters_schema(&self) -> Value
+- execute · function · L203-L265 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- ScheduleAmbientTool · struct · L272-L272 — pub struct ScheduleAmbientTool;
+- default · function · L275-L277 — fn default() -> Self
+- new · function · L281-L283 — pub fn new() -> Self
+- ScheduleInput · struct · L287-L298 — struct ScheduleInput
+- name · function · L302-L304 — fn name(&self) -> &str
+- description · function · L306-L308 — fn description(&self) -> &str
+- parameters_schema · function · L310-L335 — fn parameters_schema(&self) -> Value
+- execute · function · L337-L379 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- RequestPermissionTool · struct · L386-L386 — pub struct RequestPermissionTool;
+- default · function · L389-L391 — fn default() -> Self
+- new · function · L395-L397 — pub fn new() -> Self
+- RequestPermissionInput · struct · L401-L414 — struct RequestPermissionInput
+- default_false · function · L416-L418 — fn default_false() -> bool
+- extract_context_string · function · L420-L433 — fn extract_context_string(map: &Map<String, Value>, keys: &[&str]) -> Option<String>
+- extract_context_list · function · L435-L460 — fn extract_context_list(map: &Map<String, Value>, keys: &[&str]) -> Vec<String>
+- build_permission_review_context · function · L462-L548 — fn build_permission_review_context(
+- name · function · L552-L554 — fn name(&self) -> &str
+- description · function · L556-L558 — fn description(&self) -> &str
+- parameters_schema · function · L560-L636 — fn parameters_schema(&self) -> Value
+- execute · function · L638-L707 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- ScheduleTool · struct · L714-L714 — pub struct ScheduleTool;
+- default · function · L717-L719 — fn default() -> Self
+- new · function · L723-L725 — pub fn new() -> Self
+- ScheduleToolInput · struct · L729-L753 — struct ScheduleToolInput
+- name · function · L757-L759 — fn name(&self) -> &str
+- description · function · L761-L763 — fn description(&self) -> &str
+- parameters_schema · function · L765-L805 — fn parameters_schema(&self) -> Value
+- execute · function · L807-L820 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- execute_create · function · L824-L924 — async fn execute_create(
+- execute_list · function · L926-L959 — async fn execute_list(&self) -> Result<ToolOutput>
+- execute_retry · function · L961-L993 — async fn execute_retry(&self, params: ScheduleToolInput) -> Result<ToolOutput>
+- execute_cancel · function · L995-L1017 — async fn execute_cancel(&self, params: ScheduleToolInput) -> Result<ToolOutput>
+- parse_priority · function · L1024-L1030 — fn parse_priority(s: Option<&str>) -> Priority
+- parse_schedule_target · function · L1032-L1046 — fn parse_schedule_target(s: Option<&str>, session_id: &str) -> Result<ScheduleTarget>
+- format_schedule_target · function · L1048-L1056 — fn format_schedule_target(target: &ScheduleTarget) -> String
+- SCHEDULE_HISTORY_LIMIT · constant · L1059-L1059 — const SCHEDULE_HISTORY_LIMIT: usize = 10;
+- format_history_item · function · L1061-L1090 — fn format_history_item(item: &ScheduledItem) -> String
+- format_scheduled_item · function · L1092-L1101 — fn format_scheduled_item(item: &ScheduledItem) -> String
+- nudge_schedule_runner · function · L1103-L1112 — pub(super) fn nudge_schedule_runner()
+- SendChannelMessageTool · struct · L1118-L1118 — pub struct SendChannelMessageTool;
+- default · function · L1121-L1123 — fn default() -> Self
+- new · function · L1127-L1129 — pub fn new() -> Self
+- name · function · L1134-L1136 — fn name(&self) -> &str
+- description · function · L1138-L1140 — fn description(&self) -> &str
+- parameters_schema · function · L1142-L1158 — fn parameters_schema(&self) -> Value
+- execute · function · L1160-L1212 — async fn execute(&self, args: Value, _context: ToolContext) -> Result<ToolOutput>
+- tests · module · L1221-L1221 — mod tests;

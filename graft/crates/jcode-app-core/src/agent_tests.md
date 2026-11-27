@@ -1,0 +1,201 @@
+# crates/jcode-app-core/src/agent_tests.rs
+
+- cache_session_affinity · module · L12-L12 — mod cache_session_affinity;
+- tool_streaming · module · L15-L15 — mod tool_streaming;
+- concurrency · module · L18-L18 — mod concurrency;
+- concurrency_construction · module · L21-L21 — mod concurrency_construction;
+- desktop_selfdev · module · L24-L24 — mod desktop_selfdev;
+- compile_remote · module · L27-L27 — mod compile_remote;
+- mcp_remote_cache · module · L30-L30 — mod mcp_remote_cache;
+- DelayedProvider · struct · L32-L35 — struct DelayedProvider
+- NativeAutoCompactionProvider · struct · L37-L37 — struct NativeAutoCompactionProvider;
+- BoundSavedAccountProvider · struct · L39-L39 — struct BoundSavedAccountProvider;
+- complete · function · L43-L51 — async fn complete(
+- name · function · L52-L54 — fn name(&self) -> &str
+- oauth_account_label · function · L55-L57 — fn oauth_account_label(&self) -> Option<String>
+- active_resolved_credential · function · L58-L60 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- fork · function · L61-L63 — fn fork(&self) -> Arc<dyn Provider>
+- saved_account_restore_mismatch_blocks_model_turn · function · L67-L99 — async fn saved_account_restore_mismatch_blocks_model_turn()
+- RestoreHome · struct · L70-L70 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L72-L78 — fn drop(&mut self)
+- NativeCompactionStreamProvider · struct · L101-L101 — struct NativeCompactionStreamProvider;
+- SignatureSessionProvider · struct · L104-L106 — struct SignatureSessionProvider
+- complete · function · L110-L146 — async fn complete(
+- name · function · L148-L150 — fn name(&self) -> &str
+- handles_tools_internally · function · L151-L153 — fn handles_tools_internally(&self) -> bool
+- supports_compaction · function · L154-L156 — fn supports_compaction(&self) -> bool
+- fork · function · L157-L159 — fn fork(&self) -> Arc<dyn Provider>
+- mpsc_preserves_signatures_and_never_rebinds_to_provider_session_id · function · L163-L215 — async fn mpsc_preserves_signatures_and_never_rebinds_to_provider_session_id()
+- RestoreHome · struct · L165-L165 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L167-L174 — fn drop(&mut self)
+- ExplicitPinProvider · struct · L218-L222 — struct ExplicitPinProvider
+- new · function · L225-L231 — fn new(model: &str) -> Self
+- complete · function · L236-L244 — async fn complete(
+- name · function · L246-L248 — fn name(&self) -> &str
+- model · function · L250-L252 — fn model(&self) -> String
+- set_model · function · L254-L267 — fn set_model(&self, request: &str) -> Result<()>
+- explicit_provider_pin_for_current_model · function · L269-L271 — fn explicit_provider_pin_for_current_model(&self) -> Option<String>
+- fork · function · L273-L275 — fn fork(&self) -> Arc<dyn Provider>
+- content_text · function · L278-L283 — fn content_text(content: &[ContentBlock]) -> &str
+- message_text · function · L285-L287 — fn message_text(message: &Message) -> &str
+- agent_drop_removes_its_configured_session_tool_policy · function · L290-L311 — fn agent_drop_removes_its_configured_session_tool_policy()
+- council_policy_survives_session_transport_and_intersects_caller_tools · function · L314-L346 — fn council_policy_survives_session_transport_and_intersects_caller_tools()
+- council_executor_rejects_escape_tools_and_allows_read · function · L349-L396 — async fn council_executor_rejects_escape_tools_and_allows_read()
+- research_executor_rejects_escape_tools_and_allows_read · function · L399-L501 — async fn research_executor_rejects_escape_tools_and_allows_read()
+- council_resume_installs_policy_and_rejects_recovered_closed_seat · function · L504-L564 — fn council_resume_installs_policy_and_rejects_recovered_closed_seat()
+- RestoreHome · struct · L507-L507 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L509-L514 — fn drop(&mut self)
+- stale_agent_drop_preserves_successor_session_tool_policy · function · L567-L603 — fn stale_agent_drop_preserves_successor_session_tool_policy()
+- agent_clear_moves_tool_policy_registration_to_new_session · function · L606-L636 — fn agent_clear_moves_tool_policy_registration_to_new_session()
+- complete · function · L640-L664 — async fn complete(
+- name · function · L666-L668 — fn name(&self) -> &str
+- fork · function · L670-L675 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L680-L689 — async fn complete(
+- name · function · L691-L693 — fn name(&self) -> &str
+- supports_compaction · function · L695-L697 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L699-L701 — fn uses_jcode_compaction(&self) -> bool
+- context_window · function · L703-L705 — fn context_window(&self) -> usize
+- fork · function · L707-L709 — fn fork(&self) -> Arc<dyn Provider>
+- complete_simple · function · L711-L713 — async fn complete_simple(&self, _prompt: &str, _system: &str) -> Result<String>
+- complete_simple_with_usage · function · L715-L724 — async fn complete_simple_with_usage(
+- complete · function · L729-L763 — async fn complete(
+- name · function · L765-L767 — fn name(&self) -> &str
+- supports_compaction · function · L769-L771 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L773-L775 — fn uses_jcode_compaction(&self) -> bool
+- fork · function · L777-L779 — fn fork(&self) -> Arc<dyn Provider>
+- context_limit_recovery_announces_measured_token_counts · function · L783-L824 — async fn context_limit_recovery_announces_measured_token_counts()
+- tool_output_to_content_blocks_preserves_labeled_images · function · L827-L865 — fn tool_output_to_content_blocks_preserves_labeled_images()
+- queued_soft_interrupt_images_are_injected_as_image_blocks · function · L868-L897 — async fn queued_soft_interrupt_images_are_injected_as_image_blocks()
+- injected_soft_interrupts_report_client_ids_per_group_in_queue_order · function · L900-L942 — async fn injected_soft_interrupts_report_client_ids_per_group_in_queue_order()
+- file_activity_interrupt_keeps_typed_identity_without_model_prefix · function · L945-L969 — async fn file_activity_interrupt_keeps_typed_identity_without_model_prefix()
+- adjacent_notifications_each_emit_a_delivery_event · function · L972-L998 — async fn adjacent_notifications_each_emit_a_delivery_event()
+- run_turn_streaming_mpsc_emits_keepalive_while_provider_is_quiet · function · L1001-L1069 — async fn run_turn_streaming_mpsc_emits_keepalive_while_provider_is_quiet()
+- run_turn_streaming_mpsc_emits_native_compaction_for_client_cache_reset · function · L1072-L1122 — async fn run_turn_streaming_mpsc_emits_native_compaction_for_client_cache_reset()
+- MidStreamModelSwitchProvider · struct · L1126-L1129 — struct MidStreamModelSwitchProvider
+- complete · function · L1133-L1154 — async fn complete(
+- name · function · L1156-L1158 — fn name(&self) -> &str
+- model · function · L1160-L1162 — fn model(&self) -> String
+- fork · function · L1164-L1169 — fn fork(&self) -> Arc<dyn Provider>
+- run_turn_streaming_mpsc_emits_model_changed_on_midstream_switch · function · L1173-L1217 — async fn run_turn_streaming_mpsc_emits_model_changed_on_midstream_switch()
+- MidStreamAccountSwitchProvider · struct · L1219-L1221 — struct MidStreamAccountSwitchProvider
+- complete · function · L1225-L1240 — async fn complete(
+- name · function · L1242-L1244 — fn name(&self) -> &str
+- model · function · L1246-L1248 — fn model(&self) -> String
+- oauth_account_label · function · L1250-L1259 — fn oauth_account_label(&self) -> Option<String>
+- fork · function · L1261-L1267 — fn fork(&self) -> Arc<dyn Provider>
+- plan_mode_refuses_internally_executing_provider_before_completion · function · L1271-L1281 — async fn plan_mode_refuses_internally_executing_provider_before_completion()
+- run_turn_streaming_mpsc_emits_account_only_change_without_email · function · L1284-L1317 — async fn run_turn_streaming_mpsc_emits_account_only_change_without_email()
+- messages_for_provider_replays_persisted_native_compaction_in_auto_mode · function · L1320-L1358 — async fn messages_for_provider_replays_persisted_native_compaction_in_auto_mode()
+- oversized_openai_native_compaction_is_persisted_as_text_fallback · function · L1361-L1420 — async fn oversized_openai_native_compaction_is_persisted_as_text_fallback()
+- messages_for_provider_applies_manual_compaction_in_native_auto_mode · function · L1423-L1471 — async fn messages_for_provider_applies_manual_compaction_in_native_auto_mode()
+- interrupt_signal_fire_before_notified_does_not_hang · function · L1476-L1486 — async fn interrupt_signal_fire_before_notified_does_not_hang()
+- interrupt_signal_fire_concurrent_with_notified · function · L1489-L1506 — async fn interrupt_signal_fire_concurrent_with_notified()
+- interrupt_signal_is_set_false_initially · function · L1509-L1512 — async fn interrupt_signal_is_set_false_initially()
+- interrupt_signal_is_set_true_after_fire · function · L1515-L1519 — async fn interrupt_signal_is_set_true_after_fire()
+- interrupt_signal_reset_clears_flag · function · L1522-L1528 — async fn interrupt_signal_reset_clears_flag()
+- interrupt_signal_notified_completes_after_fire · function · L1531-L1546 — async fn interrupt_signal_notified_completes_after_fire()
+- new_agent_registers_active_pid_and_clear_swaps_it · function · L1549-L1574 — async fn new_agent_registers_active_pid_and_clear_swaps_it()
+- gmail_is_exposed_by_default_and_can_be_explicitly_disabled · function · L1577-L1727 — async fn gmail_is_exposed_by_default_and_can_be_explicitly_disabled()
+- seed_transient_session_state · function · L1729-L1756 — fn seed_transient_session_state(agent: &mut Agent)
+- clear_resets_runtime_interrupt_and_queue_state · function · L1759-L1784 — async fn clear_resets_runtime_interrupt_and_queue_state()
+- restore_session_resets_runtime_interrupt_and_queue_state · function · L1787-L1825 — async fn restore_session_resets_runtime_interrupt_and_queue_state()
+- explicit_provider_pin_is_persisted_and_reapplied_on_restore · function · L1828-L1863 — async fn explicit_provider_pin_is_persisted_and_reapplied_on_restore()
+- restore_session_rehydrates_injected_memory_ids · function · L1866-L1906 — async fn restore_session_rehydrates_injected_memory_ids()
+- build_memory_prompt_nonblocking_defers_pending_memory_during_tool_loop · function · L1909-L1990 — async fn build_memory_prompt_nonblocking_defers_pending_memory_during_tool_loop()
+- RestoreMemoryHome · struct · L1911-L1911 — struct RestoreMemoryHome(Option<std::ffi::OsString>);
+- drop · function · L1913-L1920 — fn drop(&mut self)
+- memory_injection_message_defaults_to_ephemeral_history · function · L1993-L2025 — async fn memory_injection_message_defaults_to_ephemeral_history()
+- memory_injection_message_can_persist_to_history · function · L2028-L2065 — async fn memory_injection_message_can_persist_to_history()
+- mark_closed_persists_soft_interrupts_for_restore_after_reload · function · L2068-L2106 — async fn mark_closed_persists_soft_interrupts_for_restore_after_reload()
+- env_snapshot_detail_is_minimal_for_empty_sessions_and_full_after_history · function · L2109-L2138 — async fn env_snapshot_detail_is_minimal_for_empty_sessions_and_full_after_history()
+- FakeMcpTool · struct · L2142-L2144 — struct FakeMcpTool
+- name · function · L2148-L2150 — fn name(&self) -> &str
+- description · function · L2151-L2153 — fn description(&self) -> &str
+- parameters_schema · function · L2154-L2156 — fn parameters_schema(&self) -> serde_json::Value
+- execute · function · L2157-L2163 — async fn execute(
+- VerboseFakeMcpTool · struct · L2166-L2169 — struct VerboseFakeMcpTool
+- name · function · L2173-L2175 — fn name(&self) -> &str
+- description · function · L2176-L2178 — fn description(&self) -> &str
+- parameters_schema · function · L2179-L2184 — fn parameters_schema(&self) -> serde_json::Value
+- execute · function · L2185-L2191 — async fn execute(
+- register_fake_deferred_mcp_surface · function · L2194-L2222 — async fn register_fake_deferred_mcp_surface(registry: &Registry)
+- agent_with_fake_mcp_surface · function · L2224-L2243 — async fn agent_with_fake_mcp_surface(
+- mcp_exposure_modes_select_eager_or_fixed_definitions · function · L2246-L2315 — async fn mcp_exposure_modes_select_eager_or_fixed_definitions()
+- deferred_mcp_surface_ignores_late_per_tool_registration · function · L2318-L2354 — async fn deferred_mcp_surface_ignores_late_per_tool_registration()
+- auto_mode_never_changes_the_tool_list_for_late_mcp_tools · function · L2357-L2386 — async fn auto_mode_never_changes_the_tool_list_for_late_mcp_tools()
+- mcp_tools_registered_after_lock_are_visible_to_agent · function · L2395-L2451 — async fn mcp_tools_registered_after_lock_are_visible_to_agent()
+- mcp_late_registration_rebuild_happens_at_most_once · function · L2460-L2529 — async fn mcp_late_registration_rebuild_happens_at_most_once()
+- tool_snapshot_is_stable_without_new_mcp_tools · function · L2535-L2567 — async fn tool_snapshot_is_stable_without_new_mcp_tools()
+- empty_post_tool_response_gets_more_than_one_retry · function · L2570-L2584 — fn empty_post_tool_response_gets_more_than_one_retry()
+- output_budget_truncation_requests_a_continuation · function · L2587-L2609 — fn output_budget_truncation_requests_a_continuation()
+- anthropic_pause_turn_is_resumed · function · L2612-L2618 — fn anthropic_pause_turn_is_resumed()
+- stranded_tool_use_stop_is_detected · function · L2621-L2640 — fn stranded_tool_use_stop_is_detected()
+- guardrail_stop_reason_detection · function · L2643-L2655 — fn guardrail_stop_reason_detection()
+- fable_guardrail_reconsideration_is_narrow_and_bounded · function · L2658-L2701 — fn fable_guardrail_reconsideration_is_narrow_and_bounded()
+- fable_guardrail_prompt_suite_is_distinct_and_safety_preserving · function · L2704-L2712 — fn fable_guardrail_prompt_suite_is_distinct_and_safety_preserving()
+- guardrail_notice_for_refusal_stop · function · L2715-L2725 — fn guardrail_notice_for_refusal_stop()
+- guardrail_notice_for_silent_empty_turn · function · L2728-L2739 — fn guardrail_notice_for_silent_empty_turn()
+- guardrail_notice_absent_for_normal_turns · function · L2742-L2746 — fn guardrail_notice_absent_for_normal_turns()
+- empty_turn_log_event_separates_guardrails_from_transient_empties · function · L2749-L2763 — fn empty_turn_log_event_separates_guardrails_from_transient_empties()
+- guardrail_notice_for_transient_empty_does_not_blame_content_filter · function · L2766-L2774 — fn guardrail_notice_for_transient_empty_does_not_blame_content_filter()
+- empty_post_tool_response_is_retried_in_shared_helper · function · L2777-L2833 — async fn empty_post_tool_response_is_retried_in_shared_helper()
+- StrandedToolUseProvider · struct · L2843-L2845 — struct StrandedToolUseProvider
+- complete · function · L2849-L2886 — async fn complete(
+- name · function · L2888-L2890 — fn name(&self) -> &str
+- fork · function · L2892-L2894 — fn fork(&self) -> Arc<dyn Provider>
+- stranded_tool_use_stop_continues_instead_of_ending_the_turn · function · L2903-L2933 — async fn stranded_tool_use_stop_continues_instead_of_ending_the_turn()
+- CountingAnswerProvider · struct · L2936-L2938 — struct CountingAnswerProvider
+- complete · function · L2942-L2962 — async fn complete(
+- name · function · L2964-L2966 — fn name(&self) -> &str
+- fork · function · L2968-L2970 — fn fork(&self) -> Arc<dyn Provider>
+- stop_hook_turn_calls · function · L2976-L3012 — async fn stop_hook_turn_calls(
+- stop_hook_block_continues_the_turn_up_to_the_bound · function · L3017-L3026 — async fn stop_hook_block_continues_the_turn_up_to_the_bound()
+- stop_hook_without_block_does_not_continue · function · L3031-L3035 — async fn stop_hook_without_block_does_not_continue()
+- stop_hook_stop_hook_active_is_set_after_the_first_continuation · function · L3040-L3049 — async fn stop_hook_stop_hook_active_is_set_after_the_first_continuation()
+- explicit_cancel_while_stop_hook_runs_never_continues · function · L3054-L3073 — async fn explicit_cancel_while_stop_hook_runs_never_continues()
+- lifecycle_payloads · function · L3078-L3127 — async fn lifecycle_payloads<F, Fut>(event: &str, body: F) -> Vec<serde_json::Value>
+- session_start_hook_reports_startup_and_resume_sources · function · L3132-L3156 — async fn session_start_hook_reports_startup_and_resume_sources()
+- pre_compact_hook_reports_manual_trigger · function · L3161-L3183 — async fn pre_compact_hook_reports_manual_trigger()
+- system_prompt_reminder · module · L3186-L3186 — mod system_prompt_reminder;
+- FableGuardrailProvider · struct · L3189-L3192 — struct FableGuardrailProvider
+- complete · function · L3196-L3239 — async fn complete(
+- name · function · L3241-L3243 — fn name(&self) -> &str
+- model · function · L3245-L3247 — fn model(&self) -> String
+- fork · function · L3249-L3251 — fn fork(&self) -> Arc<dyn Provider>
+- fable_guardrail_reconsideration_recovers_the_streaming_turn · function · L3255-L3287 — async fn fable_guardrail_reconsideration_recovers_the_streaming_turn()
+- sdk_custom_compile_remote_schema_survives_locked_refresh · function · L3290-L3321 — async fn sdk_custom_compile_remote_schema_survives_locked_refresh()
+- system_prompt_override_restores_and_does_not_leak_across_sessions · function · L3324-L3366 — fn system_prompt_override_restores_and_does_not_leak_across_sessions()
+- RestoreHome · struct · L3327-L3327 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L3329-L3334 — fn drop(&mut self)
+- personal_prompt_evaluation_observes_layers_and_refresh_boundaries · function · L3370-L3484 — fn personal_prompt_evaluation_observes_layers_and_refresh_boundaries()
+- SwitchableDeferredProvider · struct · L3489-L3489 — struct SwitchableDeferredProvider(Arc<std::sync::atomic::AtomicBool>);
+- complete · function · L3493-L3502 — async fn complete(
+- name · function · L3504-L3506 — fn name(&self) -> &str
+- supports_deferred_tools · function · L3508-L3510 — fn supports_deferred_tools(&self) -> bool
+- fork · function · L3512-L3514 — fn fork(&self) -> Arc<dyn Provider>
+- transcript_texts · function · L3517-L3528 — fn transcript_texts(agent: &Agent) -> Vec<String>
+- deferred_tools · module · L3531-L3531 — mod deferred_tools;
+- skill_installed_mid_session_keeps_system_prompt_stable_and_is_announced_once · function · L3534-L3609 — fn skill_installed_mid_session_keeps_system_prompt_stable_and_is_announced_once()
+- RestoreHome · struct · L3537-L3537 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L3539-L3544 — fn drop(&mut self)
+- cancelled_turn_leaves_soft_interrupt_queued · function · L3614-L3633 — async fn cancelled_turn_leaves_soft_interrupt_queued()
+- OAuthOnlyClaudeProvider · struct · L3638-L3641 — struct OAuthOnlyClaudeProvider
+- complete · function · L3645-L3653 — async fn complete(
+- name · function · L3655-L3657 — fn name(&self) -> &str
+- model · function · L3659-L3661 — fn model(&self) -> String
+- set_model · function · L3663-L3677 — fn set_model(&self, request: &str) -> Result<()>
+- fork · function · L3679-L3681 — fn fork(&self) -> Arc<dyn Provider>
+- resume_heals_stale_credential_route_after_credential_type_change · function · L3690-L3765 — async fn resume_heals_stale_credential_route_after_credential_type_change()
+- RestoreEnv · struct · L3692-L3692 — struct RestoreEnv(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L3694-L3702 — fn drop(&mut self)
+- council_provider_budget_covers_allowed_tool_followups_and_judge · function · L3768-L3865 — async fn council_provider_budget_covers_allowed_tool_followups_and_judge()
+- RestoreHome · struct · L3771-L3771 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L3773-L3778 — fn drop(&mut self)
+- ReadingProvider · struct · L3788-L3788 — struct ReadingProvider(Arc<std::sync::atomic::AtomicUsize>, String);
+- complete · function · L3791-L3813 — async fn complete(
+- name · function · L3814-L3816 — fn name(&self) -> &str
+- fork · function · L3817-L3819 — fn fork(&self) -> Arc<dyn Provider>
+- model · function · L3820-L3822 — fn model(&self) -> String
+- available_models · function · L3823-L3825 — fn available_models(&self) -> Vec<&'static str>
+- set_model · function · L3826-L3828 — fn set_model(&self, _: &str) -> Result<()>
+- additional_working_directory_moves_preserve_first_active_session_origin · module · L3868-L3868 — mod additional_working_directory_moves_preserve_first_active_session_origin;

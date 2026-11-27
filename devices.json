@@ -1,0 +1,12 @@
+{
+  "devices": [
+    {
+      "id": "test-device-1",
+      "name": "Test iPhone",
+      "token_hash": "sha256:75d7d7fec34235f2fb7496dce24981ee842502ae8094361acf887ae50f5929c1",
+      "paired_at": "2026-11-22T22:11:47.274973033+00:00",
+      "last_seen": "2026-11-22T22:11:47.274973033+00:00"
+    }
+  ],
+  "pending_codes": []
+}

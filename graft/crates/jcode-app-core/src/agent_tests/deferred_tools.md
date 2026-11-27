@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/agent_tests/deferred_tools.rs
+
+- NativeDeferredToolsProvider · struct · L3-L3 — struct NativeDeferredToolsProvider;
+- complete · function · L7-L16 — async fn complete(
+- name · function · L18-L20 — fn name(&self) -> &str
+- supports_deferred_tools · function · L22-L24 — fn supports_deferred_tools(&self) -> bool
+- fork · function · L26-L28 — fn fork(&self) -> Arc<dyn Provider>
+- native_deferred_agent · function · L31-L38 — async fn native_deferred_agent(mode: crate::config::McpToolsMode) -> Agent
+- eager_names · function · L40-L46 — fn eager_names(tools: &[ToolDefinition]) -> Vec<String>
+- native_deferred_mcp_late_registration_keeps_eager_prefix · function · L53-L97 — async fn native_deferred_mcp_late_registration_keeps_eager_prefix()
+- eager_mode_ignores_native_deferred_support · function · L100-L116 — async fn eager_mode_ignores_native_deferred_support()
+- tool_reference_metadata_becomes_reference_blocks · function · L119-L136 — fn tool_reference_metadata_becomes_reference_blocks()
+- switching_away_from_native_deferred_restores_mcp_fallback_surface · function · L139-L166 — async fn switching_away_from_native_deferred_restores_mcp_fallback_surface()
+- late_mcp_tools_are_announced_once_in_the_transcript · function · L172-L221 — async fn late_mcp_tools_are_announced_once_in_the_transcript()
+- reviewer_late_mcp_discovery_is_compact_and_preserves_tools · function · L224-L294 — async fn reviewer_late_mcp_discovery_is_compact_and_preserves_tools()
+- late_mcp_announcement_skips_referenced_native_and_eager · function · L300-L366 — async fn late_mcp_announcement_skips_referenced_native_and_eager()
+- IdentifiedFakeMcpTool · struct · L368-L371 — struct IdentifiedFakeMcpTool
+- name · function · L375-L377 — fn name(&self) -> &str
+- mcp_identity · function · L378-L380 — fn mcp_identity(&self) -> Option<(&str, &str)>
+- description · function · L381-L383 — fn description(&self) -> &str
+- parameters_schema · function · L384-L386 — fn parameters_schema(&self) -> serde_json::Value
+- execute · function · L387-L393 — async fn execute(
+- late_mcp_announcement_uses_original_names_for_sanitized_aliases · function · L400-L432 — async fn late_mcp_announcement_uses_original_names_for_sanitized_aliases()
+- native_deferral_moves_rare_builtins_behind_the_loader · function · L438-L475 — async fn native_deferral_moves_rare_builtins_behind_the_loader()
+- providers_without_native_deferral_keep_every_builtin_eager · function · L478-L487 — async fn providers_without_native_deferral_keep_every_builtin_eager()
+- an_allowlist_without_the_loader_defers_nothing · function · L490-L496 — async fn an_allowlist_without_the_loader_defers_nothing()

@@ -1,0 +1,67 @@
+# crates/jcode-tui/src/tui/app/remote.rs
+
+- followups · module · L10-L10 — mod followups;
+- input_dispatch · module · L24-L24 — mod input_dispatch;
+- key_handling · module · L25-L25 — mod key_handling;
+- latency · module · L26-L26 — mod latency;
+- queue_recovery · module · L27-L27 — mod queue_recovery;
+- reconnect · module · L28-L28 — mod reconnect;
+- server_event_handlers · module · L29-L29 — mod server_event_handlers;
+- server_events · module · L30-L30 — mod server_events;
+- session_persistence · module · L31-L31 — mod session_persistence;
+- ssh_host · module · L32-L32 — mod ssh_host;
+- ssh_sessions · module · L33-L33 — pub(super) mod ssh_sessions;
+- swarm_plan_core · module · L34-L34 — mod swarm_plan_core;
+- swarm_status_core · module · L35-L35 — mod swarm_status_core;
+- turn_identity · module · L36-L36 — pub(super) mod turn_identity;
+- workspace · module · L37-L37 — mod workspace;
+- CONNECTION_MESSAGE_TITLE · constant · L74-L74 — const CONNECTION_MESSAGE_TITLE: &str = "Connection";
+- RELOAD_MARKER_MAX_AGE · constant · L75-L75 — const RELOAD_MARKER_MAX_AGE: Duration = Duration::from_secs(30);
+- handle_ctrl_kill_to_end · function · L77-L90 — fn handle_ctrl_kill_to_end(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
+- RemoteEventOutcome · enum · L92-L96 — pub(super) enum RemoteEventOutcome
+- handle_tick · function · L98-L514 — pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) -> bool
+- dispatch_due_remote_retry · function · L518-L626 — pub(super) async fn dispatch_due_remote_retry(
+- forward_pending_reasoning_effort · function · L633-L651 — async fn forward_pending_reasoning_effort(app: &mut App, remote: &mut RemoteConnection)
+- handle_terminal_event · function · L653-L674 — pub(super) async fn handle_terminal_event(
+- MAX_DRAINED_EVENTS_PER_WAKE · constant · L665-L665 — const MAX_DRAINED_EVENTS_PER_WAKE: usize = 32;
+- apply_terminal_event · function · L676-L816 — async fn apply_terminal_event<B: Backend>(
+- key_scroll_delta · function · L818-L826 — fn key_scroll_delta(key: &KeyEvent) -> Option<i32>
+- mouse_scroll_delta · function · L828-L836 — fn mouse_scroll_delta(mouse: &MouseEvent) -> Option<i32>
+- dispatch_compacted_history_load · function · L838-L860 — async fn dispatch_compacted_history_load(app: &mut App, remote: &mut RemoteConnection) -> bool
+- tests · module · L864-L864 — mod tests;
+- borrowed_remote_status_fields_match_legacy_and_retain_sources · function · L868-L908 — fn borrowed_remote_status_fields_match_legacy_and_retain_sources()
+- handle_bus_event · function · L910-L1022 — pub(super) async fn handle_bus_event(
+- auth_provider_hint_for_login_provider · function · L1034-L1055 — fn auth_provider_hint_for_login_provider(provider: &str) -> Option<&'static str>
+- auth_changed_event_for_login_provider · function · L1057-L1096 — fn auth_changed_event_for_login_provider(provider: &str) -> Option<crate::protocol::AuthChanged>
+- check_debug_command · function · L1098-L1114 — pub(super) async fn check_debug_command(
+- handle_terminal_event_while_disconnected · function · L1116-L1179 — fn handle_terminal_event_while_disconnected<B: Backend>(
+- handle_remote_event · function · L1181-L1284 — pub(super) async fn handle_remote_event<B: Backend>(
+- debug_command_needs_current_frame · function · L1286-L1303 — pub(super) fn debug_command_needs_current_frame(command: &str) -> bool
+- restore_unconfirmed_model_switch_prompts · function · L1305-L1322 — fn restore_unconfirmed_model_switch_prompts(app: &mut App)
+- fail_pending_automatic_failover · function · L1324-L1341 — fn fail_pending_automatic_failover(app: &mut App, reason: &str)
+- handle_disconnect · function · L1343-L1459 — pub(super) fn handle_disconnect(
+- REMOTE_HISTORY_RECOVERY_FIRST_DELAY · constant · L1464-L1464 — const REMOTE_HISTORY_RECOVERY_FIRST_DELAY: Duration = Duration::from_secs(6);
+- REMOTE_HISTORY_DELTA_RECOVERY_DELAY · constant · L1465-L1465 — const REMOTE_HISTORY_DELTA_RECOVERY_DELAY: Duration = Duration::from_secs(30);
+- REMOTE_HISTORY_RECOVERY_RETRY_INTERVAL · constant · L1467-L1467 — const REMOTE_HISTORY_RECOVERY_RETRY_INTERVAL: Duration = Duration::from_secs(5);
+- REMOTE_HISTORY_RECOVERY_MAX_ATTEMPTS · constant · L1471-L1471 — const REMOTE_HISTORY_RECOVERY_MAX_ATTEMPTS: u32 = 4;
+- recover_stuck_remote_history · function · L1488-L1594 — async fn recover_stuck_remote_history(app: &mut App, remote: &mut RemoteConnection) -> bool
+- note_startup_submit_deferred · function · L1599-L1614 — fn note_startup_submit_deferred(app: &mut App, reason: &'static str)
+- dispatch_pending_server_reload · function · L1624-L1658 — async fn dispatch_pending_server_reload(app: &mut App, remote: &mut RemoteConnection)
+- MAX_AUTO_SERVER_RELOADS · constant · L1631-L1631 — const MAX_AUTO_SERVER_RELOADS: u32 = 3;
+- run_next_queued_remote_command · function · L1663-L1678 — async fn run_next_queued_remote_command(app: &mut App, remote: &mut RemoteConnection)
+- QUEUED_FOLLOWUP_STARVATION_TIMEOUT · constant · L1682-L1682 — const QUEUED_FOLLOWUP_STARVATION_TIMEOUT: Duration = Duration::from_secs(30);
+- detect_starved_queued_followup · function · L1701-L1725 — fn detect_starved_queued_followup(app: &mut App) -> bool
+- stall_timeout · function · L1736-L1741 — fn stall_timeout() -> Duration
+- MIN_STALL_TIMEOUT · constant · L1737-L1737 — const MIN_STALL_TIMEOUT: Duration = Duration::from_secs(2 * 60);
+- GRACE · constant · L1738-L1738 — const GRACE: Duration = Duration::from_secs(30);
+- format_stall_duration · function · L1745-L1754 — fn format_stall_duration(timeout: Duration) -> String
+- detect_and_cancel_stall · function · L1756-L1836 — async fn detect_and_cancel_stall(app: &mut App, remote: &mut RemoteConnection)
+- handle_mouse_event · function · L1838-L1840 — fn handle_mouse_event(app: &mut App, mouse: MouseEvent)
+- handle_debug_command · function · L1842-L1930 — async fn handle_debug_command(app: &mut App, cmd: &str, remote: &mut RemoteConnection) -> String
+- parse_and_inject_key · function · L1932-L1942 — async fn parse_and_inject_key(
+- handle_disconnected_local_command · function · L1944-L1959 — fn handle_disconnected_local_command(app: &mut App, trimmed: &str) -> bool
+- queue_message_for_reconnect · function · L1961-L1989 — fn queue_message_for_reconnect(app: &mut App)
+- handle_disconnected_key · function · L1992-L1998 — pub(super) fn handle_disconnected_key(
+- handle_disconnected_key_event · function · L2000-L2007 — pub(super) fn handle_disconnected_key_event(app: &mut App, event: KeyEvent) -> Result<()>
+- handle_disconnected_key_internal · function · L2009-L2189 — fn handle_disconnected_key_internal(
+- stall_guard_tests · module · L2193-L2193 — mod stall_guard_tests;

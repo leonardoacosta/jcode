@@ -1,0 +1,53 @@
+# crates/jcode-base/src/cloud_environment.rs
+
+- local_access_seconds · function · L11-L13 — pub fn local_access_seconds() -> i64
+- MAX_PAYLOAD_BYTES · constant · L14-L14 — pub const MAX_PAYLOAD_BYTES: usize = 4 * 1024 * 1024;
+- MAX_REQUEST_BYTES · constant · L15-L15 — pub const MAX_REQUEST_BYTES: usize = 8192;
+- MAX_REQUIREMENTS · constant · L16-L16 — const MAX_REQUIREMENTS: usize = 128;
+- Resource · enum · L20-L24 — pub enum Resource
+- Request · enum · L28-L36 — pub enum Request
+- Manifest · struct · L40-L43 — pub struct Manifest
+- Status · struct · L48-L53 — pub struct Status
+- new · function · L55-L62 — pub fn new(code: &str, applied: usize, skipped: usize) -> Self
+- rejected · function · L63-L70 — pub fn rejected() -> Self
+- validate_resource · function · L73-L133 — pub fn validate_resource(resource: &Resource) -> Result<()>
+- encode_bytes · function · L136-L139 — pub fn encode_bytes(bytes: &[u8]) -> String
+- decode_bytes · function · L140-L147 — pub fn decode_bytes(data: &str) -> Result<Vec<u8>>
+- validate_project_bytes · function · L149-L160 — pub fn validate_project_bytes(bytes: &[u8]) -> Result<()>
+- credential_paths · function · L162-L169 — pub fn credential_paths(name: &str) -> Result<&'static [&'static str]>
+- parse_request · function · L171-L199 — pub fn parse_request(bytes: &[u8]) -> Result<Request>
+- checked_path · function · L203-L221 — pub fn checked_path(base: &Path, relative: &Path) -> Result<PathBuf>
+- open_parent · function · L224-L275 — fn open_parent(
+- read_private · function · L277-L300 — pub fn read_private(base: &Path, relative: &Path) -> Result<Vec<u8>>
+- publish_private · function · L304-L355 — pub fn publish_private(base: &Path, relative: &Path, bytes: &[u8]) -> Result<bool>
+- manifest_path · function · L357-L359 — fn manifest_path() -> &'static Path
+- load_manifest · function · L360-L373 — pub fn load_manifest(root: &Path) -> Result<Manifest>
+- lock_private · function · L376-L424 — fn lock_private(base: &Path, relative: &Path) -> Result<std::fs::File>
+- save_requirement · function · L426-L443 — pub fn save_requirement(root: &Path, resource: &Resource) -> Result<()>
+- replace_private · function · L447-L494 — fn replace_private(base: &Path, relative: &Path, bytes: &[u8]) -> Result<()>
+- environment_relative · function · L496-L509 — fn environment_relative(root: &Path) -> Result<PathBuf>
+- lock_workspace_hydration · function · L515-L519 — pub fn lock_workspace_hydration(root: &Path) -> Result<std::fs::File>
+- load_environment · function · L520-L532 — pub fn load_environment(root: &Path) -> Result<BTreeMap<String, String>>
+- validate_environment_value · function · L533-L539 — pub fn validate_environment_value(value: &str) -> Result<()>
+- save_environment · function · L541-L562 — pub fn save_environment(root: &Path, name: &str, value: &str) -> Result<bool>
+- validate_lease · function · L564-L571 — pub fn validate_lease(
+- validate_lease_with_timeout · function · L573-L599 — fn validate_lease_with_timeout(
+- parity_guidance · function · L601-L603 — fn parity_guidance() -> &'static str
+- migration_guidance · function · L605-L610 — pub fn migration_guidance(session_id: &str) -> String
+- group_migration_guidance · function · L615-L625 — pub fn group_migration_guidance(session_id: &str, coordinator_session_id: &str) -> String
+- replacement_guidance · function · L626-L632 — pub fn replacement_guidance(host: Option<&str>) -> String
+- tests · module · L635-L906 — mod tests
+- root · function · L637-L641 — fn root() -> PathBuf
+- HomeGuard · struct · L642-L642 — struct HomeGuard(Option<std::ffi::OsString>);
+- set · function · L644-L648 — fn set(path: &Path) -> Self
+- drop · function · L651-L657 — fn drop(&mut self)
+- environment_root_subdirectory_and_invalid_values · function · L660-L688 — fn environment_root_subdirectory_and_invalid_values()
+- concurrent_manifest_and_environment_updates_are_not_lost · function · L690-L719 — fn concurrent_manifest_and_environment_updates_are_not_lost()
+- group_guidance_keeps_callback_with_coordinator · function · L721-L731 — fn group_guidance_keeps_callback_with_coordinator()
+- workspace_hydration_lock_is_shared_and_released · function · L735-L760 — fn workspace_hydration_lock_is_shared_and_released()
+- shared_guidance_preserves_local_replacement_role · function · L763-L771 — fn shared_guidance_preserves_local_replacement_role()
+- traversal_and_secret_requests_rejected · function · L773-L807 — fn traversal_and_secret_requests_rejected()
+- opaque_publish_and_metadata · function · L809-L841 — fn opaque_publish_and_metadata()
+- existing_credentials_are_preserved · function · L843-L850 — fn existing_credentials_are_preserved()
+- symlinks_denied · function · L853-L859 — fn symlinks_denied()
+- lease_expiry_and_return · function · L861-L905 — fn lease_expiry_and_return()

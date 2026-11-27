@@ -1,0 +1,32 @@
+# crates/jcode-provider-openai-runtime/src/openai_websocket_prewarm.rs
+
+- WEBSOCKET_V2_BETA · constant · L10-L10 — pub(super) const WEBSOCKET_V2_BETA: &str = "responses_websockets=2026-02-06";
+- PREWARM_TIMEOUT · constant · L11-L11 — const PREWARM_TIMEOUT: Duration = Duration::from_secs(5);
+- PREWARM_TTL · constant · L12-L12 — const PREWARM_TTL: Duration = Duration::from_secs(30);
+- websocket_request · function · L14-L46 — pub(super) fn websocket_request(
+- prewarm_request · function · L50-L67 — fn prewarm_request(request: &Value) -> Value
+- PrewarmJob · struct · L69-L74 — struct PrewarmJob
+- service_tier_header · function · L77-L79 — pub(super) fn service_tier_header(service_tier: Option<&str>) -> Option<&'static str>
+- routing_header · function · L85-L101 — pub(super) fn routing_header(
+- prewarm_identity · function · L103-L119 — pub(super) fn prewarm_identity(
+- drop · function · L122-L125 — fn drop(&mut self)
+- PrewarmSlot · struct · L129-L129 — pub(super) struct PrewarmSlot(StdMutex<Option<PrewarmJob>>);
+- is_ready · function · L133-L139 — pub(super) fn is_ready(&self) -> bool
+- clear · function · L141-L143 — pub(super) fn clear(&self)
+- start · function · L145-L236 — pub(super) fn start(
+- take_ready · function · L238-L271 — pub(super) fn take_ready(
+- warm_socket · function · L274-L339 — async fn warm_socket(
+- tests · module · L342-L705 — mod tests
+- oauth_routing_header_identity_tracks_model_and_every_tier · function · L346-L370 — fn oauth_routing_header_identity_tracks_model_and_every_tier()
+- oauth_routing_header_omits_invalid_values_like_upstream · function · L373-L381 — fn oauth_routing_header_omits_invalid_values_like_upstream()
+- handshake_identity_tracks_header_mode_not_nonultrafast_tier · function · L384-L391 — fn handshake_identity_tracks_header_mode_not_nonultrafast_tier()
+- ready_prewarm_requires_matching_handshake_header_mode · function · L394-L414 — async fn ready_prewarm_requires_matching_handshake_header_mode()
+- credentials · function · L416-L424 — fn credentials() -> CodexCredentials
+- v2_handshake_preserves_api_key_and_oauth_authentication · function · L427-L445 — fn v2_handshake_preserves_api_key_and_oauth_authentication()
+- foreground_cancels_matching_unfinished_warmup_without_waiting · function · L448-L467 — async fn foreground_cancels_matching_unfinished_warmup_without_waiting()
+- large_prewarm_settings_share_task_backing_and_isolate_caller_mutations · function · L470-L526 — async fn large_prewarm_settings_share_task_backing_and_isolate_caller_mutations()
+- expired_credentials_are_not_refreshed_by_speculation · function · L529-L549 — async fn expired_credentials_are_not_refreshed_by_speculation()
+- expired_ready_warmup_is_closed_instead_of_adopted · function · L552-L570 — async fn expired_ready_warmup_is_closed_instead_of_adopted()
+- warmup_only_prepares_settings_and_keeps_original_request_unchanged · function · L573-L594 — fn warmup_only_prepares_settings_and_keeps_original_request_unchanged()
+- warmup_compatibility_compares_all_settings_but_not_conversation_input · function · L597-L622 — fn warmup_compatibility_compares_all_settings_but_not_conversation_input()
+- live_openai_v2_prewarm_and_continuation · function · L629-L704 — async fn live_openai_v2_prewarm_and_continuation() -> Result<()>

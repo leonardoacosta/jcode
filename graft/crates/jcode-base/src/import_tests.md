@@ -1,0 +1,33 @@
+# crates/jcode-base/src/import_tests.rs
+
+- EnvVarGuard · struct · L3-L6 — struct EnvVarGuard
+- set_path · function · L9-L13 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- drop · function · L17-L23 — fn drop(&mut self)
+- test_truncate_title · function · L27-L35 — fn test_truncate_title()
+- test_convert_text_content · function · L38-L46 — fn test_convert_text_content()
+- test_convert_empty_content · function · L49-L53 — fn test_convert_empty_content()
+- test_convert_blocks_content · function · L56-L86 — fn test_convert_blocks_content()
+- imported_tool_history_is_provider_neutral · function · L89-L125 — fn imported_tool_history_is_provider_neutral()
+- imported_history_is_bounded_for_fast_initial_render · function · L128-L166 — fn imported_history_is_bounded_for_fast_initial_render()
+- repeated_external_resume_reuses_the_imported_snapshot · function · L169-L189 — fn repeated_external_resume_reuses_the_imported_snapshot()
+- linux_process_start_token · function · L192-L200 — fn linux_process_start_token(pid: u32) -> String
+- write_live_claude_record · function · L203-L227 — fn write_live_claude_record(
+- write_claude_transcript · function · L230-L238 — fn write_claude_transcript(path: &std::path::Path, session_id: &str)
+- ordinary_resume_never_stops_a_live_claude_process · function · L242-L274 — fn ordinary_resume_never_stops_a_live_claude_process()
+- explicit_takeover_preserves_history_and_stops_only_matching_process · function · L278-L337 — fn explicit_takeover_preserves_history_and_stops_only_matching_process()
+- takeover_with_no_complete_messages_leaves_claude_running · function · L341-L374 — fn takeover_with_no_complete_messages_leaves_claude_running()
+- takeover_rejects_a_transcript_from_a_different_live_session · function · L378-L408 — fn takeover_rejects_a_transcript_from_a_different_live_session()
+- takeover_timeout_preserves_the_staged_jcode_session_after_sigterm · function · L412-L460 — fn takeover_timeout_preserves_the_staged_jcode_session_after_sigterm()
+- cached_imported_session_preserves_existing_history_verbatim · function · L463-L534 — fn cached_imported_session_preserves_existing_history_verbatim()
+- message_role_prefilter_accepts_json_whitespace · function · L537-L545 — fn message_role_prefilter_accepts_json_whitespace()
+- test_discover_projects_uses_sandboxed_external_home · function · L548-L563 — fn test_discover_projects_uses_sandboxed_external_home()
+- test_list_claude_code_sessions_uses_live_transcripts_when_index_is_stale · function · L566-L631 — fn test_list_claude_code_sessions_uses_live_transcripts_when_index_is_stale()
+- test_list_claude_code_sessions_uses_index_metadata_without_parsing_transcript · function · L634-L677 — fn test_list_claude_code_sessions_uses_index_metadata_without_parsing_transcript()
+- test_list_claude_code_sessions_skips_empty_index_entries_without_messages · function · L680-L717 — fn test_list_claude_code_sessions_skips_empty_index_entries_without_messages()
+- test_import_claude_session_uses_recovered_live_transcript · function · L720-L764 — fn test_import_claude_session_uses_recovered_live_transcript()
+- test_import_pi_session_creates_jcode_snapshot · function · L767-L795 — fn test_import_pi_session_creates_jcode_snapshot()
+- test_import_opencode_session_creates_jcode_snapshot · function · L798-L914 — fn test_import_opencode_session_creates_jcode_snapshot()
+- test_resolve_resume_target_to_jcode_imports_codex_session · function · L917-L952 — fn test_resolve_resume_target_to_jcode_imports_codex_session()
+- test_resolve_resume_target_to_jcode_imports_claude_code_session · function · L961-L1010 — fn test_resolve_resume_target_to_jcode_imports_claude_code_session()
+- test_reimporting_claude_session_preserves_jcode_continuation · function · L1019-L1086 — fn test_reimporting_claude_session_preserves_jcode_continuation()
+- test_import_cursor_session_creates_jcode_snapshot · function · L1089-L1149 — fn test_import_cursor_session_creates_jcode_snapshot()

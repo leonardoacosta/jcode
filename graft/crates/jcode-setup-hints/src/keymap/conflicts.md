@@ -1,0 +1,22 @@
+# crates/jcode-setup-hints/src/keymap/conflicts.rs
+
+- JcodeBinding · struct · L24-L33 — pub struct JcodeBinding
+- Conflict · struct · L37-L42 — pub struct Conflict
+- summary · function · L46-L55 — pub fn summary(&self) -> String
+- interceptor_label · function · L59-L66 — fn interceptor_label(&self) -> String
+- describe_action · function · L69-L87 — fn describe_action(b: &DiscoveredBinding) -> String
+- jcode_bindings · function · L93-L313 — pub fn jcode_bindings(cfg: &KeybindingsConfig) -> Vec<JcodeBinding>
+- detect_conflicts · function · L321-L353 — pub fn detect_conflicts(cfg: &KeybindingsConfig, snapshot: &KeymapSnapshot) -> Vec<Conflict>
+- conflict_signature · function · L359-L374 — pub fn conflict_signature(conflicts: &[Conflict]) -> String
+- tests · module · L377-L547 — mod tests
+- term_binding · function · L381-L389 — fn term_binding(canonical_keys: &str, action: &str) -> DiscoveredBinding
+- app_binding · function · L391-L399 — fn app_binding(canonical_keys: &str, action: &str, tool: &str) -> DiscoveredBinding
+- snapshot_with · function · L401-L410 — fn snapshot_with(bindings: Vec<DiscoveredBinding>) -> KeymapSnapshot
+- enumerates_default_bindings · function · L413-L430 — fn enumerates_default_bindings()
+- detects_ghostty_ctrl_tab_conflict · function · L433-L446 — fn detects_ghostty_ctrl_tab_conflict()
+- detects_window_manager_prompt_jump_conflict · function · L449-L469 — fn detects_window_manager_prompt_jump_conflict()
+- detects_terminal_claiming_alternate_enter · function · L472-L480 — fn detects_terminal_claiming_alternate_enter()
+- no_conflict_when_chords_differ · function · L483-L488 — fn no_conflict_when_chords_differ()
+- deduplicates_repeated_interceptor_chords · function · L491-L503 — fn deduplicates_repeated_interceptor_chords()
+- disabled_binding_is_not_reported · function · L506-L518 — fn disabled_binding_is_not_reported()
+- signature_is_order_independent_and_changes_on_diff · function · L521-L546 — fn signature_is_order_independent_and_changes_on_diff()

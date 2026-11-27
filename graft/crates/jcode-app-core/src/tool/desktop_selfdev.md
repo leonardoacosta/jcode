@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/tool/desktop_selfdev.rs
+
+- DesktopSelfDevTool · struct · L12-L12 — pub struct DesktopSelfDevTool;
+- new · function · L15-L17 — pub fn new() -> Self
+- Input · struct · L21-L31 — struct Input
+- name · function · L35-L37 — fn name(&self) -> &str
+- description · function · L39-L41 — fn description(&self) -> &str
+- parameters_schema · function · L43-L52 — fn parameters_schema(&self) -> Value
+- execute · function · L54-L115 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- desktop_root · function · L118-L121 — fn desktop_root(cwd: Option<&Path>) -> Result<PathBuf>
+- CommandSpec · struct · L124-L128 — struct CommandSpec
+- command_spec · function · L130-L193 — fn command_spec(
+- reject_symlink_components · function · L195-L209 — fn reject_symlink_components(path: &Path) -> Result<()>
+- INSTANCES · constant · L212-L212 — const INSTANCES: &[&str] = &["main", "no-sidebar", "single-panel"];
+- instance_socket_name · function · L214-L220 — fn instance_socket_name(name: &str) -> &'static str
+- select_instance · function · L222-L258 — fn select_instance(name: Option<&str>) -> Result<Option<PathBuf>>
+- choose_instance · function · L260-L269 — fn choose_instance(mut paths: Vec<(&str, PathBuf)>) -> Result<Option<PathBuf>>
+- Host · struct · L271-L277 — struct Host
+- connect_host · function · L280-L308 — async fn connect_host(root: &Path, path: &Path) -> Result<Host>
+- peer_process · function · L311-L327 — fn peer_process(stream: &tokio::net::UnixStream) -> Result<(u32, PathBuf)>
+- peer_process · function · L330-L360 — fn peer_process(stream: &tokio::net::UnixStream) -> Result<(u32, PathBuf)>
+- host_profile · function · L362-L386 — fn host_profile(root: &Path, exe: &Path) -> Result<String>
+- connect_host · function · L389-L393 — async fn connect_host(_root: &Path, _path: &Path) -> Result<Host>
+- reload · function · L396-L413 — async fn reload(&mut self) -> Result<()>
+- OUTPUT_LIMIT · constant · L416-L416 — const OUTPUT_LIMIT: usize = 64 * 1024;
+- bounded_output · function · L418-L436 — async fn bounded_output(mut reader: impl AsyncRead + Unpin) -> Result<String>
+- ProcessGroup · struct · L439-L439 — struct ProcessGroup(u32);
+- drop · function · L441-L446 — fn drop(&mut self)
+- run_command · function · L449-L494 — async fn run_command(root: &Path, spec: CommandSpec, timeout: u64) -> Result<ToolOutput>
+- tests · module · L498-L498 — mod tests;

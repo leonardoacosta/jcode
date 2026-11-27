@@ -1,0 +1,21 @@
+# crates/jcode-harness-api/src/harness_api_tests/capability_coverage.rs
+
+- Disposition · enum · L23-L32 — enum Disposition
+- LEDGER · constant · L39-L108 — const LEDGER: &[(&str, Disposition)] = &[
+- reference_client_requests · function · L111-L118 — fn reference_client_requests() -> Option<BTreeSet<String>>
+- reference_client_requests_at · function · L120-L150 — fn reference_client_requests_at(
+- collect_requests · function · L152-L186 — fn collect_requests(dir: &std::path::Path, found: &mut BTreeSet<String>) -> std::io::Result<()>
+- the_ledger_is_sorted_unique_and_gaps_have_reasons · function · L189-L201 — fn the_ledger_is_sorted_unique_and_gaps_have_reasons()
+- reference_scrape_fails_closed_except_for_absent_vendored_sources · function · L204-L239 — fn reference_scrape_fails_closed_except_for_absent_vendored_sources()
+- Fixture · struct · L215-L215 — struct Fixture(std::path::PathBuf);
+- drop · function · L217-L219 — fn drop(&mut self)
+- every_reference_client_capability_is_triaged · function · L246-L275 — fn every_reference_client_capability_is_triaged()
+- capability_report · function · L281-L300 — fn capability_report()
+- the_sdk_inherits_every_external_credential_location · function · L312-L328 — fn the_sdk_inherits_every_external_credential_location()
+- launch_source · function · L330-L334 — fn launch_source() -> Option<String>
+- sdk_covers · function · L337-L349 — fn sdk_covers(sdk: &str, path: &str) -> bool
+- external_credential_paths · function · L355-L368 — fn external_credential_paths() -> Vec<String>
+- CREDENTIAL_HINTS · constant · L356-L356 — const CREDENTIAL_HINTS: [&str; 5] = ["auth", "credential", "oauth", "hosts.json", "apps.json"];
+- collect_home_paths · function · L370-L390 — fn collect_home_paths(dir: &std::path::Path, found: &mut Vec<String>)
+- the_ledger_only_names_real_daemon_requests · function · L403-L419 — fn the_ledger_only_names_real_daemon_requests()
+- protocol_request_variants · function · L422-L448 — fn protocol_request_variants() -> Option<BTreeSet<String>>

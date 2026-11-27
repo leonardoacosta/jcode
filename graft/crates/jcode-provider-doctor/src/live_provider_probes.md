@@ -1,0 +1,41 @@
+# crates/jcode-provider-doctor/src/live_provider_probes.rs
+
+- smoke_timeout · function · L28-L35 — fn smoke_timeout(default_secs: u64) -> std::time::Duration
+- apply_provider_auth · function · L44-L54 — fn apply_provider_auth(
+- set_output_token_cap · function · L61-L76 — fn set_output_token_cap(
+- OpenAiCompatibleModelsResponse · struct · L79-L82 — struct OpenAiCompatibleModelsResponse
+- OpenAiCompatibleModelInfo · struct · L85-L87 — struct OpenAiCompatibleModelInfo
+- fetch_live_openai_compatible_models · function · L89-L136 — pub async fn fetch_live_openai_compatible_models(
+- normalize_openai_compatible_model_id · function · L145-L157 — fn normalize_openai_compatible_model_id(
+- run_live_openai_compatible_smoke · function · L159-L222 — pub async fn run_live_openai_compatible_smoke(
+- tests · module · L225-L225 — mod tests;
+- run_live_openai_compatible_stream_smoke · function · L227-L320 — pub async fn run_live_openai_compatible_stream_smoke(
+- run_live_openai_compatible_tool_smoke · function · L322-L448 — pub async fn run_live_openai_compatible_tool_smoke(
+- build_native_claude_provider · function · L464-L470 — fn build_native_claude_provider(model: &str) -> anyhow::Result<AnthropicProvider>
+- usage_evidence · function · L476-L491 — fn usage_evidence(
+- NativeClaudeStreamOutcome · struct · L495-L519 — struct NativeClaudeStreamOutcome
+- borrowed_stop_reason_evidence_matches_legacy_and_retains_source · function · L523-L540 — fn borrowed_stop_reason_evidence_matches_legacy_and_retains_source()
+- NativeClaudeToolCall · struct · L543-L552 — struct NativeClaudeToolCall
+- usage_evidence · function · L555-L565 — fn usage_evidence(&self) -> Option<serde_json::Value>
+- diagnostics · function · L569-L578 — fn diagnostics(&self) -> String
+- any_tool_signature · function · L582-L586 — fn any_tool_signature(&self) -> bool
+- reasoning_capability · function · L597-L605 — fn reasoning_capability(&self) -> &'static str
+- consume_native_stream · function · L616-L778 — async fn consume_native_stream(
+- run_live_claude_native_smoke · function · L785-L833 — pub async fn run_live_claude_native_smoke(
+- run_live_claude_native_stream_smoke · function · L840-L929 — pub async fn run_live_claude_native_stream_smoke(
+- MAX_ATTEMPTS · constant · L865-L865 — const MAX_ATTEMPTS: usize = 3;
+- run_live_claude_native_tool_smoke · function · L942-L1078 — pub async fn run_live_claude_native_tool_smoke(
+- run_live_claude_native_reasoning_smoke · function · L1085-L1090 — pub async fn run_live_claude_native_reasoning_smoke(
+- build_native_antigravity_provider · function · L1103-L1109 — fn build_native_antigravity_provider(model: &str) -> anyhow::Result<AntigravityProvider>
+- run_live_antigravity_native_smoke · function · L1112-L1160 — pub async fn run_live_antigravity_native_smoke(
+- run_live_antigravity_native_stream_smoke · function · L1167-L1248 — pub async fn run_live_antigravity_native_stream_smoke(
+- MAX_ATTEMPTS · constant · L1188-L1188 — const MAX_ATTEMPTS: usize = 3;
+- run_live_antigravity_native_tool_smoke · function · L1262-L1267 — pub async fn run_live_antigravity_native_tool_smoke(
+- run_live_antigravity_native_reasoning_smoke · function · L1274-L1279 — pub async fn run_live_antigravity_native_reasoning_smoke(
+- run_live_native_provider_smoke · function · L1298-L1347 — pub async fn run_live_native_provider_smoke(
+- run_live_native_provider_stream_smoke · function · L1354-L1436 — pub async fn run_live_native_provider_stream_smoke(
+- MAX_ATTEMPTS · constant · L1376-L1376 — const MAX_ATTEMPTS: usize = 3;
+- run_live_native_provider_reasoning_smoke · function · L1455-L1538 — pub async fn run_live_native_provider_reasoning_smoke(
+- run_live_native_provider_tool_smoke · function · L1569-L1867 — pub async fn run_live_native_provider_tool_smoke(
+- MAX_TOOL_ROUNDS · constant · L1696-L1696 — const MAX_TOOL_ROUNDS: usize = 4;
+- tool_replay · module · L1870-L1870 — mod tool_replay;

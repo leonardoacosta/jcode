@@ -1,0 +1,141 @@
+# crates/jcode-tui/src/tui/app/commands.rs
+
+- release_prompts · module · L2-L2 — mod release_prompts;
+- manual_subagent · module · L5-L5 — mod manual_subagent;
+- REVIEW_PREFERRED_MODEL · constant · L42-L42 — pub(super) const REVIEW_PREFERRED_MODEL: &str = "gpt-5.5";
+- POKE_OFF_UI_HINT · constant · L43-L43 — const POKE_OFF_UI_HINT: &str = "/poke off to stop.";
+- TODO_COMPLETION_CONTINUATION_MESSAGE · constant · L45-L46 — const TODO_COMPLETION_CONTINUATION_MESSAGE: &str =
+- TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE · constant · L47-L48 — const TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str =
+- TodoConfidenceSummary · struct · L51-L56 — pub(super) struct TodoConfidenceSummary
+- PokeCommand · enum · L59-L64 — pub(super) enum PokeCommand
+- PokeActivation · enum · L66-L73 — pub(super) enum PokeActivation
+- parse_poke_command · function · L75-L84 — pub(super) fn parse_poke_command(trimmed: &str) -> Option<Result<PokeCommand, String>>
+- is_poke_message · function · L86-L88 — pub(super) fn is_poke_message(message: &str) -> bool
+- is_todo_confidence_summary_message · function · L90-L94 — pub(super) fn is_todo_confidence_summary_message(message: &str) -> bool
+- is_incomplete_todo_poke · function · L96-L104 — fn is_incomplete_todo_poke(message: &str) -> bool
+- drop_stale_incomplete_todo_pokes · function · L109-L115 — pub(super) fn drop_stale_incomplete_todo_pokes(app: &App, messages: &mut Vec<String>)
+- queued_messages_are_only_pokes · function · L117-L119 — pub(super) fn queued_messages_are_only_pokes(messages: &[String]) -> bool
+- clear_queued_poke_messages · function · L121-L134 — pub(super) fn clear_queued_poke_messages(app: &mut App) -> usize
+- disable_auto_poke · function · L136-L150 — pub(super) fn disable_auto_poke(app: &mut App) -> usize
+- auto_poke_errors · module · L153-L153 — mod auto_poke_errors;
+- is_auto_poke_connectivity_error · function · L163-L182 — pub(super) fn is_auto_poke_connectivity_error(error: &str) -> bool
+- is_fatal_model_endpoint_error · function · L193-L211 — pub(super) fn is_fatal_model_endpoint_error(error: &str) -> bool
+- stop_auto_poke_for_non_retryable_error · function · L213-L235 — pub(super) fn stop_auto_poke_for_non_retryable_error(app: &mut App, error: &str) -> bool
+- poke_disabled_message · function · L237-L250 — pub(super) fn poke_disabled_message(cleared: usize) -> String
+- poke_enabled_without_incomplete_message · function · L252-L254 — pub(super) fn poke_enabled_without_incomplete_message() -> String
+- poke_queued_display_message · function · L256-L261 — pub(super) fn poke_queued_display_message() -> String
+- poke_triggered_display_message · function · L263-L270 — pub(super) fn poke_triggered_display_message(incomplete_count: usize) -> String
+- activate_auto_poke · function · L272-L306 — pub(super) fn activate_auto_poke(app: &mut App) -> PokeActivation
+- activate_auto_poke_local · function · L308-L363 — pub(super) fn activate_auto_poke_local(app: &mut App)
+- toggle_auto_poke_hotkey_local · function · L365-L373 — pub(super) fn toggle_auto_poke_hotkey_local(app: &mut App)
+- transfer_pause_message · function · L375-L378 — pub(super) fn transfer_pause_message() -> String
+- transfer_active_messages · function · L380-L390 — fn transfer_active_messages(session: &crate::session::Session) -> Vec<Message>
+- create_transfer_session_from_parent · function · L392-L422 — pub(super) fn create_transfer_session_from_parent(
+- prepare_transfer_session_local · function · L424-L440 — async fn prepare_transfer_session_local(
+- start_local_transfer_prepare · function · L442-L458 — pub(super) fn start_local_transfer_prepare(app: &mut App) -> anyhow::Result<()>
+- poll_local_transfer_prepare · function · L460-L533 — pub(super) fn poll_local_transfer_prepare(app: &mut App) -> bool
+- maybe_begin_pending_local_transfer · function · L535-L560 — pub(super) fn maybe_begin_pending_local_transfer(app: &mut App) -> bool
+- handle_transfer_command_local · function · L562-L583 — pub(super) fn handle_transfer_command_local(app: &mut App)
+- poke_status_message · function · L585-L612 — pub(super) fn poke_status_message(app: &App) -> String
+- current_subagent_model_summary · function · L614-L619 — pub(super) fn current_subagent_model_summary(app: &App) -> String
+- derive_subagent_description · function · L621-L628 — fn derive_subagent_description(prompt: &str) -> String
+- parse_manual_subagent_spec · function · L630-L679 — pub(super) fn parse_manual_subagent_spec(rest: &str) -> Result<ManualSubagentSpec, String>
+- handle_subagent_model_command · function · L681-L725 — fn handle_subagent_model_command(app: &mut App, trimmed: &str) -> bool
+- handle_subagent_command · function · L727-L758 — fn handle_subagent_command(app: &mut App, trimmed: &str) -> bool
+- handle_cancel_command · function · L765-L795 — pub(super) fn handle_cancel_command(app: &mut App, trimmed: &str) -> bool
+- handle_help_command · function · L797-L819 — pub(super) fn handle_help_command(app: &mut App, trimmed: &str) -> bool
+- handle_keys_command · function · L825-L851 — pub(super) fn handle_keys_command(app: &mut App, trimmed: &str) -> bool
+- handle_model_status_command · function · L853-L881 — pub(super) fn handle_model_status_command(app: &mut App, trimmed: &str) -> bool
+- parse_diff_mode_name · function · L885-L896 — fn parse_diff_mode_name(value: &str) -> Option<crate::config::DiffDisplayMode>
+- apply_diff_mode · function · L898-L904 — fn apply_diff_mode(app: &mut App, mode: crate::config::DiffDisplayMode)
+- handle_diff_command · function · L906-L933 — pub(super) fn handle_diff_command(app: &mut App, trimmed: &str) -> bool
+- handle_log_command · function · L935-L978 — pub(super) fn handle_log_command(app: &mut App, trimmed: &str) -> bool
+- build_model_status_report · function · L980-L982 — fn build_model_status_report(provider_query: &str, model_query: &str) -> String
+- build_provider_test_coverage_summary · function · L984-L1002 — fn build_provider_test_coverage_summary() -> String
+- handle_ssh_command · function · L1004-L1059 — pub(super) fn handle_ssh_command(app: &mut App, trimmed: &str) -> bool
+- handle_pending_ssh_remote_target · function · L1061-L1077 — pub(super) fn handle_pending_ssh_remote_target(app: &mut App, name: String, input: String)
+- begin_ssh_target_prompt · function · L1079-L1101 — fn begin_ssh_target_prompt(app: &mut App, name: &str)
+- show_ssh_remotes · function · L1103-L1146 — fn show_ssh_remotes(app: &mut App)
+- show_ssh_status · function · L1148-L1150 — fn show_ssh_status(app: &mut App)
+- connect_ssh_remote · function · L1152-L1219 — fn connect_ssh_remote(app: &mut App, profile: crate::ssh_remote::SshRemoteProfile)
+- disconnect_ssh_remote · function · L1221-L1249 — fn disconnect_ssh_remote(app: &mut App, name: &str)
+- handle_btw_command · function · L1251-L1264 — fn handle_btw_command(app: &mut App, trimmed: &str) -> bool
+- handle_fork_command · function · L1268-L1280 — fn handle_fork_command(app: &mut App, trimmed: &str) -> bool
+- fork_session_with_prompt_local · function · L1285-L1304 — pub(super) fn fork_session_with_prompt_local(app: &mut App, prompt: Option<&str>)
+- load_catchup_candidates · function · L1306-L1313 — fn load_catchup_candidates(app: &App) -> Vec<crate::tui::session_picker::SessionInfo>
+- handle_catchup_command · function · L1315-L1371 — fn handle_catchup_command(app: &mut App, trimmed: &str) -> bool
+- handle_back_command · function · L1373-L1405 — fn handle_back_command(app: &mut App, trimmed: &str) -> bool
+- git_command_repo_dir · function · L1407-L1427 — fn git_command_repo_dir(app: &App) -> Result<PathBuf, String>
+- run_git_command · function · L1429-L1453 — fn run_git_command(repo_dir: &std::path::Path, args: &[&str]) -> Result<String, String>
+- build_git_status_message_for_dir · function · L1455-L1491 — fn build_git_status_message_for_dir(repo_dir: PathBuf) -> Result<String, String>
+- handle_git_command · function · L1493-L1519 — fn handle_git_command(app: &mut App, trimmed: &str) -> bool
+- transcript_opened_message · function · L1521-L1523 — fn transcript_opened_message(path: &std::path::Path) -> String
+- transcript_path_message · function · L1525-L1527 — fn transcript_path_message(path: &std::path::Path) -> String
+- handle_transcript_command · function · L1529-L1575 — fn handle_transcript_command(app: &mut App, trimmed: &str) -> bool
+- handle_git_status_completed · function · L1577-L1589 — pub(super) fn handle_git_status_completed(app: &mut App, completed: GitStatusCompleted)
+- handle_session_command · function · L1591-L2114 — pub(super) fn handle_session_command(app: &mut App, trimmed: &str) -> bool
+- build_merge_prompt · function · L2116-L2131 — pub(super) fn build_merge_prompt() -> String
+- build_merge_remote_release_prompt · function · L2133-L2150 — pub(super) fn build_merge_remote_release_prompt() -> String
+- build_commit_prompt · function · L2152-L2154 — pub(super) fn build_commit_prompt() -> String
+- build_commit_push_prompt · function · L2156-L2163 — pub(super) fn build_commit_push_prompt() -> String
+- build_triage_prompt · function · L2165-L2181 — pub(super) fn build_triage_prompt(focus: &str) -> String
+- triage_launch_notice · function · L2183-L2189 — pub(super) fn triage_launch_notice(interrupted: bool) -> String
+- handle_triage_command_local · function · L2191-L2204 — fn handle_triage_command_local(app: &mut App, rest: &str)
+- merge_launch_notice · function · L2206-L2212 — pub(super) fn merge_launch_notice(interrupted: bool) -> String
+- handle_merge_command_local · function · L2214-L2227 — fn handle_merge_command_local(app: &mut App)
+- commit_launch_notice · function · L2229-L2235 — pub(super) fn commit_launch_notice(interrupted: bool) -> String
+- commit_push_launch_notice · function · L2237-L2243 — pub(super) fn commit_push_launch_notice(interrupted: bool) -> String
+- fast_release_launch_notice · function · L2245-L2251 — pub(super) fn fast_release_launch_notice(interrupted: bool) -> String
+- fast_macos_release_launch_notice · function · L2253-L2259 — pub(super) fn fast_macos_release_launch_notice(interrupted: bool) -> String
+- merge_remote_release_launch_notice · function · L2261-L2267 — pub(super) fn merge_remote_release_launch_notice(interrupted: bool) -> String
+- remote_release_launch_notice · function · L2269-L2275 — pub(super) fn remote_release_launch_notice(interrupted: bool) -> String
+- handle_commit_command_local · function · L2277-L2290 — fn handle_commit_command_local(app: &mut App)
+- handle_commit_push_command_local · function · L2292-L2305 — fn handle_commit_push_command_local(app: &mut App)
+- handle_fast_release_command_local · function · L2307-L2320 — fn handle_fast_release_command_local(app: &mut App)
+- handle_fast_macos_release_command_local · function · L2322-L2337 — fn handle_fast_macos_release_command_local(app: &mut App)
+- handle_merge_remote_release_command_local · function · L2339-L2354 — fn handle_merge_remote_release_command_local(app: &mut App)
+- handle_remote_release_command_local · function · L2356-L2369 — fn handle_remote_release_command_local(app: &mut App)
+- handle_selfdev_command · function · L2371-L2464 — fn handle_selfdev_command(app: &mut App, trimmed: &str) -> bool
+- show_in_side_panel · function · L2468-L2472 — fn show_in_side_panel(app: &mut App, snapshot: crate::side_panel::SidePanelSnapshot)
+- handle_goals_command · function · L2474-L2577 — pub(super) fn handle_goals_command(app: &mut App, trimmed: &str) -> bool
+- handle_disabled_mission_command · function · L2579-L2590 — pub(super) fn handle_disabled_mission_command(app: &mut App, trimmed: &str) -> bool
+- handle_test_command · function · L2592-L2617 — pub(super) fn handle_test_command(app: &mut App, trimmed: &str) -> bool
+- slash_command_rest · function · L2619-L2625 — fn slash_command_rest<'a>(trimmed: &'a str, command: &str) -> Option<&'a str>
+- test_usage · function · L2627-L2630 — fn test_usage() -> String
+- build_test_verification_prompt · function · L2632-L2659 — fn build_test_verification_prompt(claim: &str) -> String
+- active_session_id · function · L2661-L2669 — pub(super) fn active_session_id(app: &App) -> String
+- poke_todos · function · L2671-L2673 — pub(super) fn poke_todos(app: &App) -> Vec<crate::todo::TodoItem>
+- is_incomplete_poke_todo · function · L2675-L2677 — pub(super) fn is_incomplete_poke_todo(todo: &crate::todo::TodoItem) -> bool
+- incomplete_poke_todos · function · L2679-L2684 — pub(super) fn incomplete_poke_todos(app: &App) -> Vec<crate::todo::TodoItem>
+- build_poke_message · function · L2686-L2688 — pub(super) fn build_poke_message(incomplete: &[crate::todo::TodoItem]) -> String
+- todo_confidence_weight · function · L2690-L2696 — fn todo_confidence_weight(priority: &str) -> u32
+- weighted_confidence_average · function · L2698-L2710 — fn weighted_confidence_average(scores: impl IntoIterator<Item = (u8, u32)>) -> Option<u8>
+- todo_confidence_summary · function · L2712-L2750 — pub(super) fn todo_confidence_summary(todos: &[crate::todo::TodoItem]) -> TodoConfidenceSummary
+- active_working_dir · function · L2752-L2757 — pub(super) fn active_working_dir(app: &App) -> Option<std::path::PathBuf>
+- handle_dictation_command · function · L2759-L2786 — pub(super) fn handle_dictation_command(app: &mut App, trimmed: &str) -> bool
+- alignment_label · function · L2788-L2790 — fn alignment_label(centered: bool) -> &'static str
+- alignment_status_notice · function · L2792-L2798 — fn alignment_status_notice(centered: bool) -> &'static str
+- parse_alignment_value · function · L2800-L2806 — fn parse_alignment_value(raw: &str) -> Option<bool>
+- parse_on_off_value · function · L2808-L2814 — fn parse_on_off_value(raw: &str) -> Option<bool>
+- handle_compact_notifications_command · function · L2816-L2859 — fn handle_compact_notifications_command(app: &mut App, trimmed: &str) -> bool
+- handle_tool_call_details_command · function · L2861-L2905 — fn handle_tool_call_details_command(app: &mut App, trimmed: &str) -> bool
+- handle_show_agentgrep_output_command · function · L2907-L2950 — fn handle_show_agentgrep_output_command(app: &mut App, trimmed: &str) -> bool
+- handle_latex_command · function · L2952-L3003 — pub(super) fn handle_latex_command(app: &mut App, trimmed: &str) -> bool
+- parse_agents_target · function · L3005-L3020 — fn parse_agents_target(raw: &str) -> Option<crate::tui::AgentModelTarget>
+- file_has_nonblank_content · function · L3022-L3026 — fn file_has_nonblank_content(path: &std::path::Path) -> bool
+- ensure_swarm_prompt_edit_path · function · L3028-L3050 — fn ensure_swarm_prompt_edit_path(
+- handle_swarm_prompt_command · function · L3052-L3121 — pub(super) fn handle_swarm_prompt_command(app: &mut App, trimmed: &str) -> bool
+- run_interactive_editor · function · L3128-L3136 — fn run_interactive_editor(
+- run_interactive_editor_with · function · L3138-L3169 — fn run_interactive_editor_with(
+- suspend_terminal_for_editor · function · L3171-L3188 — fn suspend_terminal_for_editor()
+- resume_terminal_after_editor · function · L3190-L3220 — fn resume_terminal_after_editor()
+- interactive_editor_tests · module · L3224-L3224 — mod interactive_editor_tests;
+- handle_agents_command · function · L3226-L3252 — pub(super) fn handle_agents_command(app: &mut App, trimmed: &str) -> bool
+- handle_alignment_command · function · L3254-L3298 — fn handle_alignment_command(app: &mut App, trimmed: &str) -> bool
+- handle_reasoning_display_command · function · L3300-L3353 — fn handle_reasoning_display_command(app: &mut App, trimmed: &str) -> bool
+- handle_display_settings_command · function · L3355-L3361 — pub(super) fn handle_display_settings_command(app: &mut App, trimmed: &str) -> bool
+- handle_config_command · function · L3363-L3627 — pub(super) fn handle_config_command(app: &mut App, trimmed: &str) -> bool
+- handle_usage_command · function · L3629-L3649 — pub(super) fn handle_usage_command(app: &mut App, trimmed: &str) -> bool
+- handle_feedback_command · function · L3651-L3670 — pub(super) fn handle_feedback_command(app: &mut App, trimmed: &str) -> bool
+- handle_telemetry_command · function · L3675-L3748 — pub(super) fn handle_telemetry_command(app: &mut App, trimmed: &str) -> bool
+- tests · module · L3752-L3752 — mod tests;

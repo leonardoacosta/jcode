@@ -1,0 +1,45 @@
+# crates/jcode-app-core/src/tool/selfdev/tests.rs
+
+- EnvVarGuard · struct · L5-L8 — struct EnvVarGuard
+- set · function · L11-L15 — fn set(key: &'static str, value: impl AsRef<OsStr>) -> Self
+- remove · function · L17-L21 — fn remove(key: &'static str) -> Self
+- drop · function · L25-L30 — fn drop(&mut self)
+- create_test_context · function · L33-L43 — fn create_test_context(session_id: &str, working_dir: Option<std::path::PathBuf>) -> ToolContext
+- create_repo_fixture · function · L45-L54 — fn create_repo_fixture() -> tempfile::TempDir
+- test_source_state · function · L56-L68 — fn test_source_state(repo_dir: &std::path::Path) -> build::SourceState
+- request_fixture · function · L70-L103 — fn request_fixture(
+- terminal_request_history_is_archived_without_touching_active_requests · function · L106-L147 — fn terminal_request_history_is_archived_without_touching_active_requests()
+- optimized_test_shell_command_routes_compile_subcommands_only · function · L150-L160 — fn optimized_test_shell_command_routes_compile_subcommands_only()
+- optimized_test_shell_command_executes_raw_cargo_test_through_wrapper · function · L164-L197 — fn optimized_test_shell_command_executes_raw_cargo_test_through_wrapper()
+- wait_for_task_completion · function · L199-L214 — async fn wait_for_task_completion(task_id: &str) -> background::TaskStatusFile
+- test_reload_context_serialization · function · L217-L238 — fn test_reload_context_serialization()
+- test_reload_context_path · function · L241-L248 — fn test_reload_context_path()
+- test_reload_context_save_and_load_for_session_uses_session_scoped_file · function · L251-L285 — fn test_reload_context_save_and_load_for_session_uses_session_scoped_file()
+- test_recovery_directive_prefers_reload_context_when_present · function · L288-L339 — fn test_recovery_directive_prefers_reload_context_when_present()
+- test_recovery_directive_uses_interrupted_message_without_reload_context · function · L342-L352 — fn test_recovery_directive_uses_interrupted_message_without_reload_context()
+- test_recovery_directive_returns_none_when_no_reload_recovery_needed · function · L355-L357 — fn test_recovery_directive_returns_none_when_no_reload_recovery_needed()
+- reload_manifest · module · L360-L360 — mod reload_manifest;
+- reload_timeout · module · L363-L363 — mod reload_timeout;
+- schema_only_advertises_core_selfdev_fields · function · L366-L405 — fn schema_only_advertises_core_selfdev_fields()
+- non_selfdev_schema_only_exposes_onramp_actions · function · L408-L453 — fn non_selfdev_schema_only_exposes_onramp_actions()
+- test_action_queues_command_in_test_mode · function · L456-L486 — async fn test_action_queues_command_in_test_mode()
+- do_reload_returns_after_ack_in_direct_mode · function · L489-L517 — async fn do_reload_returns_after_ack_in_direct_mode()
+- working_dir_resolver · module · L520-L520 — mod working_dir_resolver;
+- enter_creates_selfdev_session_in_test_mode · function · L523-L599 — async fn enter_creates_selfdev_session_in_test_mode()
+- enter_falls_back_to_fresh_session_when_parent_missing · function · L602-L629 — async fn enter_falls_back_to_fresh_session_when_parent_missing()
+- reload_in_non_selfdev_session_is_upgrade_in_place · function · L632-L657 — async fn reload_in_non_selfdev_session_is_upgrade_in_place()
+- socket_actions_require_selfdev_session · function · L660-L683 — async fn socket_actions_require_selfdev_session()
+- find_config_reports_key_paths · function · L686-L706 — async fn find_config_reports_key_paths()
+- setup_reports_dependency_checks · function · L709-L737 — async fn setup_reports_dependency_checks()
+- build_requires_reason · function · L740-L755 — async fn build_requires_reason()
+- build_queues_background_tasks_and_reports_queue_status · function · L758-L834 — async fn build_queues_background_tasks_and_reports_queue_status()
+- build_reload_waits_for_build_then_reloads · function · L837-L893 — async fn build_reload_waits_for_build_then_reloads()
+- build_dedupes_identical_reason_and_version_with_attached_watcher · function · L896-L953 — async fn build_dedupes_identical_reason_and_version_with_attached_watcher()
+- cancel_build_marks_request_cancelled_and_removes_it_from_queue · function · L956-L1016 — async fn cancel_build_marks_request_cancelled_and_removes_it_from_queue()
+- status_output_prunes_stale_pending_requests · function · L1019-L1080 — fn status_output_prunes_stale_pending_requests()
+- freshly_queued_request_survives_reconcile_before_task_metadata_exists · function · L1083-L1141 — fn freshly_queued_request_survives_reconcile_before_task_metadata_exists()
+- build_ignores_stale_pending_requests_when_computing_queue_position · function · L1144-L1246 — async fn build_ignores_stale_pending_requests_when_computing_queue_position()
+- reconcile_pending_state_maps_superseded_background_status · function · L1249-L1333 — fn reconcile_pending_state_maps_superseded_background_status()
+- reconcile_keeps_running_request_not_yet_registered_in_live_task_map · function · L1336-L1423 — fn reconcile_keeps_running_request_not_yet_registered_in_live_task_map()
+- repo_resolver · module · L1426-L1426 — mod repo_resolver;
+- additional_build_lock_is_removed_on_drop_and_can_be_reacquired · module · L1429-L1429 — mod additional_build_lock_is_removed_on_drop_and_can_be_reacquired;

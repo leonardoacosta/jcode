@@ -1,0 +1,44 @@
+# crates/jcode-provider-openai-runtime/src/openai_provider_impl.rs
+
+- catalog_prefetch · module · L9-L9 — mod catalog_prefetch;
+- catalog_error_is_auth_rejection · function · L13-L16 — fn catalog_error_is_auth_rejection(err: &anyhow::Error) -> bool
+- borrowed_request_fingerprint_fields_match_owned_fields · function · L20-L73 — fn borrowed_request_fingerprint_fields_match_owned_fields()
+- fingerprint · function · L23-L28 — fn fingerprint(value: &Value) -> (u64, usize)
+- set_session_id · function · L77-L91 — fn set_session_id(&self, session_id: &str)
+- set_oauth_account · function · L93-L112 — fn set_oauth_account(&self, label: Option<&str>) -> Result<()>
+- oauth_account_label · function · L114-L119 — fn oauth_account_label(&self) -> Option<String>
+- serving_oauth_account_label · function · L121-L131 — fn serving_oauth_account_label(&self) -> Option<String>
+- active_oauth_account_email · function · L133-L171 — fn active_oauth_account_email(&self) -> Option<String>
+- reload_credentials · function · L173-L175 — fn reload_credentials(&self)
+- credential_mode · function · L177-L179 — fn credential_mode(&self) -> jcode_provider_core::CredentialMode
+- set_credential_mode · function · L181-L183 — fn set_credential_mode(&self, mode: jcode_provider_core::CredentialMode) -> anyhow::Result<()>
+- prewarm · function · L185-L187 — async fn prewarm(&self, tools: &[ToolDefinition], system: &str)
+- complete · function · L189-L904 — async fn complete(
+- name · function · L906-L908 — fn name(&self) -> &str
+- on_auth_changed · function · L910-L912 — fn on_auth_changed(&self)
+- model · function · L914-L920 — fn model(&self) -> String
+- supports_image_input · function · L922-L924 — fn supports_image_input(&self) -> bool
+- supports_deferred_tools · function · L926-L929 — fn supports_deferred_tools(&self) -> bool
+- set_model · function · L931-L933 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L935-L940 — fn available_models(&self) -> Vec<&'static str>
+- available_models_for_switching · function · L942-L962 — fn available_models_for_switching(&self) -> Vec<String>
+- available_models_display · function · L964-L966 — fn available_models_display(&self) -> Vec<String>
+- model_capabilities_need_refresh · function · L968-L987 — fn model_capabilities_need_refresh(&self) -> bool
+- prefetch_models · function · L989-L991 — async fn prefetch_models(&self) -> Result<()>
+- reasoning_effort · function · L993-L1002 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L1004-L1043 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L1045-L1072 — fn available_efforts(&self) -> Vec<&'static str>
+- service_tier · function · L1074-L1076 — fn service_tier(&self) -> Option<String>
+- native_compaction_mode · function · L1078-L1080 — fn native_compaction_mode(&self) -> Option<String>
+- native_compaction_threshold_tokens · function · L1082-L1085 — fn native_compaction_threshold_tokens(&self) -> Option<usize>
+- set_service_tier · function · L1087-L1106 — fn set_service_tier(&self, service_tier: &str) -> Result<()>
+- available_service_tiers · function · L1108-L1114 — fn available_service_tiers(&self) -> Vec<&'static str>
+- transport · function · L1116-L1129 — fn transport(&self) -> Option<String>
+- set_transport · function · L1131-L1166 — fn set_transport(&self, transport: &str) -> Result<()>
+- available_transports · function · L1168-L1173 — fn available_transports(&self) -> Vec<&'static str>
+- supports_compaction · function · L1175-L1177 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L1179-L1182 — fn uses_jcode_compaction(&self) -> bool
+- native_compact · function · L1184-L1196 — async fn native_compact(
+- context_window · function · L1198-L1202 — fn context_window(&self) -> usize
+- fork · function · L1204-L1279 — fn fork(&self) -> Arc<dyn Provider>
+- invalidate_credentials · function · L1281-L1292 — async fn invalidate_credentials(&self)

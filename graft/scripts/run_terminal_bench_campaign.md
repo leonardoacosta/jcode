@@ -1,0 +1,24 @@
+# scripts/run_terminal_bench_campaign.py
+
+- repo_root · function · L16-L17 — def repo_root() -> Path
+- run · function · L20-L21 — def run(cmd: list[str], *, env: dict[str, str] | None = None, cwd: Path | None = None) -> subprocess.CompletedProcess[str]
+- capture · function · L24-L25 — def capture(cmd: list[str], *, cwd: Path | None = None) -> str
+- sha256_file · function · L28-L33 — def sha256_file(path: Path) -> str
+- resolve_existing_file · function · L36-L43 — def resolve_existing_file(candidates: list[str | None]) -> Path | None
+- load_tasks · function · L46-L62 — def load_tasks(args: argparse.Namespace) -> list[str]
+- ensure_binary · function · L65-L70 — def ensure_binary(root: Path, env: dict[str, str]) -> Path
+- current_settings · function · L73-L100 — def current_settings(root: Path, args: argparse.Namespace) -> dict[str, Any]
+- ensure_manifest · function · L119-L140 — def ensure_manifest(campaign_dir: Path, settings: dict[str, Any]) -> dict[str, Any]
+- load_manifest · function · L143-L144 — def load_manifest(campaign_dir: Path) -> dict[str, Any]
+- write_results_jsonl · function · L147-L151 — def write_results_jsonl(campaign_dir: Path, records: list[dict[str, Any]]) -> None
+- append_result · function · L154-L171 — def append_result(campaign_dir: Path, record: dict[str, Any]) -> None
+- collect_trial_results · function · L174-L196 — def collect_trial_results(job_dir: Path) -> list[dict[str, Any]]
+- summarize_job · function · L199-L212 — def summarize_job(job_result_path: Path, trial_results: list[dict[str, Any]]) -> dict[str, Any]
+- has_strict_numeric_trials · function · L215-L222 — def has_strict_numeric_trials(record: dict[str, Any], required: int) -> bool
+- completed_recorded_jobs · function · L225-L238 — def completed_recorded_jobs(campaign_dir: Path) -> dict[str, dict[str, Any]]
+- adopt_existing_job · function · L241-L261 — def adopt_existing_job(campaign_dir: Path, task: str, task_jobs_dir: Path, required_attempts: int) -> dict[str, Any] | None
+- build_task_command · function · L264-L291 — def build_task_command( *, runner: Path, task: str, task_jobs_dir: Path, job_name: str, args: argparse.Namespace, pass_through_args: list[str], ) -> list[str]
+- execute_task_process · function · L294-L315 — def execute_task_process( *, runner: Path, task: str, task_jobs_dir: Path, job_name: str, args: argparse.Namespace, pass_through_args: list[str], ) -> tuple[str, str, Path, int]
+- finalize_task_result · function · L318-L393 — def finalize_task_result( *, campaign_dir: Path, task: str, job_name: str, task_jobs_dir: Path, process_return_code: int, continue_on_failure: bool, required_attempts: int, ) -> tuple[bool, dict[str, Any]]
+- prepare_task · function · L396-L413 — def prepare_task(campaign_dir: Path, jobs_root: Path, task: str, required_attempts: int) -> tuple[str, Path] | None
+- main · function · L416-L514 — def main() -> int

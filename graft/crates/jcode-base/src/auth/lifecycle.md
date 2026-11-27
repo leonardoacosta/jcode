@@ -1,0 +1,110 @@
+# crates/jcode-base/src/auth/lifecycle.rs
+
+- AuthActivationRequest · struct · L7-L10 — pub struct AuthActivationRequest
+- new · function · L13-L18 — pub fn new(legacy_provider_hint: Option<String>, auth: Option<AuthChanged>) -> Self
+- provider_id · function · L20-L28 — pub fn provider_id(&self) -> Option<String>
+- expected_runtime · function · L30-L34 — pub fn expected_runtime(&self) -> Option<&RuntimeProviderKey>
+- expected_catalog_namespace · function · L36-L40 — pub fn expected_catalog_namespace(&self) -> Option<&CatalogNamespace>
+- AuthActivationResult · struct · L44-L50 — pub struct AuthActivationResult
+- model_switch_request · function · L53-L59 — pub fn model_switch_request(&self, current_provider_name: &str, model: &str) -> String
+- AuthCatalogInvariantReport · struct · L63-L71 — pub struct AuthCatalogInvariantReport
+- ok · function · L74-L77 — pub fn ok(&self) -> bool
+- warning_message · function · L79-L99 — pub fn warning_message(&self) -> Option<String>
+- validate_catalog_invariants · function · L102-L137 — pub fn validate_catalog_invariants(
+- provider_model_to_select_after_auth · function · L139-L218 — pub fn provider_model_to_select_after_auth(
+- provider_model_to_select_after_auth_with_configured_default · function · L222-L255 — pub fn provider_model_to_select_after_auth_with_configured_default(
+- preferred_model_for_provider · function · L264-L273 — pub fn preferred_model_for_provider(provider_id: &str, models: &[&str]) -> Option<String>
+- ranked_flagship_for_provider · function · L279-L312 — pub fn ranked_flagship_for_provider(provider_id: &str, models: &[&str]) -> Option<String>
+- default_model_for_provider · function · L317-L329 — pub fn default_model_for_provider(provider_id: &str) -> Option<&'static str>
+- onboarding_default_selection · function · L337-L353 — pub fn onboarding_default_selection(provider_ids: &[&str]) -> Option<(String, String)>
+- globally_preferred_default_route · function · L362-L371 — pub fn globally_preferred_default_route(routes: &[ModelRoute]) -> Option<ModelRoute>
+- globally_preferred_model_rank · function · L373-L407 — fn globally_preferred_model_rank(model: &str) -> (u8, usize)
+- ALL_BEDROCK_MODELS · constant · L414-L425 — const ALL_BEDROCK_MODELS: &[&str] = &[
+- ALL_GEMINI_MODELS · constant · L431-L440 — const ALL_GEMINI_MODELS: &[&str] = &[
+- ALL_GROK_MODELS · constant · L445-L445 — const ALL_GROK_MODELS: &[&str] = &["grok-4.7", "grok-4.6", "grok-4.5", "grok-code-fast-1"];
+- provider_preferred_model_orders · function · L460-L480 — fn provider_preferred_model_orders(
+- preferred_model_rank · function · L486-L498 — fn preferred_model_rank(orders: &[&'static [&'static str]], model: &str) -> usize
+- TIER_STRIDE · constant · L487-L487 — const TIER_STRIDE: usize = 10_000;
+- normalized_preference_order · function · L506-L526 — fn normalized_preference_order(order: &'static [&'static str]) -> std::sync::Arc<Vec<String>>
+- OrderCache · type · L507-L508 — type OrderCache =
+- CACHE · constant · L509-L509 — static CACHE: std::sync::LazyLock<OrderCache> = std::sync::LazyLock::new(Default::default);
+- normalize_model_for_preference · function · L539-L585 — fn normalize_model_for_preference(model: &str) -> String
+- strip_bedrock_region_prefix · function · L589-L596 — fn strip_bedrock_region_prefix(id: &str) -> String
+- strip_trailing_bedrock_version · function · L600-L605 — fn strip_trailing_bedrock_version(id: &str) -> Option<String>
+- FrontierModel · struct · L615-L618 — struct FrontierModel
+- NON_FLAGSHIP_TIER_WORDS · constant · L629-L632 — const NON_FLAGSHIP_TIER_WORDS: &[&str] = &[
+- FrontierFamily · struct · L641-L644 — struct FrontierFamily
+- frontier_families · function · L649-L682 — fn frontier_families(activation: &AuthActivationResult) -> &'static [FrontierFamily]
+- FABLE · constant · L650-L653 — const FABLE: FrontierFamily = FrontierFamily
+- CLAUDE · constant · L654-L657 — const CLAUDE: FrontierFamily = FrontierFamily
+- GPT · constant · L658-L661 — const GPT: FrontierFamily = FrontierFamily
+- GEMINI · constant · L662-L665 — const GEMINI: FrontierFamily = FrontierFamily
+- GROK · constant · L666-L669 — const GROK: FrontierFamily = FrontierFamily
+- parse_frontier_model · function · L687-L701 — fn parse_frontier_model(model: &str, families: &[FrontierFamily]) -> Option<FrontierModel>
+- parse_frontier_version_for_family · function · L708-L772 — fn parse_frontier_version_for_family(
+- parse_version_components · function · L776-L788 — fn parse_version_components(remainder: &str) -> Option<Vec<u64>>
+- version_cmp · function · L792-L803 — fn version_cmp(a: &[u64], b: &[u64]) -> std::cmp::Ordering
+- newest_frontier_release · function · L814-L901 — fn newest_frontier_release(
+- route_matches_activation · function · L903-L997 — fn route_matches_activation(route: &ModelRoute, activation: &AuthActivationResult) -> bool
+- normalized_auth_provider_id · function · L999-L1015 — pub fn normalized_auth_provider_id(provider_hint: Option<&str>) -> Option<&'static str>
+- preferred_frontier_auth_provider · function · L1025-L1051 — pub fn preferred_frontier_auth_provider(status: &crate::auth::AuthStatus) -> Option<&'static str>
+- normalized_login_provider_id · function · L1053-L1071 — fn normalized_login_provider_id(provider_id: &str) -> Option<&'static str>
+- provider_display_label · function · L1073-L1085 — pub fn provider_display_label(provider_id: Option<&str>) -> Option<String>
+- activation · module · L1088-L1088 — mod activation;
+- model_switch_request_for_provider_id · function · L1090-L1118 — pub fn model_switch_request_for_provider_id(
+- tests · module · L1121-L2863 — mod tests
+- EnvGuard · struct · L1125-L1128 — struct EnvGuard
+- new · function · L1131-L1141 — fn new(keys: &[&'static str]) -> Self
+- drop · function · L1145-L1153 — fn drop(&mut self)
+- route · function · L1156-L1166 — fn route(model: &str, provider: &str, api_method: &str, available: bool) -> ModelRoute
+- onboarding_default_selection_follows_global_preference · function · L1169-L1193 — fn onboarding_default_selection_follows_global_preference()
+- api_key_login_replaces_stale_process_env_with_saved_file_key · function · L1196-L1223 — fn api_key_login_replaces_stale_process_env_with_saved_file_key()
+- api_key_login_invalidates_auth_status_cached_before_activation · function · L1226-L1246 — fn api_key_login_invalidates_auth_status_cached_before_activation()
+- legacy_hint_only_auth_change_still_syncs_saved_file_key · function · L1249-L1265 — fn legacy_hint_only_auth_change_still_syncs_saved_file_key()
+- oauth_auth_change_does_not_touch_api_key_process_env · function · L1268-L1284 — fn oauth_auth_change_does_not_touch_api_key_process_env()
+- direct_auth_catalog_matching_preserves_oauth_vs_api_key_route_identity · function · L1287-L1346 — fn direct_auth_catalog_matching_preserves_oauth_vs_api_key_route_identity()
+- typed_auth_request_provider_id_wins_over_legacy_hint · function · L1349-L1360 — fn typed_auth_request_provider_id_wins_over_legacy_hint()
+- direct_login_provider_ids_are_normalized_with_display_labels · function · L1363-L1383 — fn direct_login_provider_ids_are_normalized_with_display_labels()
+- every_model_login_provider_has_explicit_lifecycle_normalization · function · L1386-L1411 — fn every_model_login_provider_has_explicit_lifecycle_normalization()
+- grok_build_login_selects_subscription_route_and_preserves_prefix · function · L1414-L1435 — fn grok_build_login_selects_subscription_route_and_preserves_prefix()
+- login_does_not_override_configured_default_provider_for_new_sessions · function · L1438-L1465 — fn login_does_not_override_configured_default_provider_for_new_sessions()
+- direct_login_provider_activation_sets_runtime_identity_and_active_provider · function · L1468-L1511 — fn direct_login_provider_activation_sets_runtime_identity_and_active_provider()
+- direct_login_provider_descriptor_matrix_has_full_lifecycle_parity · function · L1514-L1643 — fn direct_login_provider_descriptor_matrix_has_full_lifecycle_parity()
+- model_switch_request_prefixes_openai_compatible_profiles_with_profile_id · function · L1646-L1655 — fn model_switch_request_prefixes_openai_compatible_profiles_with_profile_id()
+- model_switch_request_is_provider_explicit_for_all_auth_providers · function · L1658-L1681 — fn model_switch_request_is_provider_explicit_for_all_auth_providers()
+- jcode_auth_lifecycle_matches_only_managed_subscription_routes · function · L1684-L1719 — fn jcode_auth_lifecycle_matches_only_managed_subscription_routes()
+- post_auth_model_selection_reselects_duplicate_model_name_from_matching_provider_route · function · L1722-L1750 — fn post_auth_model_selection_reselects_duplicate_model_name_from_matching_provider_route()
+- catalog_invariants_pass_when_selected_model_matches_provider_route · function · L1753-L1779 — fn catalog_invariants_pass_when_selected_model_matches_provider_route()
+- catalog_invariants_reject_generic_openai_compatible_route_for_namespaced_auth · function · L1782-L1805 — fn catalog_invariants_reject_generic_openai_compatible_route_for_namespaced_auth()
+- catalog_invariants_warn_when_selected_model_is_from_stale_provider · function · L1808-L1824 — fn catalog_invariants_warn_when_selected_model_is_from_stale_provider()
+- post_auth_model_selection_prefers_matching_provider_route_over_stale_model · function · L1827-L1863 — fn post_auth_model_selection_prefers_matching_provider_route_over_stale_model()
+- post_auth_model_selection_prefers_anthropic_flagship_over_catalog_order · function · L1866-L1892 — fn post_auth_model_selection_prefers_anthropic_flagship_over_catalog_order()
+- post_auth_model_selection_preserves_configured_claude_model · function · L1895-L1923 — fn post_auth_model_selection_preserves_configured_claude_model()
+- post_auth_model_selection_preserves_provider_prefixed_configured_default · function · L1926-L1960 — fn post_auth_model_selection_preserves_provider_prefixed_configured_default()
+- post_auth_model_selection_prefers_claude_oauth_flagship · function · L1963-L1982 — fn post_auth_model_selection_prefers_claude_oauth_flagship()
+- post_auth_model_selection_prefers_openai_flagship_over_catalog_order · function · L1985-L2003 — fn post_auth_model_selection_prefers_openai_flagship_over_catalog_order()
+- global_default_route_prefers_gpt_5_6_over_fable_and_preserves_route · function · L2006-L2017 — fn global_default_route_prefers_gpt_5_6_over_fable_and_preserves_route()
+- global_default_route_uses_clean_gpt_5_6_then_fable_before_weaker_models · function · L2020-L2043 — fn global_default_route_uses_clean_gpt_5_6_then_fable_before_weaker_models()
+- global_default_route_ignores_unavailable_routes_and_preserves_unknown_order · function · L2046-L2056 — fn global_default_route_ignores_unavailable_routes_and_preserves_unknown_order()
+- post_auth_model_selection_falls_back_when_quality_first_model_is_unavailable · function · L2059-L2092 — fn post_auth_model_selection_falls_back_when_quality_first_model_is_unavailable()
+- post_auth_model_selection_keeps_catalog_order_for_unranked_providers · function · L2095-L2132 — fn post_auth_model_selection_keeps_catalog_order_for_unranked_providers()
+- post_auth_model_selection_prefers_newest_live_release_for_unranked_provider · function · L2135-L2189 — fn post_auth_model_selection_prefers_newest_live_release_for_unranked_provider()
+- post_auth_auto_promotes_newer_frontier_release_not_yet_in_curated_list · function · L2192-L2221 — fn post_auth_auto_promotes_newer_frontier_release_not_yet_in_curated_list()
+- quality_first_defaults_are_not_displaced_by_lower_family_or_equal_release · function · L2224-L2246 — fn quality_first_defaults_are_not_displaced_by_lower_family_or_equal_release()
+- post_auth_frontier_promotion_ignores_cheaper_and_specialized_variants · function · L2249-L2278 — fn post_auth_frontier_promotion_ignores_cheaper_and_specialized_variants()
+- post_auth_frontier_promotion_no_op_when_curated_is_still_newest · function · L2281-L2294 — fn post_auth_frontier_promotion_no_op_when_curated_is_still_newest()
+- post_auth_frontier_promotion_covers_bedrock_and_gemini · function · L2297-L2360 — fn post_auth_frontier_promotion_covers_bedrock_and_gemini()
+- frontier_version_parsing_and_compare · function · L2363-L2433 — fn frontier_version_parsing_and_compare()
+- normalize_model_for_preference_strips_hosted_prefixes_and_suffixes · function · L2436-L2459 — fn normalize_model_for_preference_strips_hosted_prefixes_and_suffixes()
+- RANKED_PROVIDER_IDS · constant · L2467-L2480 — const RANKED_PROVIDER_IDS: &[&str] = &[
+- activation_for_provider_id · function · L2482-L2490 — fn activation_for_provider_id(provider_id: &str) -> AuthActivationResult
+- post_auth_model_selection_classifies_every_login_provider · function · L2498-L2527 — fn post_auth_model_selection_classifies_every_login_provider()
+- post_auth_model_selection_picks_flagship_for_every_ranked_provider · function · L2534-L2675 — fn post_auth_model_selection_picks_flagship_for_every_ranked_provider()
+- preferred_model_for_provider_picks_newest_flagship_for_every_provider · function · L2680-L2754 — fn preferred_model_for_provider_picks_newest_flagship_for_every_provider()
+- preferred_model_for_provider_auto_promotes_unlisted_releases · function · L2757-L2776 — fn preferred_model_for_provider_auto_promotes_unlisted_releases()
+- preferred_model_for_provider_unknown_provider_defers_to_caller · function · L2779-L2784 — fn preferred_model_for_provider_unknown_provider_defers_to_caller()
+- post_auth_model_selection_copilot_prefers_claude_family_over_openai · function · L2789-L2800 — fn post_auth_model_selection_copilot_prefers_claude_family_over_openai()
+- onboarding_frontier_provider_preference_matrix · function · L2803-L2862 — fn onboarding_frontier_provider_preference_matrix()
+- real_catalog_tests · module · L2866-L2882 — mod real_catalog_tests
+- OPENROUTER_IDS · constant · L2871-L2871 — const OPENROUTER_IDS: &str = include_str!("openrouter_catalog_snapshot.json");
+- real_openrouter_catalog_ranks_to_claude_opus_flagship · function · L2874-L2881 — fn real_openrouter_catalog_ranks_to_claude_opus_flagship()

@@ -1,0 +1,65 @@
+# crates/jcode-base/src/mobile_runner.rs
+
+- events · module · L19-L19 — mod events;
+- local · module · L21-L21 — mod local;
+- poll_tests · module · L24-L24 — mod poll_tests;
+- process · module · L29-L29 — mod process;
+- process_tests · module · L32-L32 — mod process_tests;
+- StageTimer · struct · L34-L38 — struct StageTimer
+- new · function · L40-L46 — fn new(stage: &'static str) -> Self
+- record · function · L48-L53 — fn record(&self, duration_ms: u128) -> String
+- drop · function · L56-L58 — fn drop(&mut self)
+- timed_stage · function · L61-L69 — async fn timed_stage<T>(
+- POLL_INTERVAL · constant · L71-L71 — const POLL_INTERVAL: Duration = Duration::from_secs(5);
+- TURN_TIMEOUT · constant · L72-L72 — const TURN_TIMEOUT: Duration = Duration::from_secs(40 * 60);
+- BUSY_TOUCH_INTERVAL · constant · L73-L73 — const BUSY_TOUCH_INTERVAL: Duration = Duration::from_secs(60);
+- MobileCommand · struct · L76-L87 — pub struct MobileCommand
+- MobileImage · struct · L90-L93 — pub struct MobileImage
+- validated_images · function · L96-L122 — fn validated_images(&self) -> Result<Vec<(String, String)>>
+- queue_wait_ms · function · L126-L137 — fn queue_wait_ms(&self) -> Option<u64>
+- ClaimResponse · struct · L141-L143 — struct ClaimResponse
+- TransferMetadata · struct · L146-L152 — struct TransferMetadata
+- TransferMessage · struct · L155-L159 — struct TransferMessage
+- TransferPage · struct · L162-L166 — struct TransferPage
+- transfer_session · function · L168-L232 — fn transfer_session(
+- fetch_local_transcript · function · L234-L286 — async fn fetch_local_transcript(
+- import_local_session · function · L288-L301 — async fn import_local_session(
+- is_cloud_machine · function · L304-L306 — pub fn is_cloud_machine() -> bool
+- touch_cloud_activity_marker · function · L312-L321 — pub fn touch_cloud_activity_marker()
+- busy_marker · function · L323-L331 — fn busy_marker() -> Option<PathBuf>
+- workspace_dir · function · L333-L339 — fn workspace_dir() -> PathBuf
+- inherited_provider_args · function · L342-L358 — pub fn inherited_provider_args(args: impl IntoIterator<Item = String>) -> Vec<String>
+- session_id_from_ndjson_line · function · L361-L371 — pub fn session_id_from_ndjson_line(line: &str) -> Option<String>
+- claim_request · function · L373-L388 — fn claim_request(
+- ClaimPayload · struct · L380-L382 — struct ClaimPayload<'a>
+- claim · function · L390-L403 — async fn claim(client: &reqwest::Client, base: &str, key: &str) -> Result<Option<MobileCommand>>
+- CompletionPayload · enum · L408-L417 — enum CompletionPayload<'a>
+- completion_request · function · L419-L442 — fn completion_request(
+- complete · function · L444-L456 — async fn complete(
+- run_turn · function · L458-L489 — async fn run_turn(command: &MobileCommand, session_id: Option<&str>) -> Result<String>
+- run_one · function · L492-L543 — pub async fn run_one(client: &reqwest::Client) -> Result<bool>
+- ensure_sync_enabled · function · L546-L554 — pub fn ensure_sync_enabled()
+- PollWait · interface · L556-L558 — trait PollWait
+- wait · function · L557-L557 — fn wait(&mut self, delay: Duration) -> impl std::future::Future<Output = ()> + Send;
+- wait · function · L561-L563 — async fn wait(&mut self, delay: Duration)
+- SleepWait · struct · L567-L567 — struct SleepWait;
+- wait · function · L571-L573 — async fn wait(&mut self, delay: Duration)
+- poll_commands · function · L577-L583 — async fn poll_commands<F, Fut>(run: F)
+- poll_commands_with_wait · function · L585-L606 — async fn poll_commands_with_wait<F, Fut, W>(mut run: F, mut wait: W)
+- spawn_cloud_runner · function · L609-L618 — pub fn spawn_cloud_runner()
+- tests · module · L621-L1007 — mod tests
+- claim_request_preserves_legacy_bytes_after_hostname_release · function · L625-L641 — fn claim_request_preserves_legacy_bytes_after_hostname_release()
+- completion_request_preserves_legacy_wire_contract · function · L644-L676 — fn completion_request_preserves_legacy_wire_contract()
+- photo_wire_contract_validates_types_base64_and_total_budget · function · L679-L719 — fn photo_wire_contract_validates_types_base64_and_total_budget()
+- queue_wait_uses_server_timestamps_and_accepts_legacy_commands · function · L722-L745 — fn queue_wait_uses_server_timestamps_and_accepts_legacy_commands()
+- stage_timing_uses_content_free_shared_report_fields · function · L748-L771 — fn stage_timing_uses_content_free_shared_report_fields()
+- timed_stage_preserves_success_and_error_results · function · L774-L780 — async fn timed_stage_preserves_success_and_error_results()
+- transcript_server · function · L782-L816 — async fn transcript_server(
+- page · function · L818-L820 — fn page(messages: serde_json::Value, more: bool) -> serde_json::Value
+- claim_preserves_server_queue_age_without_logging_command_content · function · L823-L842 — async fn claim_preserves_server_queue_age_without_logging_command_content()
+- fetches_all_pages_with_account_auth_and_sparse_sequences · function · L845-L873 — async fn fetches_all_pages_with_account_auth_and_sparse_sequences()
+- rejects_non_advancing_pages_and_wrong_sessions · function · L876-L912 — async fn rejects_non_advancing_pages_and_wrong_sessions()
+- transferred_conversation_is_a_new_safe_cloud_fork · function · L915-L967 — fn transferred_conversation_is_a_new_safe_cloud_fork()
+- transfer_rejects_cloud_sources_and_unknown_roles · function · L970-L986 — fn transfer_rejects_cloud_sources_and_unknown_roles()
+- parses_session_from_start_event · function · L989-L997 — fn parses_session_from_start_event()
+- forwards_provider_and_model_only · function · L1000-L1006 — fn forwards_provider_and_model_only()

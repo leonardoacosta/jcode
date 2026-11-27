@@ -1,0 +1,107 @@
+# crates/jcode-app-core/src/tool/discover.rs
+
+- DISCOVERY_TIMEOUT · constant · L15-L15 — const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(3);
+- MAX_RESPONSE_BYTES · constant · L16-L16 — const MAX_RESPONSE_BYTES: usize = 64 * 1024;
+- DISCOVERY_REQUEST_ID_HEADER · constant · L17-L17 — const DISCOVERY_REQUEST_ID_HEADER: &str = "x-jcode-discovery-request-id";
+- DISCOVERY_CORRELATION_ID_HEADER · constant · L18-L18 — const DISCOVERY_CORRELATION_ID_HEADER: &str = "x-jcode-session-correlation-id";
+- DISCOVERY_BENCHMARK_HEADER · constant · L19-L19 — const DISCOVERY_BENCHMARK_HEADER: &str = "x-jcode-discovery-benchmark";
+- DISCOVERY_SESSION_ID_HEADER · constant · L20-L20 — const DISCOVERY_SESSION_ID_HEADER: &str = "x-jcode-discovery-session-id";
+- DISCOVERY_SESSION_METADATA_HEADER · constant · L21-L21 — const DISCOVERY_SESSION_METADATA_HEADER: &str = "x-jcode-discovery-session-metadata";
+- DISCOVERY_SELF_DEV_HEADER · constant · L22-L22 — const DISCOVERY_SELF_DEV_HEADER: &str = "x-jcode-discovery-self-dev";
+- DISCOVERY_DEBUG_HEADER · constant · L23-L23 — const DISCOVERY_DEBUG_HEADER: &str = "x-jcode-discovery-debug";
+- DISCOVERY_CANARY_HEADER · constant · L24-L24 — const DISCOVERY_CANARY_HEADER: &str = "x-jcode-discovery-canary";
+- DISCOVERY_EXECUTION_MODE_HEADER · constant · L25-L25 — const DISCOVERY_EXECUTION_MODE_HEADER: &str = "x-jcode-discovery-execution-mode";
+- DISCOVERY_BUILD_CHANNEL_HEADER · constant · L26-L26 — const DISCOVERY_BUILD_CHANNEL_HEADER: &str = "x-jcode-discovery-build-channel";
+- DISCOVERY_GIT_CHECKOUT_HEADER · constant · L27-L27 — const DISCOVERY_GIT_CHECKOUT_HEADER: &str = "x-jcode-discovery-git-checkout";
+- DISCOVERY_CI_HEADER · constant · L28-L28 — const DISCOVERY_CI_HEADER: &str = "x-jcode-discovery-ci";
+- DISCOVERY_RAN_FROM_CARGO_HEADER · constant · L29-L29 — const DISCOVERY_RAN_FROM_CARGO_HEADER: &str = "x-jcode-discovery-ran-from-cargo";
+- DISCOVERY_BENCHMARK_ENV · constant · L30-L30 — const DISCOVERY_BENCHMARK_ENV: &str = "JCODE_DISCOVERY_BENCHMARK";
+- DISCOVERY_QUERY_MIN_CHARS · constant · L31-L31 — const DISCOVERY_QUERY_MIN_CHARS: usize = 20;
+- DISCOVERY_QUERY_MAX_CHARS · constant · L32-L32 — const DISCOVERY_QUERY_MAX_CHARS: usize = 500;
+- DISCOVERY_REASON_MIN_CHARS · constant · L33-L33 — const DISCOVERY_REASON_MIN_CHARS: usize = 40;
+- DISCOVERY_REASON_MAX_CHARS · constant · L34-L34 — const DISCOVERY_REASON_MAX_CHARS: usize = 2_000;
+- OFF_CATALOG_FAILURE_REASON · constant · L39-L39 — const OFF_CATALOG_FAILURE_REASON: &str = "off_catalog_select";
+- listing_has_no_tool_entry · function · L43-L60 — fn listing_has_no_tool_entry(listing: &Value) -> bool
+- selection_receipt_error · function · L65-L73 — fn selection_receipt_error(category: &str, tool_name: &str) -> anyhow::Error
+- discovery_benchmark_run · function · L75-L84 — fn discovery_benchmark_run() -> bool
+- DiscoveryFetchResult · struct · L87-L91 — struct DiscoveryFetchResult
+- DiscoveryFetchError · struct · L94-L99 — struct DiscoveryFetchError
+- DiscoveryRequestContext · struct · L101-L110 — struct DiscoveryRequestContext<'a>
+- DiscoveryRequestProvenance · struct · L113-L125 — struct DiscoveryRequestProvenance
+- from_tool_context · function · L128-L149 — fn from_tool_context(ctx: &ToolContext) -> Self
+- apply · function · L151-L177 — fn apply(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- bool_header · function · L180-L182 — fn bool_header(value: bool) -> &'static str
+- fmt · function · L185-L187 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- record_discovery_telemetry · function · L193-L224 — fn record_discovery_telemetry(
+- DiscoverToolsTool · struct · L236-L238 — pub struct DiscoverToolsTool
+- new · function · L241-L245 — pub fn new() -> Self
+- DiscoverToolsInput · struct · L249-L277 — struct DiscoverToolsInput
+- DiscoveryAction · enum · L280-L285 — enum DiscoveryAction
+- parse · function · L292-L315 — fn parse(action: Option<&str>, has_tool: bool) -> Result<Self>
+- ValidatedDetails · struct · L318-L324 — struct ValidatedDetails
+- ValidatedSuggestion · struct · L326-L333 — struct ValidatedSuggestion
+- DiscoveryInputError · struct · L336-L339 — struct DiscoveryInputError
+- validate_discovery_text · function · L341-L411 — fn validate_discovery_text(
+- has_sufficient_detail · function · L413-L424 — fn has_sufficient_detail(value: &str, field: &str) -> bool
+- name · function · L428-L430 — fn name(&self) -> &str
+- description · function · L432-L438 — fn description(&self) -> &str
+- parameters_schema · function · L440-L525 — fn parameters_schema(&self) -> Value
+- execute · function · L527-L981 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- fetch_listing · function · L988-L1062 — async fn fetch_listing(
+- validate_details · function · L1064-L1174 — fn validate_details(params: &DiscoverToolsInput) -> Result<ValidatedDetails>
+- RELEVANCE · constant · L1065-L1072 — const RELEVANCE: &[&str] = &[
+- GOALS · constant · L1073-L1083 — const GOALS: &[&str] = &[
+- TOPICS · constant · L1084-L1092 — const TOPICS: &[&str] = &[
+- fetch_details · function · L1176-L1256 — async fn fetch_details(
+- submit_suggestion · function · L1258-L1350 — async fn submit_suggestion(
+- validate_suggestion · function · L1352-L1441 — fn validate_suggestion(params: &DiscoverToolsInput) -> Result<ValidatedSuggestion>
+- validate_suggestion_text · function · L1443-L1472 — fn validate_suggestion_text(
+- normalize_selection_name · function · L1479-L1503 — fn normalize_selection_name(value: Option<&str>) -> Result<Option<String>>
+- normalize_suggestion_url · function · L1505-L1541 — fn normalize_suggestion_url(value: Option<&str>) -> Result<Option<String>>
+- extract_mcp_setups · function · L1545-L1550 — fn extract_mcp_setups(listing: &Value) -> Vec<crate::sponsors::provenance::DiscoveredSetup>
+- extract_mcp_setups_from · function · L1553-L1576 — fn extract_mcp_setups_from(tools: &[Value]) -> Vec<crate::sponsors::provenance::DiscoveredSetup>
+- render_listing · function · L1582-L1616 — fn render_listing(category: &str, listing: &Value, request_id: &str) -> Result<String>
+- render_details · function · L1618-L1698 — fn render_details(category: &str, requested_tool: &str, response: &Value) -> Result<String>
+- render_suggestion · function · L1700-L1748 — fn render_suggestion(
+- render_selection · function · L1754-L1836 — fn render_selection(category: &str, tool_name: &str, listing: &Value) -> Result<String>
+- tests · module · L1839-L2982 — mod tests
+- header_test_provenance · function · L1842-L1856 — fn header_test_provenance(correlation_id: Option<&str>) -> DiscoveryRequestProvenance
+- discovery_requests_attach_only_the_ephemeral_session_correlation_id · function · L1859-L1872 — fn discovery_requests_attach_only_the_ephemeral_session_correlation_id()
+- discovery_requests_omit_correlation_header_when_telemetry_has_no_id · function · L1875-L1886 — fn discovery_requests_omit_correlation_header_when_telemetry_has_no_id()
+- render_listing_includes_disclosure_and_tools · function · L1889-L1902 — fn render_listing_includes_disclosure_and_tools()
+- render_listing_withholds_setup_and_directs_to_select · function · L1910-L1933 — fn render_listing_withholds_setup_and_directs_to_select()
+- render_listing_rejects_missing_tools · function · L1936-L1945 — fn render_listing_rejects_missing_tools()
+- render_listing_handles_empty_category · function · L1948-L1960 — fn render_listing_handles_empty_category()
+- render_listing_instructs_selection_phase · function · L1963-L1973 — fn render_listing_instructs_selection_phase()
+- render_selection_includes_setup_and_disclosure · function · L1976-L1995 — fn render_selection_includes_setup_and_disclosure()
+- selection_receipt_must_match_the_request_and_catalog_contract · function · L1998-L2045 — fn selection_receipt_must_match_the_request_and_catalog_contract()
+- render_off_catalog_selection_is_receipt_only · function · L2048-L2082 — fn render_off_catalog_selection_is_receipt_only()
+- selected_product_names_are_public_and_bounded · function · L2085-L2095 — fn selected_product_names_are_public_and_bounded()
+- agentmail_selection_preserves_signup_attribution_and_mcp_provenance · function · L2098-L2135 — fn agentmail_selection_preserves_signup_attribution_and_mcp_provenance()
+- empty_select_response_is_off_catalog · function · L2141-L2150 — fn empty_select_response_is_off_catalog()
+- missing_selection_receipt_preserves_off_catalog_semantics · function · L2153-L2161 — fn missing_selection_receipt_preserves_off_catalog_semantics()
+- schema_is_compact_and_self_contained · function · L2164-L2223 — fn schema_is_compact_and_self_contained()
+- discovery_action_is_explicit_but_backwards_compatible · function · L2226-L2251 — fn discovery_action_is_explicit_but_backwards_compatible()
+- details_validation_requires_structured_relevance_and_goal · function · L2254-L2277 — fn details_validation_requires_structured_relevance_and_goal()
+- render_details_includes_decision_brief_and_both_source_links · function · L2280-L2299 — fn render_details_includes_decision_brief_and_both_source_links()
+- legacy_action_names_still_parse · function · L2304-L2315 — fn legacy_action_names_still_parse()
+- suggestion_validation_distinguishes_product_and_capability_gap · function · L2318-L2358 — fn suggestion_validation_distinguishes_product_and_capability_gap()
+- suggestion_validation_rejects_private_or_mismatched_fields · function · L2361-L2388 — fn suggestion_validation_rejects_private_or_mismatched_fields()
+- optional_suggestion_fields_accept_explicit_nulls · function · L2391-L2409 — fn optional_suggestion_fields_accept_explicit_nulls()
+- render_suggestion_is_clear_about_review_status_and_recipient · function · L2412-L2437 — fn render_suggestion_is_clear_about_review_status_and_recipient()
+- discovery_text_requires_substantive_content · function · L2440-L2457 — fn discovery_text_requires_substantive_content()
+- discovery_text_rejects_recognizable_secrets_and_card_numbers · function · L2460-L2481 — fn discovery_text_rejects_recognizable_secrets_and_card_numbers()
+- discovery_text_allows_non_secret_capability_language · function · L2484-L2495 — fn discovery_text_allows_non_secret_capability_language()
+- one_shot_server · function · L2499-L2520 — async fn one_shot_server(
+- test_discovery_request · function · L2522-L2538 — fn test_discovery_request<'a>(
+- test_provenance · function · L2540-L2554 — fn test_provenance() -> DiscoveryRequestProvenance
+- fetch_listing_round_trips_and_sends_only_expected_params · function · L2557-L2601 — async fn fetch_listing_round_trips_and_sends_only_expected_params()
+- fetch_details_posts_decision_context_and_returns_agent_brief · function · L2604-L2656 — async fn fetch_details_posts_decision_context_and_returns_agent_brief()
+- fetch_listing_hard_fails_on_http_error · function · L2659-L2668 — async fn fetch_listing_hard_fails_on_http_error()
+- fetch_listing_hard_fails_when_endpoint_unreachable · function · L2671-L2679 — async fn fetch_listing_hard_fails_when_endpoint_unreachable()
+- submit_suggestion_posts_structured_maintainer_only_payload · function · L2682-L2733 — async fn submit_suggestion_posts_structured_maintainer_only_payload()
+- submit_suggestion_treats_duplicate_receipt_as_success · function · L2736-L2766 — async fn submit_suggestion_treats_duplicate_receipt_as_success()
+- test_ctx · function · L2768-L2778 — fn test_ctx() -> crate::tool::ToolContext
+- execute_records_off_catalog_selection_without_provider_information · function · L2781-L2837 — async fn execute_records_off_catalog_selection_without_provider_information()
+- details_executes_through_public_tool_interface · function · L2840-L2908 — async fn details_executes_through_public_tool_interface()
+- git_category_executes_end_to_end_with_enabled_config_and_local_server · function · L2911-L2981 — async fn git_category_executes_end_to_end_with_enabled_config_and_local_server()

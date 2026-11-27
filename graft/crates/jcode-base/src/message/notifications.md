@@ -1,0 +1,41 @@
+# crates/jcode-base/src/message/notifications.rs
+
+- normalize_line_endings · function · L5-L11 — fn normalize_line_endings(content: &str) -> std::borrow::Cow<'_, str>
+- sanitize_fenced_block · function · L13-L15 — fn sanitize_fenced_block(text: &str) -> String
+- strip_ansi_escape_sequences · function · L22-L81 — pub fn strip_ansi_escape_sequences(text: &str) -> String
+- consume_csi · function · L23-L29 — fn consume_csi(chars: &mut std::iter::Peekable<std::str::Chars<'_>>)
+- consume_string · function · L31-L39 — fn consume_string(chars: &mut std::iter::Peekable<std::str::Chars<'_>>)
+- consume_escape · function · L41-L67 — fn consume_escape(chars: &mut std::iter::Peekable<std::str::Chars<'_>>)
+- format_input_shell_result_markdown · function · L83-L117 — pub fn format_input_shell_result_markdown(shell: &InputShellResult) -> String
+- indent_block · function · L119-L124 — fn indent_block(text: &str) -> String
+- input_shell_status_notice · function · L126-L136 — pub fn input_shell_status_notice(shell: &InputShellResult) -> String
+- format_background_task_status · function · L138-L146 — fn format_background_task_status(status: &BackgroundTaskStatus) -> &'static str
+- normalize_background_task_preview · function · L148-L158 — fn normalize_background_task_preview(preview: &str) -> Option<String>
+- sanitize_background_task_label · function · L160-L162 — fn sanitize_background_task_label(text: &str) -> String
+- background_task_display_name · function · L164-L171 — fn background_task_display_name<'a>(
+- background_task_header_label · function · L173-L183 — fn background_task_header_label(tool_name: &str, display_name: Option<&str>) -> String
+- background_task_display_label · function · L185-L189 — pub fn background_task_display_label(tool_name: &str, display_name: Option<&str>) -> String
+- parse_background_task_header_label · function · L191-L215 — fn parse_background_task_header_label(label: &str) -> (String, Option<String>)
+- NAMED_RE · constant · L192-L192 — static NAMED_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- TOOL_RE · constant · L193-L193 — static TOOL_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- strip_stream_prefix · function · L217-L222 — fn strip_stream_prefix(line: &str) -> &str
+- background_task_failure_summary · function · L224-L251 — fn background_task_failure_summary(preview: &str) -> Option<String>
+- format_background_task_notification_markdown · function · L253-L300 — pub fn format_background_task_notification_markdown(task: &BackgroundTaskCompleted) -> String
+- format_background_task_progress_markdown · function · L302-L309 — pub fn format_background_task_progress_markdown(task: &BackgroundTaskProgressEvent) -> String
+- ParsedBackgroundTaskStartedNotification · struct · L312-L315 — pub struct ParsedBackgroundTaskStartedNotification
+- parse_background_task_started_notification_markdown · function · L317-L331 — pub fn parse_background_task_started_notification_markdown(
+- format_background_task_stalled_markdown · function · L333-L356 — pub fn format_background_task_stalled_markdown(
+- format_model_refresh_progress_markdown · function · L358-L367 — pub fn format_model_refresh_progress_markdown(detail: &str, percent: Option<u8>) -> String
+- ParsedBackgroundTaskProgressNotification · struct · L370-L378 — pub struct ParsedBackgroundTaskProgressNotification
+- split_progress_source · function · L380-L388 — fn split_progress_source(detail: &str) -> (String, Option<String>)
+- strip_progress_bar_prefix · function · L390-L398 — fn strip_progress_bar_prefix(summary: &str) -> &str
+- parse_progress_percent · function · L400-L407 — fn parse_progress_percent(summary: &str) -> Option<f32>
+- PERCENT_RE · constant · L401-L401 — static PERCENT_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_background_task_progress_notification_markdown · function · L409-L476 — pub fn parse_background_task_progress_notification_markdown(
+- HEADER_RE · constant · L412-L412 — static HEADER_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- INLINE_RE · constant · L413-L413 — static INLINE_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- ParsedBackgroundTaskNotification · struct · L479-L489 — pub struct ParsedBackgroundTaskNotification
+- parse_background_task_notification_markdown · function · L491-L558 — pub fn parse_background_task_notification_markdown(
+- HEADER_RE · constant · L494-L494 — static HEADER_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- FULL_OUTPUT_RE · constant · L495-L495 — static FULL_OUTPUT_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- background_task_status_notice · function · L560-L578 — pub fn background_task_status_notice(task: &BackgroundTaskCompleted) -> String

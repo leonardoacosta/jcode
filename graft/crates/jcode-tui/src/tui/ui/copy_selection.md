@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/tui/ui/copy_selection.rs
+
+- copy_point_from_snapshot · function · L9-L39 — pub(super) fn copy_point_from_snapshot(
+- RawSelectionPoint · struct · L42-L45 — struct RawSelectionPoint
+- copy_selection_text_from_raw_lines · function · L48-L57 — pub(super) fn copy_selection_text_from_raw_lines(
+- copy_selection_text_any · function · L62-L71 — pub(super) fn copy_selection_text_any(
+- copy_segment_text · function · L73-L80 — fn copy_segment_text(
+- copy_selection_text_from_wrapped_lines · function · L84-L112 — pub(super) fn copy_selection_text_from_wrapped_lines(
+- semantic_slice · function · L117-L144 — fn semantic_slice(text: &str, start_col: usize, end_col: usize) -> std::borrow::Cow<'_, str>
+- FrameChrome · enum · L148-L153 — enum FrameChrome
+- frame_chrome_for_selection · function · L161-L213 — fn frame_chrome_for_selection(
+- frame_chrome_at · function · L215-L221 — fn frame_chrome_at(chrome: &[(usize, FrameChrome)], raw_line: usize) -> Option<FrameChrome>
+- copy_selection_text_from_raw_lines_base · function · L223-L291 — fn copy_selection_text_from_raw_lines_base(
+- math_target_copies_source · function · L298-L340 — fn math_target_copies_source(
+- copy_selection_text_with_math_targets · function · L345-L404 — fn copy_selection_text_with_math_targets(
+- copy_selection_metrics_from_raw_lines · function · L410-L469 — pub(super) fn copy_selection_metrics_from_raw_lines(
+- link_target_from_snapshot · function · L471-L478 — pub(super) fn link_target_from_snapshot(
+- raw_selection_point · function · L480-L499 — fn raw_selection_point(
+- tests · module · L502-L659 — mod tests
+- math_snapshot · function · L510-L518 — fn math_snapshot() -> CopyViewportSnapshot
+- unicode_math_snapshot · function · L521-L523 — fn unicode_math_snapshot() -> CopyViewportSnapshot
+- math_snapshot_with · function · L525-L569 — fn math_snapshot_with(lines: &[&str]) -> CopyViewportSnapshot
+- point · function · L571-L577 — fn point(line: usize, column: usize) -> crate::tui::CopySelectionPoint
+- selection_replaces_latex_image_rows_with_source_and_preserves_neighbors · function · L580-L590 — fn selection_replaces_latex_image_rows_with_source_and_preserves_neighbors()
+- selection_over_unicode_inline_math_copies_latex_source · function · L593-L618 — fn selection_over_unicode_inline_math_copies_latex_source()
+- selection_inside_latex_image_copies_complete_source · function · L621-L627 — fn selection_inside_latex_image_copies_complete_source()
+- partial_selection_inside_unicode_math_frame_copies_highlighted_glyphs · function · L630-L640 — fn partial_selection_inside_unicode_math_frame_copies_highlighted_glyphs()
+- full_selection_of_unicode_math_frame_copies_latex_source · function · L643-L658 — fn full_selection_of_unicode_math_frame_copies_latex_source()

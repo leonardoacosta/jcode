@@ -1,0 +1,47 @@
+# crates/jcode-app-core/src/server/debug_tests.rs
+
+- tests · module · L1-L284 — mod tests
+- production_group_transfer_does_not_enable_arbitrary_debug_control · function · L6-L47 — fn production_group_transfer_does_not_enable_arbitrary_debug_control()
+- production_group_transfer_scopes_admission_and_keeps_debug_socket_alive · function · L51-L189 — async fn production_group_transfer_scopes_admission_and_keeps_debug_socket_alive()
+- CHILD · constant · L58-L58 — const CHILD: &str = "JCODE_TEST_SCOPED_TRANSFER_CHILD";
+- client_debug_state_registers_unregisters_and_falls_back · function · L192-L209 — fn client_debug_state_registers_unregisters_and_falls_back()
+- debug_job_payloads_include_expected_fields · function · L212-L240 — fn debug_job_payloads_include_expected_fields()
+- debug_help_text_mentions_key_namespaces_and_commands · function · L243-L252 — fn debug_help_text_mentions_key_namespaces_and_commands()
+- swarm_debug_help_text_mentions_core_swarm_sections · function · L255-L261 — fn swarm_debug_help_text_mentions_core_swarm_sections()
+- parse_namespaced_command_defaults_to_server_namespace · function · L264-L270 — fn parse_namespaced_command_defaults_to_server_namespace()
+- parse_namespaced_command_recognizes_known_namespaces · function · L273-L283 — fn parse_namespaced_command_recognizes_known_namespaces()
+- transcript_routing_tests · module · L286-L605 — mod transcript_routing_tests
+- live_member · function · L298-L323 — fn live_member(session_id: &str, connection_id: &str) -> SwarmMember
+- connection · function · L325-L342 — fn connection(
+- resolve_transcript_target_session_uses_requested_connected_session · function · L345-L366 — async fn resolve_transcript_target_session_uses_requested_connected_session()
+- resolve_transcript_target_session_prefers_last_focused_live_session · function · L369-L398 — async fn resolve_transcript_target_session_prefers_last_focused_live_session()
+- resolve_transcript_target_session_rejects_requested_session_without_connected_tui · function · L401-L422 — async fn resolve_transcript_target_session_rejects_requested_session_without_connected_tui()
+- resolve_transcript_target_session_falls_back_to_most_recent_live_tui_when_last_focused_not_connected · function · L425-L469 — async fn resolve_transcript_target_session_falls_back_to_most_recent_live_tui_when_last_focused_not_connected()
+- resolve_transcript_target_session_ignores_non_live_requesting_clients · function · L472-L507 — async fn resolve_transcript_target_session_ignores_non_live_requesting_clients()
+- resolve_client_debug_sender_uses_requested_session · function · L510-L543 — async fn resolve_client_debug_sender_uses_requested_session()
+- resolve_client_debug_sender_prefers_most_recent_requested_session_connection · function · L546-L582 — async fn resolve_client_debug_sender_prefers_most_recent_requested_session_connection()
+- resolve_client_debug_sender_without_request_uses_active_client · function · L585-L604 — async fn resolve_client_debug_sender_without_request_uses_active_client()
+- debug_execution_tests · module · L607-L869 — mod debug_execution_tests
+- lock_env · function · L617-L619 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- EnvVarGuard · struct · L621-L625 — struct EnvVarGuard
+- set · function · L628-L637 — fn set(key: &'static str, value: &str) -> Self
+- remove · function · L639-L648 — fn remove(key: &'static str) -> Self
+- drop · function · L652-L658 — fn drop(&mut self)
+- TestProvider · struct · L661-L661 — pub(super) struct TestProvider;
+- name · function · L665-L667 — fn name(&self) -> &str
+- model · function · L669-L671 — fn model(&self) -> String
+- available_models · function · L673-L675 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L677-L679 — fn available_models_display(&self) -> Vec<String>
+- prefetch_models · function · L681-L683 — async fn prefetch_models(&self) -> anyhow::Result<()>
+- set_model · function · L685-L687 — fn set_model(&self, _model: &str) -> anyhow::Result<()>
+- handles_tools_internally · function · L689-L691 — fn handles_tools_internally(&self) -> bool
+- complete · function · L693-L703 — async fn complete(
+- fork · function · L705-L707 — fn fork(&self) -> Arc<dyn provider::Provider>
+- test_agent · function · L710-L714 — async fn test_agent() -> Arc<AsyncMutex<Agent>>
+- resolve_debug_session_uses_requested_session_when_present · function · L717-L735 — async fn resolve_debug_session_uses_requested_session_when_present()
+- resolve_debug_session_falls_back_to_current_session · function · L738-L755 — async fn resolve_debug_session_falls_back_to_current_session()
+- resolve_debug_session_uses_only_session_when_singleton · function · L758-L774 — async fn resolve_debug_session_uses_only_session_when_singleton()
+- resolve_debug_session_never_defaults_to_a_dead_current_session · function · L777-L811 — async fn resolve_debug_session_never_defaults_to_a_dead_current_session()
+- resolve_debug_session_errors_for_unknown_or_missing_session · function · L814-L844 — async fn resolve_debug_session_errors_for_unknown_or_missing_session()
+- debug_message_timeout_secs_reads_valid_env_values · function · L847-L850 — fn debug_message_timeout_secs_reads_valid_env_values()
+- debug_message_timeout_secs_ignores_missing_empty_invalid_and_zero · function · L853-L868 — fn debug_message_timeout_secs_ignores_missing_empty_invalid_and_zero()

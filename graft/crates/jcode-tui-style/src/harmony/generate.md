@@ -1,0 +1,25 @@
+# crates/jcode-tui-style/src/harmony/generate.rs
+
+- COLORFUL_L_MIN · constant · L19-L19 — const COLORFUL_L_MIN: f32 = 0.36;
+- COLORFUL_L_MAX · constant · L20-L20 — const COLORFUL_L_MAX: f32 = 0.94;
+- generate_from_seed · function · L31-L205 — pub fn generate_from_seed(seed: (u8, u8, u8), background: (u8, u8, u8)) -> Palette
+- NEUTRAL_SEED_CHROMA · constant · L43-L43 — const NEUTRAL_SEED_CHROMA: f32 = 0.02;
+- separate_confusable_pairs · function · L217-L432 — fn separate_confusable_pairs(
+- worst_distance · function · L225-L232 — fn worst_distance(left: (u8, u8, u8), right: (u8, u8, u8)) -> f32
+- candidates · function · L258-L330 — fn candidates(role: Role, lab: Oklab, low: f32, high: f32) -> Vec<Oklab>
+- MIN_CHROMA · constant · L264-L264 — const MIN_CHROMA: f32 = 0.05;
+- weakest_pair · function · L342-L353 — fn weakest_pair(palette: &Palette) -> (f32, Option<(Role, Role)>)
+- conventional_hue · function · L439-L446 — fn conventional_hue(role: Role) -> Option<f32>
+- at_hue · function · L449-L462 — fn at_hue(hue: f32, lightness: f32, chroma: f32) -> (u8, u8, u8)
+- generation · module · L465-L706 — mod generation
+- DARK_BG · constant · L470-L470 — const DARK_BG: (u8, u8, u8) = (18, 18, 18);
+- LIGHT_BG · constant · L471-L471 — const LIGHT_BG: (u8, u8, u8) = (250, 250, 250);
+- generated_palettes_score_well_from_any_seed · function · L477-L499 — fn generated_palettes_score_well_from_any_seed()
+- generated_palettes_beat_hand_made_classics · function · L505-L523 — fn generated_palettes_beat_hand_made_classics()
+- separating_pairs_does_not_cost_readability · function · L531-L548 — fn separating_pairs_does_not_cost_readability()
+- generated_palettes_have_no_confusable_pairs · function · L555-L598 — fn generated_palettes_have_no_confusable_pairs()
+- generated_palettes_are_reasonably_colorblind_safe · function · L601-L616 — fn generated_palettes_are_reasonably_colorblind_safe()
+- generated_palettes_beat_the_seed_used_naively_everywhere · function · L619-L633 — fn generated_palettes_beat_the_seed_used_naively_everywhere()
+- generation_respects_the_background_it_targets · function · L636-L654 — fn generation_respects_the_background_it_targets()
+- semantic_roles_keep_their_conventional_hues · function · L662-L696 — fn semantic_roles_keep_their_conventional_hues()
+- generation_is_deterministic · function · L699-L705 — fn generation_is_deterministic()

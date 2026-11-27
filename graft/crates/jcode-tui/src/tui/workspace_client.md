@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/workspace_client.rs
+
+- WorkspaceSplitTarget · enum · L7-L11 — pub enum WorkspaceSplitTarget
+- WorkspaceClientState · struct · L19-L25 — pub(crate) struct WorkspaceClientState
+- is_enabled · function · L28-L30 — pub(crate) fn is_enabled(&self) -> bool
+- enable · function · L32-L39 — pub(crate) fn enable(&mut self, current_session_id: Option<&str>, all_sessions: &[String])
+- disable · function · L41-L45 — pub(crate) fn disable(&mut self)
+- reset_for_tests · function · L48-L50 — pub(crate) fn reset_for_tests(&mut self)
+- status_summary · function · L52-L66 — pub(crate) fn status_summary(&self) -> String
+- sync_after_history · function · L68-L81 — pub(crate) fn sync_after_history(&mut self, current_session_id: &str, all_sessions: &[String])
+- queue_split_target · function · L83-L86 — pub(crate) fn queue_split_target(&mut self, target: WorkspaceSplitTarget)
+- take_pending_resume_session · function · L88-L90 — pub(crate) fn take_pending_resume_session(&mut self) -> Option<String>
+- queue_resume_session · function · L92-L94 — pub(crate) fn queue_resume_session(&mut self, session_id: String)
+- handle_split_response · function · L96-L117 — pub(crate) fn handle_split_response(&mut self, new_session_id: &str) -> bool
+- navigate_left · function · L119-L126 — pub(crate) fn navigate_left(&mut self) -> Option<String>
+- navigate_right · function · L128-L135 — pub(crate) fn navigate_right(&mut self) -> Option<String>
+- navigate_up · function · L137-L146 — pub(crate) fn navigate_up(&mut self) -> Option<String>
+- navigate_down · function · L148-L157 — pub(crate) fn navigate_down(&mut self) -> Option<String>
+- visible_rows · function · L159-L180 — pub(crate) fn visible_rows(
+- import_initial_row · function · L182-L210 — fn import_initial_row(&mut self, current_session_id: Option<&str>, all_sessions: &[String])
+- derive_visual_state · function · L213-L236 — fn derive_visual_state(
+- tests · module · L239-L294 — mod tests
+- enabling_imports_initial_sessions · function · L243-L254 — fn enabling_imports_initial_sessions()
+- horizontal_navigation_returns_new_target · function · L257-L265 — fn horizontal_navigation_returns_new_target()
+- split_response_in_workspace_targets_new_session · function · L268-L285 — fn split_response_in_workspace_targets_new_session()
+- status_summary_reports_enabled_state · function · L288-L293 — fn status_summary_reports_enabled_state()

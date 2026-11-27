@@ -1,0 +1,118 @@
+# crates/jcode-tui/src/tui/app/helpers.rs
+
+- clipboard_helper · module · L3-L3 — mod clipboard_helper;
+- git_line_cache · module · L4-L4 — mod git_line_cache;
+- git_watch · module · L6-L6 — mod git_watch;
+- model_names · module · L7-L7 — pub(crate) mod model_names;
+- environment · module · L11-L11 — mod environment;
+- AmbientInfoCacheEntry · type · L23-L23 — type AmbientInfoCacheEntry = (std::time::Instant, bool, Option<AmbientWidgetData>, bool);
+- AMBIENT_INFO_CACHE · constant · L25-L25 — static AMBIENT_INFO_CACHE: Mutex<Option<AmbientInfoCacheEntry>> = Mutex::new(None);
+- GitInfoCacheEntry · type · L30-L30 — type GitInfoCacheEntry = (std::time::Instant, Option<GitInfo>, bool);
+- GIT_INFO_CACHE · constant · L31-L31 — static GIT_INFO_CACHE: Mutex<Option<GitInfoCacheEntry>> = Mutex::new(None);
+- GIT_LINE_CACHE · constant · L32-L33 — static GIT_LINE_CACHE: std::sync::LazyLock<Mutex<git_line_cache::GitLineCache>> =
+- GIT_PROBE_STAMP · constant · L37-L37 — static GIT_PROBE_STAMP: Mutex<Option<(std::time::Instant, GitStamp)>> = Mutex::new(None);
+- GIT_FULL_PROBE_INTERVAL · constant · L42-L42 — const GIT_FULL_PROBE_INTERVAL: Duration = Duration::from_secs(60);
+- GitStamp · type · L44-L44 — type GitStamp = Vec<(std::path::PathBuf, Option<(std::time::SystemTime, u64)>)>;
+- git_stamp · function · L48-L88 — fn git_stamp(repo_root: &std::path::Path) -> Option<GitStamp>
+- TodosCacheEntry · type · L94-L99 — type TodosCacheEntry = (
+- TodosCache · type · L100-L100 — type TodosCache = std::collections::HashMap<String, TodosCacheEntry>;
+- TODOS_CACHE · constant · L101-L102 — static TODOS_CACHE: std::sync::LazyLock<Mutex<TodosCache>> =
+- backdated_now · function · L112-L124 — pub(crate) fn backdated_now(amount: Duration) -> std::time::Instant
+- invalidate_git_info_cache · function · L132-L146 — pub(crate) fn invalidate_git_info_cache()
+- seed_git_info_cache_for_tests · function · L155-L159 — pub(crate) fn seed_git_info_cache_for_tests(info: Option<GitInfo>)
+- invalidate_todos_cache · function · L165-L172 — pub(crate) fn invalidate_todos_cache(session_id: &str)
+- invalidate_ambient_info_cache · function · L179-L186 — pub(crate) fn invalidate_ambient_info_cache()
+- open_path_or_url_detached · function · L195-L212 — pub(crate) fn open_path_or_url_detached(
+- open_url_in_remote_chrome · function · L217-L247 — pub(crate) fn open_url_in_remote_chrome(host: &str, url: &str) -> bool
+- todos_cache_entry_age_for_tests · function · L253-L258 — pub(crate) fn todos_cache_entry_age_for_tests(session_id: &str) -> Option<(u64, bool)>
+- clear_todos_cache_for_tests · function · L262-L266 — pub(crate) fn clear_todos_cache_for_tests()
+- CachedContextSnapshot · struct · L269-L279 — pub(super) struct CachedContextSnapshot
+- extract_bracketed_system_message · function · L281-L290 — pub(super) fn extract_bracketed_system_message(message: &str) -> Option<String>
+- launch_client_executable · function · L292-L297 — pub(super) fn launch_client_executable() -> PathBuf
+- partition_queued_messages · function · L299-L323 — pub(super) fn partition_queued_messages(
+- ctrl_bracket_fallback_to_esc · function · L326-L333 — pub(super) fn ctrl_bracket_fallback_to_esc(code: &mut KeyCode, modifiers: &mut KeyModifiers)
+- ctrl_bracket_fallback_to_esc · function · L336-L336 — pub(super) fn ctrl_bracket_fallback_to_esc(_code: &mut KeyCode, _modifiers: &mut KeyModifiers) {}
+- debug_cmd_path · function · L339-L344 — pub(super) fn debug_cmd_path() -> PathBuf
+- debug_response_path · function · L347-L352 — pub(super) fn debug_response_path() -> PathBuf
+- rate_limit_parse · module · L355-L355 — mod rate_limit_parse;
+- is_context_limit_error · function · L358-L375 — pub(super) fn is_context_limit_error(error: &str) -> bool
+- is_request_payload_too_large_error · function · L381-L383 — pub(super) fn is_request_payload_too_large_error(error: &str) -> bool
+- parse_clock_time_to_duration · function · L386-L431 — pub(super) fn parse_clock_time_to_duration(time_str: &str) -> Option<Duration>
+- format_cache_footer · function · L433-L439 — pub(super) fn format_cache_footer(
+- format_tokens · function · L442-L450 — pub(super) fn format_tokens(tokens: u64) -> String
+- TEST_CLIPBOARD · constant · L462-L462 — static TEST_CLIPBOARD: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+- capture_clipboard_for_tests · function · L466-L470 — pub(crate) fn capture_clipboard_for_tests()
+- captured_clipboard_for_tests · function · L474-L476 — pub(crate) fn captured_clipboard_for_tests() -> Option<String>
+- stop_capturing_clipboard_for_tests · function · L480-L484 — pub(crate) fn stop_capturing_clipboard_for_tests()
+- is_remote_clipboard_session · function · L488-L503 — pub(super) fn is_remote_clipboard_session(env: impl Fn(&str) -> Option<String>) -> bool
+- run_copy_chain · function · L518-L530 — fn run_copy_chain(
+- copy_chain_tests · module · L533-L637 — mod copy_chain_tests
+- remote_detection_preserves_viewer_markers_and_explicit_overrides · function · L538-L560 — fn remote_detection_preserves_viewer_markers_and_explicit_overrides()
+- OrderLog · struct · L566-L566 — struct OrderLog(RefCell<Vec<&'static str>>);
+- writer · function · L569-L575 — fn writer(&self, label: &'static str, succeeds: bool) -> impl FnMut() -> bool + '_
+- events · function · L577-L579 — fn events(&self) -> Vec<&'static str>
+- ssh_session_writes_osc52_only · function · L583-L591 — fn ssh_session_writes_osc52_only()
+- ssh_session_never_falls_back_to_native_when_osc52_fails · function · L594-L602 — fn ssh_session_never_falls_back_to_native_when_osc52_fails()
+- local_session_prefers_native_clipboard_and_skips_osc52 · function · L605-L614 — fn local_session_prefers_native_clipboard_and_skips_osc52()
+- local_session_falls_back_to_osc52_when_native_fails · function · L617-L625 — fn local_session_falls_back_to_osc52_when_native_fails()
+- local_session_reports_failure_when_both_writers_fail · function · L628-L636 — fn local_session_reports_failure_when_both_writers_fail()
+- copy_to_local_clipboard · function · L649-L678 — fn copy_to_local_clipboard(text: &str) -> bool
+- copy_to_local_macos_clipboard · function · L681-L705 — fn copy_to_local_macos_clipboard(text: &str) -> bool
+- copy_to_clipboard · function · L716-L748 — pub(crate) fn copy_to_clipboard(text: &str) -> bool
+- copy_to_clipboard_osc52 · function · L752-L764 — fn copy_to_clipboard_osc52(text: &str) -> bool
+- effort_display_label · function · L766-L768 — pub(crate) fn effort_display_label(effort: &str) -> &str
+- effort_display_label_with_root · function · L772-L796 — fn effort_display_label_with_root<'a>(effort: &'a str, root: Option<&str>) -> &'a str
+- swarm_label · function · L773-L785 — macro_rules! swarm_label
+- inferred_reasoning_efforts · function · L798-L803 — pub(super) fn inferred_reasoning_efforts(
+- effort_bar · function · L805-L815 — pub(super) fn effort_bar(index: usize, total: usize) -> String
+- speed_tier_notice · function · L819-L836 — pub(super) fn speed_tier_notice(
+- service_tier_is_fast · function · L839-L841 — pub(super) fn service_tier_is_fast(service_tier: Option<&str>) -> bool
+- service_tier_display_label · function · L843-L853 — pub(super) fn service_tier_display_label(service_tier: &str) -> &str
+- fast_mode_success_message · function · L855-L872 — pub(super) fn fast_mode_success_message(
+- fast_mode_status_notice · function · L874-L888 — pub(super) fn fast_mode_status_notice(
+- fast_mode_overview_message · function · L890-L903 — pub(super) fn fast_mode_overview_message(
+- fast_mode_default_message · function · L905-L911 — pub(super) fn fast_mode_default_message(default_enabled: bool, default_label: &str) -> String
+- switched_model_account_suffix · function · L916-L930 — pub(crate) fn switched_model_account_suffix(
+- account_switch_notice · function · L936-L941 — pub(super) fn account_switch_notice(provider: &str, label: &str) -> String
+- mask_email · function · L943-L964 — pub(super) fn mask_email(email: &str) -> String
+- resume_invocation_args · function · L968-L984 — fn resume_invocation_args(session_id: &str, socket: Option<&str>) -> Vec<String>
+- remote_resume_invocation_args · function · L986-L1000 — fn remote_resume_invocation_args(
+- ssh_child_invocation_args · function · L1005-L1024 — pub(super) fn ssh_child_invocation_args(session_id: &str) -> Vec<String>
+- ssh_child_manual_command · function · L1026-L1031 — pub(super) fn ssh_child_manual_command(session_id: &str) -> String
+- spawn_ssh_child_in_new_terminal · function · L1034-L1059 — pub(super) fn spawn_ssh_child_in_new_terminal(session_id: &str) -> anyhow::Result<bool>
+- command_display · function · L1061-L1066 — fn command_display(program: &Path, args: &[String]) -> String
+- build_resume_command · function · L1068-L1127 — pub(super) fn build_resume_command(
+- resume_target_manual_command · function · L1129-L1132 — pub(super) fn resume_target_manual_command(target: &ResumeTarget, socket: Option<&str>) -> String
+- spawn_command_in_new_terminal · function · L1134-L1155 — fn spawn_command_in_new_terminal(
+- spawn_resume_target_in_new_terminal · function · L1157-L1164 — pub(super) fn spawn_resume_target_in_new_terminal(
+- build_fresh_session_command · function · L1169-L1180 — fn build_fresh_session_command(socket: Option<&str>) -> crate::terminal_launch::TerminalCommand
+- spawn_fresh_session_in_new_terminal · function · L1185-L1193 — pub(super) fn spawn_fresh_session_in_new_terminal(cwd: &Path) -> anyhow::Result<bool>
+- resumed_window_title · function · L1195-L1213 — fn resumed_window_title(session_id: &str) -> String
+- spawn_in_new_terminal · function · L1222-L1231 — pub(super) fn spawn_in_new_terminal(
+- helpers_tests · module · L1235-L1235 — mod helpers_tests;
+- copy_image_to_clipboard · function · L1237-L1291 — pub(super) fn copy_image_to_clipboard(media_type: &str, base64_data: &str) -> bool
+- extract_image_url · function · L1295-L1333 — pub(super) fn extract_image_url(text: &str) -> Option<String>
+- download_image_url · function · L1337-L1365 — pub(super) fn download_image_url(url: &str) -> Option<(String, String)>
+- encode_rgba_as_png · function · L1368-L1377 — pub(super) fn encode_rgba_as_png(width: usize, height: usize, rgba: &[u8]) -> Option<Vec<u8>>
+- gather_git_info · function · L1380-L1388 — pub(super) fn gather_git_info() -> Option<GitInfo>
+- gather_git_info · function · L1391-L1454 — pub(super) fn gather_git_info() -> Option<GitInfo>
+- TTL · constant · L1396-L1396 — const TTL: Duration = Duration::from_secs(5);
+- spawn_git_info_refresh · function · L1461-L1465 — fn spawn_git_info_refresh()
+- git_watch_changed · function · L1470-L1477 — fn git_watch_changed()
+- run_git_info_refresh · function · L1480-L1506 — fn run_git_info_refresh()
+- prime_git_info · function · L1516-L1540 — pub(crate) fn prime_git_info(budget: Duration)
+- gather_todos_and_goals_for_session · function · L1546-L1605 — pub(super) fn gather_todos_and_goals_for_session(
+- TTL · constant · L1554-L1554 — const TTL: Duration = Duration::from_secs(1);
+- fetch · function · L1560-L1565 — fn fetch(session_id: &str) -> (Vec<TodoItem>, Vec<crate::todo::TodoGoal>)
+- gather_ambient_info · function · L1607-L1651 — pub(super) fn gather_ambient_info(ambient_enabled: bool) -> Option<AmbientWidgetData>
+- TTL · constant · L1614-L1614 — const TTL: Duration = Duration::from_secs(2);
+- spawn_ambient_info_refresh · function · L1662-L1679 — fn spawn_ambient_info_refresh(ambient_enabled: bool)
+- clear_ambient_info_cache_for_tests · function · L1682-L1686 — pub(crate) fn clear_ambient_info_cache_for_tests()
+- format_countdown_until · function · L1688-L1711 — pub(crate) fn format_countdown_until(target: chrono::DateTime<chrono::Utc>) -> String
+- gather_git_info_inner · function · L1714-L1716 — pub(crate) fn gather_git_info_inner() -> Option<GitInfo>
+- parse_recent_commits · function · L1720-L1763 — pub(crate) fn parse_recent_commits(
+- parse_numstat · function · L1767-L1787 — pub(crate) fn parse_numstat(
+- porcelain_status_letter · function · L1792-L1807 — pub(crate) fn porcelain_status_letter(index: u8, worktree: u8) -> char
+- account_notice_tests · module · L1811-L1811 — mod account_notice_tests;
+- git_stamp_tests · module · L1814-L1828 — mod git_stamp_tests
+- stamp_changes_when_head_ref_moves · function · L1816-L1827 — fn stamp_changes_when_head_ref_moves()

@@ -1,0 +1,60 @@
+# crates/jcode-tui-render/src/swarm_gallery.rs
+
+- status_accent · function · L17-L30 — pub fn status_accent(status: &str) -> Color
+- role_glyph · function · L33-L38 — pub fn role_glyph(role: Option<&str>) -> Option<&'static str>
+- humanize_age · function · L41-L51 — pub fn humanize_age(age: u64) -> String
+- is_active_status · function · L54-L56 — pub fn is_active_status(status: &str) -> bool
+- STRIP_SPINNER_FRAME_MS · constant · L63-L63 — pub const STRIP_SPINNER_FRAME_MS: u64 = 80;
+- STRIP_SPINNER_FPS · constant · L64-L64 — pub const STRIP_SPINNER_FPS: f32 = 1000.0 / STRIP_SPINNER_FRAME_MS as f32;
+- STRIP_SPINNER_FRAMES · constant · L67-L67 — pub const STRIP_SPINNER_FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+- status_glyph · function · L72-L86 — pub fn status_glyph(status: &str, spinner_frame: usize) -> &'static str
+- card_status_glyph · function · L92-L104 — fn card_status_glyph(status: &str) -> &'static str
+- card_status_label · function · L106-L117 — fn card_status_label(status: &str) -> &'static str
+- format_elapsed · function · L119-L128 — fn format_elapsed(seconds: u64) -> String
+- format_model · function · L130-L141 — fn format_model(model: &str) -> String
+- STRIP_META_MIN_BODY · constant · L145-L145 — const STRIP_META_MIN_BODY: usize = 24;
+- strip_meta_parts · function · L149-L183 — fn strip_meta_parts(m: &GalleryMember) -> Vec<String>
+- format_tokens · function · L186-L196 — fn format_tokens(tokens: u64) -> String
+- format_route · function · L200-L209 — fn format_route(provider: Option<&str>, auth_method: Option<&str>) -> Option<String>
+- role_rank · function · L212-L217 — fn role_rank(role: Option<&str>) -> u8
+- status_rank · function · L223-L232 — fn status_rank(status: &str) -> u8
+- gallery_header · function · L235-L252 — pub fn gallery_header(total: usize, active: usize) -> Line<'static>
+- GalleryMember · struct · L260-L299 — pub struct GalleryMember
+- GalleryTodo · struct · L303-L309 — pub struct GalleryTodo
+- GalleryToolIntent · struct · L312-L319 — pub struct GalleryToolIntent
+- members_to_tiles · function · L323-L336 — pub fn members_to_tiles(members: &[GalleryMember]) -> Vec<SwarmTile>
+- render_gallery · function · L343-L368 — pub fn render_gallery(
+- render_swarm_chat_cards · function · L378-L432 — pub fn render_swarm_chat_cards(members: &[GalleryMember], width: usize) -> Vec<Line<'static>>
+- render_swarm_live_card · function · L437-L508 — pub fn render_swarm_live_card(
+- render_swarm_panel · function · L527-L590 — pub fn render_swarm_panel(
+- CHIP_TASK_MAX_W · constant · L595-L595 — const CHIP_TASK_MAX_W: usize = 24;
+- CHIP_TASK_MIN_W · constant · L596-L596 — const CHIP_TASK_MIN_W: usize = 6;
+- SwarmStripHint · struct · L599-L604 — pub struct SwarmStripHint
+- render_swarm_strip · function · L624-L931 — pub fn render_swarm_strip(
+- Chip · struct · L666-L673 — struct Chip
+- CHIP_SEP · constant · L697-L697 — const CHIP_SEP: &str = "  ";
+- render_swarm_strip_vertical · function · L957-L1261 — pub fn render_swarm_strip_vertical(
+- LEAD · constant · L1001-L1001 — const LEAD: &str = "🐝 ";
+- INDENT · constant · L1002-L1002 — const INDENT: &str = "   ";
+- render_swarm_dock · function · L1282-L1370 — pub fn render_swarm_dock(
+- render_swarm_compact · function · L1385-L1450 — pub fn render_swarm_compact(
+- plan_progress_bar · function · L1456-L1493 — fn plan_progress_bar(done: u32, running: u32, total: u32, width: usize) -> Line<'static>
+- CELL · constant · L1457-L1457 — const CELL: &str = "▁";
+- dock_header · function · L1497-L1533 — fn dock_header(
+- dock_row · function · L1537-L1584 — fn dock_row(
+- dock_tail_lines · function · L1588-L1609 — fn dock_tail_lines(member: &GalleryMember, width: usize, rows: usize) -> Vec<Line<'static>>
+- clamp_line_to_width · function · L1614-L1641 — fn clamp_line_to_width(line: &mut Line<'static>, max_width: usize)
+- render_hovered_detail · function · L1658-L1699 — fn render_hovered_detail(
+- GUTTER · constant · L1666-L1666 — const GUTTER: &str = "   ";
+- hovered_detail_body · function · L1705-L1886 — fn hovered_detail_body(
+- GUTTER · constant · L1715-L1715 — const GUTTER: &str = "   ";
+- BAR · constant · L1716-L1716 — const BAR: &str = "│   ";
+- TODO_WINDOW · constant · L1728-L1728 — const TODO_WINDOW: usize = 4;
+- TOOL_WINDOW · constant · L1729-L1729 — const TOOL_WINDOW: usize = 3;
+- panel_header · function · L1887-L1911 — fn panel_header(total: usize, active: usize, focused: bool) -> Line<'static>
+- display_order · function · L1922-L1932 — pub fn display_order(members: &[GalleryMember]) -> Vec<usize>
+- sort_members_for_display · function · L1935-L1940 — fn sort_members_for_display(members: &[GalleryMember]) -> Vec<&GalleryMember>
+- display_index_to_tile_index · function · L1945-L1953 — fn display_index_to_tile_index(
+- list_row · function · L1957-L2016 — fn list_row(member: &GalleryMember, selected: bool, focused: bool, width: usize) -> Line<'static>
+- labels · module · L2021-L2021 — mod labels;
+- tests · module · L2026-L2026 — mod tests;

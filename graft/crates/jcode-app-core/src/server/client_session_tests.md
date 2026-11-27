@@ -1,0 +1,31 @@
+# crates/jcode-app-core/src/server/client_session_tests.rs
+
+- concurrency · module · L28-L28 — mod concurrency;
+- MockProvider · struct · L30-L30 — struct MockProvider;
+- user_response_capability_does_not_block_busy_attachment · function · L33-L78 — async fn user_response_capability_does_not_block_busy_attachment()
+- IdlePrewarmProvider · struct · L80-L80 — struct IdlePrewarmProvider(Arc<tokio::sync::Notify>, bool);
+- prewarm · function · L84-L89 — async fn prewarm(&self, _tools: &[ToolDefinition], _system: &str)
+- complete · function · L91-L99 — async fn complete(
+- name · function · L101-L103 — fn name(&self) -> &str
+- fork · function · L105-L107 — fn fork(&self) -> Arc<dyn Provider>
+- idle_prewarm_starts_before_user_input_and_skips_busy_sessions · function · L111-L128 — async fn idle_prewarm_starts_before_user_input_and_skips_busy_sessions()
+- idle_prewarm_never_holds_agent_lock_across_pending_preparation · function · L131-L146 — async fn idle_prewarm_never_holds_agent_lock_across_pending_preparation()
+- test_swarm_member · function · L148-L172 — fn test_swarm_member(session_id: &str, status: &str) -> SwarmMember
+- subscribe_does_not_mark_running_startup_worker_ready · function · L175-L181 — async fn subscribe_does_not_mark_running_startup_worker_ready()
+- subscribe_marks_non_running_member_ready · function · L184-L190 — async fn subscribe_marks_non_running_member_ready()
+- resume_rename_releases_member_lock_before_waiting_for_swarm_map · function · L193-L256 — async fn resume_rename_releases_member_lock_before_waiting_for_swarm_map()
+- complete · function · L260-L270 — async fn complete(
+- name · function · L272-L274 — fn name(&self) -> &str
+- fork · function · L276-L278 — fn fork(&self) -> Arc<dyn Provider>
+- test_agent · function · L281-L287 — fn test_agent(messages: Vec<crate::session::StoredMessage>) -> Agent
+- build_test_agent · function · L289-L299 — fn build_test_agent(
+- build_test_agent_with_id · function · L301-L311 — fn build_test_agent_with_id(
+- collect_events_until_done · function · L313-L330 — async fn collect_events_until_done(
+- live_target_claim_is_atomic_with_detached_source_cleanup · function · L333-L429 — async fn live_target_claim_is_atomic_with_detached_source_cleanup()
+- subscribe_working_dir_ignores_home_when_session_has_a_project_dir · function · L436-L479 — fn subscribe_working_dir_ignores_home_when_session_has_a_project_dir()
+- effective_subscribe_working_dir_binds_all_consumers_to_one_directory · function · L486-L513 — fn effective_subscribe_working_dir_binds_all_consumers_to_one_directory()
+- apply_subscribe_working_dir_keeps_project_when_client_reports_home · function · L520-L557 — async fn apply_subscribe_working_dir_keeps_project_when_client_reports_home()
+- clear_tests · module · L560-L560 — mod clear_tests;
+- reload_tests · module · L562-L562 — mod reload_tests;
+- resume_tests · module · L564-L564 — mod resume_tests;
+- swarm_attribution_tests · module · L566-L566 — mod swarm_attribution_tests;

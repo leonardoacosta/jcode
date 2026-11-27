@@ -1,0 +1,22 @@
+# crates/jcode-base/src/provider/catalog_routes_tests.rs
+
+- names_only_catalog_keeps_future_openai_models_on_direct_routes · function · L5-L16 — fn names_only_catalog_keeps_future_openai_models_on_direct_routes()
+- saved_account_catalogs_keep_work_personal_and_named_accounts_separate · function · L19-L145 — fn saved_account_catalogs_keep_work_personal_and_named_accounts_separate()
+- saved_account_expiry_requires_login_only_without_refresh_credentials · function · L148-L161 — fn saved_account_expiry_requires_login_only_without_refresh_credentials()
+- EnvGuard · struct · L163-L167 — struct EnvGuard
+- new · function · L170-L194 — fn new() -> Self
+- save_opencode_cache · function · L196-L220 — fn save_opencode_cache(&self, source_api_base: &str, model_ids: &[&str])
+- drop · function · L224-L232 — fn drop(&mut self)
+- named_provider_profile_model_routes_to_its_own_profile · function · L239-L261 — fn named_provider_profile_model_routes_to_its_own_profile()
+- named_anthropic_profile_preserves_profile_identity_in_picker_switch · function · L264-L288 — fn named_anthropic_profile_preserves_profile_identity_in_picker_switch()
+- unknown_model_does_not_match_named_provider_profiles · function · L291-L304 — fn unknown_model_does_not_match_named_provider_profiles()
+- simplified_anthropic_routes_preserve_oauth_vs_api_key_state_space · function · L307-L370 — fn simplified_anthropic_routes_preserve_oauth_vs_api_key_state_space()
+- custom_config_profile_model_is_routed_and_not_offered_a_copilot_route · function · L376-L410 — fn custom_config_profile_model_is_routed_and_not_offered_a_copilot_route()
+- custom_config_profile_model_never_gets_a_copilot_route_from_either_source · function · L418-L459 — fn custom_config_profile_model_never_gets_a_copilot_route_from_either_source()
+- remote_compatible_route_uses_live_cache_and_does_not_mark_fallback · function · L462-L473 — fn remote_compatible_route_uses_live_cache_and_does_not_mark_fallback()
+- slash_model_route_prefers_matching_compatible_profile · function · L476-L487 — fn slash_model_route_prefers_matching_compatible_profile()
+- current_compatible_profile_accepts_only_cataloged_slash_models · function · L490-L502 — fn current_compatible_profile_accepts_only_cataloged_slash_models()
+- remote_compatible_route_marks_static_model_list_fallback · function · L505-L517 — fn remote_compatible_route_marks_static_model_list_fallback()
+- remote_compatible_route_ignores_live_cache_from_wrong_api_base · function · L520-L525 — fn remote_compatible_route_ignores_live_cache_from_wrong_api_base()
+- save_openrouter_catalog_cache · function · L527-L551 — fn save_openrouter_catalog_cache(model_ids: &[&str])
+- openrouter_alternative_routes_skip_models_absent_from_catalog · function · L558-L589 — fn openrouter_alternative_routes_skip_models_absent_from_catalog()

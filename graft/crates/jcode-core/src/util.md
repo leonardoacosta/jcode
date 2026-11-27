@@ -1,0 +1,32 @@
+# crates/jcode-core/src/util.rs
+
+- truncate_str · function · L5-L15 — pub fn truncate_str(s: &str, max_bytes: usize) -> &str
+- APPROX_CHARS_PER_TOKEN · constant · L17-L17 — pub const APPROX_CHARS_PER_TOKEN: usize = 4;
+- ApproxTokenSeverity · enum · L20-L24 — pub enum ApproxTokenSeverity
+- estimate_tokens · function · L27-L29 — pub fn estimate_tokens(s: &str) -> usize
+- format_number · function · L32-L34 — pub fn format_number(n: usize) -> String
+- format_number_u64 · function · L37-L47 — pub fn format_number_u64(n: u64) -> String
+- format_approx_token_count · function · L50-L64 — pub fn format_approx_token_count(tokens: usize) -> String
+- approx_tool_output_token_severity · function · L67-L75 — pub fn approx_tool_output_token_severity(tokens: usize) -> ApproxTokenSeverity
+- sse_data_line · function · L81-L84 — pub fn sse_data_line(line: &str) -> Option<&str>
+- Utf8StreamDecoder · struct · L99-L101 — pub struct Utf8StreamDecoder
+- new · function · L104-L106 — pub fn new() -> Self
+- decode · function · L109-L147 — pub fn decode(&mut self, chunk: &[u8]) -> String
+- flush · function · L151-L157 — pub fn flush(&mut self) -> String
+- has_pending_bytes · function · L159-L161 — pub fn has_pending_bytes(&self) -> bool
+- split_concatenated_json · function · L176-L231 — pub fn split_concatenated_json(payload: &str) -> Option<SplitJson>
+- SplitJson · struct · L235-L240 — pub struct SplitJson
+- read_max_open_files_limits · function · L243-L250 — fn read_max_open_files_limits() -> Option<(String, String)>
+- process_fd_diagnostic_snapshot · function · L254-L311 — pub fn process_fd_diagnostic_snapshot() -> String
+- tests · module · L314-L410 — mod tests
+- test_truncate_ascii · function · L318-L321 — fn test_truncate_ascii()
+- test_truncate_multibyte · function · L324-L331 — fn test_truncate_multibyte()
+- test_truncate_emoji · function · L334-L341 — fn test_truncate_emoji()
+- test_truncate_empty · function · L344-L347 — fn test_truncate_empty()
+- test_truncate_boundary_inside_multibyte_does_not_panic · function · L350-L359 — fn test_truncate_boundary_inside_multibyte_does_not_panic()
+- test_sse_data_line_accepts_optional_space · function · L362-L366 — fn test_sse_data_line_accepts_optional_space()
+- test_format_number_adds_commas · function · L369-L375 — fn test_format_number_adds_commas()
+- test_format_approx_token_count_compacts_thousands · function · L378-L383 — fn test_format_approx_token_count_compacts_thousands()
+- test_process_fd_diagnostic_snapshot_mentions_pid · function · L386-L389 — fn test_process_fd_diagnostic_snapshot_mentions_pid()
+- test_approx_tool_output_token_severity_thresholds · function · L392-L409 — fn test_approx_tool_output_token_severity_thresholds()
+- sse_stream_integrity_tests · module · L414-L414 — mod sse_stream_integrity_tests;

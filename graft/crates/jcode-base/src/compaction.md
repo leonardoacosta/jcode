@@ -1,0 +1,86 @@
+# crates/jcode-base/src/compaction.rs
+
+- HARD_THRESHOLD_PENDING_WAIT_MS · constant · L44-L44 — const HARD_THRESHOLD_PENDING_WAIT_MS: u64 = 15_000;
+- HARD_THRESHOLD_PENDING_POLL_MS · constant · L45-L45 — const HARD_THRESHOLD_PENDING_POLL_MS: u64 = 50;
+- CompactionResult · struct · L48-L54 — struct CompactionResult
+- CompactionOutcomeLog · struct · L56-L64 — struct CompactionOutcomeLog<'a>
+- HardThresholdWait · struct · L66-L70 — struct HardThresholdWait
+- ActiveCharEstimate · struct · L83-L86 — struct ActiveCharEstimate
+- value · function · L92-L94 — fn value(&self) -> usize
+- is_dirty · function · L97-L99 — fn is_dirty(&self) -> bool
+- invalidate · function · L102-L104 — fn invalidate(&mut self)
+- set_exact · function · L107-L110 — fn set_exact(&mut self, chars: usize)
+- append_exact · function · L116-L119 — fn append_exact(&mut self, chars: usize)
+- reset_pending · function · L123-L126 — fn reset_pending(&mut self, maybe_has_active: bool)
+- CompactionManager · struct · L135-L213 — pub struct CompactionManager
+- new · function · L216-L241 — pub fn new() -> Self
+- reset · function · L244-L246 — pub fn reset(&mut self)
+- with_budget · function · L248-L251 — pub fn with_budget(mut self, budget: usize) -> Self
+- set_budget · function · L254-L257 — pub fn set_budget(&mut self, budget: usize)
+- set_context_cap_override · function · L260-L263 — pub fn set_context_cap_override(&mut self, cap: Option<usize>)
+- context_cap_override · function · L266-L268 — pub fn context_cap_override(&self) -> Option<usize>
+- refresh_context_cap · function · L270-L281 — fn refresh_context_cap(&mut self)
+- capped_budget · function · L285-L291 — fn capped_budget(cfg: &crate::config::CompactionConfig, budget: usize) -> usize
+- token_budget · function · L294-L296 — pub fn token_budget(&self) -> usize
+- notify_message_added · function · L303-L307 — pub fn notify_message_added(&mut self)
+- notify_message_added_with · function · L311-L313 — pub fn notify_message_added_with(&mut self, message: &Message)
+- notify_message_added_blocks · function · L315-L319 — pub fn notify_message_added_blocks(&mut self, content: &[ContentBlock])
+- add_message · function · L324-L326 — pub fn add_message(&mut self, message: Message)
+- seed_restored_messages · function · L334-L338 — pub fn seed_restored_messages(&mut self, count: usize)
+- seed_restored_messages_with · function · L342-L347 — pub fn seed_restored_messages_with(&mut self, all_messages: &[Message])
+- seed_restored_stored_messages_with · function · L349-L361 — pub fn seed_restored_stored_messages_with(
+- restore_persisted_state · function · L364-L390 — pub fn restore_persisted_state(
+- restore_persisted_state_with · function · L394-L406 — pub fn restore_persisted_state_with(
+- restore_persisted_stored_state_with · function · L408-L421 — pub fn restore_persisted_stored_state_with(
+- persisted_state_matches · function · L425-L440 — pub fn persisted_state_matches(
+- persisted_state · function · L443-L453 — pub fn persisted_state(&self) -> Option<crate::session::StoredCompactionState>
+- discard_oversized_openai_native_compaction · function · L459-L488 — pub fn discard_oversized_openai_native_compaction(&mut self) -> bool
+- push_token_snapshot · function · L497-L503 — pub fn push_token_snapshot(&mut self, tokens: u64)
+- push_embedding_snapshot · function · L510-L518 — pub fn push_embedding_snapshot(&mut self, text: &str)
+- anti_signals_block · function · L527-L567 — fn anti_signals_block(&self, all_messages: &[Message]) -> bool
+- should_compact_proactively · function · L576-L610 — fn should_compact_proactively(&self, all_messages: &[Message]) -> bool
+- should_compact_semantic · function · L623-L663 — fn should_compact_semantic(&self, all_messages: &[Message]) -> bool
+- semantic_cutoff · function · L675-L737 — fn semantic_cutoff(&mut self, active: &[Message]) -> usize
+- active_messages · function · L741-L749 — fn active_messages<'a>(&self, all_messages: &'a [Message]) -> &'a [Message]
+- clamp_compacted_count_to_messages · function · L751-L780 — fn clamp_compacted_count_to_messages(
+- log_compaction_state · function · L782-L801 — fn log_compaction_state(&self, phase: &str, trigger: &str, all_messages: &[Message])
+- log_compaction_outcome · function · L803-L830 — fn log_compaction_outcome(&self, outcome: CompactionOutcomeLog<'_>)
+- active_message_chars_with · function · L832-L848 — fn active_message_chars_with(&self, all_messages: &[Message]) -> usize
+- token_estimate_with · function · L851-L857 — pub fn token_estimate_with(&self, all_messages: &[Message]) -> usize
+- token_estimate · function · L860-L862 — pub fn token_estimate(&self) -> usize
+- update_observed_input_tokens · function · L865-L867 — pub fn update_observed_input_tokens(&mut self, tokens: u64)
+- effective_token_count_with · function · L870-L877 — pub fn effective_token_count_with(&self, all_messages: &[Message]) -> usize
+- effective_token_count · function · L880-L887 — pub fn effective_token_count(&self) -> usize
+- context_usage_with · function · L890-L892 — pub fn context_usage_with(&self, all_messages: &[Message]) -> f32
+- context_usage · function · L895-L897 — pub fn context_usage(&self) -> f32
+- should_compact_with · function · L900-L923 — pub fn should_compact_with(&self, all_messages: &[Message]) -> bool
+- maybe_start_compaction_with · function · L926-L991 — pub fn maybe_start_compaction_with(
+- ensure_context_fits · function · L1000-L1096 — pub fn ensure_context_fits(
+- wait_for_pending_compaction_at_hard_threshold · function · L1098-L1142 — fn wait_for_pending_compaction_at_hard_threshold(
+- force_compact_with · function · L1145-L1208 — pub fn force_compact_with(
+- check_and_apply_compaction_with · function · L1212-L1347 — pub fn check_and_apply_compaction_with(&mut self, all_messages: &[Message])
+- check_and_apply_compaction · function · L1350-L1353 — pub fn check_and_apply_compaction(&mut self)
+- take_compaction_event · function · L1356-L1358 — pub fn take_compaction_event(&mut self) -> Option<CompactionEvent>
+- messages_for_api_with · function · L1362-L1397 — pub fn messages_for_api_with(&mut self, all_messages: &[Message]) -> Vec<Message>
+- is_compacting · function · L1400-L1402 — pub fn is_compacting(&self) -> bool
+- mode · function · L1405-L1407 — pub fn mode(&self) -> crate::config::CompactionMode
+- set_mode · function · L1410-L1413 — pub fn set_mode(&mut self, mode: crate::config::CompactionMode)
+- mode_trigger_label · function · L1415-L1417 — fn mode_trigger_label(&self) -> &'static str
+- compacted_count · function · L1420-L1422 — pub fn compacted_count(&self) -> usize
+- summary_chars · function · L1425-L1430 — pub fn summary_chars(&self) -> usize
+- active_messages_count · function · L1433-L1435 — pub fn active_messages_count(&self) -> usize
+- stats · function · L1438-L1449 — pub fn stats(&self) -> CompactionStats
+- stats_with · function · L1452-L1464 — pub fn stats_with(&self, all_messages: &[Message]) -> CompactionStats
+- cached_semantic_embedding · function · L1466-L1479 — fn cached_semantic_embedding(&mut self, text: &str) -> Option<Vec<f32>>
+- insert_semantic_embedding_cache · function · L1481-L1496 — fn insert_semantic_embedding_cache(&mut self, key: u64, embedding: Option<Vec<f32>>)
+- poll_compaction_event_with · function · L1499-L1505 — pub fn poll_compaction_event_with(
+- hard_compact_with · function · L1513-L1631 — pub fn hard_compact_with(&mut self, all_messages: &[Message]) -> Result<usize, String>
+- emergency_truncate_with · function · L1640-L1654 — pub fn emergency_truncate_with(&mut self, all_messages: &mut [Message]) -> usize
+- recover_within_budget · function · L1670-L1697 — pub fn recover_within_budget(&mut self, all_messages: &mut [Message]) -> EmergencyRecovery
+- EmergencyRecovery · struct · L1702-L1709 — pub struct EmergencyRecovery
+- did_anything · function · L1713-L1715 — pub fn did_anything(&self) -> bool
+- summary_line · function · L1721-L1734 — pub fn summary_line(&self, trigger_usage: f32) -> String
+- default · function · L1738-L1740 — fn default() -> Self
+- summary_generation · module · L1744-L1744 — mod summary_generation;
+- transfer · module · L1750-L1750 — mod transfer;
+- tests · module · L1755-L1755 — mod tests;

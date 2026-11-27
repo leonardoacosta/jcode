@@ -1,0 +1,45 @@
+# crates/jcode-tui/src/tui/terminal_setup.rs
+
+- Applied · enum · L33-L40 — pub enum Applied
+- SetupTarget · enum · L44-L51 — pub enum SetupTarget
+- label · function · L54-L60 — pub fn label(self) -> &'static str
+- activation_note · function · L63-L69 — pub fn activation_note(self) -> &'static str
+- SHIFT_ENTER_CSI_U · constant · L77-L77 — pub const SHIFT_ENTER_CSI_U: &str = "\u{1b}[13;2u";
+- SHIFT_ENTER_HEX_CODES · constant · L83-L83 — pub const SHIFT_ENTER_HEX_CODES: &[u8] = &[0x1b, b'[', b'1', b'3', b';', b'2', b'u'];
+- APPLE_TERMINAL_SHIFT_RETURN_KEY · constant · L90-L90 — pub const APPLE_TERMINAL_SHIFT_RETURN_KEY: &str = "$\\015";
+- TMUX_CONFIG_BLOCK · constant · L99-L104 — pub const TMUX_CONFIG_BLOCK: &str = "\
+- WEZTERM_CONFIG_LINE · constant · L107-L107 — pub const WEZTERM_CONFIG_LINE: &str = "config.enable_kitty_keyboard = true";
+- MANAGED_MARKER · constant · L111-L111 — pub const MANAGED_MARKER: &str = "# jcode: let Shift+Enter reach the application";
+- tmux_config_is_configured · function · L114-L117 — pub fn tmux_config_is_configured(config: &str) -> bool
+- tmux_config_with_block · function · L123-L136 — pub fn tmux_config_with_block(existing: &str) -> Option<String>
+- wezterm_config_is_configured · function · L139-L145 — pub fn wezterm_config_is_configured(config: &str) -> bool
+- tmux_config_path · function · L148-L150 — pub fn tmux_config_path(home: &Path) -> PathBuf
+- wezterm_config_path · function · L153-L155 — pub fn wezterm_config_path(home: &Path) -> PathBuf
+- apple_terminal_plist_path · function · L158-L162 — pub fn apple_terminal_plist_path(home: &Path) -> PathBuf
+- apple_terminal_shift_return_value · function · L168-L174 — pub fn apple_terminal_shift_return_value() -> String
+- diagnose · function · L181-L189 — pub fn diagnose(term_program: Option<&str>, inside_tmux: bool) -> SetupTarget
+- apply · function · L192-L198 — pub fn apply(target: SetupTarget, home: &Path) -> std::io::Result<Applied>
+- supports_modified_enter_reporting · function · L211-L231 — pub fn supports_modified_enter_reporting() -> Option<bool>
+- apply_tmux · function · L234-L249 — pub fn apply_tmux(home: &Path) -> std::io::Result<Applied>
+- apply_wezterm · function · L252-L283 — pub fn apply_wezterm(home: &Path) -> std::io::Result<Applied>
+- apple_terminal_guidance · function · L290-L303 — pub fn apple_terminal_guidance() -> Applied
+- tests · module · L306-L534 — mod tests
+- tmux_is_diagnosed_first_because_it_masks_a_capable_terminal · function · L310-L315 — fn tmux_is_diagnosed_first_because_it_masks_a_capable_terminal()
+- wezterm_is_diagnosed_case_insensitively · function · L318-L322 — fn wezterm_is_diagnosed_case_insensitively()
+- unknown_terminals_fall_back_to_the_apple_terminal_explanation · function · L325-L333 — fn unknown_terminals_fall_back_to_the_apple_terminal_explanation()
+- apply_routes_each_target_to_its_own_fix · function · L336-L348 — fn apply_routes_each_target_to_its_own_fix()
+- applying_tmux_setup_creates_config_then_becomes_a_no_op · function · L351-L369 — fn applying_tmux_setup_creates_config_then_becomes_a_no_op()
+- applying_tmux_setup_preserves_existing_user_config · function · L372-L384 — fn applying_tmux_setup_preserves_existing_user_config()
+- applying_wezterm_setup_writes_a_loadable_config_when_absent · function · L387-L403 — fn applying_wezterm_setup_writes_a_loadable_config_when_absent()
+- applying_wezterm_setup_never_rewrites_an_existing_config · function · L406-L421 — fn applying_wezterm_setup_never_rewrites_an_existing_config()
+- apple_terminal_guidance_names_the_real_cause_and_a_real_fix · function · L424-L432 — fn apple_terminal_guidance_names_the_real_cause_and_a_real_fix()
+- shift_enter_csi_u_matches_the_kitty_protocol_encoding · function · L435-L445 — fn shift_enter_csi_u_matches_the_kitty_protocol_encoding()
+- apple_terminal_value_spells_the_escape_in_octal · function · L448-L450 — fn apple_terminal_value_spells_the_escape_in_octal()
+- apple_terminal_key_encodes_shift_plus_return · function · L453-L457 — fn apple_terminal_key_encodes_shift_plus_return()
+- tmux_block_sets_every_option_required_for_forwarding · function · L460-L466 — fn tmux_block_sets_every_option_required_for_forwarding()
+- tmux_block_is_appended_to_an_existing_config_with_a_blank_line · function · L469-L473 — fn tmux_block_is_appended_to_an_existing_config_with_a_blank_line()
+- tmux_block_is_not_appended_twice · function · L476-L482 — fn tmux_block_is_not_appended_twice()
+- tmux_hand_written_equivalent_config_is_respected · function · L485-L490 — fn tmux_hand_written_equivalent_config_is_respected()
+- wezterm_detects_the_enabled_flag_and_ignores_comments · function · L493-L504 — fn wezterm_detects_the_enabled_flag_and_ignores_comments()
+- config_paths_are_the_documented_locations · function · L507-L515 — fn config_paths_are_the_documented_locations()
+- every_target_explains_how_to_activate_the_change · function · L518-L533 — fn every_target_explains_how_to_activate_the_change()

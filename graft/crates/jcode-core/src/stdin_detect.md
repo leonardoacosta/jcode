@@ -1,0 +1,28 @@
+# crates/jcode-core/src/stdin_detect.rs
+
+- StdinState · enum · L2-L6 — pub enum StdinState
+- is_waiting_for_stdin · function · L8-L20 — pub fn is_waiting_for_stdin(pid: u32) -> StdinState
+- linux · module · L23-L256 — pub mod linux
+- check · function · L26-L28 — pub fn check(pid: u32) -> StdinState
+- check_inner · function · L30-L73 — fn check_inner(pid: u32, strict: bool) -> StdinState
+- stdin_is_pipe_or_pty · function · L75-L81 — fn stdin_is_pipe_or_pty(pid: u32) -> bool
+- stdin_is_only_blocking_input · function · L88-L115 — fn stdin_is_only_blocking_input(pid: u32) -> bool
+- fd_is_readable · function · L117-L127 — fn fd_is_readable(pid: u32, fd: &str) -> bool
+- check_process_tree · function · L130-L186 — pub fn check_process_tree(pid: u32) -> StdinState
+- MAX_DEPTH · constant · L149-L149 — const MAX_DEPTH: usize = 32;
+- MAX_VISITED · constant · L150-L150 — const MAX_VISITED: usize = 512;
+- direct_children · function · L197-L232 — pub(crate) fn direct_children(pid: u32) -> Vec<u32>
+- children_via_proc_scan · function · L234-L255 — fn children_via_proc_scan(pid: u32) -> Vec<u32>
+- macos · module · L259-L272 — mod macos
+- proc_pidinfo · function · L264-L271 — unsafe extern "C"
+- PROC_PIDLISTFDS · constant · L274-L274 — const PROC_PIDLISTFDS: i32 = 1;
+- proc_fdinfo · struct · L277-L280 — struct proc_fdinfo
+- PROC_PIDTHREADINFO · constant · L283-L283 — const PROC_PIDTHREADINFO: i32 = 5;
+- PROC_PIDLISTTHREADS · constant · L284-L284 — const PROC_PIDLISTTHREADS: i32 = 6;
+- proc_threadinfo · struct · L287-L299 — struct proc_threadinfo
+- check · function · L309-L322 — pub fn check(pid: u32) -> StdinState
+- stdin_is_interactive · function · L324-L358 — fn stdin_is_interactive(pid: i32) -> bool
+- is_thread_waiting · function · L360-L398 — fn is_thread_waiting(pid: i32) -> bool
+- windows · module · L402-L420 — mod windows
+- check · function · L405-L419 — pub fn check(_pid: u32) -> StdinState
+- stdin_detect_tests · module · L424-L424 — mod stdin_detect_tests;

@@ -1,0 +1,21 @@
+# crates/jcode-voice/src/dictation_tests.rs
+
+- EnvVarGuard · struct · L12-L15 — struct EnvVarGuard
+- set · function · L19-L23 — fn set<K: AsRef<std::ffi::OsStr>>(key: &'static str, value: K) -> Self
+- drop · function · L28-L34 — fn drop(&mut self)
+- ChildGuard · struct · L38-L38 — struct ChildGuard(std::process::Child);
+- spawn_named · function · L42-L52 — fn spawn_named(name: &str) -> Self
+- pid · function · L54-L56 — fn pid(&self) -> u32
+- drop · function · L61-L64 — fn drop(&mut self)
+- install_fake_niri · function · L68-L85 — fn install_fake_niri(bin_dir: &std::path::Path, pid: u32, title: &str)
+- parse_ppid_from_proc_status · function · L88-L91 — fn parse_ppid_from_proc_status()
+- run_command_trims_trailing_newlines · function · L94-L99 — async fn run_command_trims_trailing_newlines()
+- select_candidate_prefers_title_match · function · L102-L119 — fn select_candidate_prefers_title_match()
+- read_resumed_session_id_from_cmdline_for_current_process · function · L122-L124 — fn read_resumed_session_id_from_cmdline_for_current_process()
+- extract_session_short_name_from_jcode_window_title · function · L127-L144 — fn extract_session_short_name_from_jcode_window_title()
+- normalize_session_short_name_strips_wrapping_punctuation · function · L147-L156 — fn normalize_session_short_name_strips_wrapping_punctuation()
+- remember_and_read_last_focused_session · function · L159-L180 — fn remember_and_read_last_focused_session()
+- focused_jcode_session_uses_niri_window_title_when_process_name_is_generic · function · L184-L211 — fn focused_jcode_session_uses_niri_window_title_when_process_name_is_generic()
+- focused_cli_session_uses_client_registry_for_task_titled_windows · function · L215-L245 — fn focused_cli_session_uses_client_registry_for_task_titled_windows()
+- focused_cli_session_ignores_unrelated_windows · function · L249-L267 — fn focused_cli_session_ignores_unrelated_windows()
+- shared_terminal_process_routes_to_last_focused_client · function · L274-L306 — fn shared_terminal_process_routes_to_last_focused_client()

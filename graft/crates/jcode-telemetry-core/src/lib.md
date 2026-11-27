@@ -1,0 +1,144 @@
+# crates/jcode-telemetry-core/src/lib.rs
+
+- concurrency · module · L3-L3 — mod concurrency;
+- desktop · module · L4-L4 — mod desktop;
+- oauth_account · module · L6-L6 — mod oauth_account;
+- categories · module · L11-L11 — mod categories;
+- lifecycle · module · L13-L13 — mod lifecycle;
+- onboarding_trace · module · L15-L15 — pub mod onboarding_trace;
+- state_support · module · L16-L16 — mod state_support;
+- usage_outbox · module · L17-L17 — mod usage_outbox;
+- TELEMETRY_ENDPOINT · constant · L43-L43 — const TELEMETRY_ENDPOINT: &str = "https://telemetry.jcode.sh/v1/event";
+- TELEMETRY_USAGE_ENDPOINT · constant · L44-L44 — const TELEMETRY_USAGE_ENDPOINT: &str = "https://telemetry.jcode.sh/v2/usage";
+- telemetry_endpoint · function · L46-L54 — fn telemetry_endpoint(payload: &serde_json::Value) -> &'static str
+- TRANSCRIPT_ENDPOINT · constant · L55-L55 — const TRANSCRIPT_ENDPOINT: &str = "https://telemetry.jcode.sh/v1/transcript";
+- ASYNC_SEND_TIMEOUT · constant · L57-L57 — const ASYNC_SEND_TIMEOUT: Duration = Duration::from_secs(5);
+- BACKGROUND_QUEUE_CAPACITY · constant · L59-L59 — const BACKGROUND_QUEUE_CAPACITY: usize = 2048;
+- BLOCKING_INSTALL_TIMEOUT · constant · L60-L60 — const BLOCKING_INSTALL_TIMEOUT: Duration = Duration::from_millis(1200);
+- BLOCKING_LIFECYCLE_TIMEOUT · constant · L61-L61 — const BLOCKING_LIFECYCLE_TIMEOUT: Duration = Duration::from_millis(800);
+- BLOCKING_FIRST_PROMPT_TIMEOUT · constant · L62-L62 — const BLOCKING_FIRST_PROMPT_TIMEOUT: Duration = Duration::from_millis(500);
+- TELEMETRY_SCHEMA_VERSION · constant · L63-L63 — const TELEMETRY_SCHEMA_VERSION: u32 = 6;
+- DEFAULT_DISCOVERY_ENDPOINT · constant · L64-L64 — const DEFAULT_DISCOVERY_ENDPOINT: &str = "https://api.jcode.sh/v1/discovery";
+- TELEMETRY_PERMANENTLY_REJECTED · constant · L66-L66 — static TELEMETRY_PERMANENTLY_REJECTED: AtomicBool = AtomicBool::new(false);
+- TELEMETRY_QUEUE_OVERFLOW_WARNED · constant · L68-L68 — static TELEMETRY_QUEUE_OVERFLOW_WARNED: AtomicBool = AtomicBool::new(false);
+- TELEMETRY_BACKGROUND_SENDER · constant · L70-L70 — static TELEMETRY_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
+- TRANSCRIPT_BACKGROUND_SENDER · constant · L72-L72 — static TRANSCRIPT_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
+- TELEMETRY_HTTP_CLIENT · constant · L74-L74 — static TELEMETRY_HTTP_CLIENT: OnceLock<reqwest::blocking::Client> = OnceLock::new();
+- TEST_EMITTED_PAYLOADS · constant · L76-L76 — static TEST_EMITTED_PAYLOADS: Mutex<Vec<Value>> = Mutex::new(Vec::new());
+- DiscoveryTelemetry · struct · L79-L94 — pub struct DiscoveryTelemetry<'a>
+- TelemetryScoreSummary · struct · L99-L103 — pub struct TelemetryScoreSummary
+- from_scores · function · L106-L121 — pub fn from_scores(scores: impl IntoIterator<Item = u8>) -> Self
+- TodoTelemetryUpdate · struct · L127-L142 — pub struct TodoTelemetryUpdate
+- TodoSessionTelemetry · struct · L145-L161 — struct TodoSessionTelemetry
+- record · function · L164-L181 — fn record(&mut self, update: TodoTelemetryUpdate)
+- abandoned · function · L183-L186 — fn abandoned(&self) -> u32
+- SESSION_STATE · constant · L194-L194 — static SESSION_STATE: Mutex<Option<SessionTelemetry>> = Mutex::new(None);
+- TurnTelemetry · struct · L197-L255 — struct TurnTelemetry
+- SessionTelemetry · struct · L258-L371 — struct SessionTelemetry
+- new · function · L374-L439 — fn new(
+- DeliveryMode · enum · L443-L446 — enum DeliveryMode
+- TelemetryOptOutSource · enum · L449-L452 — pub enum TelemetryOptOutSource
+- as_str · function · L455-L460 — pub fn as_str(self) -> &'static str
+- TelemetryStatus · struct · L464-L469 — pub struct TelemetryStatus
+- opt_out_source · function · L471-L478 — pub fn opt_out_source() -> Option<TelemetryOptOutSource>
+- status · function · L482-L490 — pub fn status() -> TelemetryStatus
+- is_enabled · function · L492-L504 — pub fn is_enabled() -> bool
+- opt_out_marker_path · function · L510-L512 — fn opt_out_marker_path() -> Option<std::path::PathBuf>
+- opt_out_forced_by_env · function · L517-L527 — pub fn opt_out_forced_by_env() -> bool
+- is_truthy · function · L518-L525 — fn is_truthy(name: &str) -> bool
+- set_usage_telemetry_enabled · function · L532-L572 — pub fn set_usage_telemetry_enabled(enabled: bool) -> bool
+- emit_telemetry_opt_out · function · L574-L597 — fn emit_telemetry_opt_out()
+- share_content_marker_path · function · L604-L610 — fn share_content_marker_path() -> Option<std::path::PathBuf>
+- content_sharing_enabled · function · L614-L624 — pub fn content_sharing_enabled() -> bool
+- set_content_sharing_enabled · function · L628-L656 — pub fn set_content_sharing_enabled(enabled: bool) -> bool
+- record_transcript · function · L662-L700 — pub fn record_transcript(
+- RuntimeProvenance · struct · L703-L708 — pub struct RuntimeProvenance
+- runtime_provenance · function · L710-L717 — pub fn runtime_provenance() -> RuntimeProvenance
+- telemetry_envelope · function · L719-L728 — fn telemetry_envelope() -> (u32, String, bool, bool, bool)
+- emit_onboarding_step · function · L730-L743 — fn emit_onboarding_step(
+- send_onboarding_step_for_id · function · L745-L780 — fn send_onboarding_step_for_id(
+- emit_onboarding_step_once · function · L782-L800 — fn emit_onboarding_step_once(
+- record_setup_step_once · function · L802-L804 — pub fn record_setup_step_once(step: &'static str)
+- record_feedback · function · L806-L840 — pub fn record_feedback(text: &str)
+- record_discovery_event · function · L844-L894 — pub fn record_discovery_event(data: DiscoveryTelemetry<'_>)
+- current_session_correlation_id · function · L900-L908 — pub fn current_session_correlation_id() -> Option<String>
+- record_todo_update · function · L911-L920 — pub fn record_todo_update(update: TodoTelemetryUpdate)
+- project_profile · module · L923-L923 — mod project_profile;
+- now_ms_since · function · L925-L927 — fn now_ms_since(started_at: Instant) -> u64
+- increment_tool_category · function · L929-L948 — fn increment_tool_category(state: &mut SessionTelemetry, category: ToolCategory)
+- increment_turn_tool_category · function · L950-L966 — fn increment_turn_tool_category(state: &mut TurnTelemetry, category: ToolCategory)
+- update_turn_activity_timestamp · function · L968-L972 — fn update_turn_activity_timestamp(turn: &mut TurnTelemetry, now: Instant)
+- session_outcome · module · L974-L974 — mod session_outcome;
+- mark_command_family_usage · function · L977-L995 — fn mark_command_family_usage(state: &mut SessionTelemetry, command: &str)
+- mark_tool_feature_usage · function · L997-L1099 — fn mark_tool_feature_usage(state: &mut SessionTelemetry, name: &str, input: &Value)
+- mark_tool_success_side_effects · function · L1101-L1146 — fn mark_tool_success_side_effects(state: &mut SessionTelemetry, name: &str, input: &Value)
+- record_command_family · function · L1148-L1158 — pub fn record_command_family(command: &str)
+- post_payload · function · L1161-L1211 — fn post_payload(payload: serde_json::Value, timeout: Duration) -> bool
+- post_payload_with_retry · function · L1214-L1231 — fn post_payload_with_retry(payload: serde_json::Value, timeout: Duration) -> bool
+- RETRY_DELAYS · constant · L1215-L1215 — const RETRY_DELAYS: [Duration; 2] = [Duration::from_millis(200), Duration::from_millis(800)];
+- post_transcript_payload · function · L1234-L1260 — fn post_transcript_payload(payload: serde_json::Value, timeout: Duration) -> bool
+- telemetry_status_is_permanent · function · L1262-L1264 — fn telemetry_status_is_permanent(status: u16) -> bool
+- payload_is_breaker_exempt · function · L1268-L1273 — fn payload_is_breaker_exempt(payload: &serde_json::Value) -> bool
+- TELEMETRY_IN_FLIGHT · constant · L1276-L1276 — static TELEMETRY_IN_FLIGHT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+- flush_pending · function · L1281-L1291 — pub fn flush_pending(timeout: std::time::Duration)
+- durable_usage_pending · function · L1293-L1302 — fn durable_usage_pending() -> bool
+- spawn_background_worker · function · L1304-L1317 — fn spawn_background_worker<F>(capacity: usize, mut deliver: F) -> std::io::Result<SyncSender<Value>>
+- background_sender · function · L1320-L1328 — fn background_sender() -> &'static SyncSender<Value>
+- transcript_background_sender · function · L1331-L1338 — fn transcript_background_sender() -> &'static SyncSender<Value>
+- send_transcript_payload · function · L1341-L1346 — fn send_transcript_payload(payload: Value) -> bool
+- send_transcript_payload · function · L1349-L1361 — fn send_transcript_payload(payload: Value) -> bool
+- send_payload · function · L1364-L1371 — fn send_payload(mut payload: serde_json::Value, mode: DeliveryMode) -> bool
+- send_payload · function · L1374-L1429 — fn send_payload(mut payload: serde_json::Value, mode: DeliveryMode) -> bool
+- current_error_counts · function · L1431-L1439 — fn current_error_counts(state: &SessionTelemetry) -> ErrorCounts
+- has_any_errors · function · L1441-L1447 — fn has_any_errors(errors: &ErrorCounts) -> bool
+- session_has_meaningful_activity · function · L1449-L1469 — fn session_has_meaningful_activity(state: &SessionTelemetry, errors: &ErrorCounts) -> bool
+- emit_turn_end_event · function · L1471-L1481 — fn emit_turn_end_event(event: TurnEndEvent, mode: DeliveryMode) -> bool
+- finalize_current_turn · function · L1483-L1626 — fn finalize_current_turn(
+- maybe_emit_session_start · function · L1628-L1681 — fn maybe_emit_session_start()
+- emit_session_start_for_state · function · L1683-L1713 — fn emit_session_start_for_state(id: String, state: &SessionTelemetry, mode: DeliveryMode) -> bool
+- record_install_if_first_run · function · L1715-L1771 — pub fn record_install_if_first_run()
+- should_record_install_for_id · function · L1773-L1775 — fn should_record_install_for_id(id: &str, install_conversion_id: Option<&str>) -> bool
+- record_upgrade_if_needed · function · L1777-L1811 — pub fn record_upgrade_if_needed()
+- record_provider_selected · function · L1813-L1815 — pub fn record_provider_selected(provider: &str)
+- record_auth_started · function · L1817-L1820 — pub fn record_auth_started(provider: &str, method: &str)
+- record_auth_failed · function · L1822-L1824 — pub fn record_auth_failed(provider: &str, method: &str)
+- record_auth_failed_reason · function · L1826-L1833 — pub fn record_auth_failed_reason(provider: &str, method: &str, reason: &str)
+- record_auth_cancelled · function · L1835-L1838 — pub fn record_auth_cancelled(provider: &str, method: &str)
+- record_auth_surface_blocked · function · L1840-L1843 — pub fn record_auth_surface_blocked(provider: &str, method: &str)
+- record_auth_surface_blocked_reason · function · L1845-L1857 — pub fn record_auth_surface_blocked_reason(provider: &str, method: &str, reason: &str)
+- record_auth_success · function · L1859-L1887 — pub fn record_auth_success(provider: &str, method: &str)
+- begin_session · function · L1889-L1891 — pub fn begin_session(provider: &str, model: &str)
+- begin_session_with_parent · function · L1893-L1900 — pub fn begin_session_with_parent(
+- begin_resumed_session · function · L1902-L1904 — pub fn begin_resumed_session(provider: &str, model: &str)
+- begin_session_with_mode · function · L1906-L2078 — fn begin_session_with_mode(
+- record_turn · function · L2080-L2142 — pub fn record_turn()
+- record_assistant_response · function · L2144-L2164 — pub fn record_assistant_response()
+- record_memory_injected · function · L2166-L2177 — pub fn record_memory_injected(_count: usize, _age_ms: u64)
+- record_tool_call · function · L2179-L2197 — pub fn record_tool_call()
+- record_tool_failure · function · L2199-L2210 — pub fn record_tool_failure()
+- record_connection_type · function · L2212-L2237 — pub fn record_connection_type(connection: &str)
+- UsageSource · enum · L2241-L2248 — pub enum UsageSource
+- as_str · function · L2251-L2257 — fn as_str(self) -> &'static str
+- ProviderUsage · struct · L2262-L2267 — pub struct ProviderUsage
+- normalized · function · L2274-L2289 — fn normalized(self, provider: &str) -> Self
+- is_zero · function · L2291-L2296 — fn is_zero(&self) -> bool
+- record_provider_usage · function · L2309-L2317 — pub fn record_provider_usage(
+- record_provider_usage_with_model_attribution · function · L2322-L2392 — pub fn record_provider_usage_with_model_attribution(
+- record_simple_completion_usage · function · L2396-L2419 — pub fn record_simple_completion_usage(
+- record_simple_completion_failure_usage · function · L2423-L2437 — pub fn record_simple_completion_failure_usage(
+- record_token_usage · function · L2439-L2475 — pub fn record_token_usage(
+- record_error · function · L2477-L2513 — pub fn record_error(category: ErrorCategory)
+- ERROR_COUNT_SESSION_CAP · constant · L2482-L2482 — const ERROR_COUNT_SESSION_CAP: u32 = 500;
+- capped_increment · function · L2484-L2486 — fn capped_increment(counter: &mut u32)
+- record_provider_switch · function · L2515-L2525 — pub fn record_provider_switch()
+- record_model_switch · function · L2527-L2537 — pub fn record_model_switch()
+- record_user_cancelled · function · L2539-L2549 — pub fn record_user_cancelled()
+- TodoGateKind · enum · L2553-L2572 — pub enum TodoGateKind
+- record_todo_gate · function · L2575-L2608 — pub fn record_todo_gate(kind: TodoGateKind)
+- record_tool_execution · function · L2610-L2680 — pub fn record_tool_execution(name: &str, input: &Value, succeeded: bool, latency_ms: u64)
+- end_session · function · L2682-L2684 — pub fn end_session(provider_end: &str, model_end: &str)
+- end_session_with_reason · function · L2686-L2688 — pub fn end_session_with_reason(provider_end: &str, model_end: &str, reason: SessionEndReason)
+- record_crash · function · L2690-L2692 — pub fn record_crash(provider_end: &str, model_end: &str, reason: SessionEndReason)
+- current_provider_model · function · L2694-L2700 — pub fn current_provider_model() -> Option<(String, String)>
+- show_first_run_notice · function · L2702-L2720 — fn show_first_run_notice()
+- tests · module · L2723-L2723 — mod tests;

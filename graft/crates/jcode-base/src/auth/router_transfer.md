@@ -1,0 +1,41 @@
+# crates/jcode-base/src/auth/router_transfer.rs
+
+- MAX_BUNDLE_BYTES · constant · L37-L37 — pub const MAX_BUNDLE_BYTES: usize = 8 * 1024 * 1024;
+- MAX_FILE_BYTES · constant · L38-L38 — const MAX_FILE_BYTES: usize = 1024 * 1024;
+- BUNDLE_VERSION · constant · L39-L39 — const BUNDLE_VERSION: u32 = 1;
+- ACCOUNT_POOL_FILE · constant · L41-L41 — pub const ACCOUNT_POOL_FILE: &str = "account-pool.json";
+- ROUTING_CONFIG_FILE · constant · L42-L42 — pub const ROUTING_CONFIG_FILE: &str = "config.toml";
+- ROUTING_CONFIG_KEYS · constant · L47-L55 — pub const ROUTING_CONFIG_KEYS: &[&str] = &[
+- routing_config_snippet · function · L59-L81 — pub fn routing_config_snippet(config: &str) -> Result<Option<String>, RouterTransferError>
+- effective_config_text · function · L87-L94 — fn effective_config_text(root: &Path, text: &str) -> Result<String, RouterTransferError>
+- merge_routing_config · function · L99-L152 — pub fn merge_routing_config(
+- jcode_home_files · function · L155-L162 — pub fn jcode_home_files() -> &'static [&'static str]
+- FIXED_ENV_FILES · constant · L165-L174 — const FIXED_ENV_FILES: &[&str] = &[
+- env_file_names · function · L177-L195 — pub fn env_file_names<'a>(extra: impl IntoIterator<Item = &'a str>) -> BTreeSet<String>
+- is_transferable_env_name · function · L197-L202 — fn is_transferable_env_name(name: &str) -> bool
+- Root · enum · L206-L209 — pub enum Root
+- Entry · struct · L212-L217 — struct Entry
+- Bundle · struct · L220-L223 — struct Bundle
+- RouterBundle · struct · L226-L229 — pub struct RouterBundle
+- as_bytes · function · L232-L234 — pub fn as_bytes(&self) -> &[u8]
+- is_empty · function · L235-L237 — pub fn is_empty(&self) -> bool
+- names · function · L239-L241 — pub fn names(&self) -> &[String]
+- fmt · function · L245-L249 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- RouterTransferError · enum · L254-L262 — pub enum RouterTransferError
+- fmt · function · L265-L277 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- read_regular · function · L282-L307 — fn read_regular(path: &Path, name: &str) -> Result<Option<String>, RouterTransferError>
+- export_at · function · L310-L359 — pub fn export_at(
+- merge_pool · function · L363-L388 — fn merge_pool(source: &str, destination: Option<&str>) -> Result<String, RouterTransferError>
+- import_at · function · L392-L453 — pub fn import_at(
+- tests · module · L456-L714 — mod tests
+- pool_merge_keeps_destination_only_priorities_and_source_auto_resets · function · L460-L471 — fn pool_merge_keeps_destination_only_priorities_and_source_auto_resets()
+- assert_mode · function · L474-L480 — fn assert_mode(path: &std::path::Path, want: u32)
+- assert_mode · function · L483-L483 — fn assert_mode(_path: &std::path::Path, _want: u32) {}
+- SECRET · constant · L485-L485 — const SECRET: &str = "synthetic-router-key-not-real";
+- dirs · function · L487-L494 — fn dirs() -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf)
+- allowlist_covers_router_sources_and_rejects_unsafe_names · function · L497-L518 — fn allowlist_covers_router_sources_and_rejects_unsafe_names()
+- roundtrip_publishes_private_files_and_merges_pool · function · L521-L577 — fn roundtrip_publishes_private_files_and_merges_pool()
+- routing_config_extracts_allowlist_and_merges_preserving_destination · function · L580-L634 — fn routing_config_extracts_allowlist_and_merges_preserving_destination()
+- routing_config_includes_fragment_held_keys_and_fails_on_broken_sources · function · L637-L666 — fn routing_config_includes_fragment_held_keys_and_fails_on_broken_sources()
+- routing_config_travels_in_bundle · function · L669-L691 — fn routing_config_travels_in_bundle()
+- rejects_traversal_and_symlinks_without_partial_writes · function · L694-L713 — fn rejects_traversal_and_symlinks_without_partial_writes()

@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/replay/tests.rs
+
+- lock_env · function · L8-L10 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- EnvVarGuard · struct · L12-L15 — struct EnvVarGuard
+- set · function · L18-L22 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L26-L32 — fn drop(&mut self)
+- test_timeline_roundtrip · function · L36-L71 — fn test_timeline_roundtrip()
+- test_timeline_to_replay_events · function · L74-L103 — fn test_timeline_to_replay_events()
+- test_timeline_to_replay_events_caps_initial_idle · function · L106-L126 — fn test_timeline_to_replay_events_caps_initial_idle()
+- test_cap_initial_replay_idle_shifts_timeline_start · function · L129-L146 — fn test_cap_initial_replay_idle_shifts_timeline_start()
+- test_tool_events · function · L149-L185 — fn test_tool_events()
+- test_user_message_and_thinking · function · L188-L225 — fn test_user_message_and_thinking()
+- test_export_timeline_includes_persisted_swarm_replay_events · function · L228-L302 — fn test_export_timeline_includes_persisted_swarm_replay_events()
+- test_timeline_to_replay_events_converts_swarm_replay_events · function · L305-L375 — fn test_timeline_to_replay_events_converts_swarm_replay_events()
+- test_load_swarm_sessions_discovers_related_sessions · function · L378-L439 — fn test_load_swarm_sessions_discovers_related_sessions()
+- test_tool_ids_match_between_start_and_done · function · L442-L479 — fn test_tool_ids_match_between_start_and_done()
+- test_batch_tool_input_preserved · function · L482-L541 — fn test_batch_tool_input_preserved()
+- test_auto_edit_compresses_tool_spans · function · L544-L611 — fn test_auto_edit_compresses_tool_spans()
+- test_auto_edit_compresses_post_tool_idle_gap · function · L614-L663 — fn test_auto_edit_compresses_post_tool_idle_gap()
+- test_auto_edit_compresses_inter_prompt_gaps · function · L666-L729 — fn test_auto_edit_compresses_inter_prompt_gaps()
+- test_auto_edit_clamps_thinking · function · L732-L763 — fn test_auto_edit_clamps_thinking()
+- test_auto_edit_preserves_already_fast_timeline · function · L766-L799 — fn test_auto_edit_preserves_already_fast_timeline()
+- test_auto_edit_empty_timeline · function · L802-L805 — fn test_auto_edit_empty_timeline()

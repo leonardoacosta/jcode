@@ -1,0 +1,49 @@
+# crates/jcode-base/src/hooks_lifecycle.rs
+
+- OUTPUT_LIMIT · constant · L31-L31 — const OUTPUT_LIMIT: usize = 64 * 1024;
+- LOG_OUTPUT_LIMIT · constant · L33-L33 — const LOG_OUTPUT_LIMIT: usize = 500;
+- LifecycleEvent · enum · L36-L43 — pub enum LifecycleEvent
+- ALL · constant · L46-L53 — pub const ALL: [Self; 6] = [
+- name · function · L55-L64 — pub fn name(self) -> &'static str
+- default_mode · function · L66-L72 — pub fn default_mode(self) -> HookMode
+- can_block · function · L75-L77 — pub fn can_block(self) -> bool
+- from_legacy · function · L80-L87 — pub(super) fn from_legacy(legacy: &str) -> Option<Self>
+- subject_field · function · L90-L97 — fn subject_field(self) -> Option<&'static str>
+- HookMode · enum · L101-L105 — pub enum HookMode
+- parse · function · L108-L115 — fn parse(raw: &str) -> Option<Self>
+- ResolvedHook · struct · L120-L127 — pub struct ResolvedHook
+- applies · function · L134-L155 — pub fn applies(&self, subject: Option<&str>, paths: &[String], cwd: Option<&str>) -> bool
+- compile_matcher · function · L160-L168 — fn compile_matcher(matcher: &str) -> Result<Option<Regex>, String>
+- compile_glob · function · L172-L217 — fn compile_glob(glob: &str) -> Result<Regex, String>
+- resolve_entry · function · L219-L259 — fn resolve_entry(
+- resolve_entries · function · L263-L280 — pub fn resolve_entries(
+- lifecycle_config_warnings · function · L283-L288 — pub fn lifecycle_config_warnings(hooks: &HooksConfig) -> Vec<String>
+- lifecycle_configured · function · L292-L297 — pub fn lifecycle_configured(event: LifecycleEvent) -> bool
+- drop_aliased_legacy · function · L301-L315 — pub(super) fn drop_aliased_legacy(
+- ChildOwnership · interface · L318-L322 — pub trait ChildOwnership: Send + Sync
+- own · function · L321-L321 — fn own(&self) -> anyhow::Result<Box<dyn ChildLease>>;
+- ChildLease · interface · L326-L328 — pub trait ChildLease: Send
+- set_pid · function · L327-L327 — fn set_pid(&mut self, pid: u32);
+- LifecycleCall · struct · L332-L344 — pub struct LifecycleCall
+- new · function · L347-L358 — pub fn new(event: LifecycleEvent, session_id: impl Into<String>) -> Self
+- cwd · function · L360-L363 — pub fn cwd(mut self, cwd: Option<String>) -> Self
+- transcript_path · function · L365-L368 — pub fn transcript_path(mut self, path: Option<String>) -> Self
+- subject · function · L370-L373 — pub fn subject(mut self, subject: impl Into<String>) -> Self
+- paths · function · L375-L378 — pub fn paths(mut self, paths: Vec<String>) -> Self
+- field · function · L380-L383 — pub fn field(mut self, key: &str, value: impl Into<Value>) -> Self
+- owner · function · L385-L388 — pub fn owner(mut self, owner: Option<Arc<dyn ChildOwnership>>) -> Self
+- payload · function · L391-L409 — pub fn payload(&self) -> Value
+- env_event · function · L411-L420 — fn env_event(&self) -> HookEvent
+- LifecycleOutcome · struct · L425-L438 — pub struct LifecycleOutcome
+- RunResult · enum · L440-L448 — enum RunResult
+- redact · function · L450-L452 — fn redact(text: &str, limit: usize) -> String
+- read_bounded · function · L454-L470 — async fn read_bounded<R: tokio::io::AsyncRead + Unpin>(reader: Option<R>) -> Vec<u8>
+- kill_group · function · L472-L480 — fn kill_group(pid: Option<u32>)
+- run_command · function · L482-L545 — async fn run_command(
+- failure_reason · function · L547-L553 — fn failure_reason(result: &RunResult, hook: &ResolvedHook) -> String
+- log_observed · function · L555-L578 — fn log_observed(event: LifecycleEvent, hook: &ResolvedHook, result: &RunResult)
+- run_lifecycle · function · L581-L589 — pub async fn run_lifecycle(call: LifecycleCall) -> LifecycleOutcome
+- run_lifecycle_with · function · L592-L634 — pub async fn run_lifecycle_with(hooks: &HooksConfig, mut call: LifecycleCall) -> LifecycleOutcome
+- apply_blocking · function · L638-L707 — fn apply_blocking(
+- dispatch_lifecycle_detached · function · L711-L726 — pub fn dispatch_lifecycle_detached(call: LifecycleCall)
+- tests · module · L730-L730 — mod tests;

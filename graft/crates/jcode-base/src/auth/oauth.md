@@ -1,0 +1,99 @@
+# crates/jcode-base/src/auth/oauth.rs
+
+- claude · module · L11-L27 — pub mod claude
+- CLIENT_ID · constant · L12-L12 — pub const CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
+- AUTHORIZE_URL · constant · L17-L17 — pub const AUTHORIZE_URL: &str = "https://claude.com/cai/oauth/authorize";
+- CONSOLE_AUTHORIZE_URL · constant · L18-L18 — pub const CONSOLE_AUTHORIZE_URL: &str = "https://platform.claude.com/oauth/authorize";
+- CLAUDE_AI_AUTHORIZE_URL · constant · L19-L19 — pub const CLAUDE_AI_AUTHORIZE_URL: &str = "https://claude.com/cai/oauth/authorize";
+- TOKEN_URL · constant · L20-L20 — pub const TOKEN_URL: &str = "https://platform.claude.com/v1/oauth/token";
+- REDIRECT_URI · constant · L21-L21 — pub const REDIRECT_URI: &str = "https://platform.claude.com/oauth/code/callback";
+- LEGACY_REDIRECT_URI · constant · L22-L22 — pub const LEGACY_REDIRECT_URI: &str = "https://console.anthropic.com/oauth/code/callback";
+- PROFILE_URL · constant · L23-L23 — pub const PROFILE_URL: &str = "https://api.anthropic.com/api/oauth/profile";
+- SCOPES · constant · L24-L24 — pub const SCOPES: &str = "org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload";
+- REFRESH_SCOPES · constant · L25-L26 — pub const REFRESH_SCOPES: &str =
+- CLAUDE_TOKEN_TIMEOUT_SECS · constant · L29-L29 — const CLAUDE_TOKEN_TIMEOUT_SECS: u64 = 15;
+- openai · module · L32-L55 — pub mod openai
+- CLIENT_ID · constant · L33-L33 — pub const CLIENT_ID: &str = "app_EMoamEEZ73f0CkXaXp7hrann";
+- AUTHORIZE_URL · constant · L34-L34 — pub const AUTHORIZE_URL: &str = "https://auth.openai.com/oauth/authorize";
+- TOKEN_URL · constant · L35-L35 — pub const TOKEN_URL: &str = "https://auth.openai.com/oauth/token";
+- DEFAULT_PORT · constant · L36-L36 — pub const DEFAULT_PORT: u16 = 1455;
+- CALLBACK_PATH · constant · L37-L37 — pub const CALLBACK_PATH: &str = "/auth/callback";
+- SCOPES · constant · L38-L39 — pub const SCOPES: &str =
+- AUTH_BASE · constant · L44-L44 — pub const AUTH_BASE: &str = "https://auth.openai.com";
+- DEVICE_VERIFICATION_URL · constant · L45-L45 — pub const DEVICE_VERIFICATION_URL: &str = "https://auth.openai.com/codex/device";
+- DEVICE_REDIRECT_URI · constant · L46-L46 — pub const DEVICE_REDIRECT_URI: &str = "https://auth.openai.com/deviceauth/callback";
+- redirect_uri · function · L48-L50 — pub fn redirect_uri(port: u16) -> String
+- default_redirect_uri · function · L52-L54 — pub fn default_redirect_uri() -> String
+- OAuthTokens · struct · L58-L66 — pub struct OAuthTokens
+- parse_oauth_scopes · function · L68-L75 — fn parse_oauth_scopes(scope: Option<&str>) -> Vec<String>
+- claude_scopes_have_inference · function · L77-L89 — pub fn claude_scopes_have_inference(scopes: &[String]) -> bool
+- ensure_claude_inference_scope · function · L91-L101 — fn ensure_claude_inference_scope(scopes: &[String], action: &str) -> Result<()>
+- generate_pkce · function · L104-L121 — fn generate_pkce() -> (String, String)
+- CHARSET · constant · L106-L106 — const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+- generate_state · function · L124-L127 — fn generate_state() -> String
+- generate_pkce_public · function · L129-L131 — pub fn generate_pkce_public() -> (String, String)
+- generate_state_public · function · L133-L135 — pub fn generate_state_public() -> String
+- CALLBACK_READ_TIMEOUT_SECS · constant · L137-L137 — const CALLBACK_READ_TIMEOUT_SECS: u64 = 5;
+- callback_io · module · L140-L140 — mod callback_io;
+- login_claude · function · L148-L266 — pub async fn login_claude(no_browser: bool) -> Result<OAuthTokens>
+- claude_auth_url · function · L268-L278 — pub fn claude_auth_url(redirect_uri: &str, challenge: &str, state: &str) -> String
+- parse_claude_code_input · function · L286-L318 — fn parse_claude_code_input(input: &str) -> Result<(String, Option<String>)>
+- claude_redirect_uri_for_input · function · L320-L340 — pub fn claude_redirect_uri_for_input(input: &str, fallback_redirect_uri: &str) -> String
+- parse_callback_input_with_state · function · L342-L352 — pub fn parse_callback_input_with_state(input: &str) -> Result<(String, String)>
+- looks_like_cloudflare_challenge · function · L354-L360 — fn looks_like_cloudflare_challenge(text: &str) -> bool
+- exchange_claude_code_at_url · function · L362-L442 — async fn exchange_claude_code_at_url(
+- ClaudeAuthorizationCodeRequest · struct · L383-L390 — struct ClaudeAuthorizationCodeRequest<'a>
+- TokenResponse · struct · L422-L428 — struct TokenResponse
+- exchange_claude_code · function · L447-L453 — pub async fn exchange_claude_code(
+- openai_login_helpers · module · L456-L456 — mod openai_login_helpers;
+- OpenAiDeviceCode · struct · L466-L473 — pub struct OpenAiDeviceCode
+- OpenAiDeviceStartRequest · struct · L477-L479 — struct OpenAiDeviceStartRequest<'a>
+- OpenAiDevicePollRequest · struct · L482-L485 — struct OpenAiDevicePollRequest<'a>
+- save_claude_tokens · function · L488-L491 — pub fn save_claude_tokens(tokens: &OAuthTokens) -> Result<()>
+- save_claude_tokens_for_account · function · L494-L518 — pub fn save_claude_tokens_for_account(tokens: &OAuthTokens, label: &str) -> Result<()>
+- ClaudeProfileResponse · struct · L521-L527 — struct ClaudeProfileResponse
+- subscription_type · function · L530-L565 — fn subscription_type(&self) -> Option<String>
+- ClaudeProfileAccount · struct · L569-L571 — struct ClaudeProfileAccount
+- fetch_claude_profile_at_url · function · L573-L597 — async fn fetch_claude_profile_at_url(
+- update_claude_account_profile · function · L600-L609 — pub async fn update_claude_account_profile(
+- CLAUDE_PROFILE_PREFETCH_INTERVAL · constant · L611-L611 — const CLAUDE_PROFILE_PREFETCH_INTERVAL: Duration = Duration::from_secs(15 * 60);
+- ClaudeProfilePrefetchAttempts · type · L612-L613 — type ClaudeProfilePrefetchAttempts =
+- reserve_claude_profile_prefetch · function · L615-L630 — fn reserve_claude_profile_prefetch(
+- prefetch_missing_claude_subscription_metadata · function · L636-L636 — pub(crate) fn prefetch_missing_claude_subscription_metadata() {}
+- prefetch_missing_claude_subscription_metadata · function · L639-L692 — pub(crate) fn prefetch_missing_claude_subscription_metadata()
+- ATTEMPTS · constant · L641-L642 — static ATTEMPTS: std::sync::OnceLock<std::sync::Mutex<ClaudeProfilePrefetchAttempts>> =
+- REQUESTS · constant · L643-L643 — static REQUESTS: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(2);
+- load_claude_tokens · function · L695-L707 — pub fn load_claude_tokens() -> Result<OAuthTokens>
+- load_claude_tokens_for_account · function · L710-L719 — pub fn load_claude_tokens_for_account(label: &str) -> Result<OAuthTokens>
+- ClaudeRefreshTokenRequest · struct · L722-L728 — struct ClaudeRefreshTokenRequest<'a>
+- ClaudeRefreshTokenResponse · struct · L731-L736 — struct ClaudeRefreshTokenResponse
+- claude_refresh_error_is_invalid_scope · function · L738-L743 — fn claude_refresh_error_is_invalid_scope(err: &anyhow::Error) -> bool
+- send_claude_refresh_request · function · L745-L776 — async fn send_claude_refresh_request(
+- refresh_claude_tokens_inner · function · L778-L821 — async fn refresh_claude_tokens_inner(
+- refresh_claude_tokens · function · L824-L828 — pub async fn refresh_claude_tokens(refresh_token: &str) -> Result<OAuthTokens>
+- stored_claude_tokens · function · L831-L849 — fn stored_claude_tokens(label: &str) -> Option<OAuthTokens>
+- refresh_claude_tokens_for_account · function · L856-L900 — pub async fn refresh_claude_tokens_for_account(
+- save_openai_tokens · function · L903-L906 — pub fn save_openai_tokens(tokens: &OAuthTokens) -> Result<()>
+- save_openai_tokens_for_account · function · L909-L918 — pub fn save_openai_tokens_for_account(tokens: &OAuthTokens, label: &str) -> Result<()>
+- OPENAI_REFRESH_TIMEOUT · constant · L927-L927 — pub const OPENAI_REFRESH_TIMEOUT: Duration = Duration::from_secs(30);
+- refresh_openai_tokens · function · L930-L940 — pub async fn refresh_openai_tokens(refresh_token: &str) -> Result<OAuthTokens>
+- stored_openai_tokens · function · L943-L961 — fn stored_openai_tokens(label: &str) -> Option<OAuthTokens>
+- refresh_openai_tokens_for_account · function · L968-L979 — pub async fn refresh_openai_tokens_for_account(
+- run_refresh_transaction · function · L992-L1008 — pub async fn run_refresh_transaction<T, F>(transaction: F) -> Result<T>
+- refresh_openai_tokens_at · function · L1010-L1060 — async fn refresh_openai_tokens_at(
+- request_openai_token_refresh · function · L1065-L1138 — async fn request_openai_token_refresh(
+- TokenResponse · struct · L1120-L1125 — struct TokenResponse
+- refresh_openai_tokens_inner · function · L1140-L1173 — async fn refresh_openai_tokens_inner(
+- build_claude_exchange_request · function · L1178-L1198 — fn build_claude_exchange_request(
+- build_claude_refresh_request · function · L1202-L1204 — fn build_claude_refresh_request(refresh_token: &str) -> (String, String, Vec<u8>)
+- build_claude_refresh_request_with_scope · function · L1208-L1229 — fn build_claude_refresh_request_with_scope(
+- build_openai_exchange_request · function · L1233-L1250 — fn build_openai_exchange_request(
+- build_openai_refresh_request · function · L1254-L1265 — fn build_openai_refresh_request(refresh_token: &str) -> (String, String, Vec<u8>)
+- exchange_code_at_url · function · L1270-L1318 — async fn exchange_code_at_url(
+- TokenResponse · struct · L1301-L1306 — struct TokenResponse
+- refresh_tokens_at_url · function · L1323-L1361 — async fn refresh_tokens_at_url(token_url: &str, refresh_token: &str) -> Result<OAuthTokens>
+- TokenResponse · struct · L1345-L1349 — struct TokenResponse
+- device_request_tests · module · L1364-L1444 — mod device_request_tests
+- device_request_serialization_matches_legacy_bytes · function · L1368-L1402 — fn device_request_serialization_matches_legacy_bytes()
+- device_request_bodies_outlive_borrowed_sources · function · L1405-L1443 — fn device_request_bodies_outlive_borrowed_sources()
+- tests · module · L1448-L1448 — mod tests;

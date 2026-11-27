@@ -1,0 +1,63 @@
+# crates/jcode-tui/src/tui/app/onboarding_flow_control.rs
+
+- ONBOARDING_IMPORT_WATCHDOG · constant · L27-L27 — const ONBOARDING_IMPORT_WATCHDOG: Duration = Duration::from_secs(20);
+- onboarding_flow_active · function · L30-L35 — pub(super) fn onboarding_flow_active(&self) -> bool
+- onboarding_phase · function · L38-L43 — pub(super) fn onboarding_phase(&self) -> Option<&OnboardingPhase>
+- set_onboarding_phase · function · L55-L71 — pub(super) fn set_onboarding_phase(&mut self, next: OnboardingPhase)
+- maybe_begin_onboarding_flow_after_login · function · L76-L89 — pub(super) fn maybe_begin_onboarding_flow_after_login(&mut self)
+- maybe_begin_onboarding_flow_on_startup · function · L100-L153 — pub(super) fn maybe_begin_onboarding_flow_on_startup(&mut self)
+- is_new_user_for_onboarding · function · L164-L166 — fn is_new_user_for_onboarding(&self) -> bool
+- is_new_user_install · function · L174-L183 — pub(super) fn is_new_user_install() -> bool
+- has_established_native_session_history · function · L188-L205 — fn has_established_native_session_history(jcode_dir: &std::path::Path) -> bool
+- ESTABLISHED_SESSION_THRESHOLD · constant · L189-L189 — const ESTABLISHED_SESSION_THRESHOLD: usize = 10;
+- is_selfdev_canary_session · function · L214-L220 — pub(super) fn is_selfdev_canary_session(&self) -> bool
+- begin_onboarding_flow · function · L227-L233 — pub(super) fn begin_onboarding_flow(&mut self)
+- begin_onboarding_flow_at_login · function · L245-L280 — pub(super) fn begin_onboarding_flow_at_login(&mut self)
+- onboarding_start_default_login · function · L286-L290 — pub(super) fn onboarding_start_default_login(&mut self)
+- onboarding_after_login · function · L297-L313 — pub(super) fn onboarding_after_login(&mut self)
+- onboarding_after_model_select · function · L317-L322 — pub(super) fn onboarding_after_model_select(&mut self)
+- onboarding_enter_continue_prompt · function · L332-L341 — fn onboarding_enter_continue_prompt(&mut self, cli: ExternalCli)
+- update_onboarding_continue_prompt_status · function · L344-L354 — fn update_onboarding_continue_prompt_status(&mut self, cli: ExternalCli)
+- onboarding_answer_continue · function · L358-L369 — pub(super) fn onboarding_answer_continue(&mut self, wants_continue: bool)
+- handle_onboarding_continue_prompt_key · function · L380-L482 — pub(super) fn handle_onboarding_continue_prompt_key(&mut self, code: KeyCode) -> bool
+- handle_onboarding_continue_choice_key · function · L492-L541 — fn handle_onboarding_continue_choice_key(&mut self, code: KeyCode) -> bool
+- handle_onboarding_import_review_key · function · L555-L672 — fn handle_onboarding_import_review_key(&mut self, code: KeyCode) -> bool
+- handle_onboarding_login_openai_key · function · L681-L723 — fn handle_onboarding_login_openai_key(&mut self, code: KeyCode) -> bool
+- onboarding_answer_login_openai · function · L733-L764 — pub(super) fn onboarding_answer_login_openai(&mut self, wants_openai: bool)
+- openai_already_connected · function · L767-L772 — fn openai_already_connected() -> bool
+- update_onboarding_login_openai_status · function · L775-L786 — fn update_onboarding_login_openai_status(&mut self)
+- onboarding_import_review_mut · function · L789-L796 — fn onboarding_import_review_mut(&mut self) -> Option<&mut ImportReview>
+- onboarding_telemetry_page_open · function · L801-L808 — pub(super) fn onboarding_telemetry_page_open(&self) -> bool
+- update_onboarding_import_review_status · function · L811-L833 — fn update_onboarding_import_review_status(&mut self)
+- onboarding_finish_import_review · function · L837-L939 — fn onboarding_finish_import_review(&mut self)
+- onboarding_open_start_choice · function · L943-L955 — pub(super) fn onboarding_open_start_choice(&mut self)
+- onboarding_mark_start_choice_shown · function · L959-L973 — fn onboarding_mark_start_choice_shown(&self)
+- onboarding_start_choice_banner_lines · function · L976-L990 — fn onboarding_start_choice_banner_lines() -> Vec<ratatui::text::Line<'static>>
+- onboarding_prefetch_recent_project · function · L1001-L1016 — fn onboarding_prefetch_recent_project(&mut self)
+- onboarding_recent_project_path · function · L1021-L1063 — pub(super) fn onboarding_recent_project_path(&self) -> Option<PathBuf>
+- recent_project_path_from_sessions · function · L1068-L1092 — fn recent_project_path_from_sessions(current_session_id: &str) -> Option<PathBuf>
+- onboarding_recent_project_review_prompt · function · L1097-L1102 — pub(super) fn onboarding_recent_project_review_prompt(repository: &Path) -> String
+- onboarding_prepare_recent_project_review · function · L1104-L1116 — pub(super) fn onboarding_prepare_recent_project_review(&mut self) -> bool
+- onboarding_start_recent_project_review · function · L1124-L1135 — pub(super) fn onboarding_start_recent_project_review(&mut self)
+- onboarding_show_suggestions · function · L1144-L1148 — pub(super) fn onboarding_show_suggestions(&mut self)
+- onboarding_default_model_label · function · L1153-L1163 — fn onboarding_default_model_label(&self) -> String
+- onboarding_default_model_id · function · L1169-L1180 — fn onboarding_default_model_id(&self) -> String
+- onboarding_validate_default_model · function · L1192-L1218 — pub(super) fn onboarding_validate_default_model(&mut self)
+- onboarding_default_model_id_is_concrete · function · L1223-L1227 — fn onboarding_default_model_id_is_concrete(&self) -> bool
+- onboarding_spawn_model_validation · function · L1230-L1267 — fn onboarding_spawn_model_validation(&mut self)
+- onboarding_tick_model_validation · function · L1272-L1287 — pub(super) fn onboarding_tick_model_validation(&mut self) -> bool
+- onboarding_pending_validation_ready_to_fire · function · L1297-L1311 — pub(super) fn onboarding_pending_validation_ready_to_fire(&self) -> bool
+- onboarding_validation_provider · function · L1319-L1334 — fn onboarding_validation_provider(
+- onboarding_run_model_validation · function · L1338-L1368 — async fn onboarding_run_model_validation(
+- onboarding_trim_validation_error · function · L1375-L1403 — fn onboarding_trim_validation_error(err: &anyhow::Error) -> String
+- onboarding_detail_looks_like_auth · function · L1408-L1418 — fn onboarding_detail_looks_like_auth(detail: &str) -> bool
+- onboarding_login_suggestion · function · L1427-L1431 — pub(super) fn onboarding_login_suggestion() -> String
+- onboarding_login_suggestion_provider · function · L1433-L1466 — fn onboarding_login_suggestion_provider() -> Option<&'static str>
+- onboarding_other_provider_rows · function · L1474-L1513 — fn onboarding_other_provider_rows(skip: Option<&str>) -> (Vec<String>, Vec<String>)
+- onboarding_attention_reason · function · L1522-L1535 — fn onboarding_attention_reason(provider_key: &str) -> &'static str
+- handle_onboarding_model_validated · function · L1540-L1626 — pub(super) fn handle_onboarding_model_validated(
+- onboarding_finish · function · L1629-L1637 — pub(super) fn onboarding_finish(&mut self)
+- onboarding_handle_login_failed · function · L1645-L1669 — pub(super) fn onboarding_handle_login_failed(&mut self, reason: Option<String>)
+- summarize_import_error · function · L1674-L1702 — fn summarize_import_error(raw: &str) -> String
+- onboarding_prepare_agent_repair_brief · function · L1710-L1730 — fn onboarding_prepare_agent_repair_brief(&mut self)
+- onboarding_tick · function · L1734-L1820 — pub(super) fn onboarding_tick(&mut self) -> bool

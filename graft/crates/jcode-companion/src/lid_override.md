@@ -1,0 +1,65 @@
+# crates/jcode-companion/src/lid_override.rs
+
+- JOURNAL_FILE · constant · L28-L28 — const JOURNAL_FILE: &str = "lid_override.json";
+- MACOS_SUDOERS_HINT · constant · L31-L34 — pub const MACOS_SUDOERS_HINT: &str = "To let jcode keep your Mac awake with the lid closed while it works, \
+- LidSnapshot · enum · L39-L53 — pub enum LidSnapshot
+- LidBackend · interface · L56-L63 — pub trait LidBackend
+- snapshot · function · L58-L58 — fn snapshot(&self) -> io::Result<LidSnapshot>;
+- block · function · L60-L60 — fn block(&self, original: &LidSnapshot) -> io::Result<()>;
+- restore · function · L62-L62 — fn restore(&self, original: &LidSnapshot) -> io::Result<()>;
+- Journal · struct · L66-L69 — struct Journal
+- LidOverride · struct · L72-L83 — pub struct LidOverride
+- for_current_platform · function · L88-L110 — pub fn for_current_platform() -> Option<Self>
+- new · function · L112-L127 — fn new(
+- is_engaged · function · L129-L131 — pub fn is_engaged(&self) -> bool
+- set_active · function · L135-L160 — pub fn set_active(&mut self, active: bool)
+- engage · function · L162-L211 — fn engage(&mut self) -> io::Result<()>
+- disengage · function · L213-L230 — fn disengage(&mut self)
+- recover_stale · function · L234-L253 — pub fn recover_stale(&mut self)
+- restore_journal · function · L255-L262 — fn restore_journal(&self, journal: &Journal) -> io::Result<()>
+- read_journal · function · L264-L285 — fn read_journal(&self) -> Option<Journal>
+- drop · function · L289-L291 — fn drop(&mut self)
+- release_for_exiting_process · function · L296-L307 — pub fn release_for_exiting_process()
+- write_journal · function · L309-L317 — fn write_journal(path: &Path, journal: &Journal) -> io::Result<()>
+- platform_backend · function · L320-L322 — fn platform_backend() -> Option<Box<dyn LidBackend + Send>>
+- platform_backend · function · L325-L327 — fn platform_backend() -> Option<Box<dyn LidBackend + Send>>
+- platform_backend · function · L330-L332 — fn platform_backend() -> Option<Box<dyn LidBackend + Send>>
+- parse_pmset_sleep_disabled · function · L336-L341 — fn parse_pmset_sleep_disabled(output: &str) -> bool
+- macos · module · L344-L405 — mod macos
+- MacosPmset · struct · L349-L349 — pub(super) struct MacosPmset;
+- set_disablesleep · function · L351-L368 — fn set_disablesleep(on: bool) -> io::Result<()>
+- snapshot · function · L371-L384 — fn snapshot(&self) -> io::Result<LidSnapshot>
+- block · function · L386-L394 — fn block(&self, original: &LidSnapshot) -> io::Result<()>
+- restore · function · L396-L403 — fn restore(&self, original: &LidSnapshot) -> io::Result<()>
+- format_guid · function · L409-L414 — fn format_guid(data1: u32, data2: u16, data3: u16, data4: [u8; 8]) -> String
+- parse_guid · function · L418-L438 — fn parse_guid(text: &str) -> Option<(u32, u16, u16, [u8; 8])>
+- windows · module · L441-L604 — mod windows
+- GUID_LIDACTION · constant · L453-L453 — const GUID_LIDACTION: GUID = GUID::from_u128(0x5ca83367_6e45_459f_a27b_476b1d01c936);
+- LID_ACTION_DO_NOTHING · constant · L455-L455 — const LID_ACTION_DO_NOTHING: u32 = 0;
+- WindowsLidAction · struct · L457-L457 — pub(super) struct WindowsLidAction;
+- check · function · L459-L468 — fn check(code: u32, what: &str) -> io::Result<()>
+- active_scheme · function · L470-L486 — fn active_scheme() -> io::Result<GUID>
+- scheme_from_snapshot · function · L488-L497 — fn scheme_from_snapshot(scheme: &str) -> io::Result<GUID>
+- write_lid_action · function · L499-L537 — fn write_lid_action(scheme: &GUID, ac: u32, dc: u32) -> io::Result<()>
+- snapshot · function · L540-L572 — fn snapshot(&self) -> io::Result<LidSnapshot>
+- block · function · L574-L585 — fn block(&self, original: &LidSnapshot) -> io::Result<()>
+- restore · function · L587-L602 — fn restore(&self, original: &LidSnapshot) -> io::Result<()>
+- tests · module · L607-L822 — mod tests
+- Fake · struct · L613-L616 — struct Fake
+- snapshot · function · L619-L623 — fn snapshot(&self) -> io::Result<LidSnapshot>
+- block · function · L624-L630 — fn block(&self, _: &LidSnapshot) -> io::Result<()>
+- restore · function · L631-L637 — fn restore(&self, original: &LidSnapshot) -> io::Result<()>
+- USER_SETTING · constant · L640-L640 — const USER_SETTING: u32 = 1; // e.g. "Sleep"
+- fake · function · L642-L651 — fn fake(fail_block: bool) -> (Fake, Arc<Mutex<u32>>)
+- alive · function · L653-L655 — fn alive(pid: u32) -> bool
+- make · function · L657-L659 — fn make(backend: Fake, path: &Path, pid: u32) -> LidOverride
+- engages_then_restores_original_setting · function · L662-L677 — fn engages_then_restores_original_setting()
+- drop_restores_setting · function · L680-L690 — fn drop_restores_setting()
+- crashed_owner_is_recovered_by_next_process · function · L693-L708 — fn crashed_owner_is_recovered_by_next_process()
+- crashed_owner_originals_are_kept_when_next_process_engages · function · L711-L726 — fn crashed_owner_originals_are_kept_when_next_process_engages()
+- live_foreign_owner_is_left_alone · function · L729-L750 — fn live_foreign_owner_is_left_alone()
+- reexec_with_same_pid_reuses_saved_originals · function · L753-L768 — fn reexec_with_same_pid_reuses_saved_originals()
+- failed_block_rolls_back_and_stops_retrying_until_idle · function · L771-L785 — fn failed_block_rolls_back_and_stops_retrying_until_idle()
+- pmset_output_parsing · function · L788-L794 — fn pmset_output_parsing()
+- guid_round_trips · function · L797-L805 — fn guid_round_trips()
+- snapshot_journal_format_is_stable · function · L808-L821 — fn snapshot_journal_format_is_stable()

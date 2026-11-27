@@ -1,0 +1,54 @@
+# crates/jcode-tui/src/tui/terminal_events.rs
+
+- QUERY_INTERVAL · constant · L21-L21 — const QUERY_INTERVAL: Duration = Duration::from_secs(5);
+- UNFOCUSED_QUERY_INTERVAL · constant · L26-L26 — const UNFOCUSED_QUERY_INTERVAL: Duration = Duration::from_secs(60);
+- INPUT_IDLE_AFTER · constant · L32-L32 — const INPUT_IDLE_AFTER: Duration = Duration::from_secs(60);
+- DISABLED_RECHECK_INTERVAL · constant · L35-L35 — const DISABLED_RECHECK_INTERVAL: Duration = Duration::from_secs(60);
+- PREFIX_TIMEOUT · constant · L36-L36 — const PREFIX_TIMEOUT: Duration = Duration::from_millis(250);
+- REPORT_TIMEOUT · constant · L37-L37 — const REPORT_TIMEOUT: Duration = Duration::from_secs(2);
+- MAX_REPORT_LEN · constant · L38-L38 — const MAX_REPORT_LEN: usize = 40;
+- THEME_REDRAW_PENDING · constant · L40-L40 — static THEME_REDRAW_PENDING: AtomicBool = AtomicBool::new(false);
+- theme_redraw_pending · function · L42-L44 — pub(super) fn theme_redraw_pending() -> bool
+- take_theme_redraw · function · L46-L48 — pub(super) fn take_theme_redraw() -> bool
+- ColorReports · struct · L51-L59 — struct ColorReports
+- recognized · function · L62-L64 — fn recognized(&self) -> bool
+- reset · function · L66-L75 — fn reset(&mut self, replay: bool)
+- deadline · function · L78-L85 — fn deadline(&self) -> Option<Instant>
+- expire · function · L87-L92 — fn expire(&mut self, now: Instant)
+- push · function · L94-L176 — fn push(&mut self, event: Event, now: Instant)
+- parse_background_report · function · L179-L211 — fn parse_background_report(body: &str) -> Option<ThemeMode>
+- RuntimeTheme · struct · L214-L226 — struct RuntimeTheme
+- note_focus · function · L229-L235 — fn note_focus(&mut self, event: &Event)
+- note_input · function · L237-L241 — fn note_input(&mut self, event: &Event, now: Instant)
+- timer_query_interval · function · L243-L252 — fn timer_query_interval(&self, now: Instant) -> Duration
+- next_wake · function · L257-L272 — fn next_wake(&self, now: Instant) -> Instant
+- runtime · function · L275-L284 — fn runtime() -> &'static Mutex<RuntimeTheme>
+- RUNTIME · constant · L276-L276 — static RUNTIME: OnceLock<Mutex<RuntimeTheme>> = OnceLock::new();
+- background_query · function · L286-L294 — fn background_query(passthrough: bool) -> &'static [u8]
+- tmux_passthrough_enabled · function · L296-L341 — fn tmux_passthrough_enabled() -> bool
+- ENABLED · constant · L297-L297 — static ENABLED: OnceLock<bool> = OnceLock::new();
+- query_if_due · function · L343-L373 — fn query_if_due(state: &mut RuntimeTheme, now: Instant, focused: bool)
+- write_background_query · function · L375-L386 — fn write_background_query(state: &mut RuntimeTheme, now: Instant, passthrough: bool)
+- take_event · function · L388-L404 — fn take_event(state: &mut RuntimeTheme) -> Option<Event>
+- try_read · function · L409-L430 — pub(super) fn try_read() -> io::Result<Option<Event>>
+- EventStream · struct · L434-L439 — pub(super) struct EventStream
+- new · function · L442-L448 — pub(super) fn new() -> Self
+- rearm · function · L453-L466 — fn rearm(&mut self, state: &RuntimeTheme, fired: bool, cx: &mut Context<'_>)
+- poll_events · function · L468-L495 — fn poll_events(
+- Item · type · L499-L499 — type Item = io::Result<Event>;
+- poll_next · function · L501-L517 — fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>>
+- tests · module · L521-L752 — mod tests
+- background_queries_bypass_tmux_cache_only_with_passthrough · function · L523-L529 — fn background_queries_bypass_tmux_cache_only_with_passthrough()
+- idle_timer_sleeps_until_the_next_query_instead_of_polling · function · L534-L563 — fn idle_timer_sleeps_until_the_next_query_instead_of_polling()
+- held_report_and_tmux_cache_read_pull_the_timer_in · function · L566-L584 — fn held_report_and_tmux_cache_read_pull_the_timer_in()
+- key · function · L586-L588 — fn key(ch: char, modifiers: KeyModifiers) -> Event
+- report · function · L590-L603 — fn report(filter: &mut ColorReports, body: &str, bel: bool, now: Instant)
+- osc_reports_switch_both_directions_without_becoming_input · function · L606-L615 — fn osc_reports_switch_both_directions_without_becoming_input()
+- ordinary_alt_chords_and_pastes_survive · function · L618-L631 — fn ordinary_alt_chords_and_pastes_survive()
+- missing_split_escape_recovers_without_losing_next_key · function · L634-L646 — fn missing_split_escape_recovers_without_losing_next_key()
+- fragmented_report_is_held_until_terminator · function · L649-L666 — fn fragmented_report_is_held_until_terminator()
+- reassembles_split_escape_introducer_and_terminator · function · L669-L692 — fn reassembles_split_escape_introducer_and_terminator()
+- genuine_escape_is_replayed_and_is_not_delayed_outside_a_query · function · L695-L712 — fn genuine_escape_is_replayed_and_is_not_delayed_outside_a_query()
+- timeout_replays_unrecognized_chord_but_drops_partial_report · function · L715-L729 — fn timeout_replays_unrecognized_chord_but_drops_partial_report()
+- validates_color_components_and_ignores_alpha · function · L732-L751 — fn validates_color_components_and_ignores_alpha()
+- pty_tests · module · L756-L756 — mod pty_tests;

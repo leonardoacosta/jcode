@@ -1,0 +1,33 @@
+# crates/jcode-build-support/src/storage_helpers.rs
+
+- builds_dir · function · L7-L16 — pub fn builds_dir() -> Result<PathBuf>
+- resolve_builds_dir · function · L18-L36 — fn resolve_builds_dir(
+- manifest_path · function · L39-L41 — pub fn manifest_path() -> Result<PathBuf>
+- version_binary_path · function · L44-L49 — pub fn version_binary_path(hash: &str) -> Result<PathBuf>
+- stable_binary_path · function · L52-L54 — pub fn stable_binary_path() -> Result<PathBuf>
+- current_binary_path · function · L57-L59 — pub fn current_binary_path() -> Result<PathBuf>
+- shared_server_binary_path · function · L62-L64 — pub fn shared_server_binary_path() -> Result<PathBuf>
+- canary_binary_path · function · L67-L69 — pub fn canary_binary_path() -> Result<PathBuf>
+- migration_context_path · function · L72-L76 — pub fn migration_context_path(session_id: &str) -> Result<PathBuf>
+- stable_version_file · function · L79-L81 — pub fn stable_version_file() -> Result<PathBuf>
+- current_version_file · function · L84-L86 — pub fn current_version_file() -> Result<PathBuf>
+- shared_server_version_file · function · L89-L91 — pub fn shared_server_version_file() -> Result<PathBuf>
+- save_migration_context · function · L94-L97 — pub fn save_migration_context(ctx: &MigrationContext) -> Result<()>
+- load_migration_context · function · L100-L107 — pub fn load_migration_context(session_id: &str) -> Result<Option<MigrationContext>>
+- clear_migration_context · function · L110-L116 — pub fn clear_migration_context(session_id: &str) -> Result<()>
+- read_stable_version · function · L119-L132 — pub fn read_stable_version() -> Result<Option<String>>
+- read_current_version · function · L135-L148 — pub fn read_current_version() -> Result<Option<String>>
+- read_shared_server_version · function · L151-L164 — pub fn read_shared_server_version() -> Result<Option<String>>
+- build_log_path · function · L167-L169 — pub fn build_log_path() -> Result<PathBuf>
+- build_progress_path · function · L172-L174 — pub fn build_progress_path() -> Result<PathBuf>
+- write_build_progress · function · L177-L182 — pub fn write_build_progress(status: &str) -> Result<()>
+- BUILD_PROGRESS_CACHE · constant · L187-L188 — static BUILD_PROGRESS_CACHE: std::sync::Mutex<Option<(std::time::Instant, Option<String>)>> =
+- BUILD_PROGRESS_TTL · constant · L190-L190 — const BUILD_PROGRESS_TTL: std::time::Duration = std::time::Duration::from_millis(100);
+- invalidate_build_progress_cache · function · L192-L196 — fn invalidate_build_progress_cache()
+- read_build_progress · function · L208-L223 — pub fn read_build_progress() -> Option<String>
+- read_build_progress_uncached · function · L225-L231 — fn read_build_progress_uncached() -> Option<String>
+- clear_build_progress · function · L234-L241 — pub fn clear_build_progress() -> Result<()>
+- tests · module · L244-L283 — mod tests
+- windows_builds_use_local_app_data · function · L249-L258 — fn windows_builds_use_local_app_data()
+- jcode_home_override_wins_on_windows · function · L261-L270 — fn jcode_home_override_wins_on_windows()
+- non_windows_builds_stay_under_jcode_home · function · L273-L282 — fn non_windows_builds_stay_under_jcode_home()

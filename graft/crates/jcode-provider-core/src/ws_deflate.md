@@ -1,0 +1,35 @@
+# crates/jcode-provider-core/src/ws_deflate.rs
+
+- PERMESSAGE_DEFLATE_OFFER · constant · L33-L33 — pub const PERMESSAGE_DEFLATE_OFFER: &str = "permessage-deflate; client_max_window_bits";
+- DEFLATE_TAIL · constant · L35-L35 — const DEFLATE_TAIL: [u8; 4] = [0x00, 0x00, 0xff, 0xff];
+- MAX_INFLATED_MESSAGE · constant · L38-L38 — const MAX_INFLATED_MESSAGE: usize = 64 << 20;
+- MAX_HANDSHAKE_BYTES · constant · L40-L40 — const MAX_HANDSHAKE_BYTES: usize = 64 * 1024;
+- READ_CHUNK · constant · L41-L41 — const READ_CHUNK: usize = 64 * 1024;
+- Negotiation · enum · L44-L52 — enum Negotiation
+- DeflateAgreement · struct · L56-L59 — pub struct DeflateAgreement
+- parse_extension_response · function · L62-L98 — pub fn parse_extension_response<'a>(values: impl IntoIterator<Item = &'a str>) -> DeflateAgreement
+- find_header_end · function · L100-L102 — fn find_header_end(buf: &[u8]) -> Option<usize>
+- negotiation_from_response · function · L104-L126 — fn negotiation_from_response(head: &[u8]) -> Negotiation
+- FrameHeader · struct · L130-L137 — struct FrameHeader
+- parse_frame_header · function · L139-L190 — fn parse_frame_header(buf: &[u8]) -> io::Result<Option<FrameHeader>>
+- write_frame_header · function · L192-L207 — fn write_frame_header(out: &mut Vec<u8>, b0: u8, mask: Option<[u8; 4]>, len: usize)
+- apply_mask · function · L209-L213 — fn apply_mask(data: &mut [u8], key: [u8; 4])
+- deflate_message · function · L217-L229 — pub fn deflate_message(payload: &[u8]) -> io::Result<Vec<u8>>
+- Inflater · struct · L231-L233 — struct Inflater
+- new · function · L236-L240 — fn new() -> Self
+- inflate · function · L244-L274 — fn inflate(&mut self, input: &[u8], out: &mut Vec<u8>, budget: usize) -> io::Result<()>
+- UploadSample · struct · L277-L281 — struct UploadSample
+- DeflateStream · struct · L286-L305 — pub struct DeflateStream<S>
+- new · function · L308-L327 — pub fn new(inner: S, mode: CompressionMode) -> Self
+- deflate_negotiated · function · L330-L332 — pub fn deflate_negotiated(&self) -> bool
+- get_ref · function · L334-L336 — pub fn get_ref(&self) -> &S
+- get_mut · function · L338-L340 — pub fn get_mut(&mut self) -> &mut S
+- push_read_out · function · L342-L348 — fn push_read_out(&mut self, bytes: &[u8])
+- process_read · function · L352-L410 — fn process_read(&mut self) -> io::Result<()>
+- accept_write · function · L413-L504 — fn accept_write(&mut self, buf: &[u8]) -> io::Result<()>
+- poll_drain · function · L508-L533 — fn poll_drain(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>>
+- poll_read · function · L537-L572 — fn poll_read(
+- poll_write · function · L576-L590 — fn poll_write(
+- poll_flush · function · L592-L596 — fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>>
+- poll_shutdown · function · L598-L602 — fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>>
+- tests · module · L607-L607 — mod tests;

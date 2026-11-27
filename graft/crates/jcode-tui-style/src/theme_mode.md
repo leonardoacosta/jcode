@@ -1,0 +1,47 @@
+# crates/jcode-tui-style/src/theme_mode.rs
+
+- ThemeMode · enum · L25-L31 — pub enum ThemeMode
+- THEME_MODE · constant · L33-L33 — static THEME_MODE: AtomicU8 = AtomicU8::new(0);
+- set_theme_mode · function · L37-L45 — pub fn set_theme_mode(mode: ThemeMode)
+- theme_mode · function · L48-L53 — pub fn theme_mode() -> ThemeMode
+- is_light_theme · function · L55-L57 — pub fn is_light_theme() -> bool
+- adapt_color_for_theme · function · L64-L69 — pub fn adapt_color_for_theme(color: Color) -> Color
+- adapt_color_for_light · function · L71-L76 — fn adapt_color_for_light(color: Color) -> Color
+- color_rgb · function · L78-L106 — fn color_rgb(color: Color) -> Option<(u8, u8, u8)>
+- LIGHT_SURFACE · constant · L110-L110 — const LIGHT_SURFACE: (u8, u8, u8) = (224, 224, 224);
+- TARGET_TEXT_CONTRAST · constant · L112-L112 — const TARGET_TEXT_CONTRAST: f32 = 7.0;
+- relative_luminance · function · L114-L124 — fn relative_luminance((r, g, b): (u8, u8, u8)) -> f32
+- contrast · function · L126-L130 — fn contrast(a: (u8, u8, u8), b: (u8, u8, u8)) -> f32
+- readable_light_foreground · function · L135-L168 — pub(crate) fn readable_light_foreground(color: Color, background: Color) -> Color
+- adapt_foreground_for_theme · function · L171-L177 — pub fn adapt_foreground_for_theme(color: Color, background: Color) -> Color
+- flip_luminance · function · L181-L185 — fn flip_luminance(r: u8, g: u8, b: u8) -> Color
+- rgb_to_hsl · function · L187-L211 — fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32)
+- hsl_to_rgb · function · L213-L233 — fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8)
+- adapt_buffer_for_theme · function · L242-L244 — pub fn adapt_buffer_for_theme(buf: &mut Buffer)
+- adapt_buffer_for_display · function · L248-L259 — pub fn adapt_buffer_for_display(buf: &mut Buffer)
+- adapt_foreground_for_display · function · L262-L272 — pub fn adapt_foreground_for_display(color: Color, background: Color) -> Color
+- no_color · function · L275-L277 — pub fn no_color() -> bool
+- adapt_buffer · function · L281-L283 — pub fn adapt_buffer(buf: &mut Buffer, mode: ThemeMode)
+- adapt_buffer_impl · function · L285-L350 — fn adapt_buffer_impl(buf: &mut Buffer, mode: ThemeMode, palette: Option<&crate::palette::Palette>)
+- tests · module · L353-L680 — mod tests
+- no_color_display_environment_matrix · function · L358-L404 — fn no_color_display_environment_matrix()
+- ThemeGuard · struct · L406-L406 — struct ThemeGuard;
+- drop · function · L408-L410 — fn drop(&mut self)
+- with_light_theme · function · L417-L422 — fn with_light_theme(f: impl FnOnce())
+- as_rgb · function · L424-L430 — fn as_rgb(c: Color) -> (u8, u8, u8)
+- luminance · function · L432-L436 — fn luminance(c: Color) -> f32
+- dark_mode_is_identity · function · L439-L445 — fn dark_mode_is_identity()
+- light_mode_flips_black_and_white · function · L448-L456 — fn light_mode_flips_black_and_white()
+- light_mode_darkens_light_palette_colors_preserving_hue · function · L459-L474 — fn light_mode_darkens_light_palette_colors_preserving_hue()
+- light_mode_lightens_dark_backgrounds · function · L477-L483 — fn light_mode_lightens_dark_backgrounds()
+- light_mode_preserves_reset · function · L486-L490 — fn light_mode_preserves_reset()
+- light_mode_maps_named_colors · function · L493-L498 — fn light_mode_maps_named_colors()
+- adapt_buffer_rewrites_cells_only_in_light_mode · function · L501-L525 — fn adapt_buffer_rewrites_cells_only_in_light_mode()
+- muted_text_is_readable_on_off_white_without_darkening_the_surface · function · L528-L554 — fn muted_text_is_readable_on_off_white_without_darkening_the_surface()
+- stronger_light_contrast_rejects_the_previous_muted_ink · function · L557-L562 — fn stronger_light_contrast_rejects_the_previous_muted_ink()
+- intermediate_surfaces_use_the_best_possible_contrast · function · L565-L570 — fn intermediate_surfaces_use_the_best_possible_contrast()
+- every_tui_literal_has_readable_light_text_on_default_and_tinted_panels · function · L573-L601 — fn every_tui_literal_has_readable_light_text_on_default_and_tinted_panels()
+- named_indexed_and_reverse_video_text_keep_contrast · function · L604-L629 — fn named_indexed_and_reverse_video_text_keep_contrast()
+- configured_panel_surface_drives_unconfigured_text_contrast · function · L632-L643 — fn configured_panel_surface_drives_unconfigured_text_contrast()
+- explicit_low_contrast_choices_remain_exact_in_both_theme_modes · function · L646-L658 — fn explicit_low_contrast_choices_remain_exact_in_both_theme_modes()
+- hsl_round_trips_reasonably · function · L661-L679 — fn hsl_round_trips_reasonably()

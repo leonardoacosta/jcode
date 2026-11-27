@@ -1,0 +1,21 @@
+# crates/jcode-base/src/generated_image.rs
+
+- generated_image_side_panel_page_id · function · L5-L16 — pub fn generated_image_side_panel_page_id(id: &str) -> String
+- GeneratedImageMetadataSummary · struct · L19-L28 — struct GeneratedImageMetadataSummary
+- GeneratedImagePanelInfo · struct · L31-L40 — struct GeneratedImagePanelInfo
+- from_inputs · function · L43-L74 — fn from_inputs(
+- title · function · L76-L85 — fn title(&self) -> String
+- summary_parts · function · L87-L106 — fn summary_parts(&self) -> Vec<String>
+- source_summary · function · L108-L121 — fn source_summary(&self) -> Option<String>
+- markdown · function · L123-L189 — fn markdown(&self) -> String
+- generated_image_side_panel_markdown · function · L192-L200 — pub fn generated_image_side_panel_markdown(
+- write_generated_image_side_panel_page · function · L202-L216 — pub fn write_generated_image_side_panel_page(
+- read_generated_image_metadata_summary · function · L218-L252 — fn read_generated_image_metadata_summary(path: &str) -> Option<GeneratedImageMetadataSummary>
+- string_field · function · L254-L256 — fn string_field(value: &Value, key: &str) -> Option<String>
+- json_scalar_to_string · function · L258-L265 — fn json_scalar_to_string(value: &Value) -> Option<String>
+- format_unix_ms · function · L267-L271 — fn format_unix_ms(ms: u64) -> Option<String>
+- escape_markdown_text · function · L273-L281 — fn escape_markdown_text(value: &str) -> String
+- markdown_code · function · L283-L285 — fn markdown_code(value: &str) -> String
+- tests · module · L288-L370 — mod tests
+- generated_image_side_panel_markdown_prefers_compact_useful_metadata · function · L292-L345 — fn generated_image_side_panel_markdown_prefers_compact_useful_metadata()
+- generated_image_side_panel_title_includes_filename_and_dimensions · function · L348-L369 — fn generated_image_side_panel_title_includes_filename_and_dimensions()

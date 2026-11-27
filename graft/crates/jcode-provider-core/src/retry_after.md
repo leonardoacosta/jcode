@@ -1,0 +1,39 @@
+# crates/jcode-provider-core/src/retry_after.rs
+
+- MAX_RETRY_AFTER · constant · L14-L14 — pub const MAX_RETRY_AFTER: Duration = Duration::from_secs(60);
+- retry_after · function · L21-L23 — pub fn retry_after(headers: &HeaderMap) -> Option<RetryAfter>
+- retry_after_body_delay · function · L34-L36 — pub fn retry_after_body_delay(body: &str) -> Option<Duration>
+- retry_after_body_seconds · function · L43-L49 — pub fn retry_after_body_seconds(body: &str) -> Option<u64>
+- retry_after_body · function · L53-L55 — pub fn retry_after_body(body: &str) -> Option<RetryAfter>
+- find_retry_after_seconds · function · L58-L67 — fn find_retry_after_seconds(value: &serde_json::Value) -> Option<u64>
+- positive_seconds · function · L72-L75 — fn positive_seconds(value: &serde_json::Value) -> Option<u64>
+- uncapped_retry_after_delay · function · L79-L81 — pub fn uncapped_retry_after_delay(headers: &HeaderMap) -> Option<Duration>
+- retry_after_delay_at · function · L83-L85 — fn retry_after_delay_at(headers: &HeaderMap, now: SystemTime) -> Option<Duration>
+- uncapped_retry_after_delay_at · function · L87-L104 — fn uncapped_retry_after_delay_at(headers: &HeaderMap, now: SystemTime) -> Option<Duration>
+- RetryAfter · struct · L108-L110 — pub struct RetryAfter
+- new · function · L113-L117 — fn new(delay: Duration) -> Self
+- remaining · function · L121-L123 — pub fn remaining(self) -> Duration
+- RetryAfterError · struct · L129-L132 — struct RetryAfterError
+- fmt · function · L135-L137 — fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result
+- error_with_retry_after · function · L144-L152 — pub fn error_with_retry_after(message: String, retry_after: Option<RetryAfter>) -> Error
+- retry_after_from_error · function · L156-L161 — pub fn retry_after_from_error(error: &Error) -> Option<Duration>
+- retry_delay · function · L165-L167 — pub fn retry_delay(attempt: u32, base_ms: u64, server_hint: Option<Duration>) -> Duration
+- tests · module · L170-L363 — mod tests
+- headers · function · L174-L178 — fn headers(value: HeaderValue) -> HeaderMap
+- parses_delta_seconds_without_sleeping · function · L181-L189 — fn parses_delta_seconds_without_sleeping()
+- uncapped_retry_after_preserves_long_gateway_deadline · function · L192-L202 — fn uncapped_retry_after_preserves_long_gateway_deadline()
+- uncapped_retry_after_saturates_oversized_delta_seconds · function · L205-L213 — fn uncapped_retry_after_saturates_oversized_delta_seconds()
+- parses_http_date_relative_to_injected_clock · function · L216-L224 — fn parses_http_date_relative_to_injected_clock()
+- past_http_date_requests_no_additional_wait · function · L227-L235 — fn past_http_date_requests_no_additional_wait()
+- far_future_http_date_is_capped · function · L238-L247 — fn far_future_http_date_is_capped()
+- malformed_retry_after_is_ignored · function · L250-L258 — fn malformed_retry_after_is_ignored()
+- openference_json_retry_after_seconds_does_not_use_max_rpm · function · L261-L264 — fn openference_json_retry_after_seconds_does_not_use_max_rpm()
+- body_retry_after_rounds_up_nested_fractional_delays · function · L267-L272 — fn body_retry_after_rounds_up_nested_fractional_delays()
+- body_retry_after_is_bounded_and_zero_uses_default_backoff · function · L275-L281 — fn body_retry_after_is_bounded_and_zero_uses_default_backoff()
+- invalid_body_retry_hints_are_ignored · function · L284-L300 — fn invalid_body_retry_hints_are_ignored()
+- body_hint_survives_formatted_diagnostics_and_error_context · function · L303-L310 — fn body_hint_survives_formatted_diagnostics_and_error_context()
+- oversized_retry_after_is_capped_even_when_it_overflows_u64 · function · L313-L319 — fn oversized_retry_after_is_capped_even_when_it_overflows_u64()
+- body_retry_after_seconds_keeps_long_waits_for_turn_holds · function · L322-L332 — fn body_retry_after_seconds_keeps_long_waits_for_turn_holds()
+- error_hint_round_trips_without_changing_message · function · L335-L345 — fn error_hint_round_trips_without_changing_message()
+- server_hint_replaces_backoff_without_sleeping · function · L348-L353 — fn server_hint_replaces_backoff_without_sleeping()
+- elapsed_hint_does_not_add_another_wait · function · L356-L362 — fn elapsed_hint_does_not_add_another_wait()

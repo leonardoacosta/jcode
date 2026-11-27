@@ -1,0 +1,60 @@
+# crates/jcode-app-core/src/update.rs
+
+- update_dev_guard · module · L21-L21 — mod update_dev_guard;
+- update_metadata · module · L23-L23 — mod update_metadata;
+- update_rate_limit · module · L25-L25 — mod update_rate_limit;
+- GITHUB_REPO · constant · L31-L31 — const GITHUB_REPO: &str = "1jehuang/jcode";
+- UPDATE_CHECK_INTERVAL · constant · L40-L40 — const UPDATE_CHECK_INTERVAL: Duration = Duration::from_secs(30 * 60);
+- UPDATE_CHECK_TIMEOUT · constant · L41-L41 — const UPDATE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+- DOWNLOAD_CONNECT_TIMEOUT · constant · L43-L43 — const DOWNLOAD_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+- DOWNLOAD_ATTEMPT_TIMEOUT · constant · L53-L53 — const DOWNLOAD_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(120);
+- DOWNLOAD_MAX_ATTEMPTS · constant · L59-L59 — const DOWNLOAD_MAX_ATTEMPTS: usize = 10;
+- DOWNLOAD_PROGRESS_UPDATE_STEP · constant · L60-L60 — const DOWNLOAD_PROGRESS_UPDATE_STEP: u64 = 1_048_576;
+- is_release_build · function · L62-L64 — pub fn is_release_build() -> bool
+- current_update_semver · function · L66-L68 — fn current_update_semver() -> &'static str
+- release_is_update · function · L73-L80 — fn release_is_update(release: &GitHubRelease) -> Result<bool>
+- release_is_update_with · function · L82-L95 — fn release_is_update_with(
+- source_build_root · function · L97-L99 — fn source_build_root() -> Result<PathBuf>
+- source_build_repo_dir · function · L101-L103 — fn source_build_repo_dir() -> Result<PathBuf>
+- should_auto_update · function · L105-L112 — pub fn should_auto_update() -> bool
+- should_auto_update_with · function · L114-L132 — fn should_auto_update_with(
+- run_git_pull_ff_only · function · L134-L150 — pub fn run_git_pull_ff_only(repo_dir: &Path, quiet: bool) -> Result<()>
+- is_inside_git_repo · function · L152-L166 — fn is_inside_git_repo(path: &std::path::Path) -> bool
+- auto_update_git_repo_skip_reason · function · L168-L172 — fn auto_update_git_repo_skip_reason(path: &std::path::Path) -> Option<&'static str>
+- UPDATE_RELEASE_URL_OVERRIDE_ENV · constant · L176-L176 — pub const UPDATE_RELEASE_URL_OVERRIDE_ENV: &str = "JCODE_UPDATE_RELEASE_URL";
+- release_url_override · function · L182-L187 — fn release_url_override() -> Option<String>
+- release_url_override_with · function · L189-L201 — fn release_url_override_with(value: Option<String>, sandboxed_home: bool) -> Option<String>
+- fetch_latest_release_blocking · function · L203-L240 — pub fn fetch_latest_release_blocking() -> Result<GitHubRelease>
+- update_preview · module · L243-L243 — mod update_preview;
+- github_api_request · function · L249-L267 — fn github_api_request(
+- latest_main_sha_blocking · function · L269-L293 — fn latest_main_sha_blocking() -> Result<String>
+- platform_asset · function · L295-L310 — fn platform_asset(release: &GitHubRelease) -> Result<&GitHubAsset>
+- checksum_asset · function · L312-L314 — fn checksum_asset(release: &GitHubRelease) -> Option<&GitHubAsset>
+- verify_asset_checksum_if_available · function · L316-L344 — fn verify_asset_checksum_if_available(
+- synthetic_main_release · function · L346-L355 — fn synthetic_main_release(latest_sha: &str) -> GitHubRelease
+- install_main_source_update_blocking · function · L357-L387 — fn install_main_source_update_blocking(latest_sha: &str) -> Result<PathBuf>
+- prepare_release_update · function · L389-L417 — fn prepare_release_update(release: GitHubRelease) -> Result<PreparedUpdate>
+- prepare_main_update_blocking · function · L419-L487 — fn prepare_main_update_blocking() -> Result<PreparedUpdate>
+- prepare_update_blocking · function · L489-L496 — pub fn prepare_update_blocking() -> Result<PreparedUpdate>
+- short_update_error · function · L502-L505 — fn short_update_error(context: &str, error: &anyhow::Error) -> String
+- spawn_background_session_update · function · L507-L600 — pub fn spawn_background_session_update(session_id: String)
+- check_for_update_blocking · function · L602-L604 — pub fn check_for_update_blocking() -> Result<Option<GitHubRelease>>
+- check_for_main_update_blocking · function · L611-L670 — fn check_for_main_update_blocking() -> Result<Option<GitHubRelease>>
+- has_cargo · function · L673-L679 — fn has_cargo() -> bool
+- build_from_source · function · L682-L769 — fn build_from_source() -> Result<PathBuf>
+- download_asset_with_resume · function · L778-L902 — fn download_asset_with_resume(
+- read_response_into · function · L904-L927 — fn read_response_into(
+- content_range_total · function · L929-L937 — fn content_range_total(response: &reqwest::blocking::Response) -> Option<u64>
+- log_download_retry · function · L939-L944 — fn log_download_retry(attempt: usize, resume_from: u64, err: &impl std::fmt::Display)
+- log_download_retry_status · function · L946-L951 — fn log_download_retry_status(attempt: usize, resume_from: u64, status: reqwest::StatusCode)
+- log_download_retry_short · function · L953-L958 — fn log_download_retry_short(attempt: usize, downloaded: u64, total: u64)
+- download_and_install_blocking_with_progress · function · L960-L1110 — pub fn download_and_install_blocking_with_progress(
+- TERMUX_PREFIX · constant · L1112-L1112 — const TERMUX_PREFIX: &str = "/data/data/com.termux/files/usr";
+- is_termux_env · function · L1115-L1123 — fn is_termux_env(
+- termux_glibc_interpreter · function · L1126-L1136 — fn termux_glibc_interpreter(os: &str, arch: &str) -> Option<String>
+- patch_termux_interpreter_if_needed · function · L1138-L1176 — fn patch_termux_interpreter_if_needed(binary: &Path) -> Result<()>
+- termux_tests · module · L1180-L1180 — mod termux_tests;
+- check_and_maybe_update · function · L1182-L1264 — pub fn check_and_maybe_update(auto_install: bool) -> UpdateCheckResult
+- repair_stale_shared_server_after_no_update · function · L1266-L1285 — fn repair_stale_shared_server_after_no_update()
+- tests · module · L1289-L1289 — mod tests;
+- github_auth_tests · module · L1293-L1293 — mod github_auth_tests;

@@ -1,0 +1,105 @@
+# crates/jcode-app-core/src/tool/tests.rs
+
+- plan_mode_denies_mutation_and_restores_dispatch · function · L12-L78 — async fn plan_mode_denies_mutation_and_restores_dispatch()
+- plan_mode_bash_allowlist_fails_closed · function · L81-L122 — fn plan_mode_bash_allowlist_fails_closed()
+- plan_mode_cancel_and_batch_cannot_leak_authority · function · L125-L160 — async fn plan_mode_cancel_and_batch_cannot_leak_authority()
+- plan_mode_bash_reads_without_shell_and_bounds_output · function · L164-L211 — async fn plan_mode_bash_reads_without_shell_and_bounds_output()
+- base_tools_do_not_expose_invalid_reporting_tool · function · L214-L219 — fn base_tools_do_not_expose_invalid_reporting_tool()
+- base_tools_exclude_replace_and_keep_other_editing_tools · function · L222-L229 — fn base_tools_exclude_replace_and_keep_other_editing_tools()
+- TestHomeGuard · struct · L231-L233 — struct TestHomeGuard
+- new · function · L236-L240 — fn new(path: &std::path::Path) -> Self
+- drop · function · L244-L250 — fn drop(&mut self)
+- MockProvider · struct · L253-L253 — struct MockProvider;
+- complete · function · L257-L267 — async fn complete(
+- name · function · L269-L271 — fn name(&self) -> &str
+- fork · function · L273-L275 — fn fork(&self) -> Arc<dyn Provider>
+- mcp_test_context · function · L278-L288 — fn mcp_test_context(working_dir: &std::path::Path) -> ToolContext
+- register_empty_mcp_tools · function · L290-L302 — async fn register_empty_mcp_tools(registry: &Registry, working_dir: &std::path::Path)
+- mcp_list_remains_available_while_background_connect_is_handshaking · function · L305-L350 — async fn mcp_list_remains_available_while_background_connect_is_handshaking()
+- cached_mcp_registration_returns_while_shared_health_is_blocked · function · L353-L369 — async fn cached_mcp_registration_returns_while_shared_health_is_blocked()
+- with_blocked_mcp_health · function · L371-L553 — pub(crate) async fn with_blocked_mcp_health<F, Fut>(run: F)
+- real_mcp_registration_does_not_retain_registry_tool_map · function · L556-L573 — async fn real_mcp_registration_does_not_retain_registry_tool_map()
+- mcp_management_upgrades_registry_through_surviving_clone · function · L576-L628 — async fn mcp_management_upgrades_registry_through_surviving_clone()
+- maintainer_feedback_tool_is_registered · function · L631-L641 — async fn maintainer_feedback_tool_is_registered()
+- test_tool_definitions_are_sorted · function · L644-L667 — async fn test_tool_definitions_are_sorted()
+- deferred_mcp_surfaces_follow_umbrella_and_per_tool_filters · function · L670-L708 — fn deferred_mcp_surfaces_follow_umbrella_and_per_tool_filters()
+- test_resolve_skill_aliases_to_skill_manage · function · L711-L715 — fn test_resolve_skill_aliases_to_skill_manage()
+- test_discover_tools_not_registered_when_sponsors_disabled · function · L718-L731 — async fn test_discover_tools_not_registered_when_sponsors_disabled()
+- directory_listings_use_bash_instead_of_a_dedicated_tool · function · L734-L744 — async fn directory_listings_use_bash_instead_of_a_dedicated_tool()
+- subagent_tool_is_not_registered · function · L747-L759 — async fn subagent_tool_is_not_registered()
+- BareSchemaTool · struct · L761-L761 — struct BareSchemaTool;
+- name · function · L765-L767 — fn name(&self) -> &str
+- description · function · L769-L771 — fn description(&self) -> &str
+- parameters_schema · function · L773-L781 — fn parameters_schema(&self) -> Value
+- execute · function · L783-L785 — async fn execute(&self, _input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- tool_definitions_auto_inject_required_intent · function · L793-L808 — fn tool_definitions_auto_inject_required_intent()
+- first_party_tool_definitions_require_an_undescribed_intent · function · L811-L845 — async fn first_party_tool_definitions_require_an_undescribed_intent()
+- test_resolve_tool_name_oauth_aliases · function · L848-L871 — fn test_resolve_tool_name_oauth_aliases()
+- model_facing_definitions_advertise_canonical_names_only · function · L874-L920 — async fn model_facing_definitions_advertise_canonical_names_only()
+- test_batch_resolves_function_namespaced_tools · function · L923-L955 — async fn test_batch_resolves_function_namespaced_tools()
+- test_batch_rejects_function_namespaced_batch_recursion · function · L958-L983 — async fn test_batch_rejects_function_namespaced_batch_recursion()
+- test_batch_resolves_oauth_names · function · L986-L1005 — async fn test_batch_resolves_oauth_names()
+- registry_execute_enforces_session_tool_policy_after_alias_resolution · function · L1008-L1037 — async fn registry_execute_enforces_session_tool_policy_after_alias_resolution()
+- registry_execute_pre_tool_hook_blocks_and_allows · function · L1041-L1106 — async fn registry_execute_pre_tool_hook_blocks_and_allows()
+- registry_execute_lifecycle_hooks_gate_rewrite_and_report_tool_calls · function · L1111-L1214 — async fn registry_execute_lifecycle_hooks_gate_rewrite_and_report_tool_calls()
+- registry_execute_denies_tools_when_config_composition_is_broken · function · L1218-L1280 — async fn registry_execute_denies_tools_when_config_composition_is_broken()
+- registry_execute_allows_config_repair_and_reads_while_composition_is_broken · function · L1283-L1397 — async fn registry_execute_allows_config_repair_and_reads_while_composition_is_broken()
+- test_definitions_keep_batch_schema_generic · function · L1400-L1421 — async fn test_definitions_keep_batch_schema_generic()
+- resolve_tool_name_maps_communicate_to_swarm · function · L1424-L1426 — fn resolve_tool_name_maps_communicate_to_swarm()
+- print_tool_definition_token_report · function · L1430-L1445 — async fn print_tool_definition_token_report()
+- tool_descriptions_stay_under_token_cap · function · L1451-L1497 — async fn tool_descriptions_stay_under_token_cap()
+- DESCRIPTION_TOKEN_CAP · constant · L1452-L1452 — const DESCRIPTION_TOKEN_CAP: usize = 20;
+- EXEMPT · constant · L1465-L1473 — const EXEMPT: &[&str] = &[
+- collect_param_descriptions · function · L1499-L1521 — fn collect_param_descriptions(schema: &Value, path: &str, out: &mut Vec<(String, String)>)
+- tool_parameter_descriptions_stay_under_token_cap · function · L1528-L1581 — async fn tool_parameter_descriptions_stay_under_token_cap()
+- PARAM_DESCRIPTION_TOKEN_CAP · constant · L1529-L1529 — const PARAM_DESCRIPTION_TOKEN_CAP: usize = 25;
+- EXEMPT · constant · L1539-L1555 — const EXEMPT: &[(&str, &str)] = &[
+- schema_type_includes · function · L1583-L1591 — fn schema_type_includes(schema: &Value, expected: &str) -> bool
+- collect_schema_errors · function · L1593-L1653 — fn collect_schema_errors(schema: &Value, path: &str, errors: &mut Vec<String>)
+- test_tool_definitions_do_not_expose_invalid_array_schemas · function · L1656-L1675 — async fn test_tool_definitions_do_not_expose_invalid_array_schemas()
+- test_schema_validator_rejects_any_of_branches_without_type · function · L1678-L1700 — fn test_schema_validator_rejects_any_of_branches_without_type()
+- test_context_guard_small_output_passes_through · function · L1703-L1715 — async fn test_context_guard_small_output_passes_through()
+- test_context_guard_withholds_huge_single_output_by_default · function · L1718-L1753 — async fn test_context_guard_withholds_huge_single_output_by_default()
+- test_context_guard_returns_truncated_output_when_caller_accepts · function · L1756-L1782 — async fn test_context_guard_returns_truncated_output_when_caller_accepts()
+- test_context_guard_reports_the_real_cost_and_affordable_size · function · L1785-L1831 — async fn test_context_guard_reports_the_real_cost_and_affordable_size()
+- test_context_guard_truncates_when_context_nearly_full · function · L1834-L1854 — async fn test_context_guard_truncates_when_context_nearly_full()
+- test_context_guard_still_refuses_when_context_is_exhausted · function · L1857-L1887 — async fn test_context_guard_still_refuses_when_context_is_exhausted()
+- test_context_guard_zero_budget_passes_through · function · L1890-L1906 — async fn test_context_guard_zero_budget_passes_through()
+- test_accepts_large_output_requires_an_unambiguous_yes · function · L1909-L1939 — fn test_accepts_large_output_requires_an_unambiguous_yes()
+- test_request_permission_is_ambient_only · function · L1942-L1958 — async fn test_request_permission_is_ambient_only()
+- closest_tool_names_suggests_near_misses · function · L1961-L1977 — fn closest_tool_names_suggests_near_misses()
+- unknown_tool_error_lists_available_tools_and_suggestions · function · L1980-L2008 — async fn unknown_tool_error_lists_available_tools_and_suggestions()
+- gemini_build_tools_from_registry_definitions_omits_const_keywords · function · L2011-L2058 — async fn gemini_build_tools_from_registry_definitions_omits_const_keywords()
+- schema_contains_key · function · L2015-L2025 — fn schema_contains_key(schema: &serde_json::Value, key: &str) -> bool
+- collect_dangling_required · function · L2063-L2088 — fn collect_dangling_required(schema: &Value, path: &str, errors: &mut Vec<String>)
+- test_context_guard_never_spends_more_than_it_reports · function · L2091-L2148 — async fn test_context_guard_never_spends_more_than_it_reports()
+- test_context_guard_refusal_reads_clearly_for_todays_regression · function · L2151-L2177 — async fn test_context_guard_refusal_reads_clearly_for_todays_regression()
+- BigOutputTool · struct · L2181-L2183 — struct BigOutputTool
+- name · function · L2187-L2189 — fn name(&self) -> &str
+- description · function · L2191-L2193 — fn description(&self) -> &str
+- parameters_schema · function · L2195-L2197 — fn parameters_schema(&self) -> Value
+- execute · function · L2199-L2201 — async fn execute(&self, _input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- execute_big_output · function · L2204-L2210 — async fn execute_big_output(input: Value) -> String
+- NEXT · constant · L2207-L2207 — static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- execute_big_output_in · function · L2212-L2241 — async fn execute_big_output_in(session_id: &str, input: Value) -> String
+- test_execute_withholds_oversized_output_by_default · function · L2244-L2258 — async fn test_execute_withholds_oversized_output_by_default()
+- test_execute_honors_accept_large_output_from_raw_input · function · L2261-L2277 — async fn test_execute_honors_accept_large_output_from_raw_input()
+- test_execute_ignores_a_non_boolean_accept_flag · function · L2280-L2289 — async fn test_execute_ignores_a_non_boolean_accept_flag()
+- test_no_tool_schema_carries_the_large_output_flag · function · L2292-L2320 — async fn test_no_tool_schema_carries_the_large_output_flag()
+- test_repeating_a_withheld_call_accepts_its_cost · function · L2323-L2345 — async fn test_repeating_a_withheld_call_accepts_its_cost()
+- test_a_different_call_does_not_accept_a_withheld_one · function · L2348-L2359 — async fn test_a_different_call_does_not_accept_a_withheld_one()
+- test_batch_guards_both_its_subcalls_and_its_own_aggregate · function · L2362-L2449 — async fn test_batch_guards_both_its_subcalls_and_its_own_aggregate()
+- test_guard_withholds_large_output_on_a_million_token_window · function · L2452-L2486 — async fn test_guard_withholds_large_output_on_a_million_token_window()
+- test_single_output_ceiling_is_absolute_not_only_proportional · function · L2489-L2516 — async fn test_single_output_ceiling_is_absolute_not_only_proportional()
+- initiative_is_not_registered_or_advertised · function · L2519-L2531 — async fn initiative_is_not_registered_or_advertised()
+- tool_schemas_are_sendable_to_every_provider_dialect · function · L2547-L2589 — async fn tool_schemas_are_sendable_to_every_provider_dialect()
+- the_dialect_sweep_catches_the_issue_754_schema · function · L2596-L2629 — fn the_dialect_sweep_catches_the_issue_754_schema()
+- only_the_known_open_world_tools_are_ineligible_for_openai_strict_mode · function · L2641-L2674 — async fn only_the_known_open_world_tools_are_ineligible_for_openai_strict_mode()
+- KNOWN_OPEN_WORLD_TOOLS · constant · L2648-L2648 — const KNOWN_OPEN_WORLD_TOOLS: &[&str] = &["batch", "browser", "todo"];
+- mcp_collision · module · L2677-L2677 — mod mcp_collision;
+- sdk_tests · module · L2680-L2680 — mod sdk_tests;
+- touched_paths_include_patch_headers_and_path_keys · function · L2683-L2704 — fn touched_paths_include_patch_headers_and_path_keys()
+- plan_mode_read_skips_executable_feedback_hook · function · L2708-L2742 — async fn plan_mode_read_skips_executable_feedback_hook()
+- post_tool_feedback_hook_appends_stdout_to_tool_result · function · L2746-L2784 — async fn post_tool_feedback_hook_appends_stdout_to_tool_result()
+- dump_tool_definitions · function · L2792-L2808 — async fn dump_tool_definitions()
+- additional_base_tools_do_not_expose_invalid_reporting_tool · module · L2811-L2811 — mod additional_base_tools_do_not_expose_invalid_reporting_tool;

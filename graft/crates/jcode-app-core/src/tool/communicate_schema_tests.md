@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/tool/communicate_schema_tests.rs
+
+- model_facing_swarm_definition_stays_compact · function · L4-L46 — fn model_facing_swarm_definition_stays_compact()
+- description_bytes · function · L5-L20 — fn description_bytes(value: &serde_json::Value) -> usize
+- schema_still_requires_action · function · L49-L52 — fn schema_still_requires_action()
+- schema_hides_model_override_by_default_and_keeps_effort_user_configured · function · L55-L73 — fn schema_hides_model_override_by_default_and_keeps_effort_user_configured()
+- schema_only_exposes_exact_allowlisted_worker_models_when_enabled · function · L76-L93 — fn schema_only_exposes_exact_allowlisted_worker_models_when_enabled()
+- spawning_actions_cannot_bypass_worker_model_policy · function · L96-L124 — fn spawning_actions_cannot_bypass_worker_model_policy()
+- stale_worker_model_override_is_rejected_before_server_dispatch · function · L127-L148 — async fn stale_worker_model_override_is_rejected_before_server_dispatch()
+- schema_requires_a_nonblank_label_for_spawn · function · L151-L176 — fn schema_requires_a_nonblank_label_for_spawn()
+- schema_advertises_only_canonical_spawn_and_target_fields · function · L179-L198 — fn schema_advertises_only_canonical_spawn_and_target_fields()
+- spawn_label_validation_rejects_missing_or_blank_labels · function · L201-L224 — fn spawn_label_validation_rejects_missing_or_blank_labels()
+- spawn_label_validation_trims_valid_labels · function · L227-L237 — fn spawn_label_validation_trims_valid_labels()
+- spawn_execute_rejects_missing_label_before_sending_request · function · L240-L251 — async fn spawn_execute_rejects_missing_label_before_sending_request()
+- description_includes_swarm_prompt_guidance · function · L254-L265 — fn description_includes_swarm_prompt_guidance()
+- existing_tool_keeps_prompt_while_new_tool_loads_edit · function · L268-L286 — fn existing_tool_keeps_prompt_while_new_tool_loads_edit()
+- spawning_action_inputs_preserve_requested_model · function · L289-L307 — fn spawning_action_inputs_preserve_requested_model()
+- spawning_action_inputs_allow_omitted_or_null_model · function · L310-L323 — fn spawning_action_inputs_allow_omitted_or_null_model()
+- format_swarm_model_list_renders_routes_and_default · function · L326-L358 — fn format_swarm_model_list_renders_routes_and_default()
+- format_swarm_model_list_handles_empty_catalog · function · L361-L367 — fn format_swarm_model_list_handles_empty_catalog()
+- schema_does_not_advertise_explicit_completion_reporting · function · L370-L377 — fn schema_does_not_advertise_explicit_completion_reporting()
+- legacy_report_input_remains_compatible · function · L380-L393 — fn legacy_report_input_remains_compatible()
+- schema_advertises_a_lean_lane_first_action_set · function · L396-L480 — fn schema_advertises_a_lean_lane_first_action_set()

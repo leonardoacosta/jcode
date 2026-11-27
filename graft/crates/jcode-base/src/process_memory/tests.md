@@ -1,0 +1,21 @@
+# crates/jcode-base/src/process_memory/tests.rs
+
+- windows_memory_metrics_keep_private_commit_separate · function · L4-L18 — fn windows_memory_metrics_keep_private_commit_separate()
+- windows_native_snapshot_reports_working_set_and_records_history · function · L22-L35 — fn windows_native_snapshot_reports_working_set_and_records_history()
+- linux_snapshot_preserves_resident_virtual_and_history_metrics · function · L39-L52 — fn linux_snapshot_preserves_resident_virtual_and_history_metrics()
+- estimate_json_bytes_matches_serialized_length_without_buffering_output · function · L55-L68 — fn estimate_json_bytes_matches_serialized_length_without_buffering_output()
+- estimate_json_bytes_returns_zero_when_serialization_fails · function · L71-L84 — fn estimate_json_bytes_returns_zero_when_serialization_fails()
+- FailingSerialize · struct · L72-L72 — struct FailingSerialize;
+- serialize · function · L75-L80 — fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+- release_retained_heap_is_safe_to_call · function · L87-L93 — fn release_retained_heap_is_safe_to_call()
+- release_retained_heap_debounced_skips_within_interval · function · L96-L106 — fn release_retained_heap_debounced_skips_within_interval()
+- parse_retention_trim_threshold_handles_default_disable_and_values · function · L109-L124 — fn parse_retention_trim_threshold_handles_default_disable_and_values()
+- release_retained_heap_if_excessive_skips_below_threshold · function · L127-L136 — fn release_retained_heap_if_excessive_skips_below_threshold()
+- retention_growth_trigger_measures_growth_above_baseline · function · L139-L151 — fn retention_growth_trigger_measures_growth_above_baseline()
+- release_retained_heap_if_excessive_runs_above_threshold_then_requires_regrowth · function · L155-L177 — fn release_retained_heap_if_excessive_runs_above_threshold_then_requires_regrowth()
+- glibc_only_allocator_paths_are_gated_on_gnu_not_just_linux · function · L190-L222 — fn glibc_only_allocator_paths_are_gated_on_gnu_not_just_linux()
+- allocator_info_matches_enabled_allocator_features · function · L225-L236 — fn allocator_info_matches_enabled_allocator_features()
+- glibc_malloc_stats_report_live_and_retained_bytes · function · L240-L255 — fn glibc_malloc_stats_report_live_and_retained_bytes()
+- parse_proc_value_bytes_handles_kib_and_mib_units · function · L259-L270 — fn parse_proc_value_bytes_handles_kib_and_mib_units()
+- parse_proc_status_count_reads_unitless_counters · function · L274-L278 — fn parse_proc_status_count_reads_unitless_counters()
+- snapshot_populates_thread_and_stack_and_pss_split_fields · function · L282-L303 — fn snapshot_populates_thread_and_stack_and_pss_split_fields()

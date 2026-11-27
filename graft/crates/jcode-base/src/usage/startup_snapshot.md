@@ -1,0 +1,34 @@
+# crates/jcode-base/src/usage/startup_snapshot.rs
+
+- SCHEMA · constant · L9-L9 — const SCHEMA: u32 = 1;
+- MAX_BYTES · constant · L10-L10 — const MAX_BYTES: u64 = 64 * 1024;
+- MAX_AGE · constant · L13-L13 — const MAX_AGE: Duration = Duration::from_secs(90);
+- SocketIdentity · struct · L16-L21 — struct SocketIdentity
+- Snapshot · struct · L24-L33 — struct Snapshot
+- AccountUsageStartupPublisher · struct · L37-L42 — pub struct AccountUsageStartupPublisher
+- now_ms · function · L44-L51 — fn now_ms() -> Option<u64>
+- normalized_socket · function · L53-L66 — fn normalized_socket(socket: &Path) -> Option<PathBuf>
+- cache_path · function · L68-L74 — fn cache_path(socket: &Path) -> PathBuf
+- socket_identity · function · L77-L89 — fn socket_identity(socket: &Path) -> Option<SocketIdentity>
+- socket_identity · function · L92-L94 — fn socket_identity(_socket: &Path) -> Option<SocketIdentity>
+- serialized_byte_len · function · L98-L121 — fn serialized_byte_len(value: &impl Serialize) -> serde_json::Result<u64>
+- Counter · struct · L99-L99 — struct Counter(u64);
+- write · function · L101-L104 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- write_all · function · L106-L112 — fn write_all(&mut self, bytes: &[u8]) -> std::io::Result<()>
+- flush · function · L114-L116 — fn flush(&mut self) -> std::io::Result<()>
+- new · function · L124-L133 — pub fn new(socket: &Path, instance_id: &str) -> Option<Self>
+- publish · function · L136-L173 — pub fn publish(
+- read_private · function · L177-L202 — fn read_private(path: &Path) -> Option<Vec<u8>>
+- read_private · function · L205-L207 — fn read_private(_path: &Path) -> Option<Vec<u8>>
+- snapshot_age · function · L209-L226 — fn snapshot_age(
+- hydrate_remote_account_usage · function · L231-L234 — pub fn hydrate_remote_account_usage(socket: &Path) -> bool
+- hydrate_remote_account_usage_for_generation · function · L238-L251 — pub fn hydrate_remote_account_usage_for_generation(socket: &Path, generation: u64) -> bool
+- read_snapshot · function · L253-L265 — fn read_snapshot(socket: &Path, path: &Path) -> Option<(Snapshot, Duration)>
+- discard_expired_windows · function · L267-L298 — fn discard_expired_windows(accounts: &mut [AccountUsageSnapshot], now_ms: u64)
+- sizing_tests · module · L302-L302 — mod sizing_tests;
+- tests · module · L305-L484 — mod tests
+- generation_and_age_fail_closed · function · L310-L337 — fn generation_and_age_fail_closed()
+- private_reader_rejects_permissions_symlinks_and_oversize · function · L340-L354 — fn private_reader_rejects_permissions_symlinks_and_oversize()
+- bound_publisher_does_not_replace_new_socket_generation · function · L357-L395 — fn bound_publisher_does_not_replace_new_socket_generation()
+- publisher_captures_generation_after_socket_permissions_are_finalized · function · L398-L428 — fn publisher_captures_generation_after_socket_permissions_are_finalized()
+- reset_boundary_discards_exhaustion_but_preserves_error · function · L431-L483 — fn reset_boundary_discards_exhaustion_but_preserves_error()

@@ -1,0 +1,35 @@
+# src/cli/selfdev_tests.rs
+
+- reload_identity_reads_actual_socket_and_rejects_mismatch · function · L10-L38 — async fn reload_identity_reads_actual_socket_and_rejects_mismatch()
+- reload_identity_missing_wrong_reply_and_timeout_never_verify · function · L42-L77 — async fn reload_identity_missing_wrong_reply_and_timeout_never_verify()
+- lock_env · function · L79-L81 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- EnvVarGuard · struct · L83-L85 — struct EnvVarGuard
+- capture · function · L88-L95 — fn capture(names: &[&'static str]) -> Self
+- drop · function · L99-L107 — fn drop(&mut self)
+- set_socket_test_env · function · L110-L115 — fn set_socket_test_env(socket_path: &Path, runtime_dir: &Path) -> EnvVarGuard
+- TestEnvGuard · struct · L117-L121 — struct TestEnvGuard
+- new · function · L124-L139 — fn new() -> anyhow::Result<Self>
+- setup_test_env · function · L142-L144 — fn setup_test_env() -> TestEnvGuard
+- TestProvider · struct · L146-L146 — struct TestProvider;
+- name · function · L150-L152 — fn name(&self) -> &str
+- model · function · L154-L156 — fn model(&self) -> String
+- available_models · function · L158-L160 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L162-L164 — fn available_models_display(&self) -> Vec<String>
+- prefetch_models · function · L166-L168 — async fn prefetch_models(&self) -> anyhow::Result<()>
+- set_model · function · L170-L172 — fn set_model(&self, _model: &str) -> anyhow::Result<()>
+- handles_tools_internally · function · L174-L176 — fn handles_tools_internally(&self) -> bool
+- complete · function · L178-L188 — async fn complete(
+- fork · function · L190-L192 — fn fork(&self) -> Arc<dyn provider::Provider>
+- test_selfdev_tool_registration · function · L196-L226 — async fn test_selfdev_tool_registration()
+- test_selfdev_session_and_registry · function · L229-L279 — async fn test_selfdev_session_and_registry()
+- test_wait_for_reloading_server_returns_false_when_reload_failed · function · L282-L297 — async fn test_wait_for_reloading_server_returns_false_when_reload_failed()
+- test_wait_for_reloading_server_returns_true_for_live_listener · function · L300-L308 — async fn test_wait_for_reloading_server_returns_true_for_live_listener()
+- isolated_launcher_env · function · L310-L323 — fn isolated_launcher_env() -> (
+- set_var · function · L325-L327 — fn set_var<T: AsRef<OsStr>>(name: &str, value: T)
+- test_launcher_dir_uses_trimmed_install_dir_before_jcode_home · function · L330-L341 — fn test_launcher_dir_uses_trimmed_install_dir_before_jcode_home()
+- test_launcher_dir_ignores_blank_overrides_and_uses_home_default · function · L344-L351 — fn test_launcher_dir_ignores_blank_overrides_and_uses_home_default()
+- default_launcher_dir · function · L353-L359 — fn default_launcher_dir(home: &Path) -> PathBuf
+- test_selfdev_build_command_prefers_repo_wrapper_when_present · function · L362-L377 — fn test_selfdev_build_command_prefers_repo_wrapper_when_present()
+- test_selfdev_build_command_falls_back_to_cargo_when_wrapper_missing · function · L380-L388 — fn test_selfdev_build_command_falls_back_to_cargo_when_wrapper_missing()
+- test_selfdev_build_command_can_target_all · function · L391-L397 — fn test_selfdev_build_command_can_target_all()
+- test_selfdev_build_command_can_target_tui_only · function · L400-L406 — fn test_selfdev_build_command_can_target_tui_only()

@@ -1,0 +1,41 @@
+# crates/jcode-tui/src/tui/ui_viewport.rs
+
+- todo_margins · module · L3-L3 — mod todo_margins;
+- COPY_BADGE_ALT_LABEL · constant · L11-L11 — pub(crate) const COPY_BADGE_ALT_LABEL: &str = "⌥";
+- COPY_BADGE_ALT_LABEL · constant · L13-L13 — pub(crate) const COPY_BADGE_ALT_LABEL: &str = "Alt";
+- copy_badge_alt_label · function · L15-L18 — pub(crate) fn copy_badge_alt_label() -> String
+- handterm_native_latex_cell_symbol · function · L23-L38 — fn handterm_native_latex_cell_symbol(source: &str, rows: u16, cols: u16) -> Option<String>
+- shortcut_badge_spans · function · L40-L54 — pub(crate) fn shortcut_badge_spans(
+- copy_badge_shortcut_width · function · L56-L60 — fn copy_badge_shortcut_width(key_label: &str) -> usize
+- expand_badge_reserved_width · function · L65-L67 — pub(crate) fn expand_badge_reserved_width(badge_text: &str) -> usize
+- expand_badge_spans · function · L69-L103 — fn expand_badge_spans(
+- expand_badge_target_line · function · L105-L111 — fn expand_badge_target_line(active: &ActiveFileDiffContext, inline: bool) -> usize
+- lower_bound · function · L113-L115 — fn lower_bound(values: &[usize], target: usize) -> usize
+- TAIL_CATCHUP_MIN_JUMP · constant · L120-L120 — const TAIL_CATCHUP_MIN_JUMP: usize = 4;
+- TAIL_CATCHUP_MAX_STEP · constant · L125-L125 — const TAIL_CATCHUP_MAX_STEP: usize = 3;
+- resolve_tail_follow_scroll · function · L133-L166 — fn resolve_tail_follow_scroll(max_scroll: usize, viewport_height: usize) -> usize
+- viewport_text · module · L171-L171 — mod viewport_text;
+- pick_copy_badge_line · function · L184-L208 — pub(crate) fn pick_copy_badge_line(
+- copy_badge_reserved_width · function · L210-L223 — pub(crate) fn copy_badge_reserved_width(
+- reserve_copy_badge_margins · function · L225-L246 — pub(crate) fn reserve_copy_badge_margins(
+- draw_messages · function · L248-L1289 — pub(super) fn draw_messages(
+- PREFETCH_VIEWPORTS · constant · L1096-L1096 — const PREFETCH_VIEWPORTS: usize = 2;
+- viewport_margins · module · L1292-L1292 — mod viewport_margins;
+- pinned_todo_band_lines · function · L1296-L1334 — pub(crate) fn pinned_todo_band_lines(
+- PINNED_TODO_SCROLL · constant · L1336-L1336 — static PINNED_TODO_SCROLL: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+- PINNED_TODO_MAX_SCROLL · constant · L1337-L1338 — static PINNED_TODO_MAX_SCROLL: std::sync::atomic::AtomicUsize =
+- PINNED_TODO_LAST_MAX · constant · L1341-L1342 — static PINNED_TODO_LAST_MAX: std::sync::atomic::AtomicUsize =
+- PINNED_TODO_BAND_AREA · constant · L1343-L1343 — static PINNED_TODO_BAND_AREA: std::sync::Mutex<Option<Rect>> = std::sync::Mutex::new(None);
+- pinned_todo_scroll · function · L1345-L1347 — fn pinned_todo_scroll() -> usize
+- publish_pinned_todo_scroll · function · L1349-L1359 — fn publish_pinned_todo_scroll(band_area: Option<Rect>)
+- publish_pinned_todo_scroll_for_test · function · L1362-L1364 — pub(crate) fn publish_pinned_todo_scroll_for_test()
+- scroll_pinned_todos · function · L1367-L1373 — pub(crate) fn scroll_pinned_todos(delta: isize) -> bool
+- reset_pinned_todo_scroll · function · L1375-L1378 — pub(crate) fn reset_pinned_todo_scroll()
+- set_pinned_todo_band_area · function · L1380-L1387 — fn set_pinned_todo_band_area(area: Option<Rect>)
+- pinned_todo_scroll_area · function · L1390-L1395 — pub(crate) fn pinned_todo_scroll_area() -> Option<Rect>
+- PINNED_TODO_MORE_AREA · constant · L1397-L1397 — static PINNED_TODO_MORE_AREA: std::sync::Mutex<Option<Rect>> = std::sync::Mutex::new(None);
+- set_pinned_todo_more_area · function · L1399-L1406 — fn set_pinned_todo_more_area(area: Option<Rect>)
+- set_pinned_todo_more_area_for_test · function · L1409-L1411 — pub(crate) fn set_pinned_todo_more_area_for_test(area: Option<Rect>)
+- pinned_todo_more_area · function · L1413-L1415 — pub(crate) fn pinned_todo_more_area() -> Option<Rect>
+- prompt_preview · module · L1420-L1420 — mod prompt_preview;
+- tests · module · L1431-L1431 — mod tests;

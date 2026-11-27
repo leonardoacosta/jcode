@@ -1,0 +1,83 @@
+# crates/jcode-app-core/src/tool/browser_fast_tests.rs
+
+- MockBrowser · struct · L6-L14 — struct MockBrowser
+- new · function · L16-L26 — fn new(observations: Vec<Value>) -> Self
+- id · function · L30-L32 — fn id(&self) -> &'static str
+- supported_browsers · function · L33-L35 — fn supported_browsers(&self) -> &'static [&'static str]
+- status · function · L36-L43 — async fn status(&self, _: &ToolContext) -> Result<ToolOutput>
+- status_for · function · L44-L51 — async fn status_for(&self, browser: Option<&str>, ctx: &ToolContext) -> Result<ToolOutput>
+- setup · function · L52-L54 — async fn setup(&self) -> Result<ToolOutput>
+- ensure_ready · function · L55-L57 — async fn ensure_ready(&self) -> Result<Option<String>>
+- execute · function · L58-L105 — async fn execute(
+- MockTransport · struct · L107-L111 — struct MockTransport
+- new · function · L113-L128 — fn new(choices: &[(&str, f64)]) -> Self
+- model · function · L132-L134 — fn model(&self) -> &str
+- decide · function · L135-L150 — async fn decide(&self, request: &DecisionRequest) -> Result<Decision>
+- ctx · function · L152-L162 — fn ctx() -> ToolContext
+- input · function · L163-L170 — fn input() -> BrowserInput
+- page · function · L171-L173 — fn page(text: &str) -> Value
+- result · function · L174-L180 — async fn result(browser: &MockBrowser, transport: &MockTransport, input: &BrowserInput) -> Value
+- observes_before_done_and_after_each_action · function · L183-L196 — async fn observes_before_done_and_after_each_action()
+- invalid_or_uncertain_decisions_never_execute · function · L198-L221 — async fn invalid_or_uncertain_decisions_never_execute()
+- budget_always_observes_last_action · function · L223-L232 — async fn budget_always_observes_last_action()
+- stall_returns_control · function · L234-L240 — async fn stall_returns_control()
+- sensitive_pages_never_reach_transport · function · L242-L259 — async fn sensitive_pages_never_reach_transport()
+- validates_inputs_before_browser_calls · function · L261-L280 — async fn validates_inputs_before_browser_calls()
+- FailingDecisionTransport · struct · L281-L284 — struct FailingDecisionTransport
+- model · function · L287-L289 — fn model(&self) -> &str
+- decide · function · L290-L297 — async fn decide(&self, request: &DecisionRequest) -> Result<Decision>
+- decision_provider_failure_requests_direct_actions_and_preserves_tab · function · L301-L335 — async fn decision_provider_failure_requests_direct_actions_and_preserves_tab()
+- decision_provider_failure_preserves_completed_action_progress · function · L338-L354 — async fn decision_provider_failure_preserves_completed_action_progress()
+- PendingDecisionTransport · struct · L356-L356 — struct PendingDecisionTransport(Option<crate::agent::InterruptSignal>);
+- model · function · L359-L361 — fn model(&self) -> &str
+- decide · function · L362-L367 — async fn decide(&self, _: &DecisionRequest) -> Result<Decision>
+- decision_timeout_recovers_but_shutdown_does_not_request_more_actions · function · L371-L403 — async fn decision_timeout_recovers_but_shutdown_does_not_request_more_actions()
+- browser_errors_and_not_ready_hand_back · function · L406-L417 — async fn browser_errors_and_not_ready_hand_back()
+- rejects_scope_escapes_and_recursive_actions · function · L419-L439 — fn rejects_scope_escapes_and_recursive_actions()
+- raw_commands_get_authoritative_scope · function · L441-L448 — fn raw_commands_get_authoritative_scope()
+- exact_payloads_support_all_tab_local_capabilities · function · L450-L464 — fn exact_payloads_support_all_tab_local_capabilities()
+- auto_candidates_filter_risky_controls_and_use_only_supplied_text · function · L466-L502 — fn auto_candidates_filter_risky_controls_and_use_only_supplied_text()
+- password_workflows_are_not_blanket_blocked · function · L504-L518 — fn password_workflows_are_not_blanket_blocked()
+- candidates_are_capped_below_model_limit · function · L521-L526 — fn candidates_are_capped_below_model_limit()
+- oversized_observation_is_rejected_not_truncated_json · function · L528-L534 — async fn oversized_observation_is_rejected_not_truncated_json()
+- timeout_and_cancellation_drop_pending_work · function · L536-L557 — async fn timeout_and_cancellation_drop_pending_work()
+- observation_script_does_not_read_form_values · function · L559-L566 — fn observation_script_does_not_read_form_values()
+- stale_dom_replans_without_executing_old_target · function · L569-L589 — async fn stale_dom_replans_without_executing_old_target()
+- exact_actions_execute_once_and_results_feed_next_decision · function · L592-L620 — async fn exact_actions_execute_once_and_results_feed_next_decision()
+- whole_tab_actions_cannot_escape_explicit_subframe · function · L623-L639 — fn whole_tab_actions_cannot_escape_explicit_subframe()
+- scoped_inputs_inherit_requested_browser · function · L642-L669 — fn scoped_inputs_inherit_requested_browser()
+- requested_browser_is_preserved_through_entire_handoff · function · L672-L703 — async fn requested_browser_is_preserved_through_entire_handoff()
+- mismatched_window_is_rejected_before_observing_page · function · L706-L719 — async fn mismatched_window_is_rejected_before_observing_page()
+- bridge_evaluate_function_body_returns_observation · function · L722-L726 — fn bridge_evaluate_function_body_returns_observation()
+- nullable_handoff_options_do_not_break_direct_actions · function · L729-L735 — fn nullable_handoff_options_do_not_break_direct_actions()
+- credentials_in_page_never_reach_transport_or_parent · function · L738-L754 — async fn credentials_in_page_never_reach_transport_or_parent()
+- done_checks_latest_dom_and_returns_changed_observation · function · L757-L762 — async fn done_checks_latest_dom_and_returns_changed_observation()
+- navigation_retires_old_exact_actions_but_continues_task · function · L765-L788 — async fn navigation_retires_old_exact_actions_but_continues_task()
+- partial_form_results_are_failures · function · L791-L803 — fn partial_form_results_are_failures()
+- handoff_clicks_do_not_dispatch_twice · function · L806-L817 — fn handoff_clicks_do_not_dispatch_twice()
+- requests_main_agent_script_or_text_without_executing · function · L820-L828 — async fn requests_main_agent_script_or_text_without_executing()
+- exact_candidate_is_not_reoffered_after_execution · function · L831-L857 — async fn exact_candidate_is_not_reoffered_after_execution()
+- PendingDecision · struct · L859-L859 — struct PendingDecision;
+- model · function · L862-L864 — fn model(&self) -> &str
+- decide · function · L865-L867 — async fn decide(&self, _: &DecisionRequest) -> Result<Decision>
+- decision_timeout_is_structured_handback · function · L871-L883 — async fn decision_timeout_is_structured_handback()
+- cancelled_handoff_never_starts_browser_work · function · L886-L900 — async fn cancelled_handoff_never_starts_browser_work()
+- compact_candidates_omit_unavailable_scroll_and_wait · function · L903-L928 — fn compact_candidates_omit_unavailable_scroll_and_wait()
+- observer_filters_viewport_and_tracks_scroll_availability · function · L931-L937 — fn observer_filters_viewport_and_tracks_scroll_availability()
+- delayed_navigation_settles_before_second_model_decision · function · L940-L964 — async fn delayed_navigation_settles_before_second_model_decision()
+- settling_loading_page_times_out_without_model_retry · function · L967-L994 — async fn settling_loading_page_times_out_without_model_retry()
+- rolling_action_results_keep_newest_and_bound_history · function · L997-L1023 — fn rolling_action_results_keep_newest_and_bound_history()
+- entire_task_keeps_context_and_results_across_three_actions · function · L1026-L1072 — async fn entire_task_keeps_context_and_results_across_three_actions()
+- unrelated_page_changes_do_not_abort_stable_target_action · function · L1075-L1089 — async fn unrelated_page_changes_do_not_abort_stable_target_action()
+- navigation_disconnect_is_observed_without_repeating_click · function · L1092-L1122 — async fn navigation_disconnect_is_observed_without_repeating_click()
+- uncertain_exact_side_effect_is_not_replayed_or_assumed_successful · function · L1125-L1146 — async fn uncertain_exact_side_effect_is_not_replayed_or_assumed_successful()
+- sensitive_action_results_do_not_enter_next_decision · function · L1149-L1157 — async fn sensitive_action_results_do_not_enter_next_decision()
+- low_confidence_help_still_reports_missing_capability · function · L1160-L1171 — async fn low_confidence_help_still_reports_missing_capability()
+- low_confidence_scrolling_gathers_evidence_without_parent_intervention · function · L1174-L1185 — async fn low_confidence_scrolling_gathers_evidence_without_parent_intervention()
+- uncertain_click_is_reconsidered_after_safe_exploration · function · L1188-L1210 — async fn uncertain_click_is_reconsidered_after_safe_exploration()
+- low_confidence_exact_scroll_and_completion_still_hand_back · function · L1213-L1231 — async fn low_confidence_exact_scroll_and_completion_still_hand_back()
+- structured_credentials_are_redacted_even_in_encoded_results · function · L1234-L1240 — fn structured_credentials_are_redacted_even_in_encoded_results()
+- wait_is_valid_but_same_url_reloaded_document_is_not · function · L1243-L1254 — fn wait_is_valid_but_same_url_reloaded_document_is_not()
+- distinct_successful_actions_on_unchanged_page_do_not_stall · function · L1257-L1280 — async fn distinct_successful_actions_on_unchanged_page_do_not_stall()
+- reconnect_timeout · module · L1283-L1283 — mod reconnect_timeout;
+- observation_reconnect · module · L1286-L1286 — mod observation_reconnect;

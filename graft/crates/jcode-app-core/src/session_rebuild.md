@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/session_rebuild.rs
+
+- hot_rebuild · function · L8-L27 — pub fn hot_rebuild(session_id: &str) -> Result<()>
+- spawn_background_session_rebuild · function · L29-L31 — pub fn spawn_background_session_rebuild(session_id: String)
+- pull_latest_changes_for_rebuild · function · L33-L38 — fn pull_latest_changes_for_rebuild(repo_dir: &Path)
+- run_release_build · function · L40-L47 — fn run_release_build(repo_dir: &Path) -> Result<()>
+- run_release_tests · function · L49-L60 — fn run_release_tests(repo_dir: &Path) -> Result<()>
+- run_cargo_release_step · function · L62-L67 — fn run_cargo_release_step(repo_dir: &Path, args: &[&str]) -> Result<ExitStatus>
+- install_local_release_with_warning · function · L69-L73 — fn install_local_release_with_warning(repo_dir: &Path)
+- rebuild_reload_candidate · function · L75-L79 — fn rebuild_reload_candidate(repo_dir: &Path, is_selfdev: bool) -> PathBuf
+- exec_rebuilt_session · function · L81-L92 — fn exec_rebuilt_session(exe: &Path, session_id: &str, cwd: &Path, is_selfdev: bool) -> Result<()>
+- run_background_session_rebuild · function · L94-L110 — fn run_background_session_rebuild(session_id: String)
+- BackgroundRebuildPublisher · struct · L113-L116 — struct BackgroundRebuildPublisher
+- new · function · L119-L124 — fn new(session_id: String) -> Self
+- status · function · L126-L132 — fn status(&self, message: impl Into<String>)
+- error · function · L134-L140 — fn error(&self, message: impl Into<String>)
+- ready · function · L142-L150 — fn ready(self, repo_dir: &Path)
+- publish · function · L152-L154 — fn publish(&self, status: SessionUpdateStatus)
+- background_pull_latest_changes · function · L157-L165 — fn background_pull_latest_changes(publisher: &BackgroundRebuildPublisher, repo_dir: &Path)
+- background_release_build · function · L167-L185 — fn background_release_build(publisher: &BackgroundRebuildPublisher, repo_dir: &Path) -> bool
+- background_release_tests · function · L187-L205 — fn background_release_tests(publisher: &BackgroundRebuildPublisher, repo_dir: &Path) -> bool
+- background_install_local_release · function · L207-L214 — fn background_install_local_release(publisher: &BackgroundRebuildPublisher, repo_dir: &Path)
+- publish_rebuild_ready_or_error · function · L216-L230 — fn publish_rebuild_ready_or_error(publisher: BackgroundRebuildPublisher, repo_dir: &Path)
+- rebuild_version_label · function · L232-L242 — fn rebuild_version_label(repo_dir: &Path) -> String

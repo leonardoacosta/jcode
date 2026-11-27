@@ -1,0 +1,50 @@
+# crates/jcode-tui/src/tui/app/state_ui.rs
+
+- count_format · module · L2-L2 — mod count_format;
+- reload_input · module · L5-L5 — mod reload_input;
+- RestoredReloadInput · struct · L12-L42 — pub(super) struct RestoredReloadInput
+- publish_user_image_previews · function · L47-L82 — pub(super) fn publish_user_image_previews(&mut self, images: &[(String, String)])
+- append_live_inline_images · function · L84-L95 — pub(super) fn append_live_inline_images(
+- recompute_display_message_stats · function · L97-L112 — fn recompute_display_message_stats(&mut self)
+- display_message_is_edit_tool · function · L116-L122 — fn display_message_is_edit_tool(message: &DisplayMessage) -> bool
+- adjust_display_message_stats · function · L129-L151 — pub(super) fn adjust_display_message_stats(&mut self, message: &DisplayMessage, added: bool)
+- active_client_session_id · function · L153-L159 — pub(super) fn active_client_session_id(&self) -> Option<&str>
+- note_client_focus · function · L161-L183 — pub(super) fn note_client_focus(&mut self, force: bool)
+- note_client_interaction · function · L185-L208 — pub(super) fn note_client_interaction(&mut self)
+- client_focused · function · L212-L214 — pub(crate) fn client_focused(&self) -> bool
+- set_client_focused · function · L222-L244 — pub(super) fn set_client_focused(&mut self, focused: bool) -> bool
+- expire_presumed_focus · function · L262-L270 — pub(super) fn expire_presumed_focus(&mut self)
+- PRESUMED_FOCUS_TIMEOUT · constant · L272-L273 — pub(super) const PRESUMED_FOCUS_TIMEOUT: std::time::Duration =
+- unfocused_redraw_warranted · function · L285-L287 — pub(crate) fn unfocused_redraw_warranted(&self) -> bool
+- display_messages · function · L289-L291 — pub fn display_messages(&self) -> &[DisplayMessage]
+- bump_display_messages_version · function · L293-L296 — pub(super) fn bump_display_messages_version(&mut self)
+- invalidate_side_pane_images_signature · function · L301-L303 — pub(super) fn invalidate_side_pane_images_signature(&mut self)
+- clear_inline_image_state · function · L307-L312 — pub(crate) fn clear_inline_image_state(&mut self)
+- bump_display_messages_version_no_stats · function · L317-L322 — pub(super) fn bump_display_messages_version_no_stats(&mut self)
+- bump_context_revision · function · L324-L326 — pub(super) fn bump_context_revision(&mut self)
+- save_startup_message_for_session · function · L328-L358 — pub(crate) fn save_startup_message_for_session(session_id: &str, message: String)
+- save_startup_submission_for_session · function · L360-L366 — pub(crate) fn save_startup_submission_for_session(
+- restore_input_for_reload · function · L368-L657 — pub(super) fn restore_input_for_reload(session_id: &str) -> Option<RestoredReloadInput>
+- toggle_scroll_bookmark · function · L661-L674 — pub(super) fn toggle_scroll_bookmark(&mut self)
+- follow_chat_bottom_for_typing · function · L676-L680 — pub(super) fn follow_chat_bottom_for_typing(&mut self)
+- set_side_panel_snapshot · function · L682-L711 — pub(super) fn set_side_panel_snapshot(
+- apply_side_panel_snapshot · function · L713-L762 — pub(super) fn apply_side_panel_snapshot(
+- refresh_side_panel_linked_content_if_due · function · L764-L807 — pub(super) fn refresh_side_panel_linked_content_if_due(&mut self) -> bool
+- toggle_typing_scroll_lock · function · L809-L817 — pub(super) fn toggle_typing_scroll_lock(&mut self)
+- toggle_centered_mode · function · L819-L828 — pub(super) fn toggle_centered_mode(&mut self)
+- set_centered · function · L830-L833 — pub fn set_centered(&mut self, centered: bool)
+- set_remote_server_identity_for_tests · function · L836-L848 — pub(crate) fn set_remote_server_identity_for_tests(
+- set_connection_type_for_tests · function · L853-L855 — pub(crate) fn set_connection_type_for_tests(&mut self, connection_type: Option<&str>)
+- prewarm_focused_side_panel · function · L857-L873 — fn prewarm_focused_side_panel(&self)
+- enable_debug_socket · function · L879-L883 — pub fn enable_debug_socket(&mut self) -> tokio::sync::broadcast::Receiver<backend::DebugEvent>
+- broadcast_debug · function · L886-L890 — pub(super) fn broadcast_debug(&self, event: backend::DebugEvent)
+- create_debug_snapshot · function · L893-L936 — pub fn create_debug_snapshot(&self) -> backend::DebugEvent
+- start_debug_socket_listener · function · L940-L1020 — pub fn start_debug_socket_listener(
+- debug_socket_path · function · L1023-L1025 — pub fn debug_socket_path() -> std::path::PathBuf
+- push_cache_signature · function · L1028-L1091 — fn push_cache_signature(
+- push_cache_baseline · function · L1093-L1130 — fn push_cache_baseline(lines: &mut Vec<String>, label: &str, baseline: Option<&KvCacheBaseline>)
+- format_cache_stats · function · L1132-L1696 — fn format_cache_stats(app: &App) -> String
+- build_skills_report · function · L1700-L1800 — fn build_skills_report(app: &App) -> String
+- transcript_links · function · L1804-L1828 — pub(super) fn transcript_links<'a>(contents: impl Iterator<Item = &'a str>) -> Vec<String>
+- RE · constant · L1805-L1805 — static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+- handle_info_command · function · L1830-L2472 — pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool

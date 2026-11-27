@@ -1,0 +1,35 @@
+# crates/jcode-voice/src/command_capture.rs
+
+- CHUNK_SAMPLES · constant · L23-L23 — const CHUNK_SAMPLES: usize = 1600;
+- MAX_SAMPLES · constant · L24-L24 — const MAX_SAMPLES: usize = 16000 * MAX_RECORDING_DURATION.as_secs() as usize;
+- FIRST_AUDIO_TIMEOUT · constant · L27-L27 — const FIRST_AUDIO_TIMEOUT: Duration = Duration::from_secs(3);
+- RecorderCommand · struct · L31-L34 — pub struct RecorderCommand
+- new · function · L37-L42 — fn new(program: &str, args: &[&str]) -> Self
+- label · function · L45-L51 — pub fn label(&self) -> &str
+- command · function · L53-L68 — fn command(&self) -> Command
+- SHELL · constant · L72-L72 — const SHELL: &str = "cmd";
+- SHELL · constant · L74-L74 — const SHELL: &str = "sh";
+- detect_recorders · function · L78-L91 — pub fn detect_recorders(custom: &str) -> Vec<RecorderCommand>
+- known_recorders · function · L93-L170 — fn known_recorders() -> Vec<RecorderCommand>
+- on_path · function · L172-L180 — fn on_path(program: &str) -> bool
+- start_pcm · function · L184-L199 — pub(super) fn start_pcm(
+- RecorderFailure · enum · L201-L206 — enum RecorderFailure
+- KillOnDrop · struct · L208-L208 — struct KillOnDrop(Child);
+- drop · function · L210-L212 — fn drop(&mut self)
+- terminate · function · L215-L245 — fn terminate(child: &mut Child)
+- run_recorder · function · L247-L348 — fn run_recorder(
+- PcmAssembler · struct · L353-L357 — struct PcmAssembler
+- push · function · L360-L396 — fn push(&mut self, bytes: &[u8], level: &AtomicU32) -> Vec<Vec<i16>>
+- finish · function · L398-L400 — fn finish(&mut self) -> Option<Vec<i16>>
+- tests · module · L404-L546 — mod tests
+- level_of · function · L407-L409 — fn level_of(level: &AtomicU32) -> f32
+- assembler_joins_split_samples_and_bounds_chunks · function · L412-L428 — fn assembler_joins_split_samples_and_bounds_chunks()
+- assembler_stops_at_duration_cap · function · L431-L440 — fn assembler_stops_at_duration_cap()
+- custom_recorder_is_the_only_candidate · function · L443-L449 — fn custom_recorder_is_the_only_candidate()
+- known_recorders_request_raw_mono_16k_s16le · function · L452-L462 — fn known_recorders_request_raw_mono_16k_s16le()
+- shell · function · L465-L467 — fn shell(script: &str) -> RecorderCommand
+- drain · function · L470-L476 — fn drain(rx: &mut tokio::sync::mpsc::Receiver<Vec<i16>>) -> Vec<i16>
+- recorder_streams_until_stop_then_is_terminated · function · L480-L504 — fn recorder_streams_until_stop_then_is_terminated()
+- falls_through_broken_recorders_to_a_working_one · function · L508-L521 — fn falls_through_broken_recorders_to_a_working_one()
+- no_working_recorder_reports_microphone_unavailable · function · L525-L528 — fn no_working_recorder_reports_microphone_unavailable()
+- recorder_exiting_after_audio_ends_the_stream_cleanly · function · L532-L545 — fn recorder_exiting_after_audio_ends_the_stream_cleanly()

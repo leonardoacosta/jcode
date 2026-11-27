@@ -1,0 +1,27 @@
+# crates/jcode-tui/src/tui/app/handterm_native_scroll.rs
+
+- ENV_SOCKET · constant · L28-L28 — const ENV_SOCKET: &str = "HANDTERM_NATIVE_SCROLL_SOCKET";
+- PaneKind · enum · L32-L35 — pub(super) enum PaneKind
+- PaneState · struct · L39-L48 — pub(super) struct PaneState
+- PaneSnapshot · struct · L52-L54 — struct PaneSnapshot
+- AppToHost · enum · L59-L61 — enum AppToHost
+- HostToApp · enum · L65-L67 — pub(super) enum HostToApp
+- HandtermNativeScrollClient · struct · L69-L79 — pub(super) struct HandtermNativeScrollClient
+- connect_from_env · function · L82-L93 — pub(super) fn connect_from_env() -> Option<Self>
+- connect · function · L96-L108 — fn connect(socket_path: PathBuf) -> Option<Self>
+- sync_from_app · function · L110-L133 — pub(super) fn sync_from_app(&mut self, app: &App)
+- recv · function · L135-L137 — pub(super) async fn recv(&mut self) -> Option<HostToApp>
+- drop · function · L142-L147 — fn drop(&mut self)
+- current_native_scroll_snapshot · function · L152-L193 — fn current_native_scroll_snapshot(&self) -> PaneSnapshot
+- apply_handterm_native_scroll · function · L195-L204 — pub(super) fn apply_handterm_native_scroll(&mut self, command: HostToApp)
+- spawn_bridge_thread · function · L208-L227 — fn spawn_bridge_thread(
+- bridge_thread · function · L230-L312 — fn bridge_thread(
+- connect_with_retry · function · L315-L323 — fn connect_with_retry(socket_path: &PathBuf, stop: &AtomicBool) -> Option<UnixStream>
+- write_line · function · L326-L332 — fn write_line<T: Serialize>(stream: &mut UnixStream, message: &T) -> Result<()>
+- bridge_tests · module · L335-L456 — mod bridge_tests
+- unique_socket_path · function · L341-L350 — fn unique_socket_path(label: &str) -> PathBuf
+- accept_with_timeout · function · L352-L367 — fn accept_with_timeout(listener: &UnixListener) -> UnixStream
+- snapshot · function · L369-L382 — fn snapshot(position: usize) -> AppToHost
+- read_snapshot · function · L384-L396 — fn read_snapshot(stream: &UnixStream) -> AppToHost
+- bridge_reconnects_and_replays_latest_snapshot · function · L399-L426 — fn bridge_reconnects_and_replays_latest_snapshot()
+- bridge_coalesces_updates_while_waiting_for_host · function · L429-L455 — fn bridge_coalesces_updates_while_waiting_for_host()

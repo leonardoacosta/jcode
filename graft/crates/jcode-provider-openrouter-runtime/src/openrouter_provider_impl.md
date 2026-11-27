@@ -1,0 +1,37 @@
+# crates/jcode-provider-openrouter-runtime/src/openrouter_provider_impl.rs
+
+- canonical_input_parts · function · L6-L18 — fn canonical_input_parts(request: &Value) -> (&[Value], Option<&Value>, Option<&Value>, usize)
+- set_session_id · function · L22-L26 — fn set_session_id(&self, session_id: &str)
+- runtime_display_name · function · L28-L30 — fn runtime_display_name(&self) -> String
+- supports_provider_routing_features · function · L32-L34 — fn supports_provider_routing_features(&self) -> bool
+- direct_openai_compatible_route_parts · function · L36-L38 — fn direct_openai_compatible_route_parts(&self) -> Option<(String, String, String)>
+- explicit_provider_pin_for_current_model · function · L40-L42 — fn explicit_provider_pin_for_current_model(&self) -> Option<String>
+- maybe_schedule_endpoint_refresh_for_display · function · L44-L56 — fn maybe_schedule_endpoint_refresh_for_display(
+- complete · function · L58-L400 — async fn complete(
+- name · function · L402-L404 — fn name(&self) -> &str
+- display_name · function · L406-L408 — fn display_name(&self) -> String
+- model · function · L410-L415 — fn model(&self) -> String
+- supports_image_input · function · L417-L458 — fn supports_image_input(&self) -> bool
+- set_model · function · L460-L548 — fn set_model(&self, model: &str) -> Result<()>
+- reasoning_effort · function · L550-L558 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L560-L587 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L589-L602 — fn available_efforts(&self) -> Vec<&'static str>
+- available_models · function · L604-L608 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L610-L694 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L696-L698 — fn available_models_for_switching(&self) -> Vec<String>
+- model_routes · function · L700-L743 — fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute>
+- prefetch_models · function · L745-L760 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L762-L809 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- supports_compaction · function · L811-L813 — fn supports_compaction(&self) -> bool
+- preferred_provider · function · L815-L817 — fn preferred_provider(&self) -> Option<String>
+- context_window · function · L819-L895 — fn context_window(&self) -> usize
+- fork · function · L897-L945 — fn fork(&self) -> Arc<dyn Provider>
+- complete_azure_responses · function · L949-L1037 — async fn complete_azure_responses(
+- foreground_cache_namespace · function · L1051-L1055 — pub(crate) fn foreground_cache_namespace(&self) -> Option<String>
+- load_usable_model_disk_cache_entry · function · L1059-L1064 — pub(crate) fn load_usable_model_disk_cache_entry(
+- load_disk_cache_entry_for_this_profile · function · L1068-L1077 — pub(crate) fn load_disk_cache_entry_for_this_profile(
+- is_user_named_profile · function · L1082-L1097 — pub(crate) fn is_user_named_profile(&self) -> bool
+- should_merge_static_models_with_live_catalog · function · L1099-L1116 — pub(crate) fn should_merge_static_models_with_live_catalog(&self) -> bool
+- catalog_declares_image_input · function · L1132-L1152 — pub(crate) fn catalog_declares_image_input(&self, model_id: &str) -> bool
+- declares_image_input · function · L1156-L1161 — fn declares_image_input(model: &jcode_provider_openrouter::ModelInfo) -> bool
+- canonical_input_tests · module · L1165-L1165 — mod canonical_input_tests;

@@ -1,0 +1,36 @@
+# crates/jcode-provider-core/src/openai_schema.rs
+
+- openai_compatible_schema · function · L15-L17 — pub fn openai_compatible_schema(schema: &Value) -> Value
+- schema_has_type_info · function · L22-L40 — fn schema_has_type_info(schema: &Value) -> bool
+- schema_supports_strict · function · L42-L134 — pub fn schema_supports_strict(schema: &Value) -> bool
+- check_map · function · L43-L127 — fn check_map(map: &serde_json::Map<String, Value>) -> bool
+- declares_a_type · function · L140-L158 — fn declares_a_type(schema: &Value) -> bool
+- TYPE_BEARING_KEYWORDS · constant · L144-L154 — const TYPE_BEARING_KEYWORDS: &[&str] = &[
+- branch_names_a_type · function · L166-L175 — fn branch_names_a_type(branch: &Value) -> bool
+- schema_is_object_typed · function · L177-L183 — fn schema_is_object_typed(map: &serde_json::Map<String, Value>) -> bool
+- schema_contains_null_type · function · L185-L191 — fn schema_contains_null_type(schema: &Value) -> bool
+- make_schema_nullable · function · L193-L236 — pub fn make_schema_nullable(schema: Value) -> Value
+- normalize_strict_schema_keyword · function · L238-L259 — fn normalize_strict_schema_keyword(key: &str, value: &Value) -> Value
+- existing_required_keys · function · L261-L270 — fn existing_required_keys(map: &serde_json::Map<String, Value>) -> HashSet<String>
+- normalize_required_properties · function · L272-L299 — fn normalize_required_properties(map: &mut serde_json::Map<String, Value>)
+- OPENAI_SUPPORTED_STRING_FORMATS · constant · L304-L314 — const OPENAI_SUPPORTED_STRING_FORMATS: &[&str] = &[
+- is_supported_string_format · function · L316-L321 — fn is_supported_string_format(value: &Value) -> bool
+- strict_normalize_schema · function · L323-L349 — pub fn strict_normalize_schema(schema: &Value) -> Value
+- normalize_map · function · L324-L342 — fn normalize_map(map: &serde_json::Map<String, Value>) -> serde_json::Map<String, Value>
+- tests · module · L352-L761 — mod tests
+- strict_normalize_schema_marks_optional_properties_nullable_and_required · function · L360-L384 — fn strict_normalize_schema_marks_optional_properties_nullable_and_required()
+- strict_normalize_schema_strips_unsupported_formats · function · L387-L412 — fn strict_normalize_schema_strips_unsupported_formats()
+- strict_normalize_schema_strips_nested_unsupported_formats · function · L415-L432 — fn strict_normalize_schema_strips_nested_unsupported_formats()
+- strict_normalize_schema_preserves_existing_nullability · function · L435-L452 — fn strict_normalize_schema_preserves_existing_nullability()
+- strict_normalize_schema_recurses_through_nested_object_keywords · function · L455-L488 — fn strict_normalize_schema_recurses_through_nested_object_keywords()
+- schema_supports_strict_rejects_open_or_empty_objects · function · L491-L503 — fn schema_supports_strict_rejects_open_or_empty_objects()
+- schema_supports_strict_rejects_untyped_properties · function · L508-L530 — fn schema_supports_strict_rejects_untyped_properties()
+- openai_compatible_schema_flattens_allof_object_branches · function · L533-L566 — fn openai_compatible_schema_flattens_allof_object_branches()
+- openai_compatible_schema_strips_unsupported_keywords · function · L571-L604 — fn openai_compatible_schema_strips_unsupported_keywords()
+- openai_compatible_schema_keeps_properties_named_like_keywords · function · L609-L626 — fn openai_compatible_schema_keeps_properties_named_like_keywords()
+- issue_713_a_property_without_a_type_disqualifies_strict_mode · function · L638-L650 — fn issue_713_a_property_without_a_type_disqualifies_strict_mode()
+- a_fully_typed_schema_still_qualifies_for_strict_mode · function · L656-L675 — fn a_fully_typed_schema_still_qualifies_for_strict_mode()
+- issue_711_constructs_openai_rejects_do_not_claim_strict · function · L684-L738 — fn issue_711_constructs_openai_rejects_do_not_claim_strict()
+- well_formed_schemas_keep_strict_mode · function · L744-L760 — fn well_formed_schemas_keep_strict_mode()
+- root_shape_tests · module · L764-L795 — mod root_shape_tests
+- root_any_of_is_flattened_for_openai · function · L771-L794 — fn root_any_of_is_flattened_for_openai()

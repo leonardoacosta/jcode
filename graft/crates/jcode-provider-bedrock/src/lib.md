@@ -1,0 +1,77 @@
+# crates/jcode-provider-bedrock/src/lib.rs
+
+- catalog · module · L1-L1 — mod catalog;
+- DEFAULT_MODEL · constant · L49-L49 — const DEFAULT_MODEL: &str = "anthropic.claude-opus-5-5";
+- DEFAULT_MAX_OUTPUT_TOKENS · constant · L50-L50 — const DEFAULT_MAX_OUTPUT_TOKENS: usize = 4096;
+- bedrock_token_usage · function · L53-L66 — fn bedrock_token_usage(usage: &aws_sdk_bedrockruntime::types::TokenUsage) -> StreamEvent
+- ENV_FILE · constant · L67-L67 — pub const ENV_FILE: &str = "bedrock.env";
+- API_KEY_ENV · constant · L68-L68 — pub const API_KEY_ENV: &str = "AWS_BEARER_TOKEN_BEDROCK";
+- REGION_ENV · constant · L69-L69 — pub const REGION_ENV: &str = "JCODE_BEDROCK_REGION";
+- NO_AWS_SDK_SUPPORT · constant · L71-L72 — const NO_AWS_SDK_SUPPORT: &str =
+- BedrockModelInfo · struct · L75-L82 — struct BedrockModelInfo
+- PersistedCatalog · struct · L85-L96 — struct PersistedCatalog
+- BedrockProvider · struct · L98-L106 — pub struct BedrockProvider
+- PLACEHOLDER_DEFAULT_MODEL · constant · L112-L112 — pub const PLACEHOLDER_DEFAULT_MODEL: &'static str = DEFAULT_MODEL;
+- replace_placeholder_default_model · function · L118-L137 — pub fn replace_placeholder_default_model(&self, model: &str) -> bool
+- has_catalog · function · L142-L147 — pub fn has_catalog(&self) -> bool
+- new · function · L149-L163 — pub fn new() -> Self
+- has_credentials · function · L165-L185 — pub fn has_credentials() -> bool
+- sdk_config · function · L188-L209 — async fn sdk_config() -> aws_types::SdkConfig
+- runtime_client · function · L212-L222 — async fn runtime_client() -> BedrockRuntimeClient
+- control_client · function · L225-L232 — async fn control_client() -> BedrockControlClient
+- validate_credentials_if_requested · function · L235-L253 — async fn validate_credentials_if_requested() -> Result<()>
+- configured_region · function · L255-L259 — fn configured_region() -> Option<String>
+- configured_profile · function · L261-L263 — fn configured_profile() -> Option<String>
+- configured_bearer_token · function · L265-L267 — pub fn configured_bearer_token() -> Option<String>
+- configured_bearer_token_for_runtime · function · L270-L275 — fn configured_bearer_token_for_runtime() -> Option<String>
+- env_or_config · function · L277-L283 — fn env_or_config(name: &str) -> Option<String>
+- classify_error_message · function · L287-L337 — fn classify_error_message(raw: &str) -> String
+- sdk_error_message · function · L340-L351 — fn sdk_error_message(err: &(impl std::fmt::Display + std::fmt::Debug)) -> String
+- json_to_document · function · L354-L379 — fn json_to_document(value: &serde_json::Value) -> aws_smithy_types::Document
+- bedrock_input_schema · function · L386-L447 — fn bedrock_input_schema(schema: &Value) -> Value
+- image_format_for_media_type · function · L450-L458 — fn image_format_for_media_type(media_type: &str) -> Option<ImageFormat>
+- image_block · function · L461-L476 — fn image_block(media_type: &str, data: &str) -> Result<ImageBlock>
+- to_bedrock_messages · function · L479-L560 — fn to_bedrock_messages(messages: &[JMessage], allow_images: bool) -> Result<Vec<Message>>
+- tool_config · function · L563-L589 — fn tool_config(tools: &[ToolDefinition]) -> Option<ToolConfiguration>
+- additional_request_fields · function · L592-L605 — fn additional_request_fields(&self) -> Result<Option<aws_smithy_types::Document>>
+- inference_config · function · L608-L653 — fn inference_config(model: &str) -> Option<InferenceConfiguration>
+- opus_default_route · function · L662-L681 — fn opus_default_route(model: &str, region: Option<&str>) -> Result<String>
+- normalize_model_id · function · L683-L695 — fn normalize_model_id(model: &str) -> String
+- foundation_model_id_from_arn · function · L698-L703 — fn foundation_model_id_from_arn(arn: &str) -> Option<String>
+- inference_profile_id_from_arn · function · L705-L710 — fn inference_profile_id_from_arn(arn: &str) -> Option<String>
+- foundation_model_id_from_profile_id · function · L712-L723 — fn foundation_model_id_from_profile_id(profile_id: &str) -> Option<String>
+- region_profile_prefix · function · L725-L736 — fn region_profile_prefix() -> Option<&'static str>
+- inference_profile_priority · function · L738-L752 — fn inference_profile_priority(profile_id: &str) -> u8
+- insert_preferred_profile_route · function · L754-L774 — fn insert_preferred_profile_route(
+- merge_profile_routes_from_profile_ids · function · L776-L789 — fn merge_profile_routes_from_profile_ids(
+- profile_route_for_model · function · L791-L817 — fn profile_route_for_model(&self, model: &str) -> Option<String>
+- is_bedrock_model_id · function · L819-L846 — pub fn is_bedrock_model_id(model: &str) -> bool
+- model_supports_tools · function · L849-L851 — pub fn model_supports_tools(model: &str) -> bool
+- model_info · function · L853-L975 — fn model_info(model: &str) -> BedrockModelInfo
+- route_pricing · function · L977-L989 — fn route_pricing(model: &str) -> Option<RouteCheapnessEstimate>
+- known_models · function · L991-L1005 — fn known_models() -> Vec<&'static str>
+- all_display_models · function · L1007-L1043 — fn all_display_models(&self) -> Vec<String>
+- refresh_catalog · function · L1046-L1049 — async fn refresh_catalog(&self) -> Result<(Vec<String>, Vec<String>)>
+- refresh_catalog_with_client · function · L1052-L1167 — async fn refresh_catalog_with_client(
+- default · function · L1171-L1173 — fn default() -> Self
+- complete · function · L1179-L1348 — async fn complete(
+- complete · function · L1351-L1359 — async fn complete(
+- name · function · L1361-L1363 — fn name(&self) -> &str
+- model · function · L1365-L1367 — fn model(&self) -> String
+- reasoning_effort · function · L1369-L1380 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L1382-L1395 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- supports_image_input · function · L1397-L1399 — fn supports_image_input(&self) -> bool
+- set_model · function · L1401-L1408 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L1410-L1412 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L1414-L1416 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L1418-L1420 — fn available_models_for_switching(&self) -> Vec<String>
+- model_routes · function · L1422-L1487 — fn model_routes(&self) -> Vec<ModelRoute>
+- prefetch_models · function · L1490-L1492 — async fn prefetch_models(&self) -> Result<()>
+- prefetch_models · function · L1495-L1498 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L1501-L1513 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- refresh_model_catalog · function · L1516-L1518 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- context_window · function · L1520-L1522 — fn context_window(&self) -> usize
+- supports_compaction · function · L1524-L1526 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L1528-L1530 — fn uses_jcode_compaction(&self) -> bool
+- fork · function · L1532-L1547 — fn fork(&self) -> Arc<dyn Provider>
+- tests · module · L1551-L1551 — mod tests;

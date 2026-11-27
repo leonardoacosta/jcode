@@ -1,0 +1,27 @@
+# crates/jcode-app-core/src/usage_openai.rs
+
+- ParsedOpenAIUsageReport · struct · L5-L9 — pub(super) struct ParsedOpenAIUsageReport
+- normalize_ratio_value · function · L11-L20 — fn normalize_ratio_value(raw: f32) -> f32
+- normalize_percent · function · L22-L24 — fn normalize_percent(raw: f32) -> f32
+- clamp_percent · function · L26-L32 — fn clamp_percent(raw: f32) -> f32
+- usage_percent_to_ratio · function · L34-L36 — pub(super) fn usage_percent_to_ratio(percent: f32) -> f32
+- normalize_limit_key · function · L38-L51 — fn normalize_limit_key(name: &str) -> String
+- limit_mentions_five_hour · function · L53-L58 — fn limit_mentions_five_hour(key: &str) -> bool
+- limit_mentions_weekly · function · L60-L66 — fn limit_mentions_weekly(key: &str) -> bool
+- limit_mentions_spark · function · L68-L70 — fn limit_mentions_spark(key: &str) -> bool
+- to_openai_window · function · L72-L78 — fn to_openai_window(limit: &UsageLimit) -> OpenAIUsageWindow
+- classify_openai_limits · function · L80-L127 — pub(super) fn classify_openai_limits(limits: &[UsageLimit]) -> OpenAIUsageData
+- parse_f32_value · function · L129-L134 — fn parse_f32_value(value: &serde_json::Value) -> Option<f32>
+- parse_usage_percent_from_obj · function · L136-L172 — pub(super) fn parse_usage_percent_from_obj(
+- parse_resets_at_from_obj · function · L174-L191 — fn parse_resets_at_from_obj(obj: &serde_json::Map<String, serde_json::Value>) -> Option<String>
+- parse_limit_name · function · L193-L202 — fn parse_limit_name(entry: &serde_json::Value, fallback: &str) -> String
+- parse_bool_value · function · L204-L216 — fn parse_bool_value(value: &serde_json::Value) -> Option<bool>
+- parse_openai_hard_limit_reached · function · L218-L234 — pub(super) fn parse_openai_hard_limit_reached(json: &serde_json::Value) -> bool
+- parse_window_seconds · function · L236-L240 — fn parse_window_seconds(obj: &serde_json::Map<String, serde_json::Value>) -> Option<u64>
+- window_duration_label · function · L242-L261 — fn window_duration_label(seconds: u64) -> String
+- HOUR · constant · L243-L243 — const HOUR: u64 = 60 * 60;
+- DAY · constant · L244-L244 — const DAY: u64 = 24 * HOUR;
+- parse_wham_window · function · L263-L281 — fn parse_wham_window(window: &serde_json::Value, fallback_name: &str) -> Option<UsageLimit>
+- parse_wham_rate_limit · function · L283-L301 — fn parse_wham_rate_limit(
+- qualify_additional_limit · function · L303-L312 — fn qualify_additional_limit(limit_name: &str, mut limit: UsageLimit) -> UsageLimit
+- parse_openai_usage_payload · function · L314-L408 — pub(super) fn parse_openai_usage_payload(json: &serde_json::Value) -> ParsedOpenAIUsageReport

@@ -1,0 +1,41 @@
+# src/cli/commands/menubar.rs
+
+- CountsReport · struct · L15-L18 — struct CountsReport
+- from · function · L21-L26 — fn from(counts: SessionCounts) -> Self
+- load_user_root_session · function · L33-L37 — fn load_user_root_session(session_id: &str) -> Option<bool>
+- user_root_session_presence · function · L39-L46 — fn user_root_session_presence() -> Vec<SessionPresence>
+- counts_for_presence · function · L48-L53 — fn counts_for_presence(sessions: &[SessionPresence]) -> SessionCounts
+- format_menubar_title · function · L61-L67 — pub(crate) fn format_menubar_title(counts: SessionCounts) -> String
+- format_menubar_summary · function · L70-L77 — pub(crate) fn format_menubar_summary(counts: SessionCounts) -> String
+- format_session_menu_item_title · function · L83-L86 — pub(crate) fn format_session_menu_item_title(session_id: &str, streaming: bool) -> String
+- format_session_menu_item_title_with_display · function · L89-L102 — fn format_session_menu_item_title_with_display(
+- run_menubar_command · function · L104-L134 — pub fn run_menubar_command(once: bool, json: bool) -> Result<()>
+- ensure_menubar_helper_running · function · L151-L213 — pub fn ensure_menubar_helper_running()
+- ensure_menubar_helper_running · function · L216-L216 — pub fn ensure_menubar_helper_running() {}
+- menubar_enabled_in_config · function · L222-L224 — fn menubar_enabled_in_config() -> bool
+- other_menubar_helper_alive · function · L229-L240 — fn other_menubar_helper_alive() -> bool
+- menubar_helper_pids · function · L245-L262 — fn menubar_helper_pids(ps_output: &str, self_pid: u32) -> Vec<u32>
+- global_menubar_dir · function · L276-L281 — fn global_menubar_dir() -> Option<std::path::PathBuf>
+- running_in_menubar_sandbox · function · L287-L295 — fn running_in_menubar_sandbox() -> bool
+- real_user_home · function · L303-L305 — fn real_user_home() -> Option<std::path::PathBuf>
+- passwd_home_dir · function · L308-L310 — fn passwd_home_dir() -> Option<std::path::PathBuf>
+- passwd_home_dir_for_uid · function · L313-L331 — fn passwd_home_dir_for_uid(uid: libc::uid_t) -> Option<std::path::PathBuf>
+- env_truthy · function · L334-L342 — fn env_truthy(key: &str) -> bool
+- is_menubar_sandbox · function · L353-L391 — fn is_menubar_sandbox(
+- macos · module · L394-L903 — mod macos
+- REFRESH_INTERVAL_MS · constant · L419-L419 — const REFRESH_INTERVAL_MS: u64 = 1000;
+- SingletonLock · struct · L424-L427 — struct SingletonLock
+- acquire_singleton_lock · function · L442-L475 — fn acquire_singleton_lock() -> Option<SingletonLock>
+- dummy_file · function · L480-L485 — fn dummy_file() -> Option<std::fs::File>
+- STATUS_ITEM_AUTOSAVE · constant · L488-L488 — const STATUS_ITEM_AUTOSAVE: &str = "jcode-menubar";
+- MENU_TAIL_ITEMS · constant · L493-L493 — const MENU_TAIL_ITEMS: isize = 4;
+- new · function · L527-L530 — fn new(mtm: MainThreadMarker) -> Retained<Self>
+- launch_jcode_window · function · L535-L543 — fn launch_jcode_window(args: Vec<String>)
+- run_status_item_app · function · L545-L738 — pub(super) fn run_status_item_app()
+- sync_app_appearance · function · L752-L767 — fn sync_app_appearance(app: &NSApplication)
+- status_icon · function · L777-L797 — fn status_icon(streaming: bool) -> Option<Retained<NSImage>>
+- streaming_color · function · L802-L804 — fn streaming_color() -> Retained<NSColor>
+- attributed_title · function · L814-L833 — fn attributed_title(
+- rebuild_session_items · function · L837-L874 — fn rebuild_session_items(
+- spawn_refresh_timer · function · L877-L902 — fn spawn_refresh_timer<F>(refresh: F)
+- tests · module · L907-L907 — mod tests;

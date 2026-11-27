@@ -1,0 +1,62 @@
+# crates/jcode-tui/src/tui/app/onboarding_flow.rs
+
+- DECISION_TIMEOUT · constant · L28-L28 — pub(crate) const DECISION_TIMEOUT: Duration = Duration::from_secs(60);
+- ExternalCli · enum · L32-L38 — pub(crate) enum ExternalCli
+- label · function · L41-L49 — pub(crate) fn label(self) -> &'static str
+- TelemetrySettings · struct · L55-L60 — pub(crate) struct TelemetrySettings
+- ROWS · constant · L63-L63 — pub(crate) const ROWS: usize = 1 + 6;
+- current · function · L66-L71 — pub(crate) fn current() -> Self
+- step · function · L73-L79 — pub(crate) fn step(&mut self, forward: bool)
+- toggle · function · L82-L90 — pub(crate) fn toggle(&mut self) -> bool
+- set_all · function · L92-L94 — pub(crate) fn set_all(&mut self, on: bool)
+- persist · function · L96-L98 — pub(crate) fn persist(&self)
+- status_label · function · L100-L102 — pub(crate) fn status_label(&self) -> String
+- status_label_for · function · L106-L115 — pub(crate) fn status_label_for(checked: [bool; 6]) -> String
+- ImportReview · struct · L126-L153 — pub(crate) struct ImportReview
+- SummaryPill · enum · L157-L164 — pub(crate) enum SummaryPill
+- ORDER · constant · L167-L171 — const ORDER: [SummaryPill; 3] = [
+- index · function · L173-L175 — fn index(self) -> usize
+- step · function · L177-L186 — fn step(self, forward: bool) -> Self
+- new · function · L193-L210 — pub(crate) fn new(
+- enter_choose_mode · function · L214-L219 — pub(crate) fn enter_choose_mode(&mut self)
+- open_telemetry · function · L223-L225 — pub(crate) fn open_telemetry(&mut self)
+- close_telemetry · function · L229-L231 — pub(crate) fn close_telemetry(&mut self)
+- summary_step · function · L235-L238 — pub(crate) fn summary_step(&mut self, forward: bool)
+- focus_summary_pill · function · L243-L246 — pub(crate) fn focus_summary_pill(&mut self, pill: SummaryPill)
+- current · function · L251-L256 — pub(crate) fn current(&self) -> Option<&crate::external_auth::ExternalAuthReviewCandidate>
+- position · function · L260-L262 — pub(crate) fn position(&self) -> usize
+- total · function · L265-L267 — pub(crate) fn total(&self) -> usize
+- cursor_up · function · L272-L286 — pub(crate) fn cursor_up(&mut self)
+- cursor_down · function · L290-L304 — pub(crate) fn cursor_down(&mut self)
+- toggle_current · function · L308-L315 — pub(crate) fn toggle_current(&mut self)
+- set_current · function · L319-L326 — pub(crate) fn set_current(&mut self, checked: bool)
+- current_checked · function · L331-L336 — pub(crate) fn current_checked(&self) -> bool
+- approved_indices · function · L339-L345 — pub(crate) fn approved_indices(&self) -> Vec<usize>
+- checked_count · function · L348-L350 — pub(crate) fn checked_count(&self) -> usize
+- seconds_remaining · function · L354-L358 — pub(crate) fn seconds_remaining(&self) -> u64
+- timed_out · function · L363-L365 — pub(crate) fn timed_out(&self) -> bool
+- OnboardingPhase · enum · L370-L416 — pub(crate) enum OnboardingPhase
+- OnboardingPendingValidation · struct · L430-L442 — pub(crate) struct OnboardingPendingValidation
+- RESOLVE_TIMEOUT · constant · L447-L447 — const RESOLVE_TIMEOUT: Duration = Duration::from_secs(8);
+- new · function · L449-L456 — pub(crate) fn new(session_id: String) -> Self
+- awaiting_catalog_refresh · function · L460-L467 — pub(crate) fn awaiting_catalog_refresh(session_id: String, catalog_generation: u64) -> Self
+- resolve_timed_out · function · L471-L473 — pub(crate) fn resolve_timed_out(&self) -> bool
+- OnboardingFlow · struct · L478-L480 — pub(crate) struct OnboardingFlow
+- begin · function · L486-L490 — pub(crate) fn begin() -> Self
+- begin_at_login · function · L497-L507 — pub(crate) fn begin_at_login(import: Option<ImportReview>) -> Self
+- is_active · function · L510-L512 — pub(crate) fn is_active(&self) -> bool
+- decision_seconds_remaining · function · L516-L528 — pub(crate) fn decision_seconds_remaining(&self) -> Option<u64>
+- decision_timed_out · function · L532-L542 — pub(crate) fn decision_timed_out(&self) -> bool
+- detect_external_cli_oauths · function · L551-L594 — pub(crate) fn detect_external_cli_oauths() -> Vec<ExternalCli>
+- external_transcripts_present · function · L598-L628 — fn external_transcripts_present(root: &std::path::Path, ext: &str) -> bool
+- walk · function · L599-L621 — fn walk(dir: &std::path::Path, ext: &str, budget: &mut u32) -> bool
+- external_home_path · function · L632-L637 — fn external_home_path(rel: &str) -> PathBuf
+- home_dir · function · L639-L641 — fn home_dir() -> Option<PathBuf>
+- external_oauth_present · function · L644-L648 — fn external_oauth_present(path: &PathBuf) -> bool
+- tests · module · L651-L735 — mod tests
+- flow_starts_at_model_select_and_is_active · function · L655-L659 — fn flow_starts_at_model_select_and_is_active()
+- done_phase_is_inactive · function · L662-L667 — fn done_phase_is_inactive()
+- continue_prompt_counts_down_and_times_out · function · L670-L683 — fn continue_prompt_counts_down_and_times_out()
+- fresh_continue_prompt_has_remaining_time · function · L686-L699 — fn fresh_continue_prompt_has_remaining_time()
+- external_oauth_present_requires_nonempty_file · function · L702-L713 — fn external_oauth_present_requires_nonempty_file()
+- external_transcripts_present_finds_nested_files · function · L716-L734 — fn external_transcripts_present_finds_nested_files()

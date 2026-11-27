@@ -1,0 +1,16 @@
+# crates/jcode-app-core/src/ambient_tests.rs
+
+- test_ambient_status_default · function · L5-L8 — fn test_ambient_status_default()
+- test_priority_ordering · function · L11-L14 — fn test_priority_ordering()
+- test_scheduled_queue_push_and_pop · function · L17-L68 — fn test_scheduled_queue_push_and_pop()
+- test_scheduled_queue_remove_by_id_persists_remaining_items · function · L71-L116 — fn test_scheduled_queue_remove_by_id_persists_remaining_items()
+- test_pop_ready_sorts_by_priority_then_time · function · L119-L164 — fn test_pop_ready_sorts_by_priority_then_time()
+- test_take_ready_direct_items_only_removes_direct_targets · function · L167-L232 — fn test_take_ready_direct_items_only_removes_direct_targets()
+- test_ambient_state_record_cycle · function · L235-L257 — fn test_ambient_state_record_cycle()
+- test_ambient_state_record_cycle_with_schedule · function · L260-L289 — fn test_ambient_state_record_cycle_with_schedule()
+- test_ambient_lock_release · function · L292-L304 — fn test_ambient_lock_release()
+- test_schedule_id_format · function · L307-L311 — fn test_schedule_id_format()
+- test_format_duration_rough · function · L314-L324 — fn test_format_duration_rough()
+- test_build_ambient_system_prompt_minimal · function · L327-L360 — fn test_build_ambient_system_prompt_minimal()
+- test_build_ambient_system_prompt_with_data · function · L363-L441 — fn test_build_ambient_system_prompt_with_data()
+- test_scheduled_queue_items_accessor · function · L444-L468 — fn test_scheduled_queue_items_accessor()

@@ -1,0 +1,30 @@
+# crates/jcode-base/src/background/model.rs
+
+- AbortAdoptedTask · struct · L13-L13 — pub(super) struct AbortAdoptedTask<T>(pub(super) JoinHandle<T>);
+- drop · function · L16-L18 — fn drop(&mut self)
+- task_dir · function · L22-L24 — pub(super) fn task_dir() -> PathBuf
+- EXIT_MARKER_PREFIX · constant · L26-L26 — pub(super) const EXIT_MARKER_PREFIX: &str = "--- Command finished with exit code: ";
+- MAX_EVENT_HISTORY · constant · L27-L27 — const MAX_EVENT_HISTORY: usize = 50;
+- BackgroundTaskEventKind · enum · L31-L40 — pub enum BackgroundTaskEventKind
+- BackgroundTaskEventRecord · struct · L43-L54 — pub struct BackgroundTaskEventRecord
+- TaskStatusFile · struct · L58-L112 — pub struct TaskStatusFile
+- default_true · function · L114-L116 — fn default_true() -> bool
+- process_instance_token · function · L122-L126 — pub fn process_instance_token() -> &'static str
+- TOKEN · constant · L124-L124 — static TOKEN: OnceLock<String> = OnceLock::new();
+- normalize_delivery · function · L128-L130 — pub(super) fn normalize_delivery(notify: bool, wake: bool) -> (bool, bool)
+- push_task_event · function · L132-L138 — pub(super) fn push_task_event(status: &mut TaskStatusFile, event: BackgroundTaskEventRecord)
+- progress_event_record · function · L140-L152 — pub(super) fn progress_event_record(
+- terminal_event_kind · function · L154-L168 — fn terminal_event_kind(
+- terminal_event_record · function · L170-L183 — pub(super) fn terminal_event_record(
+- progress_wait_reason · function · L185-L192 — pub(super) fn progress_wait_reason(
+- progress_equivalent · function · L200-L209 — pub(super) fn progress_equivalent(a: &BackgroundTaskProgress, b: &BackgroundTaskProgress) -> bool
+- RunningBackgroundProgress · struct · L212-L217 — pub struct RunningBackgroundProgress
+- BackgroundTaskInfo · struct · L221-L225 — pub struct BackgroundTaskInfo
+- BackgroundTaskWaitReason · enum · L229-L237 — pub enum BackgroundTaskWaitReason
+- BackgroundTaskWaitResult · struct · L240-L247 — pub struct BackgroundTaskWaitResult
+- BackgroundCleanupResult · struct · L250-L254 — pub struct BackgroundCleanupResult
+- RunningTask · struct · L257-L268 — pub(super) struct RunningTask
+- TaskResult · struct · L271-L275 — pub struct TaskResult
+- completed · function · L278-L284 — pub fn completed(exit_code: Option<i32>) -> Self
+- failed · function · L286-L292 — pub fn failed(exit_code: Option<i32>, error: impl Into<String>) -> Self
+- superseded · function · L294-L300 — pub fn superseded(exit_code: Option<i32>, detail: impl Into<String>) -> Self

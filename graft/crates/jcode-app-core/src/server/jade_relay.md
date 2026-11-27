@@ -1,0 +1,69 @@
+# crates/jcode-app-core/src/server/jade_relay.rs
+
+- RELAY_LONG_POLL_SECONDS · constant · L17-L17 — const RELAY_LONG_POLL_SECONDS: u32 = 20;
+- HEARTBEAT_INTERVAL · constant · L18-L18 — const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
+- ERROR_BACKOFF · constant · L19-L19 — const ERROR_BACKOFF: Duration = Duration::from_secs(10);
+- LAUNCH_SESSION_WAIT · constant · L20-L20 — const LAUNCH_SESSION_WAIT: Duration = Duration::from_secs(45);
+- MAX_RESPONSE_CHARS · constant · L21-L21 — const MAX_RESPONSE_CHARS: usize = 12_000;
+- CANCEL_SIGNAL_RESET · constant · L22-L22 — const CANCEL_SIGNAL_RESET: Duration = Duration::from_secs(5);
+- SessionCancelSignals · type · L24-L24 — type SessionCancelSignals = Arc<RwLock<HashMap<String, InterruptSignal>>>;
+- RelayApiConfig · struct · L27-L33 — struct RelayApiConfig
+- from_safety · function · L36-L49 — fn from_safety(safety: &SafetyConfig) -> Option<Self>
+- url · function · L51-L53 — fn url(&self, path: &str) -> String
+- auth · function · L55-L61 — fn auth(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- RelayListenerConfig · struct · L65-L69 — struct RelayListenerConfig
+- from_safety · function · L72-L83 — fn from_safety(safety: &SafetyConfig) -> Option<Self>
+- RelayLaunchConfig · struct · L87-L90 — struct RelayLaunchConfig
+- from_safety · function · L93-L102 — fn from_safety(safety: &SafetyConfig) -> Option<Self>
+- non_empty · function · L105-L107 — fn non_empty(value: Option<&str>) -> Option<&str>
+- env_flag · function · L109-L117 — fn env_flag(name: &str) -> bool
+- normalize_api_base · function · L119-L126 — fn normalize_api_base(api_base: &str) -> String
+- session_command_event_types_param · function · L128-L130 — fn session_command_event_types_param() -> String
+- default_device_id · function · L132-L142 — fn default_device_id() -> String
+- spawn_if_configured · function · L144-L192 — pub(super) fn spawn_if_configured(
+- RelayClient · struct · L194-L197 — struct RelayClient
+- new · function · L200-L205 — fn new(config: RelayListenerConfig) -> Self
+- url · function · L207-L209 — fn url(&self, path: &str) -> String
+- auth · function · L211-L213 — fn auth(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- run · function · L215-L241 — async fn run(
+- run_from_after · function · L243-L309 — async fn run_from_after(
+- heartbeat · function · L311-L326 — async fn heartbeat(&self) -> Result<()>
+- poll_commands · function · L328-L350 — async fn poll_commands(&self, after: i64, wait: u32) -> Result<RelayEventsResponse>
+- post_relay_event · function · L352-L386 — async fn post_relay_event(
+- handle_prompt · function · L388-L474 — async fn handle_prompt(
+- handle_cancel · function · L476-L581 — async fn handle_cancel(
+- RelayLauncherClient · struct · L584-L587 — struct RelayLauncherClient
+- new · function · L590-L595 — fn new(config: RelayLaunchConfig) -> Self
+- url · function · L597-L599 — fn url(&self, path: &str) -> String
+- auth · function · L601-L603 — fn auth(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- run · function · L605-L662 — async fn run(
+- heartbeat · function · L664-L680 — async fn heartbeat(&self) -> Result<()>
+- poll_launches · function · L682-L704 — async fn poll_launches(&self, after: i64, wait: u32) -> Result<RelayEventsResponse>
+- post_device_event · function · L706-L740 — async fn post_device_event(
+- post_session_event · function · L742-L784 — async fn post_session_event(
+- handle_launch · function · L786-L979 — async fn handle_launch(
+- spawn_session_listener · function · L981-L1013 — fn spawn_session_listener(
+- ensure_success · function · L1016-L1026 — async fn ensure_success(response: reqwest::Response, action: &str) -> Result<reqwest::Response>
+- add_user_id · function · L1028-L1037 — fn add_user_id(body: &mut serde_json::Value, user_id: Option<&str>)
+- LaunchRequest · struct · L1040-L1046 — struct LaunchRequest
+- from_event · function · L1049-L1069 — fn from_event(event: &RelayEvent, default_working_dir: Option<&str>) -> Result<Self>
+- data_string · function · L1072-L1078 — fn data_string(data: Option<&serde_json::Value>, key: &str) -> Option<String>
+- data_bool · function · L1080-L1084 — fn data_bool(data: Option<&serde_json::Value>, key: &str) -> bool
+- provider_key_for_launch_model · function · L1086-L1112 — fn provider_key_for_launch_model(
+- create_launch_session · function · L1114-L1137 — fn create_launch_session(request: &LaunchRequest) -> Result<(String, PathBuf)>
+- spawn_launch_window · function · L1139-L1167 — fn spawn_launch_window(
+- wait_for_live_session · function · L1169-L1187 — async fn wait_for_live_session(
+- deliver_to_session · function · L1189-L1232 — async fn deliver_to_session(
+- PENDING_QUEUE_LIMIT · constant · L1234-L1234 — const PENDING_QUEUE_LIMIT: usize = 32;
+- PENDING_MESSAGES · constant · L1236-L1238 — static PENDING_MESSAGES: std::sync::LazyLock<
+- enqueue_pending · function · L1241-L1251 — fn enqueue_pending(session_id: &str, text: String) -> (usize, Option<String>)
+- take_pending · function · L1253-L1258 — fn take_pending(session_id: &str) -> Vec<String>
+- spawn_pending_drain · function · L1261-L1288 — fn spawn_pending_drain(
+- deliver_to_launched_session · function · L1290-L1309 — async fn deliver_to_launched_session(
+- run_relay_turn · function · L1311-L1346 — async fn run_relay_turn(
+- RelayEventsResponse · struct · L1349-L1354 — struct RelayEventsResponse
+- RelayEvent · struct · L1357-L1366 — struct RelayEvent
+- event_type · function · L1369-L1375 — fn event_type(&self) -> &str
+- truncate_chars · function · L1378-L1388 — fn truncate_chars(text: &str, max_chars: usize) -> String
+- urlencoding_encode · function · L1391-L1402 — fn urlencoding_encode(s: &str) -> String
+- tests · module · L1406-L1406 — mod tests;

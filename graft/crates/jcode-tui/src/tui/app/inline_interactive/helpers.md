@@ -1,0 +1,27 @@
+# crates/jcode-tui/src/tui/app/inline_interactive/helpers.rs
+
+- slash_command_preview_filter · function · L4-L22 — pub(super) fn slash_command_preview_filter(input: &str, commands: &[&str]) -> Option<String>
+- catchup_candidates · function · L24-L32 — pub(super) fn catchup_candidates(
+- catchup_queue_position · function · L34-L44 — pub(super) fn catchup_queue_position(
+- agent_model_target_label · function · L46-L54 — pub(super) fn agent_model_target_label(target: AgentModelTarget) -> &'static str
+- agent_model_target_slug · function · L56-L64 — pub(super) fn agent_model_target_slug(target: AgentModelTarget) -> &'static str
+- agent_model_target_config_path · function · L66-L74 — pub(super) fn agent_model_target_config_path(target: AgentModelTarget) -> &'static str
+- load_agent_model_override · function · L76-L85 — pub(super) fn load_agent_model_override(target: AgentModelTarget) -> Option<String>
+- save_agent_model_override · function · L87-L104 — pub(super) fn save_agent_model_override(
+- model_entry_base_name · function · L106-L116 — pub(super) fn model_entry_base_name(entry: &PickerEntry) -> String
+- openrouter_route_model_id · function · L118-L120 — pub(super) fn openrouter_route_model_id(model: &str) -> String
+- picker_route_model_spec · function · L122-L160 — pub(super) fn picker_route_model_spec(entry: &PickerEntry, route: &PickerOption) -> String
+- picker_route_selection · function · L162-L175 — pub(super) fn picker_route_selection(
+- openai_compatible_profile_id_for_route · function · L177-L188 — pub(super) fn openai_compatible_profile_id_for_route(route: &PickerOption) -> Option<String>
+- model_entry_saved_spec · function · L190-L201 — pub(super) fn model_entry_saved_spec(entry: &PickerEntry) -> String
+- agent_model_inherit_fallback_label · function · L203-L211 — pub(super) fn agent_model_inherit_fallback_label(target: AgentModelTarget) -> &'static str
+- normalize_agent_model_summary · function · L213-L233 — pub(super) fn normalize_agent_model_summary(
+- agent_model_default_summary · function · L235-L253 — pub(super) fn agent_model_default_summary(target: AgentModelTarget, app: &App) -> String
+- tests · module · L256-L409 — mod tests
+- memory_model_picker_describes_extraction_not_recall · function · L261-L280 — fn memory_model_picker_describes_extraction_not_recall()
+- entry · function · L282-L298 — fn entry(model: &str, route: PickerOption) -> PickerEntry
+- route · function · L300-L308 — fn route(provider: &str, api_method: &str) -> PickerOption
+- saved_account_picker_specs_preserve_exact_account_and_effort · function · L311-L330 — fn saved_account_picker_specs_preserve_exact_account_and_effort()
+- model_picker_specs_preserve_provider_and_openai_auth_state_space · function · L333-L379 — fn model_picker_specs_preserve_provider_and_openai_auth_state_space()
+- model_picker_route_selection_preserves_runtime_key · function · L382-L395 — fn model_picker_route_selection_preserves_runtime_key()
+- model_picker_grok_build_route_selection_is_wire_safe · function · L398-L408 — fn model_picker_grok_build_route_selection_is_wire_safe()

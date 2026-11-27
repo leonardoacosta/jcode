@@ -1,0 +1,33 @@
+# crates/jcode-provider-core/src/fallback_pick.rs
+
+- api_method_is_oauth · function · L17-L25 — fn api_method_is_oauth(api_method: &ModelRouteApiMethod) -> bool
+- model_generation_rank · function · L30-L42 — pub fn model_generation_rank(model: &str) -> usize
+- models_match · function · L44-L46 — fn models_match(a: &str, b: &str) -> bool
+- api_methods_match · function · L48-L50 — fn api_methods_match(a: &str, b: &str) -> bool
+- FallbackPickOptions · struct · L54-L63 — pub struct FallbackPickOptions
+- error_looks_like_credential_failure · function · L70-L93 — pub fn error_looks_like_credential_failure(error: &str) -> bool
+- pick_next_fallback_route · function · L111-L124 — pub fn pick_next_fallback_route(
+- pick_next_fallback_route_with_options · function · L127-L186 — pub fn pick_next_fallback_route_with_options(
+- tests · module · L189-L390 — mod tests
+- route · function · L192-L202 — fn route(model: &str, provider: &str, api_method: &str, available: bool) -> ModelRoute
+- prefers_same_model_oauth_when_api_key_broken · function · L205-L217 — fn prefers_same_model_oauth_when_api_key_broken()
+- falls_back_to_same_provider_sibling_model · function · L220-L231 — fn falls_back_to_same_provider_sibling_model()
+- falls_back_cross_provider_as_last_resort · function · L234-L243 — fn falls_back_cross_provider_as_last_resort()
+- skips_unavailable_routes · function · L246-L258 — fn skips_unavailable_routes()
+- returns_none_when_only_current_route_exists · function · L261-L264 — fn returns_none_when_only_current_route_exists()
+- cross_provider_prefers_oauth_over_api_key · function · L267-L278 — fn cross_provider_prefers_oauth_over_api_key()
+- unknown_method_never_offers_same_model_same_provider · function · L281-L292 — fn unknown_method_never_offers_same_model_same_provider()
+- credential_failure_skips_sibling_models_on_same_credential · function · L295-L316 — fn credential_failure_skips_sibling_models_on_same_credential()
+- credential_failure_still_offers_other_method_same_provider · function · L319-L338 — fn credential_failure_still_offers_other_method_same_provider()
+- credential_failure_with_unknown_method_skips_whole_provider · function · L341-L356 — fn credential_failure_with_unknown_method_skips_whole_provider()
+- classifies_credential_failures · function · L359-L389 — fn classifies_credential_failures()
+- generation_tests · module · L393-L418 — mod generation_tests
+- route · function · L396-L406 — fn route(model: &str, provider: &str, api_method: &str) -> ModelRoute
+- prefers_latest_generation_over_catalog_order · function · L409-L417 — fn prefers_latest_generation_over_catalog_order()
+- route_pool_key · function · L423-L438 — pub fn route_pool_key(api_method: &str) -> Option<String>
+- rank_fallback_routes · function · L447-L503 — pub fn rank_fallback_routes(
+- unified_rank_tests · module · L506-L547 — mod unified_rank_tests
+- route · function · L509-L524 — fn route(model: &str, api_method: &str) -> ModelRoute
+- pool_order_then_newest_generation · function · L527-L546 — fn pool_order_then_newest_generation()
+- unified_rank_account_tests · module · L550-L576 — mod unified_rank_account_tests
+- spent_account_does_not_exclude_sibling_account · function · L554-L575 — fn spent_account_does_not_exclude_sibling_account()

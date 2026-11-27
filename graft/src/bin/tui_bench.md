@@ -1,0 +1,121 @@
+# src/bin/tui_bench.rs
+
+- tui_bench_side_panel · module · L20-L20 — mod tui_bench_side_panel;
+- is_edit_tool_name · function · L25-L39 — fn is_edit_tool_name(name: &str) -> bool
+- percentile_ms · function · L41-L48 — fn percentile_ms(samples_ms: &[f64], percentile: f64) -> f64
+- TimingSummary · struct · L51-L57 — struct TimingSummary
+- SidePanelFrameProfile · struct · L60-L82 — struct SidePanelFrameProfile
+- MermaidUiBenchmarkSummary · struct · L85-L97 — struct MermaidUiBenchmarkSummary
+- TuiPolicySummary · struct · L100-L111 — struct TuiPolicySummary
+- summarize_policy · function · L113-L126 — fn summarize_policy(source: &str, policy: TuiPerfPolicy) -> TuiPolicySummary
+- summarize_timing · function · L128-L141 — fn summarize_timing(samples_ms: &[f64]) -> TimingSummary
+- summarize_mermaid_ui · function · L143-L206 — fn summarize_mermaid_ui(
+- Args · struct · L211-L299 — struct Args
+- BenchMode · enum · L302-L311 — enum BenchMode
+- SidePanelSource · enum · L314-L317 — enum SidePanelSource
+- BenchSyntheticProfile · enum · L320-L324 — enum BenchSyntheticProfile
+- to_system_profile · function · L327-L333 — fn to_system_profile(self) -> SyntheticSystemProfile
+- BenchState · struct · L336-L363 — struct BenchState
+- new · function · L366-L469 — fn new(
+- from_session · function · L471-L547 — fn from_session(
+- simulate_linked_refresh · function · L549-L570 — fn simulate_linked_refresh(&mut self) -> Result<()>
+- prewarm_side_panel · function · L572-L581 — fn prewarm_side_panel(&self, width: u16, height: u16) -> bool
+- drop · function · L585-L589 — fn drop(&mut self)
+- session_to_display_messages · function · L592-L626 — fn session_to_display_messages(session: &Session, max_messages: usize) -> Vec<DisplayMessage>
+- stored_message_visible_text · function · L628-L657 — fn stored_message_visible_text(message: &jcode::session::StoredMessage) -> String
+- reconstruct_side_panel_snapshot_from_session · function · L659-L812 — fn reconstruct_side_panel_snapshot_from_session(session: &Session) -> SidePanelSnapshot
+- display_messages · function · L815-L817 — fn display_messages(&self) -> &[DisplayMessage]
+- display_user_message_count · function · L819-L824 — fn display_user_message_count(&self) -> usize
+- has_display_edit_tool_messages · function · L826-L834 — fn has_display_edit_tool_messages(&self) -> bool
+- side_pane_images · function · L836-L838 — fn side_pane_images(&self) -> Vec<jcode::session::RenderedImage>
+- display_messages_version · function · L840-L842 — fn display_messages_version(&self) -> u64
+- streaming_text · function · L844-L846 — fn streaming_text(&self) -> &str
+- input · function · L848-L850 — fn input(&self) -> &str
+- cursor_pos · function · L852-L854 — fn cursor_pos(&self) -> usize
+- is_processing · function · L856-L858 — fn is_processing(&self) -> bool
+- queued_messages · function · L860-L862 — fn queued_messages(&self) -> &[String]
+- interleave_message · function · L864-L866 — fn interleave_message(&self) -> Option<&str>
+- pending_soft_interrupts · function · L868-L870 — fn pending_soft_interrupts(&self) -> &[String]
+- scroll_offset · function · L872-L874 — fn scroll_offset(&self) -> usize
+- auto_scroll_paused · function · L876-L878 — fn auto_scroll_paused(&self) -> bool
+- provider_name · function · L880-L882 — fn provider_name(&self) -> String
+- provider_model · function · L884-L886 — fn provider_model(&self) -> String
+- upstream_provider · function · L888-L890 — fn upstream_provider(&self) -> Option<String>
+- connection_type · function · L892-L894 — fn connection_type(&self) -> Option<String>
+- status_detail · function · L896-L898 — fn status_detail(&self) -> Option<String>
+- mcp_servers · function · L900-L902 — fn mcp_servers(&self) -> Vec<(String, usize)>
+- available_skills · function · L904-L906 — fn available_skills(&self) -> Vec<String>
+- streaming_tokens · function · L908-L910 — fn streaming_tokens(&self) -> (u64, u64)
+- streaming_cache_tokens · function · L912-L914 — fn streaming_cache_tokens(&self) -> (Option<u64>, Option<u64>)
+- output_tps · function · L916-L918 — fn output_tps(&self) -> Option<f32>
+- streaming_tool_calls · function · L920-L922 — fn streaming_tool_calls(&self) -> Vec<ToolCall>
+- elapsed · function · L924-L926 — fn elapsed(&self) -> Option<Duration>
+- status · function · L928-L930 — fn status(&self) -> ProcessingStatus
+- command_suggestions · function · L932-L934 — fn command_suggestions(&self) -> Vec<(String, &'static str)>
+- active_skill · function · L936-L938 — fn active_skill(&self) -> Option<String>
+- subagent_status · function · L940-L942 — fn subagent_status(&self) -> Option<String>
+- batch_progress · function · L944-L946 — fn batch_progress(&self) -> Option<jcode::bus::BatchProgress>
+- time_since_activity · function · L948-L950 — fn time_since_activity(&self) -> Option<Duration>
+- total_session_tokens · function · L952-L954 — fn total_session_tokens(&self) -> Option<(u64, u64)>
+- is_remote_mode · function · L956-L958 — fn is_remote_mode(&self) -> bool
+- is_canary · function · L960-L962 — fn is_canary(&self) -> bool
+- is_replay · function · L964-L966 — fn is_replay(&self) -> bool
+- diff_mode · function · L968-L970 — fn diff_mode(&self) -> jcode::config::DiffDisplayMode
+- current_session_id · function · L972-L974 — fn current_session_id(&self) -> Option<String>
+- session_display_name · function · L976-L978 — fn session_display_name(&self) -> Option<String>
+- server_display_name · function · L980-L982 — fn server_display_name(&self) -> Option<String>
+- server_display_icon · function · L984-L986 — fn server_display_icon(&self) -> Option<String>
+- server_sessions · function · L988-L990 — fn server_sessions(&self) -> Vec<String>
+- connected_clients · function · L992-L994 — fn connected_clients(&self) -> Option<usize>
+- status_notice · function · L996-L998 — fn status_notice(&self) -> Option<String>
+- remote_startup_phase_active · function · L1000-L1002 — fn remote_startup_phase_active(&self) -> bool
+- dictation_key_label · function · L1004-L1006 — fn dictation_key_label(&self) -> Option<String>
+- animation_elapsed · function · L1008-L1011 — fn animation_elapsed(&self) -> f32
+- rate_limit_remaining · function · L1013-L1015 — fn rate_limit_remaining(&self) -> Option<Duration>
+- queue_mode · function · L1017-L1019 — fn queue_mode(&self) -> bool
+- next_prompt_new_session_armed · function · L1021-L1023 — fn next_prompt_new_session_armed(&self) -> bool
+- has_stashed_input · function · L1025-L1027 — fn has_stashed_input(&self) -> bool
+- context_info · function · L1029-L1031 — fn context_info(&self) -> ContextInfo
+- context_limit · function · L1033-L1035 — fn context_limit(&self) -> Option<usize>
+- client_update_available · function · L1037-L1039 — fn client_update_available(&self) -> bool
+- server_update_available · function · L1041-L1043 — fn server_update_available(&self) -> Option<bool>
+- info_widget_data · function · L1045-L1047 — fn info_widget_data(&self) -> InfoWidgetData
+- update_cost · function · L1049-L1051 — fn update_cost(&mut self)
+- render_streaming_markdown · function · L1053-L1056 — fn render_streaming_markdown(&self, width: usize) -> Vec<ratatui::text::Line<'static>>
+- centered_mode · function · L1058-L1060 — fn centered_mode(&self) -> bool
+- auth_status · function · L1062-L1064 — fn auth_status(&self) -> jcode::auth::AuthStatus
+- diagram_mode · function · L1066-L1068 — fn diagram_mode(&self) -> jcode::config::DiagramDisplayMode
+- diagram_focus · function · L1070-L1072 — fn diagram_focus(&self) -> bool
+- diagram_index · function · L1074-L1076 — fn diagram_index(&self) -> usize
+- diagram_scroll · function · L1078-L1080 — fn diagram_scroll(&self) -> (i32, i32)
+- diagram_pane_ratio · function · L1082-L1084 — fn diagram_pane_ratio(&self) -> u8
+- diagram_pane_ratio_user_adjusted · function · L1086-L1088 — fn diagram_pane_ratio_user_adjusted(&self) -> bool
+- diagram_pane_animating · function · L1090-L1092 — fn diagram_pane_animating(&self) -> bool
+- diagram_pane_enabled · function · L1094-L1096 — fn diagram_pane_enabled(&self) -> bool
+- diagram_pane_position · function · L1098-L1100 — fn diagram_pane_position(&self) -> jcode::config::DiagramPanePosition
+- diagram_zoom · function · L1102-L1104 — fn diagram_zoom(&self) -> u8
+- diff_pane_scroll · function · L1105-L1107 — fn diff_pane_scroll(&self) -> usize
+- diff_pane_scroll_x · function · L1108-L1110 — fn diff_pane_scroll_x(&self) -> i32
+- side_panel_image_zoom_percent · function · L1111-L1113 — fn side_panel_image_zoom_percent(&self) -> u8
+- diff_pane_focus · function · L1114-L1116 — fn diff_pane_focus(&self) -> bool
+- side_panel · function · L1117-L1119 — fn side_panel(&self) -> &jcode::side_panel::SidePanelSnapshot
+- pin_images · function · L1120-L1122 — fn pin_images(&self) -> bool
+- chat_native_scrollbar · function · L1124-L1126 — fn chat_native_scrollbar(&self) -> bool
+- side_panel_native_scrollbar · function · L1128-L1130 — fn side_panel_native_scrollbar(&self) -> bool
+- inline_interactive_state · function · L1132-L1134 — fn inline_interactive_state(&self) -> Option<&jcode::tui::InlineInteractiveState>
+- changelog_scroll · function · L1136-L1138 — fn changelog_scroll(&self) -> Option<usize>
+- help_scroll · function · L1140-L1142 — fn help_scroll(&self) -> Option<usize>
+- session_picker_overlay · function · L1144-L1148 — fn session_picker_overlay(
+- login_picker_overlay · function · L1150-L1154 — fn login_picker_overlay(
+- account_picker_overlay · function · L1156-L1160 — fn account_picker_overlay(
+- usage_overlay · function · L1162-L1166 — fn usage_overlay(
+- working_dir · function · L1168-L1170 — fn working_dir(&self) -> Option<String>
+- now_millis · function · L1172-L1174 — fn now_millis(&self) -> u64
+- copy_badge_ui · function · L1176-L1178 — fn copy_badge_ui(&self) -> jcode::tui::CopyBadgeUiState
+- copy_selection_mode · function · L1180-L1182 — fn copy_selection_mode(&self) -> bool
+- copy_selection_range · function · L1184-L1186 — fn copy_selection_range(&self) -> Option<jcode::tui::CopySelectionRange>
+- copy_selection_status · function · L1188-L1190 — fn copy_selection_status(&self) -> Option<jcode::tui::CopySelectionStatus>
+- suggestion_prompts · function · L1192-L1194 — fn suggestion_prompts(&self) -> Vec<(String, String)>
+- cache_ttl_status · function · L1196-L1198 — fn cache_ttl_status(&self) -> Option<jcode::tui::CacheTtlInfo>
+- make_text · function · L1201-L1210 — fn make_text(len: usize) -> String
+- main · function · L1212-L1765 — fn main() -> Result<()>

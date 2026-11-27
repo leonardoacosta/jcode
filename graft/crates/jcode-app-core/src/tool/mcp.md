@@ -1,0 +1,46 @@
+# crates/jcode-app-core/src/tool/mcp.rs
+
+- remote_management_tests · module · L5-L5 — mod remote_management_tests;
+- McpSearchInput · struct · L18-L23 — struct McpSearchInput
+- McpSearchResult · struct · L26-L32 — struct McpSearchResult
+- MAX_SEARCH_TOOL_REFERENCES · constant · L36-L36 — const MAX_SEARCH_TOOL_REFERENCES: usize = 32;
+- SEARCH_TOKEN_BUDGET · constant · L41-L41 — const SEARCH_TOKEN_BUDGET: usize = 6_000;
+- MIN_SEARCH_DESCRIPTION_CHARS · constant · L44-L44 — const MIN_SEARCH_DESCRIPTION_CHARS: usize = 120;
+- clip_description · function · L47-L55 — fn clip_description(text: &str, max: usize) -> String
+- MatchRank · enum · L61-L64 — enum MatchRank
+- match_rank · function · L66-L85 — fn match_rank(
+- fit_search_results · function · L91-L152 — fn fit_search_results(matches: &[McpSearchResult], budget: usize) -> Result<(String, usize)>
+- McpSearchTool · struct · L155-L158 — pub struct McpSearchTool
+- new · function · L161-L166 — pub fn new(manager: Arc<RwLock<McpManager>>) -> Self
+- with_registry · function · L168-L171 — pub fn with_registry(mut self, registry: crate::tool::Registry) -> Self
+- model_visible · function · L176-L178 — fn model_visible(&self) -> bool
+- name · function · L180-L182 — fn name(&self) -> &str
+- description · function · L184-L186 — fn description(&self) -> &str
+- parameters_schema · function · L188-L202 — fn parameters_schema(&self) -> Value
+- execute · function · L204-L305 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- McpCallInput · struct · L309-L314 — struct McpCallInput
+- McpCallTool · struct · L317-L320 — pub struct McpCallTool
+- new · function · L323-L328 — pub fn new(manager: Arc<RwLock<McpManager>>) -> Self
+- with_registry · function · L330-L333 — pub fn with_registry(mut self, registry: crate::tool::Registry) -> Self
+- model_visible · function · L338-L340 — fn model_visible(&self) -> bool
+- name · function · L342-L344 — fn name(&self) -> &str
+- description · function · L346-L348 — fn description(&self) -> &str
+- parameters_schema · function · L350-L364 — fn parameters_schema(&self) -> Value
+- execute · function · L366-L480 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- McpToolInput · struct · L484-L500 — struct McpToolInput
+- connection_config · function · L502-L564 — fn connection_config(
+- validate_remote_url · function · L566-L579 — fn validate_remote_url(value: &str) -> Result<()>
+- McpManagementTool · struct · L581-L584 — pub struct McpManagementTool
+- new · function · L587-L592 — pub fn new(manager: Arc<RwLock<McpManager>>) -> Self
+- with_registry · function · L594-L598 — pub fn with_registry(mut self, registry: crate::tool::Registry) -> Self
+- name · function · L603-L605 — fn name(&self) -> &str
+- description · function · L607-L609 — fn description(&self) -> &str
+- parameters_schema · function · L611-L659 — fn parameters_schema(&self) -> Value
+- execute · function · L661-L748 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- manager · function · L753-L755 — pub fn manager(&self) -> &Arc<RwLock<McpManager>>
+- oauth_action · function · L759-L812 — async fn oauth_action(&self, params: McpToolInput) -> Result<ToolOutput>
+- list_servers · function · L814-L924 — async fn list_servers(&self) -> Result<ToolOutput>
+- connect_server · function · L926-L1052 — async fn connect_server(&self, params: McpToolInput, session_id: &str) -> Result<ToolOutput>
+- disconnect_server · function · L1054-L1108 — async fn disconnect_server(&self, params: McpToolInput) -> Result<ToolOutput>
+- reload_config · function · L1110-L1216 — async fn reload_config(&self, session_id: &str) -> Result<ToolOutput>
+- tests · module · L1221-L1221 — mod tests;

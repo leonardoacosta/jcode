@@ -1,0 +1,36 @@
+# crates/jcode-overnight-core/src/usage_reconcile.rs
+
+- USAGE_RECONCILED_VERSION · constant · L13-L13 — pub const USAGE_RECONCILED_VERSION: u32 = 1;
+- USAGE_BASIS · constant · L14-L14 — pub const USAGE_BASIS: &str = "post_request_observation";
+- UsageObservation · struct · L18-L39 — pub struct UsageObservation
+- UsageSource · enum · L43-L47 — pub enum UsageSource
+- label · function · L50-L56 — pub fn label(self) -> &'static str
+- TokenTotals · struct · L61-L67 — pub struct TokenTotals
+- add · function · L69-L73 — fn add(total: &mut Option<u64>, value: Option<u64>)
+- push · function · L76-L85 — fn push(&mut self, o: &UsageObservation)
+- summary · function · L87-L98 — fn summary(&self) -> String
+- GenerationUsage · struct · L102-L107 — pub struct GenerationUsage
+- ProviderUsageReconciliation · struct · L110-L118 — pub struct ProviderUsageReconciliation
+- RunSessionState · struct · L122-L127 — pub struct RunSessionState
+- SessionUsage · struct · L130-L137 — pub struct SessionUsage
+- LimitReconciliation · struct · L140-L149 — pub struct LimitReconciliation
+- ProjectedUsage · struct · L152-L157 — pub struct ProjectedUsage
+- UsageReconciled · struct · L160-L171 — pub struct UsageReconciled
+- ReconcileInput · struct · L173-L182 — pub struct ReconcileInput<'a>
+- dedup_observations · function · L185-L194 — pub fn dedup_observations<'a>(
+- reconcile_usage · function · L196-L356 — pub fn reconcile_usage(input: ReconcileInput<'_>) -> UsageReconciled
+- range · function · L358-L363 — fn range(min: Option<f32>, max: Option<f32>) -> String
+- usage_reconciled_summary · function · L365-L377 — pub fn usage_reconciled_summary(usage: &UsageReconciled) -> String
+- limit_bar_html · function · L381-L390 — fn limit_bar_html(used: f32) -> String
+- render_usage_reconciled_html · function · L392-L460 — pub fn render_usage_reconciled_html(usage: Option<&UsageReconciled>) -> String
+- tests · module · L463-L662 — mod tests
+- obs · function · L467-L487 — fn obs(
+- projection · function · L489-L511 — fn projection() -> UsageProjection
+- run · function · L513-L528 — fn run<'a>(
+- duplicate_event_ids_count_once_and_other_runs_are_ignored · function · L531-L543 — fn duplicate_event_ids_count_once_and_other_runs_are_ignored()
+- generations_stay_separate_and_unbound_is_not_a_generation · function · L546-L560 — fn generations_stay_separate_and_unbound_is_not_a_generation()
+- provider_and_account_never_merge · function · L563-L583 — fn provider_and_account_never_merge()
+- missing_usage_is_estimated_or_unavailable_never_zero · function · L586-L601 — fn missing_usage_is_estimated_or_unavailable_never_zero()
+- unsettled_worker_without_usage_is_unknown_not_zero · function · L604-L622 — fn unsettled_worker_without_usage_is_unknown_not_zero()
+- reported_limits_carry_projection_and_labels_never_claim_authority · function · L625-L653 — fn reported_limits_carry_projection_and_labels_never_claim_authority()
+- html_escapes_untrusted_names · function · L656-L661 — fn html_escapes_untrusted_names()

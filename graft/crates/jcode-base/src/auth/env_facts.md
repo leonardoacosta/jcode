@@ -1,0 +1,29 @@
+# crates/jcode-base/src/auth/env_facts.rs
+
+- Tri · enum · L27-L32 — pub enum Tri
+- label · function · L36-L42 — pub fn label(self) -> &'static str
+- is_probably · function · L48-L50 — pub fn is_probably(self) -> bool
+- is_definitely_not · function · L53-L55 — pub fn is_definitely_not(self) -> bool
+- from_bool · function · L57-L59 — fn from_bool(value: bool) -> Self
+- EnvFacts · struct · L67-L83 — pub struct EnvFacts
+- probe · function · L92-L101 — pub fn probe() -> Self
+- probe_timed · function · L105-L109 — pub fn probe_timed() -> (Self, Duration)
+- preferred_auth_method · function · L115-L139 — pub fn preferred_auth_method(&self) -> AuthMethodChoice
+- AuthMethodChoice · enum · L146-L159 — pub enum AuthMethodChoice
+- label · function · L163-L171 — pub fn label(self) -> &'static str
+- precondition_message · function · L174-L184 — pub fn precondition_message(self) -> Option<&'static str>
+- probe_tty · function · L187-L190 — fn probe_tty() -> Tri
+- probe_browser · function · L192-L214 — fn probe_browser() -> Tri
+- probe_loopback_bind · function · L216-L220 — fn probe_loopback_bind() -> Tri
+- probe_config_writable · function · L222-L239 — fn probe_config_writable() -> Tri
+- probe_container · function · L241-L263 — fn probe_container() -> Tri
+- probe_proxy · function · L265-L277 — fn probe_proxy() -> Tri
+- binary_on_path · function · L279-L284 — fn binary_on_path(name: &str) -> bool
+- tests · module · L287-L481 — mod tests
+- facts · function · L291-L300 — fn facts(tty: Tri, browser: Tri, loopback: Tri, writable: Tri, container: Tri) -> EnvFacts
+- unknown_is_always_optimistic · function · L303-L323 — fn unknown_is_always_optimistic()
+- method_selection_covers_the_documented_table · function · L326-L370 — fn method_selection_covers_the_documented_table()
+- every_env_fact_combination_yields_a_usable_choice · function · L373-L414 — fn every_env_fact_combination_yields_a_usable_choice()
+- a_normal_desktop_keeps_the_browser_flow · function · L417-L441 — fn a_normal_desktop_keeps_the_browser_flow()
+- probe_is_cheap_and_carries_no_user_data · function · L444-L473 — fn probe_is_cheap_and_carries_no_user_data()
+- loopback_bind_succeeds_on_a_normal_machine · function · L476-L480 — fn loopback_bind_succeeds_on_a_normal_machine()

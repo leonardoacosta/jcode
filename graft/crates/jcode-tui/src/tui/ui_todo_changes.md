@@ -1,0 +1,35 @@
+# crates/jcode-tui/src/tui/ui_todo_changes.rs
+
+- MAX_CHANGE_LINES · constant · L26-L26 — const MAX_CHANGE_LINES: usize = 6;
+- todos_from_tool_input · function · L30-L79 — pub(super) fn todos_from_tool_input(tc: &ToolCall) -> Option<Vec<TodoItem>>
+- Phase · struct · L33-L36 — struct Phase
+- Lane · struct · L38-L43 — struct Lane
+- previous_todos · function · L84-L96 — pub(super) fn previous_todos(
+- TodoChangeKind · enum · L99-L105 — enum TodoChangeKind
+- TodoChange · struct · L108-L111 — struct TodoChange
+- TodoDiff · struct · L114-L127 — struct TodoDiff
+- is_substantive · function · L132-L134 — fn is_substantive(&self) -> bool
+- blocked_of · function · L137-L139 — fn blocked_of(todo: &TodoItem) -> bool
+- compute_diff · function · L141-L230 — fn compute_diff(prev: Option<&[TodoItem]>, next: &[TodoItem]) -> TodoDiff
+- status_icon · function · L232-L242 — fn status_icon(status: &str, blocked: bool) -> (&'static str, Color)
+- change_marker · function · L245-L264 — fn change_marker(kind: &TodoChangeKind) -> (&'static str, Color, Color)
+- summary_text · function · L266-L294 — fn summary_text(diff: &TodoDiff) -> String
+- progress_span · function · L296-L301 — fn progress_span(diff: &TodoDiff) -> Span<'static>
+- header_line · function · L303-L310 — fn header_line(diff: &TodoDiff, width: u16) -> Line<'static>
+- change_line · function · L312-L320 — fn change_line(change: &TodoChange, indent: &str, width: u16) -> Line<'static>
+- render_todo_change_lines · function · L324-L374 — pub(super) fn render_todo_change_lines(
+- tests · module · L377-L592 — mod tests
+- complete_blocker_changes_are_visible_and_width_safe · function · L381-L417 — fn complete_blocker_changes_are_visible_and_width_safe()
+- parse · function · L419-L424 — fn parse(input: serde_json::Value) -> Option<Vec<TodoItem>>
+- nested_input_inherits_parents_and_preserves_order · function · L427-L454 — fn nested_input_inherits_parents_and_preserves_order()
+- legacy_input_remains_compatible_with_nested_deltas · function · L457-L472 — fn legacy_input_remains_compatible_with_nested_deltas()
+- malformed_nested_input_is_not_a_write · function · L475-L489 — fn malformed_nested_input_is_not_a_write()
+- read_calls_and_empty_writes_remain_distinct · function · L492-L497 — fn read_calls_and_empty_writes_remain_distinct()
+- todo · function · L499-L519 — fn todo(id: &str, content: &str, status: &str) -> TodoItem
+- first_write_is_substantive_and_counts_all_added · function · L522-L529 — fn first_write_is_substantive_and_counts_all_added()
+- single_status_flip_is_form_a · function · L532-L541 — fn single_status_flip_is_form_a()
+- two_status_changes_is_form_b · function · L544-L552 — fn two_status_changes_is_form_b()
+- add_and_remove_detected · function · L555-L562 — fn add_and_remove_detected()
+- no_change_yields_no_lines · function · L565-L570 — fn no_change_yields_no_lines()
+- content_edit_is_form_a · function · L573-L581 — fn content_edit_is_form_a()
+- change_block_caps_at_max_lines · function · L584-L591 — fn change_block_caps_at_max_lines()

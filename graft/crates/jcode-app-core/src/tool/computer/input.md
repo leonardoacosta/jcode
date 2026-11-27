@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/tool/computer/input.rs
+
+- Button · enum · L19-L22 — pub enum Button
+- source · function · L24-L30 — fn source() -> Result<CGEventSource>
+- post · function · L32-L34 — fn post(event: CGEvent)
+- current_cursor · function · L37-L41 — pub fn current_cursor() -> Result<CGPoint>
+- move_to · function · L43-L54 — pub fn move_to(x: f64, y: f64) -> Result<()>
+- click · function · L56-L99 — pub fn click(x: Option<f64>, y: Option<f64>, button: Button, count: u32) -> Result<CGPoint>
+- drag · function · L101-L128 — pub fn drag(from_x: f64, from_y: f64, to_x: f64, to_y: f64) -> Result<()>
+- scroll · function · L130-L140 — pub fn scroll(x: Option<f64>, y: Option<f64>, dx: i32, dy: i32) -> Result<()>
+- type_text · function · L144-L157 — pub fn type_text(text: &str) -> Result<()>
+- parse_chord · function · L160-L187 — pub fn parse_chord(chord: &str) -> Result<(CGEventFlags, u16)>
+- key_chord · function · L189-L204 — pub fn key_chord(chord: &str) -> Result<()>
+- parse_chord_opt · function · L209-L238 — pub fn parse_chord_opt(chord: &str) -> Result<(CGEventFlags, Option<u16>)>
+- modifier_keycode · function · L241-L250 — fn modifier_keycode(chord: &str) -> Option<u16>
+- key_hold · function · L254-L281 — pub fn key_hold(chord: &str, down_state: bool) -> Result<()>
+- tests · module · L284-L312 — mod tests
+- parses_modifier_only_chord · function · L288-L292 — fn parses_modifier_only_chord()
+- parses_chord_with_key · function · L295-L299 — fn parses_chord_with_key()
+- rejects_empty_chord · function · L302-L304 — fn rejects_empty_chord()
+- modifier_keycodes_known · function · L307-L311 — fn modifier_keycodes_known()

@@ -1,0 +1,72 @@
+# crates/jcode-provider-openrouter/src/lib.rs
+
+- request · module · L1-L1 — pub mod request;
+- stream · module · L2-L2 — pub mod stream;
+- CACHE_TTL_SECS · constant · L10-L10 — const CACHE_TTL_SECS: u64 = 24 * 60 * 60;
+- ENDPOINTS_CACHE_TTL_SECS · constant · L11-L11 — const ENDPOINTS_CACHE_TTL_SECS: u64 = 60 * 60;
+- DEFAULT_CACHE_NAMESPACE · constant · L12-L12 — const DEFAULT_CACHE_NAMESPACE: &str = "openrouter";
+- KIMI_FALLBACK_PROVIDERS · constant · L16-L16 — pub const KIMI_FALLBACK_PROVIDERS: &[&str] = &["Fireworks", "Moonshot AI", "Together", "DeepInfra"];
+- KNOWN_PROVIDERS · constant · L19-L26 — const KNOWN_PROVIDERS: &[&str] = &[
+- PROVIDER_ALIASES · constant · L29-L37 — const PROVIDER_ALIASES: &[(&str, &str)] = &[
+- known_providers · function · L40-L42 — pub fn known_providers() -> Vec<String>
+- ModelInfo · struct · L45-L59 — pub struct ModelInfo
+- ModelPricing · struct · L62-L79 — pub struct ModelPricing
+- deserialize_optional_string_or_number · function · L81-L98 — fn deserialize_optional_string_or_number<'de, D>(
+- EndpointInfo · struct · L101-L123 — pub struct EndpointInfo
+- extract_p50 · function · L126-L132 — fn extract_p50(value: &serde_json::Value) -> Option<f64>
+- detail_string · function · L134-L182 — pub fn detail_string(&self) -> String
+- DiskCache · struct · L186-L191 — pub struct DiskCache
+- DiskCacheMemoEntry · struct · L194-L197 — struct DiskCacheMemoEntry
+- DISK_CACHE_MEMO · constant · L199-L200 — static DISK_CACHE_MEMO: LazyLock<Mutex<HashMap<PathBuf, DiskCacheMemoEntry>>> =
+- EndpointsDiskCache · struct · L203-L206 — struct EndpointsDiskCache
+- EndpointsDiskCacheMemoEntry · struct · L209-L212 — struct EndpointsDiskCacheMemoEntry
+- ENDPOINTS_DISK_CACHE_MEMO · constant · L214-L215 — static ENDPOINTS_DISK_CACHE_MEMO: LazyLock<Mutex<HashMap<PathBuf, EndpointsDiskCacheMemoEntry>>> =
+- ModelsCache · struct · L218-L222 — pub struct ModelsCache
+- ModelCatalogRefreshState · struct · L225-L228 — pub struct ModelCatalogRefreshState
+- PinSource · enum · L231-L234 — pub enum PinSource
+- ProviderPin · struct · L237-L243 — pub struct ProviderPin
+- ParsedProvider · struct · L246-L249 — pub struct ParsedProvider
+- normalize_provider_name · function · L251-L286 — pub fn normalize_provider_name(raw: &str) -> String
+- parse_model_spec · function · L288-L321 — pub fn parse_model_spec(raw: &str) -> (String, Option<ParsedProvider>)
+- current_unix_secs · function · L323-L328 — pub fn current_unix_secs() -> Option<u64>
+- sanitize_cache_namespace · function · L330-L340 — fn sanitize_cache_namespace(raw: &str) -> String
+- configured_cache_namespace · function · L342-L350 — fn configured_cache_namespace() -> String
+- cache_path_for_namespace · function · L352-L365 — fn cache_path_for_namespace(namespace: &str) -> PathBuf
+- cache_path · function · L367-L369 — fn cache_path() -> PathBuf
+- disk_cache_modified_at · function · L371-L373 — fn disk_cache_modified_at(path: &PathBuf) -> Option<SystemTime>
+- fresh_disk_cache · function · L375-L383 — fn fresh_disk_cache(cache: Option<DiskCache>) -> Option<DiskCache>
+- load_disk_cache_entry_from_path · function · L385-L410 — fn load_disk_cache_entry_from_path(path: PathBuf) -> Option<DiskCache>
+- load_disk_cache_entry · function · L412-L414 — pub fn load_disk_cache_entry() -> Option<DiskCache>
+- load_disk_cache_entry_for_namespace · function · L416-L418 — pub fn load_disk_cache_entry_for_namespace(namespace: &str) -> Option<DiskCache>
+- load_disk_cache · function · L420-L422 — pub fn load_disk_cache() -> Option<Vec<ModelInfo>>
+- load_model_pricing_disk_cache_public · function · L424-L429 — pub fn load_model_pricing_disk_cache_public(model_id: &str) -> Option<ModelPricing>
+- ModelTimestampIndex · type · L431-L431 — pub type ModelTimestampIndex = HashMap<String, u64>;
+- model_created_timestamp · function · L433-L436 — pub fn model_created_timestamp(model_id: &str) -> Option<u64>
+- model_created_timestamp_from_index · function · L438-L454 — pub fn model_created_timestamp_from_index(
+- openrouter_id_candidates · function · L456-L474 — fn openrouter_id_candidates(model: &str) -> Vec<String>
+- load_model_timestamp_index · function · L476-L478 — pub fn load_model_timestamp_index() -> ModelTimestampIndex
+- all_model_timestamps · function · L480-L486 — pub fn all_model_timestamps() -> Vec<(String, u64)>
+- normalize_model_created_timestamp · function · L488-L502 — fn normalize_model_created_timestamp(created: Option<u64>) -> Option<u64>
+- FIRST_PLAUSIBLE_MODEL_RELEASE_SECS · constant · L492-L492 — const FIRST_PLAUSIBLE_MODEL_RELEASE_SECS: u64 = 1_577_836_800; // 2020-01-01
+- ONE_YEAR_SECS · constant · L493-L493 — const ONE_YEAR_SECS: u64 = 365 * 24 * 60 * 60;
+- save_disk_cache · function · L504-L506 — pub fn save_disk_cache(models: &[ModelInfo])
+- save_disk_cache_with_source · function · L508-L510 — pub fn save_disk_cache_with_source(models: &[ModelInfo], source_api_base: Option<&str>)
+- save_disk_cache_with_source_for_namespace · function · L512-L522 — pub fn save_disk_cache_with_source_for_namespace(
+- save_disk_cache_with_source_to_path · function · L524-L557 — fn save_disk_cache_with_source_to_path(
+- endpoints_cache_path · function · L559-L567 — fn endpoints_cache_path(model: &str) -> PathBuf
+- load_endpoints_disk_cache_public · function · L569-L601 — pub fn load_endpoints_disk_cache_public(model: &str) -> Option<(Vec<EndpointInfo>, u64)>
+- load_endpoints_disk_cache · function · L603-L635 — pub fn load_endpoints_disk_cache(model: &str) -> Option<Vec<EndpointInfo>>
+- save_endpoints_disk_cache · function · L637-L663 — pub fn save_endpoints_disk_cache(model: &str, endpoints: &[EndpointInfo])
+- ProviderRouting · struct · L666-L674 — pub struct ProviderRouting
+- default · function · L677-L687 — fn default() -> Self
+- is_empty · function · L691-L699 — pub fn is_empty(&self) -> bool
+- parse_provider_routing_from_env · function · L702-L721 — pub fn parse_provider_routing_from_env() -> ProviderRouting
+- is_kimi_model · function · L723-L726 — pub fn is_kimi_model(model: &str) -> bool
+- rank_providers_from_endpoints · function · L728-L801 — pub fn rank_providers_from_endpoints(endpoints: &[EndpointInfo]) -> Vec<String>
+- tests · module · L804-L937 — mod tests
+- parse_model_spec_handles_provider_aliases_and_auto · function · L808-L829 — fn parse_model_spec_handles_provider_aliases_and_auto()
+- model_created_timestamp_from_index_handles_provider_aliases · function · L832-L855 — fn model_created_timestamp_from_index_handles_provider_aliases()
+- make_endpoint · function · L857-L886 — fn make_endpoint(
+- rank_providers_prioritizes_cache_then_speed · function · L889-L897 — fn rank_providers_prioritizes_cache_then_speed()
+- endpoint_detail_string_formats_common_fields · function · L900-L926 — fn endpoint_detail_string_formats_common_fields()
+- normalize_model_created_timestamp_rejects_implausible_dates · function · L929-L936 — fn normalize_model_created_timestamp_rejects_implausible_dates()

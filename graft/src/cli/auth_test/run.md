@@ -1,0 +1,24 @@
+# src/cli/auth_test/run.rs
+
+- maybe_run_auth_test_smoke · function · L1-L52 — async fn maybe_run_auth_test_smoke(
+- maybe_run_auth_test_smoke_for_choice · function · L54-L101 — async fn maybe_run_auth_test_smoke_for_choice(
+- run_post_login_validation · function · L103-L107 — pub(crate) async fn run_post_login_validation(
+- run_post_login_validation_quiet · function · L109-L113 — pub(crate) async fn run_post_login_validation_quiet(
+- run_post_login_validation_inner · function · L115-L206 — async fn run_post_login_validation_inner(
+- run_auth_test_coverage_command · function · L208-L240 — pub fn run_auth_test_coverage_command(
+- run_auth_test_context_audit_command · function · L242-L275 — pub async fn run_auth_test_context_audit_command(
+- run_context_audit_for_target · function · L277-L316 — async fn run_context_audit_for_target(
+- audit_openrouter_context_windows · function · L318-L411 — async fn audit_openrouter_context_windows(
+- print_context_audit_reports · function · L413-L428 — fn print_context_audit_reports(reports: &[AuthTestContextAuditReport])
+- run_auth_test_command · function · L434-L518 — pub async fn run_auth_test_command(
+- resolve_auth_test_targets · function · L520-L546 — pub(crate) fn resolve_auth_test_targets(
+- configured_auth_test_targets · function · L548-L556 — pub(crate) fn configured_auth_test_targets(
+- run_auth_test_target · function · L558-L592 — async fn run_auth_test_target(
+- populate_auth_test_target_report · function · L594-L634 — async fn populate_auth_test_target_report(
+- populate_generic_auth_test_report · function · L640-L674 — async fn populate_generic_auth_test_report(
+- persist_auth_test_report · function · L676-L716 — fn persist_auth_test_report(report: &AuthTestProviderReport, model: Option<&str>)
+- persist_auth_test_live_verification_event · function · L718-L808 — fn persist_auth_test_live_verification_event(
+- auth_test_coverage_provider_identity · function · L810-L831 — fn auth_test_coverage_provider_identity(report: &AuthTestProviderReport) -> (String, String)
+- auth_test_step_stage · function · L833-L847 — fn auth_test_step_stage(
+- auth_test_step_is_skipped · function · L849-L851 — fn auth_test_step_is_skipped(step: &AuthTestStepReport) -> bool
+- auth_test_tool_derived_stage · function · L853-L861 — fn auth_test_tool_derived_stage(

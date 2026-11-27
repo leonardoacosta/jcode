@@ -1,0 +1,101 @@
+# crates/jcode-base/src/memory.rs
+
+- activity · module · L26-L26 — mod activity;
+- cache · module · L27-L27 — mod cache;
+- pending · module · L29-L29 — mod pending;
+- prompt_support · module · L31-L31 — mod prompt_support;
+- LEGACY_NOTE_CATEGORY · constant · L65-L65 — const LEGACY_NOTE_CATEGORY: &str = "note";
+- MEMORY_RELEVANCE_MAX_CANDIDATES · constant · L66-L66 — const MEMORY_RELEVANCE_MAX_CANDIDATES: usize = 30;
+- MEMORY_RELEVANCE_MAX_RESULTS · constant · L67-L67 — const MEMORY_RELEVANCE_MAX_RESULTS: usize = 10;
+- validate_remember_text · function · L70-L76 — pub fn validate_remember_text(text: &str) -> Result<()>
+- SyntheticEntryProvider · type · L84-L84 — type SyntheticEntryProvider = fn() -> Vec<MemoryEntry>;
+- SYNTHETIC_ENTRY_PROVIDERS · constant · L86-L88 — static SYNTHETIC_ENTRY_PROVIDERS: std::sync::LazyLock<
+- register_synthetic_entry_provider · function · L94-L99 — pub fn register_synthetic_entry_provider(provider: SyntheticEntryProvider)
+- collect_synthetic_entries · function · L102-L111 — fn collect_synthetic_entries() -> Vec<MemoryEntry>
+- LegacyNotesFile · struct · L114-L117 — struct LegacyNotesFile
+- LegacyNoteEntry · struct · L120-L126 — struct LegacyNoteEntry
+- MemoryEventSink · type · L128-L128 — pub type MemoryEventSink = Arc<dyn Fn(crate::protocol::ServerEvent) + Send + Sync>;
+- memory_sidecar_enabled · function · L131-L133 — pub fn memory_sidecar_enabled() -> bool
+- memory_llm_judge_available · function · L136-L138 — pub fn memory_llm_judge_available() -> bool
+- memory_runtime_active · function · L142-L144 — pub fn memory_runtime_active() -> bool
+- emit_memory_activity · function · L146-L151 — fn emit_memory_activity(event_tx: Option<&MemoryEventSink>)
+- MemoryEntryEmbeddingExt · interface · L153-L155 — trait MemoryEntryEmbeddingExt
+- ensure_embedding · function · L154-L154 — fn ensure_embedding(&mut self) -> bool;
+- ensure_embedding · function · L160-L179 — fn ensure_embedding(&mut self) -> bool
+- project_memory_file · function · L184-L192 — pub fn project_memory_file(project_dir: &std::path::Path) -> Result<PathBuf>
+- MemoryManager · struct · L195-L200 — pub struct MemoryManager
+- MemoryRelevanceResult · struct · L205-L209 — pub struct MemoryRelevanceResult
+- new · function · L212-L218 — pub fn new() -> Self
+- with_project_dir · function · L220-L223 — pub fn with_project_dir(mut self, project_dir: impl Into<PathBuf>) -> Self
+- with_skills · function · L225-L228 — pub fn with_skills(mut self, include_skills: bool) -> Self
+- new_test · function · L231-L237 — pub fn new_test() -> Self
+- is_test_mode · function · L240-L242 — pub fn is_test_mode(&self) -> bool
+- set_test_mode · function · L245-L247 — pub fn set_test_mode(&mut self, test_mode: bool)
+- clear_test_storage · function · L250-L261 — pub fn clear_test_storage(&self) -> Result<()>
+- get_project_dir · function · L263-L265 — fn get_project_dir(&self) -> Option<PathBuf>
+- project_memory_path · function · L267-L281 — fn project_memory_path(&self) -> Result<Option<PathBuf>>
+- legacy_notes_path · function · L283-L308 — fn legacy_notes_path(&self) -> Result<Option<PathBuf>>
+- normalize_graph_search_text · function · L310-L320 — fn normalize_graph_search_text(graph: &mut MemoryGraph) -> bool
+- import_legacy_notes_into_graph · function · L322-L357 — fn import_legacy_notes_into_graph(&self, graph: &mut MemoryGraph) -> Result<bool>
+- global_memory_path · function · L359-L367 — fn global_memory_path(&self) -> Result<PathBuf>
+- load_project · function · L369-L374 — pub fn load_project(&self) -> Result<MemoryStore>
+- load_global · function · L376-L383 — pub fn load_global(&self) -> Result<MemoryStore>
+- save_project · function · L385-L390 — pub fn save_project(&self, store: &MemoryStore) -> Result<()>
+- save_global · function · L392-L395 — pub fn save_global(&self, store: &MemoryStore) -> Result<()>
+- remember_project · function · L399-L409 — pub fn remember_project(&self, entry: MemoryEntry) -> Result<String>
+- remember_global · function · L411-L417 — pub fn remember_global(&self, entry: MemoryEntry) -> Result<String>
+- remember_in_graph · function · L419-L435 — fn remember_in_graph(graph: &mut MemoryGraph, entry: MemoryEntry) -> String
+- validate_remember_entry · function · L437-L446 — fn validate_remember_entry(entry: &MemoryEntry) -> Result<()>
+- upsert_project_memory · function · L451-L456 — pub fn upsert_project_memory(&self, entry: MemoryEntry) -> Result<String>
+- upsert_global_memory · function · L461-L466 — pub fn upsert_global_memory(&self, entry: MemoryEntry) -> Result<String>
+- upsert_memory_in_graph · function · L468-L507 — fn upsert_memory_in_graph(
+- find_similar · function · L509-L528 — pub fn find_similar(
+- find_similar_scoped · function · L530-L549 — pub fn find_similar_scoped(
+- find_similar_with_embedding · function · L552-L560 — pub fn find_similar_with_embedding(
+- find_similar_with_embedding_scoped · function · L562-L571 — pub fn find_similar_with_embedding_scoped(
+- find_similar_hybrid · function · L582-L589 — pub fn find_similar_hybrid(
+- find_similar_hybrid_scoped · function · L591-L605 — pub fn find_similar_hybrid_scoped(
+- hybrid_fuse · function · L608-L668 — fn hybrid_fuse(
+- RRF_K · constant · L652-L652 — const RRF_K: f32 = 60.0;
+- collect_all_memories_with_embeddings · function · L670-L672 — fn collect_all_memories_with_embeddings(&self) -> Result<Vec<MemoryEntry>>
+- collect_memories_with_embeddings_scoped · function · L674-L700 — fn collect_memories_with_embeddings_scoped(
+- collect_memories_scoped · function · L702-L715 — fn collect_memories_scoped(&self, scope: MemoryScope) -> Result<Vec<MemoryEntry>>
+- synthetic_skill_entries · function · L718-L724 — fn synthetic_skill_entries(&self) -> Vec<MemoryEntry>
+- collect_retrieval_candidates_scoped · function · L727-L733 — fn collect_retrieval_candidates_scoped(&self, scope: MemoryScope) -> Result<Vec<MemoryEntry>>
+- score_and_filter · function · L735-L802 — fn score_and_filter(
+- apply_gap_filter · function · L810-L832 — fn apply_gap_filter(scored: Vec<(MemoryEntry, f32)>) -> Vec<(MemoryEntry, f32)>
+- GAP_FACTOR · constant · L815-L815 — const GAP_FACTOR: f32 = 0.25;
+- MIN_KEEP · constant · L816-L816 — const MIN_KEEP: usize = 1;
+- backfill_embeddings · function · L835-L876 — pub fn backfill_embeddings(&self) -> Result<(usize, usize)>
+- get_prompt_memories · function · L878-L880 — pub fn get_prompt_memories(&self, limit: usize) -> Option<String>
+- get_prompt_memories_scoped · function · L882-L903 — pub fn get_prompt_memories_scoped(&self, limit: usize, scope: MemoryScope) -> Option<String>
+- relevant_prompt_for_messages · function · L905-L919 — pub async fn relevant_prompt_for_messages(
+- relevant_prompt_for_context · function · L921-L934 — pub async fn relevant_prompt_for_context(
+- search · function · L936-L938 — pub fn search(&self, query: &str) -> Result<Vec<MemoryEntry>>
+- search_scoped · function · L940-L955 — pub fn search_scoped(&self, query: &str, scope: MemoryScope) -> Result<Vec<MemoryEntry>>
+- list_all · function · L957-L959 — pub fn list_all(&self) -> Result<Vec<MemoryEntry>>
+- list_all_scoped · function · L961-L965 — pub fn list_all_scoped(&self, scope: MemoryScope) -> Result<Vec<MemoryEntry>>
+- forget · function · L969-L1009 — pub fn forget(&self, id: &str) -> Result<bool>
+- extract_from_transcript · function · L1014-L1048 — pub async fn extract_from_transcript(
+- get_relevant_for_context · function · L1052-L1064 — pub async fn get_relevant_for_context(
+- get_relevant_keywords · function · L1067-L1101 — pub fn get_relevant_keywords(
+- spawn_relevance_check · function · L1110-L1166 — pub fn spawn_relevance_check(
+- get_relevant_parallel · function · L1169-L1179 — pub async fn get_relevant_parallel(
+- get_relevant_parallel_enabled · function · L1183-L1275 — pub(crate) async fn get_relevant_parallel_enabled(
+- load_project_graph · function · L1278-L1340 — pub fn load_project_graph(&self) -> Result<MemoryGraph>
+- load_global_graph · function · L1343-L1395 — pub fn load_global_graph(&self) -> Result<MemoryGraph>
+- save_project_graph · function · L1398-L1406 — pub fn save_project_graph(&self, graph: &MemoryGraph) -> Result<()>
+- save_global_graph · function · L1409-L1416 — pub fn save_global_graph(&self, graph: &MemoryGraph) -> Result<()>
+- tag_memory · function · L1419-L1435 — pub fn tag_memory(&self, memory_id: &str, tag: &str) -> Result<()>
+- link_memories · function · L1438-L1457 — pub fn link_memories(&self, from_id: &str, to_id: &str, weight: f32) -> Result<()>
+- get_related · function · L1460-L1487 — pub fn get_related(&self, memory_id: &str, depth: usize) -> Result<Vec<MemoryEntry>>
+- find_similar_with_cascade · function · L1493-L1500 — pub fn find_similar_with_cascade(
+- find_similar_with_cascade_scoped · function · L1502-L1581 — pub fn find_similar_with_cascade_scoped(
+- graph_stats · function · L1584-L1594 — pub fn graph_stats(&self) -> Result<(usize, usize, usize, usize)>
+- EMBEDDING_SIMILARITY_THRESHOLD · constant · L1599-L1599 — pub const EMBEDDING_SIMILARITY_THRESHOLD: f32 = 0.5;
+- EMBEDDING_MAX_HITS · constant · L1602-L1602 — pub const EMBEDDING_MAX_HITS: usize = 10;
+- HYBRID_POOL_MIN · constant · L1605-L1605 — const HYBRID_POOL_MIN: usize = 50;
+- MAX_JEV_RECALL_CANDIDATES · constant · L1611-L1611 — pub(crate) const MAX_JEV_RECALL_CANDIDATES: usize = 72;
+- ranking · module · L1614-L1614 — mod ranking;
+- default · function · L1617-L1619 — fn default() -> Self
+- tests · module · L1624-L1624 — mod tests;

@@ -1,0 +1,80 @@
+# crates/jcode-base/src/session_tests/cases.rs
+
+- token_usage_totals_counts_cache_reported_inputs_only_when_cache_fields_exist · function · L5-L49 — fn token_usage_totals_counts_cache_reported_inputs_only_when_cache_fields_exist()
+- initial_session_context_is_persisted_once_and_not_overwritten · function · L52-L81 — fn initial_session_context_is_persisted_once_and_not_overwritten()
+- initial_session_context_preserves_explicitly_bound_cwd_when_inserted · function · L85-L129 — fn initial_session_context_preserves_explicitly_bound_cwd_when_inserted() -> Result<()>
+- initial_session_context_can_refresh_before_real_conversation · function · L133-L178 — fn initial_session_context_can_refresh_before_real_conversation() -> Result<()>
+- initial_session_context_does_not_refresh_after_real_conversation · function · L182-L227 — fn initial_session_context_does_not_refresh_after_real_conversation() -> Result<()>
+- existing_non_empty_session_does_not_get_retroactive_session_context · function · L230-L251 — fn existing_non_empty_session_does_not_get_retroactive_session_context()
+- load_startup_stub_preserves_metadata_but_skips_heavy_vectors · function · L254-L329 — fn load_startup_stub_preserves_metadata_but_skips_heavy_vectors() -> Result<()>
+- load_for_remote_startup_preserves_messages_and_replay_but_skips_heavy_vectors · function · L332-L400 — fn load_for_remote_startup_preserves_messages_and_replay_but_skips_heavy_vectors() -> Result<()>
+- test_create_marks_debug_when_test_session_env_enabled · function · L403-L412 — fn test_create_marks_debug_when_test_session_env_enabled()
+- test_create_not_debug_when_test_session_env_disabled · function · L415-L421 — fn test_create_not_debug_when_test_session_env_disabled()
+- test_recover_crashed_sessions_preserves_debug_flag · function · L424-L455 — fn test_recover_crashed_sessions_preserves_debug_flag() -> Result<()>
+- test_recover_crashed_sessions_by_ids_restores_only_selected_group · function · L458-L499 — fn test_recover_crashed_sessions_by_ids_restores_only_selected_group() -> Result<()>
+- untouched_session_is_not_persisted_until_real_conversation_starts · function · L502-L526 — fn untouched_session_is_not_persisted_until_real_conversation_starts() -> Result<()>
+- empty_fork_is_persisted_before_first_visible_message · function · L529-L551 — fn empty_fork_is_persisted_before_first_visible_message() -> Result<()>
+- session_created_with_title_is_persisted_before_first_visible_message · function · L554-L573 — fn session_created_with_title_is_persisted_before_first_visible_message() -> Result<()>
+- test_save_persists_full_session_content · function · L576-L628 — fn test_save_persists_full_session_content() -> Result<()>
+- test_save_persists_compaction_state · function · L631-L660 — fn test_save_persists_compaction_state() -> Result<()>
+- test_startup_stub_save_preserves_compaction_state · function · L666-L728 — fn test_startup_stub_save_preserves_compaction_state() -> Result<()>
+- test_save_persists_provider_key · function · L731-L753 — fn test_save_persists_provider_key() -> Result<()>
+- test_save_persists_reasoning_effort · function · L756-L778 — fn test_save_persists_reasoning_effort() -> Result<()>
+- context_cap_survives_snapshot_journal_and_startup_loaders · function · L781-L816 — fn context_cap_survives_snapshot_journal_and_startup_loaders() -> Result<()>
+- original_working_dir_survives_snapshot_journal_and_startup_loaders · function · L819-L850 — fn original_working_dir_survives_snapshot_journal_and_startup_loaders() -> Result<()>
+- context_cap_missing_is_backward_compatible_for_all_snapshot_types · function · L853-L875 — fn context_cap_missing_is_backward_compatible_for_all_snapshot_types() -> Result<()>
+- test_save_appends_journal_and_load_replays_it · function · L878-L922 — fn test_save_appends_journal_and_load_replays_it() -> Result<()>
+- test_save_checkpoints_after_full_mutation_and_clears_journal · function · L925-L970 — fn test_save_checkpoints_after_full_mutation_and_clears_journal() -> Result<()>
+- test_journal_replay_skips_corrupt_line_and_keeps_tail · function · L973-L1033 — fn test_journal_replay_skips_corrupt_line_and_keeps_tail() -> Result<()>
+- text_block · function · L1035-L1040 — fn text_block(text: &str) -> ContentBlock
+- test_interrupted_checkpoint_does_not_duplicate_journal_messages · function · L1046-L1109 — fn test_interrupted_checkpoint_does_not_duplicate_journal_messages() -> Result<()>
+- test_load_repairs_snapshot_with_duplicated_message_ids · function · L1114-L1138 — fn test_load_repairs_snapshot_with_duplicated_message_ids() -> Result<()>
+- test_journal_replay_salvages_glued_entries_on_torn_line · function · L1141-L1195 — fn test_journal_replay_salvages_glued_entries_on_torn_line() -> Result<()>
+- test_corrupt_journal_heals_via_checkpoint_on_next_save · function · L1198-L1258 — fn test_corrupt_journal_heals_via_checkpoint_on_next_save() -> Result<()>
+- test_redacted_for_export_redacts_tool_result_and_tool_input · function · L1261-L1310 — fn test_redacted_for_export_redacts_tool_result_and_tool_input() -> Result<()>
+- test_redacted_for_export_redacts_provider_native_items_only_in_copy · function · L1313-L1347 — fn test_redacted_for_export_redacts_provider_native_items_only_in_copy() -> Result<()>
+- test_redacted_for_export_redacts_replay_events · function · L1350-L1430 — fn test_redacted_for_export_redacts_replay_events() -> Result<()>
+- test_summarize_tool_calls_includes_tool_only_assistant_messages · function · L1433-L1456 — fn test_summarize_tool_calls_includes_tool_only_assistant_messages()
+- failed_wake_error_survives_roundtrip_without_provider_context_pollution · function · L1459-L1505 — fn failed_wake_error_survives_roundtrip_without_provider_context_pollution()
+- failed_wake_errors_follow_compacted_history_window · function · L1508-L1584 — fn failed_wake_errors_follow_compacted_history_window()
+- test_render_messages_honors_system_display_role_override · function · L1587-L1607 — fn test_render_messages_honors_system_display_role_override()
+- legacy_scheduled_task_message_renders_as_system · function · L1610-L1624 — fn legacy_scheduled_task_message_renders_as_system()
+- test_render_messages_shows_auto_poke_continuations_as_system_not_user · function · L1627-L1703 — fn test_render_messages_shows_auto_poke_continuations_as_system_not_user()
+- reasoning_render · module · L1706-L1706 — mod reasoning_render;
+- test_render_messages_honors_background_task_display_role_override · function · L1709-L1729 — fn test_render_messages_honors_background_task_display_role_override()
+- test_render_messages_hides_internal_system_reminders · function · L1732-L1752 — fn test_render_messages_hides_internal_system_reminders()
+- test_render_messages_shows_recent_compacted_history_by_default · function · L1755-L1804 — fn test_render_messages_shows_recent_compacted_history_by_default()
+- test_render_messages_can_expand_compacted_history_window · function · L1807-L1872 — fn test_render_messages_can_expand_compacted_history_window()
+- test_compacted_history_truncates_only_when_long_and_many_turns · function · L1875-L1950 — fn test_compacted_history_truncates_only_when_long_and_many_turns()
+- test_compacted_history_never_truncates_single_long_turn · function · L1953-L2004 — fn test_compacted_history_never_truncates_single_long_turn()
+- test_compacted_history_window_counts_renderable_messages_not_hidden_reminders · function · L2007-L2081 — fn test_compacted_history_window_counts_renderable_messages_not_hidden_reminders()
+- test_render_messages_and_images_share_tool_resolution_and_labels · function · L2084-L2148 — fn test_render_messages_and_images_share_tool_resolution_and_labels()
+- reasoning_trace_survives_session_save_and_load · function · L2151-L2205 — fn reasoning_trace_survives_session_save_and_load() -> Result<()>
+- test_render_images_anchors_tool_and_user_images · function · L2208-L2269 — fn test_render_images_anchors_tool_and_user_images()
+- test_render_images_attached_label_message_does_not_shift_prompt_ordinals · function · L2272-L2332 — fn test_render_images_attached_label_message_does_not_shift_prompt_ordinals()
+- fork_notice_is_model_visible_but_hidden_from_transcript · function · L2335-L2378 — fn fork_notice_is_model_visible_but_hidden_from_transcript()
+- streaming_guard_creates_visible_macos_sleep_assertion · function · L2382-L2412 — fn streaming_guard_creates_visible_macos_sleep_assertion()
+- test_rewind_targets_match_rendered_transcript_numbering · function · L2418-L2511 — fn test_rewind_targets_match_rendered_transcript_numbering()
+- test_rewind_after_undo_uses_the_new_target_not_the_previous_one · function · L2522-L2589 — fn test_rewind_after_undo_uses_the_new_target_not_the_previous_one()
+- restored_tool_image_boundaries_follow_returned_history_rows · function · L2592-L2676 — fn restored_tool_image_boundaries_follow_returned_history_rows()
+- restored_tool_image_boundary_can_be_history_end · function · L2679-L2697 — fn restored_tool_image_boundary_can_be_history_end()
+- rendered_image_history_boundary_is_backward_compatible · function · L2700-L2713 — fn rendered_image_history_boundary_is_backward_compatible()
+- cache_prompt_totals_preserve_mixed_provider_accounting_and_legacy_unknown · function · L2716-L2751 — fn cache_prompt_totals_preserve_mixed_provider_accounting_and_legacy_unknown()
+- system_prompt_persists_before_first_message_and_across_metadata_updates · function · L2754-L2793 — fn system_prompt_persists_before_first_message_and_across_metadata_updates() -> Result<()>
+- system_prompt_missing_in_legacy_session_defaults_to_none · function · L2796-L2803 — fn system_prompt_missing_in_legacy_session_defaults_to_none() -> Result<()>
+- first_visible_user_prompt_becomes_the_generated_title · function · L2806-L2842 — fn first_visible_user_prompt_becomes_the_generated_title()
+- env_snapshot_past_cap_appends_instead_of_rewriting_snapshot · function · L2849-L2916 — fn env_snapshot_past_cap_appends_instead_of_rewriting_snapshot() -> Result<()>
+- metadata_change_on_large_session_is_journaled_not_rewritten · function · L2922-L2969 — fn metadata_change_on_large_session_is_journaled_not_rewritten() -> Result<()>
+- assert_persisted_route · function · L2971-L2989 — fn assert_persisted_route(session_id: &str, expected: Option<&str>) -> Result<()>
+- route_journal_roundtrip · function · L2991-L3030 — fn route_journal_roundtrip(large: bool) -> Result<()>
+- route_journal_small_session_roundtrip · function · L3033-L3035 — fn route_journal_small_session_roundtrip() -> Result<()>
+- route_journal_large_session_roundtrip · function · L3038-L3040 — fn route_journal_large_session_roundtrip() -> Result<()>
+- route_journal_legacy_entries_preserve_snapshot_and_prior_journal_route · function · L3043-L3079 — fn route_journal_legacy_entries_preserve_snapshot_and_prior_journal_route() -> Result<()>
+- big_compaction · function · L3081-L3090 — fn big_compaction(tag: &str) -> std::sync::Arc<crate::session::StoredCompactionState>
+- journal_entries_elide_unchanged_compaction_but_loads_keep_it · function · L3096-L3162 — fn journal_entries_elide_unchanged_compaction_but_loads_keep_it() -> Result<()>
+- legacy_journal_entries_with_inline_compaction_still_load · function · L3167-L3209 — fn legacy_journal_entries_with_inline_compaction_still_load() -> Result<()>
+- write_compaction_elision_compat_fixture · function · L3216-L3243 — fn write_compaction_elision_compat_fixture() -> Result<()>
+- read_compaction_elision_compat_fixture · function · L3249-L3266 — fn read_compaction_elision_compat_fixture() -> Result<()>
+- provider_identity · module · L3269-L3269 — mod provider_identity;
+- memory_profile · module · L3272-L3272 — mod memory_profile;
+- additional_test_session_exists_roundtrip · module · L3275-L3275 — mod additional_test_session_exists_roundtrip;

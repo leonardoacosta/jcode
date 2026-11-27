@@ -1,0 +1,33 @@
+# crates/jcode-tui/src/tui/app/remote/input_dispatch.rs
+
+- begin_remote_send · function · L9-L153 — pub(in crate::tui::app) async fn begin_remote_send(
+- EXECUTION_RETRY_PREFIX · constant · L37-L37 — const EXECUTION_RETRY_PREFIX: &str = "<system-reminder>Retry the interrupted execution of the previous turn. Continue from the current conversation and completed tool results without repeating completed work.</system-reminder>\n\n";
+- restore_prepared_remote_input · function · L155-L168 — pub(in crate::tui::app) fn restore_prepared_remote_input(
+- history_matches_pending_startup_prompt · function · L170-L181 — pub(in crate::tui::app) fn history_matches_pending_startup_prompt(app: &App) -> bool
+- restore_pending_startup_prompt_echo · function · L186-L199 — pub(in crate::tui::app) fn restore_pending_startup_prompt_echo(app: &mut App)
+- submit_prepared_remote_input · function · L201-L359 — pub(in crate::tui::app) async fn submit_prepared_remote_input(
+- submit_remote_slash_input · function · L367-L453 — pub(in crate::tui::app) async fn submit_remote_slash_input(
+- route_prepared_input_to_new_remote_session · function · L455-L514 — pub(in crate::tui::app) async fn route_prepared_input_to_new_remote_session(
+- begin_remote_split_launch · function · L516-L531 — pub(in crate::tui::app) fn begin_remote_split_launch(app: &mut App, label: &str)
+- finish_remote_split_launch · function · L533-L548 — pub(in crate::tui::app) fn finish_remote_split_launch(app: &mut App)
+- set_transcript_input · function · L550-L556 — fn set_transcript_input(app: &mut App, text: String)
+- transcript_send_text · function · L558-L571 — fn transcript_send_text(text: &str) -> String
+- TRANSCRIPTION_PREFIX · constant · L559-L559 — const TRANSCRIPTION_PREFIX: &str = "[transcription]";
+- queue_transcript_input · function · L573-L581 — fn queue_transcript_input(app: &mut App)
+- submit_transcript_input · function · L583-L596 — fn submit_transcript_input(app: &mut App)
+- submit_remote_transcript_input · function · L598-L653 — async fn submit_remote_transcript_input(
+- submit_remote_input_shell · function · L655-L693 — pub(super) async fn submit_remote_input_shell(
+- apply_transcript_event · function · L695-L728 — pub(in crate::tui::app) fn apply_transcript_event(
+- StashedDraft · struct · L732-L738 — struct StashedDraft
+- stash_draft_for_voice · function · L740-L751 — fn stash_draft_for_voice(app: &mut App, transcript: &str) -> StashedDraft
+- restore_draft_after_voice · function · L753-L766 — fn restore_draft_after_voice(app: &mut App, stash: StashedDraft)
+- submit_voice_transcript · function · L771-L776 — pub(in crate::tui::app) fn submit_voice_transcript(app: &mut App, transcript: &str)
+- submit_remote_voice_transcript · function · L779-L789 — pub(in crate::tui::app) async fn submit_remote_voice_transcript(
+- apply_remote_transcript_event · function · L791-L813 — pub(in crate::tui::app) async fn apply_remote_transcript_event(
+- stage_turn_for_remote_tick_loop · function · L823-L836 — pub(in crate::tui::app) fn stage_turn_for_remote_tick_loop(app: &mut App, input: &str) -> bool
+- ssh_slash_tests · module · L839-L1102 — mod ssh_slash_tests
+- ssh_slash_capability_matrix_covers_entire_registry · function · L843-L851 — fn ssh_slash_capability_matrix_covers_entire_registry()
+- ssh_alternate_slash_input_uses_wire_dispatch_not_agent_prompt · function · L854-L929 — fn ssh_alternate_slash_input_uses_wire_dispatch_not_agent_prompt()
+- ssh_poke_hotkey_controls_daemon_instead_of_local_todos · function · L932-L974 — fn ssh_poke_hotkey_controls_daemon_instead_of_local_todos()
+- ssh_host_loop_and_usage_commands_send_structured_requests · function · L977-L1031 — fn ssh_host_loop_and_usage_commands_send_structured_requests()
+- ssh_registered_unimplemented_command_fails_closed_but_skills_reach_server · function · L1034-L1101 — fn ssh_registered_unimplemented_command_fails_closed_but_skills_reach_server()

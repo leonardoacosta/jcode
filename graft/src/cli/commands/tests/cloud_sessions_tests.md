@@ -1,0 +1,17 @@
+# src/cli/commands/tests/cloud_sessions_tests.rs
+
+- cloud_sessions_args_match_jade_helper_contract · function · L4-L59 — fn cloud_sessions_args_match_jade_helper_contract()
+- cloud_sessions_config_persists_secret_and_feeds_helper_env_without_args · function · L62-L121 — fn cloud_sessions_config_persists_secret_and_feeds_helper_env_without_args()
+- is_syncable_session_stem_filters_non_session_files · function · L124-L130 — fn is_syncable_session_stem_filters_non_session_files()
+- collect_sync_candidates_picks_only_session_json · function · L133-L149 — fn collect_sync_candidates_picks_only_session_json()
+- cloud_sessions_sync_dry_run_reports_without_uploading_or_writing_state · function · L152-L192 — fn cloud_sessions_sync_dry_run_reports_without_uploading_or_writing_state()
+- cloud_sessions_sync_respects_min_interval_throttle · function · L195-L243 — fn cloud_sessions_sync_respects_min_interval_throttle()
+- render_cloud_sessions_dashboard_html_escapes_and_lists_rows · function · L246-L268 — fn render_cloud_sessions_dashboard_html_escapes_and_lists_rows()
+- render_cloud_sessions_dashboard_html_handles_empty · function · L271-L275 — fn render_cloud_sessions_dashboard_html_handles_empty()
+- render_cloud_sessions_dashboard_html_links_rows_with_view_files · function · L278-L297 — fn render_cloud_sessions_dashboard_html_links_rows_with_view_files()
+- sanitize_filename_keeps_safe_chars_and_replaces_others · function · L300-L306 — fn sanitize_filename_keeps_safe_chars_and_replaces_others()
+- dashboard_views_dir_is_sibling_of_dashboard · function · L309-L312 — fn dashboard_views_dir_is_sibling_of_dashboard()
+- relative_link_is_relative_to_dashboard_parent · function · L315-L321 — fn relative_link_is_relative_to_dashboard_parent()
+- parse_cloud_session_list_json_accepts_array_and_object_wrappers · function · L324-L348 — fn parse_cloud_session_list_json_accepts_array_and_object_wrappers()
+- parse_cloud_session_list_json_rejects_unexpected_shapes · function · L351-L360 — fn parse_cloud_session_list_json_rejects_unexpected_shapes()
+- resolve_jade_sessions_helper_prefers_explicit_and_env_paths · function · L363-L375 — fn resolve_jade_sessions_helper_prefers_explicit_and_env_paths()

@@ -1,0 +1,22 @@
+# crates/jcode-voice/src/global/hotkey/tests.rs
+
+- temp · function · L2-L9 — fn temp() -> PathBuf
+- decoder_chords_repeat_and_release · function · L11-L27 — fn decoder_chords_repeat_and_release()
+- shift_before_copilot_spawns_but_synthetic_shift_holds · function · L29-L49 — fn shift_before_copilot_spawns_but_synthetic_shift_holds()
+- spawned_window_adopts_a_held_key_or_falls_back_to_a_tap · function · L51-L78 — fn spawned_window_adopts_a_held_key_or_falls_back_to_a_tap()
+- held_at_open_is_ignored · function · L80-L92 — fn held_at_open_is_ignored()
+- global_chord_rejects_control_alt_and_partial_synthetic_modifiers · function · L94-L116 — fn global_chord_rejects_control_alt_and_partial_synthetic_modifiers()
+- newest_focus_and_stable_lease · function · L118-L138 — fn newest_focus_and_stable_lease()
+- stale_and_unready_registrations_are_excluded · function · L140-L152 — fn stale_and_unready_registrations_are_excluded()
+- delayed_press_cannot_recapture_after_focus_changes · function · L154-L168 — fn delayed_press_cannot_recapture_after_focus_changes()
+- capability_bitmap_and_native_abi · function · L170-L188 — fn capability_bitmap_and_native_abi()
+- fake_listener · function · L189-L219 — fn fake_listener() -> (Listener, File, PathBuf)
+- send · function · L220-L238 — fn send(file: &mut File, kind: u16, code: u16, value: i32)
+- dropped_events_resync_keeps_a_held_key_and_releases_a_lifted_one · function · L240-L259 — fn dropped_events_resync_keeps_a_held_key_and_releases_a_lifted_one()
+- poll_dropped_disconnect_deadline_and_drop · function · L261-L287 — fn poll_dropped_disconnect_deadline_and_drop()
+- eligibility_cancels_but_physical_key_up_releases · function · L289-L308 — fn eligibility_cancels_but_physical_key_up_releases()
+- registry_failure_cancels_and_invalid_allowlist_fails · function · L310-L324 — fn registry_failure_cancels_and_invalid_allowlist_fails()
+- routing_contention_retries_only_while_physical_key_remains_down · function · L326-L344 — fn routing_contention_retries_only_while_physical_key_remains_down()
+- heartbeat_is_throttled_but_focus_and_eligibility_publish_immediately · function · L346-L357 — fn heartbeat_is_throttled_but_focus_and_eligibility_publish_immediately()
+- malformed_peer_registration_does_not_block_valid_capture · function · L359-L367 — fn malformed_peer_registration_does_not_block_valid_capture()
+- unsafe_directory_is_rejected · function · L370-L377 — fn unsafe_directory_is_rejected()

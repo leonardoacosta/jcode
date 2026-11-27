@@ -1,0 +1,40 @@
+# crates/jcode-app-core/src/tool/agentgrep.rs
+
+- AGENTGREP_FOREGROUND_BUDGET · constant · L28-L28 — const AGENTGREP_FOREGROUND_BUDGET: Duration = Duration::from_secs(5);
+- CancelSearchOnDrop · struct · L30-L30 — struct CancelSearchOnDrop(Arc<AtomicBool>);
+- drop · function · L33-L35 — fn drop(&mut self)
+- SearchTaskOwner · struct · L40-L40 — struct SearchTaskOwner(Option<tokio::task::JoinHandle<Result<ToolOutput>>>);
+- drop · function · L43-L47 — fn drop(&mut self)
+- spawn_cancellable_search · function · L50-L65 — fn spawn_cancellable_search(
+- args · module · L67-L67 — mod args;
+- context · module · L68-L68 — mod context;
+- AgentGrepInput · struct · L86-L122 — struct AgentGrepInput
+- DEFAULT_GREP_MAX_REGIONS · constant · L130-L130 — const DEFAULT_GREP_MAX_REGIONS: usize = 200;
+- default_agentgrep_mode · function · L132-L134 — fn default_agentgrep_mode() -> String
+- AgentGrepHarnessContext · struct · L137-L147 — struct AgentGrepHarnessContext
+- AgentGrepKnownRegion · struct · L150-L159 — struct AgentGrepKnownRegion
+- AgentGrepKnownFile · struct · L162-L170 — struct AgentGrepKnownFile
+- AgentGrepKnownSymbol · struct · L173-L184 — struct AgentGrepKnownSymbol
+- RegionConfidenceProfile · struct · L187-L192 — struct RegionConfidenceProfile
+- PendingTraceRegion · struct · L195-L200 — struct PendingTraceRegion
+- ToolExposureObservation · struct · L203-L208 — struct ToolExposureObservation
+- ExposureDescriptor · struct · L211-L216 — struct ExposureDescriptor
+- AgentGrepTool · struct · L218-L218 — pub struct AgentGrepTool;
+- new · function · L221-L223 — pub fn new() -> Self
+- name · function · L228-L230 — fn name(&self) -> &str
+- description · function · L232-L234 — fn description(&self) -> &str
+- parameters_schema · function · L236-L289 — fn parameters_schema(&self) -> Value
+- execute · function · L291-L312 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- await_or_background_search · function · L315-L367 — async fn await_or_background_search(
+- summarize_background_search · function · L369-L386 — fn summarize_background_search(params: &AgentGrepInput) -> String
+- run_agentgrep_blocking · function · L388-L432 — fn run_agentgrep_blocking(params: &AgentGrepInput, ctx: &ToolContext) -> Result<ToolOutput>
+- execute_linked_agentgrep · function · L434-L491 — fn execute_linked_agentgrep(
+- resolve_path_arg · function · L493-L495 — fn resolve_path_arg(ctx: &ToolContext, path: &str) -> PathBuf
+- exact_search_file_path · function · L497-L506 — fn exact_search_file_path(ctx: &ToolContext, path: Option<&str>) -> Option<String>
+- filter_grep_result_to_exact_file · function · L508-L520 — fn filter_grep_result_to_exact_file(
+- filter_find_result_to_exact_file · function · L522-L532 — fn filter_find_result_to_exact_file(
+- filter_smart_result_to_exact_file · function · L534-L547 — fn filter_smart_result_to_exact_file(
+- normalized_agentgrep_glob · function · L549-L560 — fn normalized_agentgrep_glob(glob: Option<&str>) -> Option<&str>
+- normalized_agentgrep_glob_owned · function · L562-L564 — fn normalized_agentgrep_glob_owned(glob: Option<&str>) -> Option<String>
+- is_match_all_glob · function · L566-L568 — fn is_match_all_glob(glob: &str) -> bool
+- tests · module · L572-L572 — mod tests;

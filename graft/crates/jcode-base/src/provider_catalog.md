@@ -1,0 +1,46 @@
+# crates/jcode-base/src/provider_catalog.rs
+
+- OPENAI_COMPAT_LOCAL_ENABLED_ENV · constant · L9-L9 — pub const OPENAI_COMPAT_LOCAL_ENABLED_ENV: &str = "JCODE_OPENAI_COMPAT_LOCAL_ENABLED";
+- MINIMAX_CHINA_API_BASE · constant · L10-L10 — pub const MINIMAX_CHINA_API_BASE: &str = "https://api.minimaxi.com/v1";
+- MINIMAX_CHINA_SETUP_URL · constant · L11-L11 — pub const MINIMAX_CHINA_SETUP_URL: &str = "https://platform.minimaxi.com/docs/llms.txt";
+- profile_credentials · module · L13-L13 — mod profile_credentials;
+- api_base_uses_localhost · function · L19-L36 — pub fn api_base_uses_localhost(raw: &str) -> bool
+- resolve_openai_compatible_profile · function · L38-L42 — pub fn resolve_openai_compatible_profile(
+- resolve_openai_compatible_profile_with_api_key_hint · function · L44-L59 — pub fn resolve_openai_compatible_profile_with_api_key_hint(
+- resolve_openai_compatible_profile_endpoint · function · L68-L145 — fn resolve_openai_compatible_profile_endpoint(
+- newest_released_model_for_openai_compatible_profile · function · L147-L151 — pub fn newest_released_model_for_openai_compatible_profile(profile_id: &str) -> Option<String>
+- newest_released_model_for_resolved_openai_compatible_profile · function · L153-L197 — fn newest_released_model_for_resolved_openai_compatible_profile(
+- Key · type · L165-L165 — type Key = (String, String, Option<String>, u64);
+- MEMO · constant · L166-L167 — static MEMO: std::sync::LazyLock<std::sync::Mutex<HashMap<Key, Option<String>>>> =
+- model_ranking · module · L200-L200 — mod model_ranking;
+- apply_profile_key_based_endpoint_overrides · function · L204-L227 — fn apply_profile_key_based_endpoint_overrides(
+- resolve_openai_compatible_profile_selection · function · L229-L235 — pub fn resolve_openai_compatible_profile_selection(input: &str) -> Option<OpenAiCompatibleProfile>
+- active_openai_compatible_display_name · function · L237-L275 — pub fn active_openai_compatible_display_name() -> Option<String>
+- runtime_provider_display_name · function · L277-L289 — pub fn runtime_provider_display_name(provider_name: &str) -> String
+- openai_compatible_profile_by_id · function · L291-L297 — pub fn openai_compatible_profile_by_id(id: &str) -> Option<OpenAiCompatibleProfile>
+- openai_compatible_profile_id_for_api_base · function · L299-L308 — pub fn openai_compatible_profile_id_for_api_base(api_base: &str) -> Option<&'static str>
+- openai_compatible_profile_id_for_display_name · function · L310-L322 — pub fn openai_compatible_profile_id_for_display_name(display_name: &str) -> Option<&'static str>
+- openai_compatible_profile_static_models · function · L324-L641 — pub fn openai_compatible_profile_static_models(profile: OpenAiCompatibleProfile) -> Vec<String>
+- openai_compatible_profile_model_supports_chat · function · L643-L645 — pub fn openai_compatible_profile_model_supports_chat(_profile_id: &str, _model: &str) -> bool
+- openai_compatible_profile_static_context_limits · function · L647-L656 — pub fn openai_compatible_profile_static_context_limits(
+- openai_compatible_profile_context_limit · function · L658-L680 — pub fn openai_compatible_profile_context_limit(profile_id: &str, model: &str) -> Option<usize>
+- conifer_context_limit · function · L686-L703 — fn conifer_context_limit(model: &str) -> Option<usize>
+- apply_openai_compatible_profile_env · function · L705-L707 — pub fn apply_openai_compatible_profile_env(profile: Option<OpenAiCompatibleProfile>)
+- force_apply_openai_compatible_profile_env · function · L709-L711 — pub fn force_apply_openai_compatible_profile_env(profile: Option<OpenAiCompatibleProfile>)
+- api_base_is_anthropic · function · L714-L716 — pub fn api_base_is_anthropic(api_base: &str) -> bool
+- ANTHROPIC_VERSION_HEADER_VALUE · constant · L718-L718 — pub const ANTHROPIC_VERSION_HEADER_VALUE: &str = "2023-06-01";
+- apply_openai_compatible_catalog_auth · function · L724-L736 — pub fn apply_openai_compatible_catalog_auth(
+- apply_openai_compatible_profile_env_impl · function · L738-L792 — fn apply_openai_compatible_profile_env_impl(
+- inline_key_env_name · function · L794-L806 — fn inline_key_env_name(profile_name: &str) -> String
+- clear_anthropic_profile_env · function · L808-L820 — pub fn clear_anthropic_profile_env()
+- apply_named_provider_profile_env · function · L822-L825 — pub fn apply_named_provider_profile_env(profile_name: &str) -> anyhow::Result<String>
+- apply_named_provider_profile_env_from_config · function · L827-L1082 — pub fn apply_named_provider_profile_env_from_config(
+- openrouter_like_api_key_sources · function · L1084-L1119 — pub fn openrouter_like_api_key_sources() -> Vec<(String, String)>
+- parse_bool_like · function · L1121-L1126 — fn parse_bool_like(value: &str) -> bool
+- active_named_provider_profile_credential_source · function · L1132-L1151 — pub fn active_named_provider_profile_credential_source() -> Option<(String, String)>
+- active_named_provider_profile_is_configured · function · L1158-L1170 — fn active_named_provider_profile_is_configured() -> Option<bool>
+- configured_api_key_source · function · L1172-L1209 — pub fn configured_api_key_source(
+- env_override · function · L1211-L1217 — fn env_override(name: &str) -> Option<String>
+- dedup_sources · function · L1219-L1228 — fn dedup_sources(sources: Vec<(String, String)>) -> Vec<(String, String)>
+- provider_catalog_tests · module · L1232-L1232 — mod provider_catalog_tests;
+- provider_catalog_muse_tests · module · L1236-L1236 — mod provider_catalog_muse_tests;

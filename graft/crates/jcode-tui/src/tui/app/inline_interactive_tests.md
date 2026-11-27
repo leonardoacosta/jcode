@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/app/inline_interactive_tests.rs
+
+- ssh_model_picker_uses_wire_catalog_without_local_cache · function · L2-L43 — fn ssh_model_picker_uses_wire_catalog_without_local_cache()
+- picker_entry · function · L61-L77 — fn picker_entry(name: &str, provider: &str, usage_score: u32) -> PickerEntry
+- picker_option_with_method · function · L79-L87 — fn picker_option_with_method(provider: &str, api_method: &str) -> PickerOption
+- picker_option · function · L89-L91 — fn picker_option(provider: &str) -> PickerOption
+- saved_account_model_picker_current_and_default_are_account_specific · function · L94-L132 — fn saved_account_model_picker_current_and_default_are_account_specific()
+- model_picker_hotkey_char_matching_is_case_insensitive · function · L135-L140 — fn model_picker_hotkey_char_matching_is_case_insensitive()
+- runtime_model_picker_scope_excludes_agent_model_picker · function · L143-L167 — fn runtime_model_picker_scope_excludes_agent_model_picker()
+- favorite_cycle_reaches_every_favorite_across_fresh_picker_sorts · function · L170-L231 — fn favorite_cycle_reaches_every_favorite_across_fresh_picker_sorts()
+- model_picker_fuzzy_filter_prefers_previously_selected_route · function · L234-L251 — fn model_picker_fuzzy_filter_prefers_previously_selected_route()
+- model_picker_fuzzy_filter_tolerates_common_typos · function · L254-L271 — fn model_picker_fuzzy_filter_tolerates_common_typos()
+- model_picker_exact_name_outranks_longer_frequently_used_prefix · function · L274-L291 — fn model_picker_exact_name_outranks_longer_frequently_used_prefix()
+- model_picker_current_route_requires_matching_provider · function · L294-L312 — fn model_picker_current_route_requires_matching_provider()
+- model_picker_current_route_requires_matching_api_method · function · L315-L333 — fn model_picker_current_route_requires_matching_api_method()
+- model_picker_current_route_allows_provider_aliases · function · L336-L353 — fn model_picker_current_route_allows_provider_aliases()
+- model_picker_provider_match_does_not_use_substring_false_positives · function · L356-L365 — fn model_picker_provider_match_does_not_use_substring_false_positives()
+- model_picker_default_route_requires_matching_provider_when_config_has_provider · function · L368-L384 — fn model_picker_default_route_requires_matching_provider_when_config_has_provider()
+- model_picker_default_route_marks_anthropic_api_config_provider · function · L387-L416 — fn model_picker_default_route_marks_anthropic_api_config_provider()
+- model_picker_effort_default_matches_only_stored_variant · function · L419-L467 — fn model_picker_effort_default_matches_only_stored_variant()
+- model_picker_default_route_honors_provider_prefixed_model_specs · function · L470-L486 — fn model_picker_default_route_honors_provider_prefixed_model_specs()
+- model_picker_default_route_matches_openrouter_endpoint_specs · function · L489-L504 — fn model_picker_default_route_matches_openrouter_endpoint_specs()
+- model_picker_recommended_route_is_provider_aware · function · L507-L571 — fn model_picker_recommended_route_is_provider_aware()
+- remote_model_catalog_cache_keeps_flattened_legacy_schema · function · L574-L604 — fn remote_model_catalog_cache_keeps_flattened_legacy_schema()
+- remote_model_catalog_cache_rejects_stale_and_future_timestamps · function · L607-L627 — fn remote_model_catalog_cache_rejects_stale_and_future_timestamps()
+- remote_model_catalog_cache_rejects_forged_or_oversized_routes · function · L630-L654 — fn remote_model_catalog_cache_rejects_forged_or_oversized_routes()
+- model_route · function · L656-L666 — fn model_route(model: &str, provider: &str, api_method: &str) -> crate::provider::ModelRoute
+- route_effort_support_covers_effort_capable_runtimes_only · function · L669-L685 — fn route_effort_support_covers_effort_capable_runtimes_only()
+- provider_allowlist_filters_routes_by_label_method_and_profile · function · L688-L728 — fn provider_allowlist_filters_routes_by_label_method_and_profile()
+- provider_allowlist_keeps_current_model_and_never_empties_picker · function · L731-L778 — fn provider_allowlist_keeps_current_model_and_never_empties_picker()
+- provider_allowlist_does_not_keep_disallowed_route_sharing_current_model · function · L781-L801 — fn provider_allowlist_does_not_keep_disallowed_route_sharing_current_model()
+- provider_allowlist_keeps_only_exact_active_route_when_model_and_provider_overlap · function · L804-L837 — fn provider_allowlist_keeps_only_exact_active_route_when_model_and_provider_overlap()

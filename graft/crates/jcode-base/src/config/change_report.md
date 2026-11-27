@@ -1,0 +1,21 @@
+# crates/jcode-base/src/config/change_report.rs
+
+- Liveness · enum · L18-L23 — pub enum Liveness
+- label · function · L26-L31 — pub fn label(self) -> &'static str
+- RESTART_REQUIRED_SECTIONS · constant · L40-L48 — const RESTART_REQUIRED_SECTIONS: &[&str] = &[
+- liveness_for_key · function · L51-L58 — pub fn liveness_for_key(key: &str) -> Liveness
+- ConfigChange · struct · L62-L70 — pub struct ConfigChange
+- render · function · L73-L83 — fn render(&self) -> String
+- REDACTED · constant · L87-L87 — const REDACTED: &str = "<redacted>";
+- SECRET_KEY_PARTS · constant · L89-L89 — const SECRET_KEY_PARTS: &[&str] = &["key", "token", "secret", "password", "auth", "credential"];
+- is_secret_name · function · L92-L95 — fn is_secret_name(name: &str) -> bool
+- is_secret_key · function · L99-L101 — fn is_secret_key(key: &str) -> bool
+- value_names_secret_key · function · L106-L120 — fn value_names_secret_key(rendered: &str) -> bool
+- walk · function · L110-L118 — fn walk(value: &Value) -> bool
+- diff_toml · function · L128-L160 — pub fn diff_toml(before: &str, after: &str) -> Vec<ConfigChange>
+- summarize_toml_change · function · L166-L172 — pub fn summarize_toml_change(before: &str, after: &str) -> Option<String>
+- summarize_changes · function · L175-L199 — pub fn summarize_changes(changes: &[ConfigChange]) -> String
+- flatten_toml · function · L205-L212 — fn flatten_toml(text: &str) -> BTreeMap<String, String>
+- flatten_value · function · L214-L233 — fn flatten_value(prefix: String, value: &Value, out: &mut BTreeMap<String, String>)
+- render_value · function · L235-L240 — fn render_value(value: &Value) -> String
+- tests · module · L244-L244 — mod tests;

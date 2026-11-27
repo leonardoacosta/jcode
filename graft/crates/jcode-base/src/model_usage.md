@@ -1,0 +1,43 @@
+# crates/jcode-base/src/model_usage.rs
+
+- RouteKey · type · L14-L14 — type RouteKey = (String, String, String);
+- USAGE_GENERATION · constant · L16-L16 — static USAGE_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- CatalogUsageRevision · struct · L21-L24 — pub struct CatalogUsageRevision
+- UsageFileStamp · struct · L27-L34 — struct UsageFileStamp
+- usage_file_stamp · function · L36-L68 — fn usage_file_stamp(path: &Path) -> Option<UsageFileStamp>
+- catalog_usage_revision · function · L70-L81 — pub fn catalog_usage_revision() -> CatalogUsageRevision
+- usage_revision_for_paths · function · L83-L94 — fn usage_revision_for_paths(paths: Vec<std::path::PathBuf>) -> CatalogUsageRevision
+- key · function · L96-L114 — fn key(model: &str, provider: &str, api_method: &str) -> RouteKey
+- open · function · L116-L134 — fn open(path: &Path, now: u64) -> Result<Connection>
+- path · function · L136-L138 — fn path() -> Result<std::path::PathBuf>
+- now · function · L140-L142 — fn now() -> u64
+- record_at · function · L144-L166 — fn record_at(
+- LegacyStore · struct · L169-L172 — struct LegacyStore
+- LegacyEntry · struct · L174-L177 — struct LegacyEntry
+- legacy_selections · function · L179-L199 — fn legacy_selections(path: &Path) -> HashMap<RouteKey, ModelUsage>
+- legacy · function · L201-L206 — fn legacy() -> HashMap<RouteKey, ModelUsage>
+- method_usage_counts · function · L212-L214 — pub fn method_usage_counts() -> Result<HashMap<String, u64>>
+- method_usage_counts_at · function · L216-L224 — fn method_usage_counts_at(path: &Path) -> Result<HashMap<String, u64>>
+- RouteUsageRow · type · L228-L228 — type RouteUsageRow = (RouteKey, u64, Option<u64>);
+- UsageAggregate · type · L230-L230 — type UsageAggregate = (u64, HashMap<RouteKey, ModelUsage>);
+- UsageAggregateMemo · struct · L233-L235 — struct UsageAggregateMemo
+- get · function · L238-L256 — fn get(
+- USAGE_AGGREGATE_MEMO · constant · L259-L260 — static USAGE_AGGREGATE_MEMO: std::sync::Mutex<UsageAggregateMemo> =
+- usage_aggregate · function · L262-L273 — fn usage_aggregate() -> Result<std::sync::Arc<UsageAggregate>>
+- read_usage_aggregate · function · L275-L305 — fn read_usage_aggregate() -> Result<UsageAggregate>
+- enrich_routes · function · L307-L334 — pub fn enrich_routes(routes: &mut [ModelRoute])
+- serving_route · function · L339-L392 — pub fn serving_route(provider: &dyn Provider, selected_method: Option<&str>) -> Option<ModelRoute>
+- record_turn · function · L396-L405 — pub fn record_turn(turn_id: &str, route: &ModelRoute) -> Result<ModelUsage>
+- serving_route_tests · module · L408-L408 — mod serving_route_tests;
+- tests · module · L411-L641 — mod tests
+- usage_aggregate_memo_reuses_until_revision_changes_and_retries_errors · function · L415-L474 — fn usage_aggregate_memo_reuses_until_revision_changes_and_retries_errors()
+- usage_aggregate_enrichment_tracks_external_writes_and_unknown_failures · function · L477-L504 — fn usage_aggregate_enrichment_tracks_external_writes_and_unknown_failures()
+- catalog_usage_revision_detects_wal_legacy_and_scope_changes · function · L507-L530 — fn catalog_usage_revision_detects_wal_legacy_and_scope_changes()
+- route · function · L532-L542 — fn route(method: &str) -> ModelRoute
+- continuations_count_once_per_turn_and_route_and_survive_restart · function · L545-L573 — fn continuations_count_once_per_turn_and_route_and_survive_restart()
+- concurrent_connections_do_not_lose_turns · function · L576-L600 — fn concurrent_connections_do_not_lose_turns()
+- legacy_selections_are_separate_and_efforts_aggregate · function · L603-L624 — fn legacy_selections_are_separate_and_efforts_aggregate()
+- aliases_normalize_without_collapsing_distinct_routes · function · L627-L640 — fn aliases_normalize_without_collapsing_distinct_routes()
+- method_usage_tests · module · L644-L677 — mod method_usage_tests
+- method_counts_deduplicate_turns_across_models_and_keep_auth_routes_separate · function · L648-L668 — fn method_counts_deduplicate_turns_across_models_and_keep_auth_routes_separate()
+- missing_usage_remains_unknown_and_is_not_created · function · L671-L676 — fn missing_usage_remains_unknown_and_is_not_created()

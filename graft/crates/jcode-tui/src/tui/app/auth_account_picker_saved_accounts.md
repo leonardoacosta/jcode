@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/tui/app/auth_account_picker_saved_accounts.rs
+
+- saved_login_picker_entries · function · L5-L65 — pub(super) fn saved_login_picker_entries(
+- new_login_account_entries · function · L69-L98 — fn new_login_account_entries() -> Vec<crate::tui::PickerEntry>
+- selected_login_label · function · L100-L113 — fn selected_login_label(
+- saved_account_current_login_tests · module · L116-L136 — mod saved_account_current_login_tests
+- session_account_takes_precedence_over_global_saved_preference · function · L119-L135 — fn session_account_takes_precedence_over_global_saved_preference()
+- saved_login_entry · function · L138-L179 — fn saved_login_entry(
+- handle_login_picker_key · function · L182-L208 — pub(crate) fn handle_login_picker_key(
+- render_openai_accounts_markdown · function · L210-L272 — pub(crate) fn render_openai_accounts_markdown(&self) -> String
+- render_anthropic_accounts_markdown · function · L274-L324 — pub(crate) fn render_anthropic_accounts_markdown(&self) -> String
+- append_anthropic_account_picker_items · function · L326-L385 — pub(super) fn append_anthropic_account_picker_items(
+- append_openai_account_picker_items · function · L387-L448 — pub(super) fn append_openai_account_picker_items(
+- openai_account_usage_details · function · L452-L459 — fn openai_account_usage_details(label: &str) -> Vec<(String, String)>
+- account_display_name · function · L463-L477 — pub(super) fn account_display_name(provider: &str, label: &str, account_count: usize) -> String
+- account_picker_display_name · function · L481-L492 — pub(super) fn account_picker_display_name(
+- anthropic_account_use · function · L497-L503 — pub(super) fn anthropic_account_use(subscription_type: Option<&str>) -> &'static str
+- format_account_table · function · L505-L532 — fn format_account_table(headers: &[&str; 5], rows: &[[String; 5]]) -> Vec<String>
+- account_display_tests · module · L535-L675 — mod account_display_tests
+- login_additions_use_safe_account_add_actions_for_both_oauth_providers · function · L539-L553 — fn login_additions_use_safe_account_add_actions_for_both_oauth_providers()
+- login_picker_includes_additions_independently_of_saved_account_state · function · L556-L563 — fn login_picker_includes_additions_independently_of_saved_account_state()
+- saved_login_choices_preserve_all_named_reauthentication_targets · function · L566-L588 — fn saved_login_choices_preserve_all_named_reauthentication_targets()
+- saved_login_lists_distinguish_active_and_inactive_accounts_for_both_providers · function · L591-L620 — fn saved_login_lists_distinguish_active_and_inactive_accounts_for_both_providers()
+- expired_saved_login_starts_reauthentication_for_the_same_account · function · L623-L632 — fn expired_saved_login_starts_reauthentication_for_the_same_account()
+- picker_names_show_full_email_for_single_and_multiple_accounts · function · L635-L644 — fn picker_names_show_full_email_for_single_and_multiple_accounts()
+- picker_names_handle_missing_and_blank_emails · function · L647-L654 — fn picker_names_handle_missing_and_blank_emails()
+- animals_only_distinguish_duplicate_provider_logins · function · L657-L667 — fn animals_only_distinguish_duplicate_provider_logins()
+- known_anthropic_plans_identify_personal_and_work_accounts · function · L670-L674 — fn known_anthropic_plans_identify_personal_and_work_accounts()

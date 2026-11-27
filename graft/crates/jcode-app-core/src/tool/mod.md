@@ -1,0 +1,148 @@
+# crates/jcode-app-core/src/tool/mod.rs
+
+- BACKGROUND_WAIT_GUIDANCE · constant · L1-L1 — pub(crate) const BACKGROUND_WAIT_GUIDANCE: &str = "While this task runs, try to make progress on other useful work that does not depend on its result. If nothing independent remains, wait for completion rather than repeatedly polling. Do not duplicate the running task or change inputs it is still using.";
+- agentgrep · module · L3-L3 — mod agentgrep;
+- ambient · module · L4-L4 — pub mod ambient;
+- apply_patch · module · L5-L5 — mod apply_patch;
+- bash · module · L6-L6 — mod bash;
+- batch · module · L7-L7 — mod batch;
+- bg · module · L8-L8 — mod bg;
+- bridge_reload · module · L10-L10 — pub(crate) mod bridge_reload;
+- browser · module · L11-L11 — mod browser;
+- calendar · module · L12-L12 — mod calendar;
+- codemode · module · L13-L13 — mod codemode;
+- communicate · module · L14-L14 — mod communicate;
+- computer · module · L16-L16 — mod computer;
+- config_edit_notice · module · L17-L17 — mod config_edit_notice;
+- conversation_search · module · L18-L18 — mod conversation_search;
+- council · module · L19-L19 — pub(crate) mod council;
+- debug_socket · module · L20-L20 — mod debug_socket;
+- desktop_selfdev · module · L21-L21 — mod desktop_selfdev;
+- discover · module · L22-L22 — mod discover;
+- discover_secrets · module · L23-L23 — mod discover_secrets;
+- edit · module · L24-L24 — mod edit;
+- edit_stats · module · L25-L25 — mod edit_stats;
+- feedback · module · L26-L26 — mod feedback;
+- file_diff · module · L27-L27 — mod file_diff;
+- file_lock · module · L28-L28 — pub(crate) mod file_lock;
+- gmail · module · L29-L29 — mod gmail;
+- applet · module · L31-L31 — pub mod applet;
+- goal · module · L33-L33 — mod goal;
+- inflight · module · L34-L34 — pub mod inflight;
+- jcode_docs · module · L35-L35 — mod jcode_docs;
+- load_tools · module · L36-L36 — pub(crate) mod load_tools;
+- mcp · module · L38-L38 — pub mod mcp;
+- memory · module · L39-L39 — mod memory;
+- name_suggestions · module · L40-L40 — mod name_suggestions;
+- open · module · L41-L41 — mod open;
+- panel · module · L42-L42 — mod panel;
+- patch · module · L43-L43 — mod patch;
+- plan_guard · module · L44-L44 — mod plan_guard;
+- read · module · L49-L49 — mod read;
+- remote_exec · module · L50-L50 — pub mod remote_exec;
+- sdk · module · L51-L51 — pub(crate) mod sdk;
+- selfdev · module · L52-L52 — pub mod selfdev;
+- serde_coerce · module · L53-L53 — pub(crate) mod serde_coerce;
+- session_http · module · L54-L54 — pub(crate) mod session_http;
+- session_search · module · L55-L55 — mod session_search;
+- session_search_index · module · L56-L56 — pub(crate) mod session_search_index;
+- side_panel · module · L57-L57 — mod side_panel;
+- skill · module · L58-L58 — mod skill;
+- todo · module · L59-L59 — mod todo;
+- user_response · module · L60-L60 — mod user_response;
+- webfetch · module · L61-L61 — mod webfetch;
+- websearch · module · L62-L62 — mod websearch;
+- withheld_identity · module · L63-L63 — mod withheld_identity;
+- write · module · L64-L64 — mod write;
+- name_policy · module · L79-L79 — mod name_policy;
+- ensure_mcp_action_allowed · function · L83-L100 — fn ensure_mcp_action_allowed(session_id: &str, surface: &str) -> Result<()>
+- tool_name_is_disabled · function · L102-L104 — pub(crate) fn tool_name_is_disabled(disabled: &HashSet<String>, name: &str) -> bool
+- is_fixed_mcp_tool · function · L106-L108 — fn is_fixed_mcp_tool(name: &str) -> bool
+- is_mcp_tool_name · function · L110-L112 — fn is_mcp_tool_name(name: &str) -> bool
+- required_check_outcome · function · L121-L136 — pub fn required_check_outcome(
+- required_check_batch · function · L139-L149 — pub fn required_check_batch(
+- SessionToolPolicy · struct · L155-L159 — struct SessionToolPolicy
+- SESSION_TOOL_POLICIES · constant · L161-L162 — static SESSION_TOOL_POLICIES: LazyLock<StdRwLock<HashMap<String, SessionToolPolicy>>> =
+- NEXT_SESSION_TOOL_POLICY_OWNER · constant · L163-L163 — static NEXT_SESSION_TOOL_POLICY_OWNER: AtomicU64 = AtomicU64::new(1);
+- SessionToolPolicyRegistration · struct · L169-L172 — pub(crate) struct SessionToolPolicyRegistration
+- drop · function · L175-L186 — fn drop(&mut self)
+- register_session_tool_policy · function · L189-L210 — pub(crate) fn register_session_tool_policy(
+- set_session_tool_policy · function · L213-L229 — pub(crate) fn set_session_tool_policy(
+- clear_session_tool_policy_entry · function · L232-L239 — pub(crate) fn clear_session_tool_policy_entry(session_id: &str)
+- clear_session_tool_policy · function · L242-L247 — pub(crate) fn clear_session_tool_policy(session_id: &str)
+- config_repair_exempt · function · L255-L271 — fn config_repair_exempt(name: &str, input: &Value, ctx: &ToolContext, custom: bool) -> bool
+- session_tool_policy · function · L273-L291 — fn session_tool_policy(session_id: &str) -> Option<SessionToolPolicy>
+- session_tool_policy_allows_tool_for_test · function · L294-L305 — pub(crate) fn session_tool_policy_allows_tool_for_test(
+- session_mcp_dispatch_is_allowed · function · L311-L317 — pub(crate) fn session_mcp_dispatch_is_allowed(
+- session_mcp_alias_is_allowed · function · L321-L338 — pub(crate) fn session_mcp_alias_is_allowed(
+- accepts_large_output · function · L351-L359 — fn accepts_large_output(input: &Value) -> bool
+- OUTPUT_WITHHELD_MARKER · constant · L362-L362 — const OUTPUT_WITHHELD_MARKER: &str = "⚠️ OUTPUT WITHHELD";
+- WITHHELD_CALLS · constant · L370-L371 — static WITHHELD_CALLS: LazyLock<StdRwLock<HashMap<String, Vec<u64>>>> =
+- WITHHELD_CALLS_PER_SESSION · constant · L375-L375 — const WITHHELD_CALLS_PER_SESSION: usize = 8;
+- take_repeated_withheld_call · function · L379-L394 — fn take_repeated_withheld_call(session_id: &str, key: u64) -> bool
+- remember_withheld_call · function · L396-L410 — fn remember_withheld_call(session_id: &str, key: u64)
+- McpPolicyIndex · struct · L415-L423 — struct McpPolicyIndex
+- Registry · struct · L429-L434 — pub struct Registry
+- WeakRegistry · struct · L441-L446 — pub(super) struct WeakRegistry
+- upgrade · function · L449-L456 — pub(super) fn upgrade(&self) -> Option<Registry>
+- clone · function · L460-L469 — fn clone(&self) -> Self
+- registry_touched_paths · module · L473-L473 — mod registry_touched_paths;
+- registry_lifecycle · module · L476-L476 — mod registry_lifecycle;
+- set_desktop_ui_enabled · function · L483-L496 — pub(crate) async fn set_desktop_ui_enabled(&self, enabled: bool)
+- downgrade · function · L498-L505 — fn downgrade(&self) -> WeakRegistry
+- shared_skills_registry · function · L507-L509 — fn shared_skills_registry() -> Arc<RwLock<SkillRegistry>>
+- insert_tool · function · L511-L516 — fn insert_tool<T>(tools: &mut HashMap<String, Arc<dyn Tool>>, name: &str, tool: T)
+- insert_tool_timed · function · L518-L529 — fn insert_tool_timed<T>(
+- empty · function · L533-L540 — pub fn empty() -> Self
+- base_tools · function · L544-L669 — fn base_tools(skills: &Arc<RwLock<SkillRegistry>>) -> HashMap<String, Arc<dyn Tool>>
+- BASE · constant · L546-L546 — static BASE: OnceLock<HashMap<String, Arc<dyn Tool>>> = OnceLock::new();
+- new · function · L671-L739 — pub async fn new(_provider: Arc<dyn Provider>) -> Self
+- definitions · function · L742-L766 — pub async fn definitions(
+- tool_names · function · L768-L771 — pub async fn tool_names(&self) -> Vec<String>
+- tool_list · function · L774-L815 — pub async fn tool_list(&self, query: &str) -> Vec<crate::protocol::ToolListEntry>
+- bind_mcp_manager · function · L817-L821 — pub(super) fn bind_mcp_manager(&self, manager: &Arc<RwLock<crate::mcp::McpManager>>)
+- definitions_for_session · function · L828-L837 — pub(crate) async fn definitions_for_session(&self, session_id: &str) -> Vec<ToolDefinition>
+- enable_memory_test_mode · function · L841-L851 — pub async fn enable_memory_test_mode(&self)
+- resolve_tool_name · function · L864-L866 — pub(crate) fn resolve_tool_name(name: &str) -> &str
+- estimate_tokens · function · L869-L871 — fn estimate_tokens(s: &str) -> usize
+- SINGLE_OUTPUT_MAX_FRACTION · constant · L875-L875 — const SINGLE_OUTPUT_MAX_FRACTION: f32 = 0.30;
+- SINGLE_OUTPUT_MAX_TOKENS · constant · L886-L886 — const SINGLE_OUTPUT_MAX_TOKENS: usize = 50_000;
+- oversized_output_refusal · function · L893-L922 — fn oversized_output_refusal(
+- resolve_tool_name_for_session · function · L927-L934 — pub(crate) fn resolve_tool_name_for_session<'a>(session_id: &str, name: &'a str) -> &'a str
+- execute · function · L937-L1233 — pub async fn execute(&self, name: &str, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- CONTEXT_GUARD_THRESHOLD · constant · L1237-L1237 — const CONTEXT_GUARD_THRESHOLD: f32 = 0.90;
+- guard_context_overflow · function · L1248-L1380 — async fn guard_context_overflow(
+- register · function · L1383-L1390 — pub async fn register(&self, name: String, tool: Arc<dyn Tool>)
+- record_mcp_surface · function · L1392-L1404 — fn record_mcp_surface(&self, tools: &HashMap<String, Arc<dyn Tool>>)
+- mcp_alias · function · L1406-L1414 — fn mcp_alias(&self, server: &str, raw: &str) -> Option<String>
+- mcp_policy_names · function · L1416-L1425 — fn mcp_policy_names(&self, server: &str, raw: &str) -> HashSet<String>
+- policy_names · function · L1427-L1437 — fn policy_names(&self, name: &str) -> HashSet<String>
+- tool_is_allowed · function · L1439-L1443 — pub(crate) fn tool_is_allowed(&self, allowed: &HashSet<String>, name: &str) -> bool
+- tool_is_disabled · function · L1445-L1449 — pub(crate) fn tool_is_disabled(&self, disabled: &HashSet<String>, name: &str) -> bool
+- mcp_alias_is_direct · function · L1453-L1458 — pub fn mcp_alias_is_direct(&self, alias: &str) -> bool
+- set_mcp_server_failed · function · L1460-L1467 — fn set_mcp_server_failed(&self, server: &str, failed: bool)
+- mcp_identity_for_alias · function · L1471-L1478 — pub(crate) fn mcp_identity_for_alias(&self, alias: &str) -> Option<(String, String)>
+- has_mcp_tools_for_server · function · L1483-L1490 — pub fn has_mcp_tools_for_server(&self, server: &str) -> bool
+- mcp_dispatch_is_allowed · function · L1492-L1511 — fn mcp_dispatch_is_allowed(
+- mcp_tools_match · function · L1515-L1531 — fn mcp_tools_match(
+- refresh_mcp_tools · function · L1535-L1542 — pub async fn refresh_mcp_tools(
+- refresh_connected_mcp_server · function · L1551-L1558 — pub async fn refresh_connected_mcp_server(
+- refresh_mcp_tools_inner · function · L1560-L1610 — async fn refresh_mcp_tools_inner(
+- reconcile_mcp_tools · function · L1614-L1619 — pub async fn reconcile_mcp_tools(&self, fresh: Vec<(String, Arc<dyn Tool>)>)
+- unregister_mcp_server · function · L1622-L1636 — pub async fn unregister_mcp_server(&self, server: &str) -> Vec<String>
+- register_mcp_tools · function · L1642-L1650 — pub async fn register_mcp_tools(
+- register_mcp_tools_for_dir · function · L1656-L1973 — pub async fn register_mcp_tools_for_dir(
+- resync_mcp_server_tools · function · L1977-L1987 — async fn resync_mcp_server_tools(
+- spawn_mcp_catalog_resync · function · L1992-L2022 — fn spawn_mcp_catalog_resync(&self, mcp_manager: &Arc<RwLock<crate::mcp::McpManager>>)
+- register_selfdev_tools · function · L2025-L2041 — pub async fn register_selfdev_tools(&self)
+- register_ambient_tools · function · L2044-L2068 — pub async fn register_ambient_tools(&self)
+- unregister · function · L2071-L2076 — pub async fn unregister(&self, name: &str) -> Option<Arc<dyn Tool>>
+- unregister_prefix · function · L2079-L2091 — pub async fn unregister_prefix(&self, prefix: &str) -> Vec<String>
+- skills · function · L2094-L2096 — pub fn skills(&self) -> Arc<RwLock<SkillRegistry>>
+- compaction · function · L2099-L2101 — pub fn compaction(&self) -> Arc<RwLock<CompactionManager>>
+- mcp_allow_list_tests · module · L2106-L2106 — mod mcp_allow_list_tests;
+- mcp_notification_tests · module · L2110-L2110 — mod mcp_notification_tests;
+- external_effect_category · function · L2112-L2159 — fn external_effect_category(tool: &str, action: &str, custom_or_mcp: bool) -> Option<&'static str>
+- tests · module · L2162-L2162 — pub(crate) mod tests;
+- stop_effect_tests · module · L2165-L2219 — mod stop_effect_tests
+- observations_and_local_reports_do_not_taint_stop_settlement · function · L2169-L2218 — fn observations_and_local_reports_do_not_taint_stop_settlement()

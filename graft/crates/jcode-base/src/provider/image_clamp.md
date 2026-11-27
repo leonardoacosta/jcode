@@ -1,0 +1,49 @@
+# crates/jcode-base/src/provider/image_clamp.rs
+
+- TOOL_IMAGE_LABEL_PREFIX · constant · L44-L44 — const TOOL_IMAGE_LABEL_PREFIX: &str = "[Attached image associated with the preceding tool result: ";
+- omit_image_block · function · L55-L84 — fn omit_image_block(content: &mut Vec<ContentBlock>, index: usize, marker: String) -> usize
+- filter_unsupported_outbound_images · function · L91-L119 — pub(crate) fn filter_unsupported_outbound_images(
+- MANY_IMAGE_THRESHOLD · constant · L122-L122 — const MANY_IMAGE_THRESHOLD: usize = 20;
+- MANY_IMAGE_MAX_EDGE · constant · L124-L124 — const MANY_IMAGE_MAX_EDGE: u32 = 2000;
+- FEW_IMAGE_MAX_EDGE · constant · L126-L126 — const FEW_IMAGE_MAX_EDGE: u32 = 8000;
+- IMAGE_BASE64_BYTE_LIMIT · constant · L129-L129 — const IMAGE_BASE64_BYTE_LIMIT: usize = 10 * 1024 * 1024;
+- IMAGE_BASE64_BYTE_TARGET · constant · L132-L132 — const IMAGE_BASE64_BYTE_TARGET: usize = 9 * 1024 * 1024;
+- clamp_outbound_images · function · L139-L211 — pub(crate) fn clamp_outbound_images(messages: &[Message]) -> Option<Vec<Message>>
+- format_needs_fix · function · L216-L224 — fn format_needs_fix(media_type: &str, data_b64: &str) -> bool
+- ensure_provider_format · function · L229-L240 — fn ensure_provider_format(media_type: &mut String, data: &mut String) -> Result<bool, String>
+- reconcile_media_type · function · L244-L255 — fn reconcile_media_type(media_type: &mut String, data_b64: &str) -> bool
+- image_exceeds_edge · function · L261-L270 — fn image_exceeds_edge(data_b64: &str, max_edge: u32) -> bool
+- clamp_image_block · function · L277-L327 — fn clamp_image_block(media_type: &mut String, data: &mut String, max_edge: u32) -> bool
+- encode_same_format · function · L331-L350 — fn encode_same_format(media_type: &str, img: &image::DynamicImage) -> Option<String>
+- encode_within_byte_budget · function · L354-L380 — fn encode_within_byte_budget(img: &image::DynamicImage, target_b64_bytes: usize) -> Option<String>
+- encode_jpeg · function · L383-L389 — fn encode_jpeg(img: &image::DynamicImage) -> Option<Vec<u8>>
+- base64_len · function · L392-L394 — fn base64_len(n: usize) -> usize
+- decode_b64 · function · L396-L400 — fn decode_b64(data_b64: &str) -> Option<Vec<u8>>
+- probe_dimensions · function · L404-L443 — fn probe_dimensions(data: &[u8]) -> Option<(u32, u32)>
+- tests · module · L446-L832 — mod tests
+- encode_png · function · L451-L458 — fn encode_png(w: u32, h: u32) -> String
+- encode_noise_png · function · L463-L479 — fn encode_noise_png(w: u32, h: u32) -> String
+- image_message · function · L481-L492 — fn image_message(data: String) -> Message
+- image_message_with · function · L494-L505 — fn image_message_with(media_type: &str, data: String) -> Message
+- encode_jpeg_b64 · function · L507-L514 — fn encode_jpeg_b64(w: u32, h: u32) -> String
+- dims · function · L516-L520 — fn dims(data_b64: &str) -> (u32, u32)
+- no_images_returns_none · function · L523-L526 — fn no_images_returns_none()
+- text_only_provider_history_replaces_images_before_request · function · L529-L559 — fn text_only_provider_history_replaces_images_before_request()
+- image_capable_provider_history_is_not_rewritten · function · L562-L570 — fn image_capable_provider_history_is_not_rewritten()
+- text_only_image_free_history_is_not_cloned · function · L573-L576 — fn text_only_image_free_history_is_not_cloned()
+- within_limits_returns_none · function · L579-L582 — fn within_limits_returns_none()
+- single_large_image_uses_few_image_limit · function · L585-L590 — fn single_large_image_uses_few_image_limit()
+- many_images_clamp_to_2000 · function · L593-L608 — fn many_images_clamp_to_2000()
+- few_images_clamp_to_8000 · function · L611-L621 — fn few_images_clamp_to_8000()
+- oversized_base64_image_is_reencoded_under_byte_cap · function · L624-L652 — fn oversized_base64_image_is_reencoded_under_byte_cap()
+- jpeg_bytes_mislabeled_as_png_are_relabeled · function · L655-L672 — fn jpeg_bytes_mislabeled_as_png_are_relabeled()
+- png_bytes_mislabeled_as_jpeg_are_relabeled · function · L675-L689 — fn png_bytes_mislabeled_as_jpeg_are_relabeled()
+- correctly_labeled_image_is_not_touched · function · L692-L699 — fn correctly_labeled_image_is_not_touched()
+- media_type_match_is_case_insensitive · function · L702-L710 — fn media_type_match_is_case_insensitive()
+- sniff_detects_common_formats · function · L713-L728 — fn sniff_detects_common_formats()
+- bmp_b64 · function · L730-L737 — fn bmp_b64() -> String
+- tool_result_block · function · L739-L745 — fn tool_result_block(id: &str, content: &str) -> ContentBlock
+- bmp_block_is_converted_to_png · function · L750-L760 — fn bmp_block_is_converted_to_png()
+- tiff_bytes_labelled_png_are_converted · function · L764-L781 — fn tiff_bytes_labelled_png_are_converted()
+- undecodable_tool_image_folds_marker_into_tool_result · function · L786-L821 — fn undecodable_tool_image_folds_marker_into_tool_result()
+- invalid_base64_image_is_omitted · function · L824-L831 — fn invalid_base64_image_is_omitted()

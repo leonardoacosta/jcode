@@ -1,0 +1,122 @@
+# crates/jcode-provider-openrouter-runtime/src/openrouter_tests.rs
+
+- SharedEnvLock · struct · L14-L14 — pub(crate) struct SharedEnvLock;
+- ENV_LOCK · constant · L16-L16 — pub(crate) static ENV_LOCK: SharedEnvLock = SharedEnvLock;
+- lock · function · L26-L28 — pub(crate) fn lock(&self) -> std::sync::MutexGuard<'static, ()>
+- EnvVarGuard · struct · L31-L34 — pub(crate) struct EnvVarGuard
+- set · function · L37-L41 — pub(crate) fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- remove · function · L43-L47 — pub(crate) fn remove(key: &'static str) -> Self
+- drop · function · L51-L57 — fn drop(&mut self)
+- test_config_dir · function · L60-L73 — fn test_config_dir(temp: &TempDir) -> std::path::PathBuf
+- write_test_api_key · function · L75-L80 — fn write_test_api_key(temp: &TempDir, env_file: &str, env_key: &str, value: &str)
+- isolate_openrouter_autodetect_env · function · L82-L115 — fn isolate_openrouter_autodetect_env() -> Vec<EnvVarGuard>
+- catalog_shape_tests · module · L118-L118 — mod catalog_shape_tests;
+- direct_openai_compatible_provider_advertises_image_input_support · function · L121-L136 — fn direct_openai_compatible_provider_advertises_image_input_support()
+- named_openai_compatible_provider_uses_per_model_image_input_support · function · L139-L172 — fn named_openai_compatible_provider_uses_per_model_image_input_support()
+- named_openai_compatible_model_with_omitted_input_preserves_image_support · function · L175-L195 — fn named_openai_compatible_model_with_omitted_input_preserves_image_support()
+- named_openai_compatible_model_with_empty_input_preserves_image_support · function · L198-L220 — fn named_openai_compatible_model_with_empty_input_preserves_image_support()
+- direct_deepseek_profile_unknown_model_does_not_advertise_image_input_support · function · L223-L231 — fn direct_deepseek_profile_unknown_model_does_not_advertise_image_input_support()
+- deepseek_image_input_capability_matrix · function · L234-L266 — fn deepseek_image_input_capability_matrix()
+- deepseek_image_input_explicit_model_inputs_take_precedence · function · L269-L303 — fn deepseek_image_input_explicit_model_inputs_take_precedence()
+- deepseek_image_input_captured_requests_preserve_only_allowed_pixels · function · L306-L385 — fn deepseek_image_input_captured_requests_preserve_only_allowed_pixels()
+- direct_zai_profile_does_not_advertise_image_input_support · function · L388-L396 — fn direct_zai_profile_does_not_advertise_image_input_support()
+- direct_deepseek_profile_omits_image_url_parts · function · L399-L453 — fn direct_deepseek_profile_omits_image_url_parts()
+- parse_captured_request_body · function · L456-L463 — fn parse_captured_request_body(request: &str) -> serde_json::Value
+- interrupted_reasoning_only_assistant_message_is_not_sent_empty · function · L473-L561 — fn interrupted_reasoning_only_assistant_message_is_not_sent_empty()
+- interrupted_reasoning_only_assistant_message_keeps_reasoning_with_content · function · L569-L650 — fn interrupted_reasoning_only_assistant_message_keeps_reasoning_with_content()
+- kimi_for_coding_tool_call_message_includes_reasoning_content · function · L662-L753 — fn kimi_for_coding_tool_call_message_includes_reasoning_content()
+- direct_compatible_deepseek_tool_call_replays_reasoning_content · function · L761-L856 — fn direct_compatible_deepseek_tool_call_replays_reasoning_content()
+- minimax_profile_exposes_static_models_before_catalog_refresh · function · L859-L866 — fn minimax_profile_exposes_static_models_before_catalog_refresh()
+- cerebras_profile_exposes_live_chat_models_before_catalog_refresh · function · L869-L891 — fn cerebras_profile_exposes_live_chat_models_before_catalog_refresh()
+- openai_compatible_profiles_with_unverified_live_catalogs_have_static_fallbacks · function · L894-L949 — fn openai_compatible_profiles_with_unverified_live_catalogs_have_static_fallbacks()
+- profiles_use_endpoint_default_max_tokens · function · L952-L968 — fn profiles_use_endpoint_default_max_tokens()
+- max_tokens_env_overrides_profile_default · function · L971-L979 — fn max_tokens_env_overrides_profile_default()
+- test_configured_api_base_accepts_https · function · L982-L995 — fn test_configured_api_base_accepts_https()
+- test_configured_api_base_rejects_insecure_http_remote · function · L998-L1008 — fn test_configured_api_base_rejects_insecure_http_remote()
+- autodetects_single_saved_openai_compatible_profile · function · L1011-L1033 — fn autodetects_single_saved_openai_compatible_profile()
+- autodetects_single_saved_local_openai_compatible_profile · function · L1036-L1063 — fn autodetects_single_saved_local_openai_compatible_profile()
+- openrouter_transport_state_distinguishes_runtime_identities · function · L1066-L1129 — fn openrouter_transport_state_distinguishes_runtime_identities()
+- does_not_guess_when_multiple_saved_openai_compatible_profiles_exist · function · L1132-L1163 — fn does_not_guess_when_multiple_saved_openai_compatible_profiles_exist()
+- autodetected_profile_seeds_default_model_and_cache_namespace · function · L1166-L1187 — fn autodetected_profile_seeds_default_model_and_cache_namespace()
+- test_parse_model_spec · function · L1190-L1211 — fn test_parse_model_spec()
+- fork_preserves_explicit_provider_pin · function · L1214-L1227 — fn fork_preserves_explicit_provider_pin()
+- make_endpoint · function · L1229-L1252 — fn make_endpoint(name: &str, throughput: f64, uptime: f64, cache: bool, cost: f64) -> EndpointInfo
+- make_provider · function · L1254-L1289 — pub(super) fn make_provider() -> OpenRouterProvider
+- make_custom_compatible_provider · function · L1291-L1326 — fn make_custom_compatible_provider() -> OpenRouterProvider
+- spawn_single_response_models_server · function · L1328-L1354 — fn spawn_single_response_models_server(body: &'static str) -> (String, mpsc::Receiver<String>)
+- spawn_single_response_chat_server · function · L1356-L1358 — fn spawn_single_response_chat_server() -> (String, mpsc::Receiver<String>)
+- spawn_response_chat_server · function · L1360-L1405 — fn spawn_response_chat_server(
+- direct_deepseek_profile_exposes_max_reasoning_effort · function · L1408-L1423 — fn direct_deepseek_profile_exposes_max_reasoning_effort()
+- direct_zai_profile_exposes_openai_reasoning_effort_ladder · function · L1426-L1441 — fn direct_zai_profile_exposes_openai_reasoning_effort_ladder()
+- direct_zai_profile_applies_configured_effort_on_construction_and_model_switch · function · L1444-L1463 — fn direct_zai_profile_applies_configured_effort_on_construction_and_model_switch()
+- openrouter_with_openrouter_profile_id_exposes_unified_reasoning_effort · function · L1466-L1484 — fn openrouter_with_openrouter_profile_id_exposes_unified_reasoning_effort()
+- non_deepseek_compatible_profile_does_not_expose_reasoning_effort · function · L1487-L1498 — fn non_deepseek_compatible_profile_does_not_expose_reasoning_effort()
+- openrouter_chat_request_sends_unified_reasoning_effort · function · L1501-L1549 — fn openrouter_chat_request_sends_unified_reasoning_effort()
+- live_openrouter_models · function · L1551-L1560 — fn live_openrouter_models() -> Vec<String>
+- collect_openrouter_live_smoke_stream · function · L1562-L1590 — async fn collect_openrouter_live_smoke_stream(
+- live_openrouter_unified_reasoning_smoke · function · L1594-L1661 — async fn live_openrouter_unified_reasoning_smoke() -> Result<()>
+- direct_deepseek_chat_request_sends_reasoning_effort · function · L1664-L1720 — fn direct_deepseek_chat_request_sends_reasoning_effort()
+- sol_compatible_request_sends_low_reasoning_effort · function · L1723-L1772 — fn sol_compatible_request_sends_low_reasoning_effort()
+- direct_openai_compatible_chat_request_preserves_max_reasoning_effort · function · L1775-L1821 — fn direct_openai_compatible_chat_request_preserves_max_reasoning_effort()
+- openai_compatible_model_catalog_refresh_calls_models_endpoint_and_updates_display · function · L1824-L1910 — fn openai_compatible_model_catalog_refresh_calls_models_endpoint_and_updates_display()
+- built_in_openai_compatible_static_models_drop_out_after_live_catalog · function · L1913-L1965 — fn built_in_openai_compatible_static_models_drop_out_after_live_catalog()
+- direct_openai_compatible_static_models_are_marked_as_fallback_before_live_catalog · function · L1968-L1991 — fn direct_openai_compatible_static_models_are_marked_as_fallback_before_live_catalog()
+- cerebras_live_catalog_models_are_selectable_on_explicit_switch · function · L1994-L2013 — fn cerebras_live_catalog_models_are_selectable_on_explicit_switch()
+- direct_deepseek_profile_uses_static_1m_context_when_catalog_is_absent · function · L2016-L2028 — fn direct_deepseek_profile_uses_static_1m_context_when_catalog_is_absent()
+- env_applied_builtin_profile_uses_profile_default_model_not_openrouter_default · function · L2035-L2049 — fn env_applied_builtin_profile_uses_profile_default_model_not_openrouter_default()
+- direct_deepseek_profile_uses_1m_context_for_listed_models_when_catalog_is_absent · function · L2056-L2070 — fn direct_deepseek_profile_uses_1m_context_for_listed_models_when_catalog_is_absent()
+- conifer_context_fallback_yields_to_live_and_disk_catalog_without_remapping_aliases · function · L2073-L2171 — fn conifer_context_fallback_yields_to_live_and_disk_catalog_without_remapping_aliases()
+- explicit_cached_context_window_precedes_zai_family_fallback · function · L2174-L2193 — fn explicit_cached_context_window_precedes_zai_family_fallback()
+- named_openai_compatible_model_context_window_overrides_default · function · L2196-L2218 — fn named_openai_compatible_model_context_window_overrides_default()
+- named_profile_context_window_survives_provider_qualified_model · function · L2221-L2254 — fn named_profile_context_window_survives_provider_qualified_model()
+- named_openai_compatible_loads_api_key_from_env_file · function · L2257-L2277 — fn named_openai_compatible_loads_api_key_from_env_file()
+- custom_compatible_provider_preserves_claude_like_model_ids · function · L2280-L2286 — fn custom_compatible_provider_preserves_claude_like_model_ids()
+- custom_compatible_provider_preserves_at_sign_model_ids · function · L2289-L2295 — fn custom_compatible_provider_preserves_at_sign_model_ids()
+- named_profile_set_model_strips_own_session_routing_prefix · function · L2298-L2315 — fn named_profile_set_model_strips_own_session_routing_prefix()
+- named_profile_set_model_strips_other_known_profile_prefix · function · L2318-L2330 — fn named_profile_set_model_strips_other_known_profile_prefix()
+- named_profile_set_model_keeps_builtin_routing_prefixes · function · L2333-L2351 — fn named_profile_set_model_keeps_builtin_routing_prefixes()
+- named_profile_set_model_keeps_unknown_prefix_with_colon · function · L2354-L2366 — fn named_profile_set_model_keeps_unknown_prefix_with_colon()
+- openrouter_provider_normalizes_bare_pinned_model_ids · function · L2369-L2375 — fn openrouter_provider_normalizes_bare_pinned_model_ids()
+- test_rank_providers_cache_priority · function · L2378-L2386 — fn test_rank_providers_cache_priority()
+- test_rank_providers_speed_priority_among_cache_capable · function · L2389-L2397 — fn test_rank_providers_speed_priority_among_cache_capable()
+- test_rank_providers_filters_down_providers · function · L2400-L2411 — fn test_rank_providers_filters_down_providers()
+- test_background_refresh_waits_for_soft_ttl · function · L2414-L2421 — fn test_background_refresh_waits_for_soft_ttl()
+- test_background_refresh_is_throttled_between_attempts · function · L2424-L2432 — fn test_background_refresh_is_throttled_between_attempts()
+- test_kimi_routing_uses_endpoints_or_fallback · function · L2435-L2452 — fn test_kimi_routing_uses_endpoints_or_fallback()
+- observed_session_provider_pin_sticks_without_fallbacks · function · L2455-L2488 — fn observed_session_provider_pin_sticks_without_fallbacks()
+- observed_pin_yields_to_explicit_user_routing_order · function · L2491-L2523 — fn observed_pin_yields_to_explicit_user_routing_order()
+- test_kimi_coding_header_detection_matches_endpoint_and_model · function · L2526-L2555 — fn test_kimi_coding_header_detection_matches_endpoint_and_model()
+- test_openrouter_kimi_chat_request_includes_compat_user_agent · function · L2558-L2574 — fn test_openrouter_kimi_chat_request_includes_compat_user_agent()
+- test_parse_next_event_accepts_compact_sse_data_and_reasoning_content · function · L2577-L2591 — fn test_parse_next_event_accepts_compact_sse_data_and_reasoning_content()
+- test_parse_next_event_emits_only_incremental_reasoning_content · function · L2594-L2617 — fn test_parse_next_event_emits_only_incremental_reasoning_content()
+- test_endpoint_detail_string · function · L2620-L2681 — fn test_endpoint_detail_string()
+- strict_openai_schema_endpoint_detects_mistral_profile · function · L2684-L2695 — fn strict_openai_schema_endpoint_detects_mistral_profile()
+- strict_openai_schema_endpoint_detects_mistral_api_base · function · L2698-L2707 — fn strict_openai_schema_endpoint_detects_mistral_api_base()
+- strict_openai_schema_endpoint_allows_other_providers · function · L2710-L2723 — fn strict_openai_schema_endpoint_allows_other_providers()
+- runtime_display_name_for_profile_runtime_instance · function · L2726-L2744 — fn runtime_display_name_for_profile_runtime_instance()
+- jcode_subscription_runtime_has_explicit_display_and_route_identity · function · L2747-L2786 — fn jcode_subscription_runtime_has_explicit_display_and_route_identity()
+- non_subscription_runtimes_keep_existing_display_and_route_identity · function · L2789-L2822 — fn non_subscription_runtimes_keep_existing_display_and_route_identity()
+- custom_endpoint_using_jcode_key_name_is_not_a_subscription_runtime · function · L2825-L2854 — fn custom_endpoint_using_jcode_key_name_is_not_a_subscription_runtime()
+- resolve_extra_body_returns_none_when_unset · function · L2857-L2861 — fn resolve_extra_body_returns_none_when_unset()
+- resolve_extra_body_parses_env_json_object · function · L2864-L2881 — fn resolve_extra_body_parses_env_json_object()
+- resolve_extra_body_ignores_invalid_env_json · function · L2884-L2888 — fn resolve_extra_body_ignores_invalid_env_json()
+- resolve_extra_body_ignores_non_object_env_json · function · L2891-L2895 — fn resolve_extra_body_ignores_non_object_env_json()
+- resolve_extra_body_merges_config_and_env_with_env_override · function · L2898-L2920 — fn resolve_extra_body_merges_config_and_env_with_env_override()
+- resolve_extra_body_ignores_non_object_config · function · L2923-L2928 — fn resolve_extra_body_ignores_non_object_config()
+- named_profile_extra_body_threads_into_provider · function · L2931-L2960 — fn named_profile_extra_body_threads_into_provider()
+- named_provider_config_deserializes_nested_extra_body_toml · function · L2963-L3002 — fn named_provider_config_deserializes_nested_extra_body_toml()
+- spawn_midstream_fault_then_complete_server · function · L3011-L3063 — fn spawn_midstream_fault_then_complete_server() -> String
+- midstream_transport_fault_emits_retry_rollback_before_replay · function · L3070-L3160 — fn midstream_transport_fault_emits_retry_rollback_before_replay()
+- compat_profile_serving_deepseek_model_supports_reasoning_effort · function · L3166-L3185 — fn compat_profile_serving_deepseek_model_supports_reasoning_effort()
+- compat_profile_serving_gpt_family_model_supports_reasoning_effort · function · L3191-L3227 — fn compat_profile_serving_gpt_family_model_supports_reasoning_effort()
+- compatible_model_switch_clears_an_effort_invalid_for_the_new_vocabulary · function · L3230-L3240 — fn compatible_model_switch_clears_an_effort_invalid_for_the_new_vocabulary()
+- named_profile_supports_reasoning_effort_config_override · function · L3245-L3270 — fn named_profile_supports_reasoning_effort_config_override()
+- named_profile_construction_reads_openai_reasoning_effort_config · function · L3276-L3305 — fn named_profile_construction_reads_openai_reasoning_effort_config()
+- named_profile_can_disable_reasoning_model_name_heuristics · function · L3308-L3322 — fn named_profile_can_disable_reasoning_model_name_heuristics()
+- named_profile_model_reasoning_overrides_capability_and_default_effort · function · L3325-L3365 — fn named_profile_model_reasoning_overrides_capability_and_default_effort()
+- user_named_profile_prefix_is_stripped_even_without_profile_id · function · L3376-L3458 — fn user_named_profile_prefix_is_stripped_even_without_profile_id()
+- named_openai_compatible_provider_keeps_stable_name_and_profile_display_name · function · L3470-L3493 — fn named_openai_compatible_provider_keeps_stable_name_and_profile_display_name()
+- wire_tests · module · L3496-L3496 — mod wire_tests;
+- venice_disables_venice_system_prompt_by_default_but_user_can_override · function · L3499-L3514 — fn venice_disables_venice_system_prompt_by_default_but_user_can_override()
+- catalog_auth · module · L3517-L3517 — mod catalog_auth;
+- additional_cache_breakpoint_preserves_shared_payload_when_already_marked · module · L3520-L3520 — mod additional_cache_breakpoint_preserves_shared_payload_when_already_marked;

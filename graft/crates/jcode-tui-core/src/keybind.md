@@ -1,0 +1,73 @@
+# crates/jcode-tui-core/src/keybind.rs
+
+- LINE_SCROLL_AMOUNT · constant · L3-L3 — pub const LINE_SCROLL_AMOUNT: i32 = 3;
+- MACOS_OPTION_SYMBOL · constant · L7-L7 — pub const MACOS_OPTION_SYMBOL: &str = "⌥";
+- alt_label · function · L10-L12 — pub fn alt_label() -> &'static str
+- alt_label_for_platform · function · L14-L16 — pub fn alt_label_for_platform(is_macos: bool) -> &'static str
+- alt_chord · function · L19-L21 — pub fn alt_chord(keys: &str) -> String
+- alt_chord_lower · function · L25-L32 — pub fn alt_chord_lower(keys: &str) -> String
+- KeyBinding · struct · L35-L38 — pub struct KeyBinding
+- matches · function · L41-L43 — pub fn matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- matches_for_platform · function · L45-L62 — pub fn matches_for_platform(
+- macos_option_char_to_ascii_key · function · L65-L99 — pub fn macos_option_char_to_ascii_key(code: KeyCode) -> Option<char>
+- ModelSwitchKeys · struct · L102-L105 — pub struct ModelSwitchKeys
+- WorkspaceNavigationDirection · enum · L108-L113 — pub enum WorkspaceNavigationDirection
+- WorkspaceNavigationKeys · struct · L116-L121 — pub struct WorkspaceNavigationKeys
+- direction_for · function · L124-L142 — pub fn direction_for(
+- direction_for · function · L146-L156 — pub fn direction_for(&self, code: KeyCode, modifiers: KeyModifiers) -> Option<i8>
+- binding_list_matches · function · L159-L163 — fn binding_list_matches(bindings: &[KeyBinding], code: KeyCode, modifiers: KeyModifiers) -> bool
+- parse_or_default · function · L165-L174 — pub fn parse_or_default(
+- parse_bindings_or_default · function · L176-L191 — pub fn parse_bindings_or_default(
+- parse_optional · function · L193-L206 — pub fn parse_optional(
+- parse_keybinding_list · function · L208-L215 — pub fn parse_keybinding_list(raw: &str) -> Vec<KeyBinding>
+- is_disabled · function · L217-L222 — pub fn is_disabled(raw: &str) -> bool
+- parse_keybinding · function · L224-L294 — pub fn parse_keybinding(raw: &str) -> Option<KeyBinding>
+- normalize_key · function · L296-L317 — fn normalize_key(code: KeyCode, modifiers: KeyModifiers) -> (KeyCode, KeyModifiers)
+- parse_function_key · function · L319-L322 — fn parse_function_key(raw: &str) -> Option<u8>
+- ScrollKeys · struct · L326-L336 — pub struct ScrollKeys
+- matches_scroll_up · function · L339-L346 — fn matches_scroll_up(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- matches_scroll_down · function · L348-L355 — fn matches_scroll_down(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- scroll_amount · function · L358-L394 — pub fn scroll_amount(&self, code: KeyCode, modifiers: KeyModifiers) -> Option<i32>
+- prompt_jump · function · L397-L431 — pub fn prompt_jump(&self, code: KeyCode, modifiers: KeyModifiers) -> Option<i8>
+- is_bookmark · function · L434-L436 — pub fn is_bookmark(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- EffortSwitchKeys · struct · L440-L443 — pub struct EffortSwitchKeys
+- SpeedSwitchKeys · struct · L448-L451 — pub struct SpeedSwitchKeys
+- direction_for · function · L454-L470 — pub fn direction_for(&self, code: KeyCode, modifiers: KeyModifiers) -> Option<i8>
+- CenteredToggleKeys · struct · L474-L477 — pub struct CenteredToggleKeys
+- matches · function · L480-L484 — pub fn matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- OptionalBinding · struct · L488-L491 — pub struct OptionalBinding
+- direction_for · function · L494-L502 — pub fn direction_for(&self, code: KeyCode, modifiers: KeyModifiers) -> Option<i8>
+- macos_option_arrow_escape_direction_for · function · L504-L525 — pub fn macos_option_arrow_escape_direction_for(
+- uses_default_alt_arrow_bindings · function · L527-L530 — fn uses_default_alt_arrow_bindings(&self) -> bool
+- format_binding · function · L533-L584 — pub fn format_binding(binding: &KeyBinding) -> String
+- tests · module · L587-L1235 — mod tests
+- kitty_mods · function · L593-L609 — fn kitty_mods(modbyte: u8) -> KeyModifiers
+- alt_label_uses_option_keycap_on_macos · function · L612-L615 — fn alt_label_uses_option_keycap_on_macos()
+- ghostty_cmd_b_sequence_matches_open_resume_binding · function · L618-L627 — fn ghostty_cmd_b_sequence_matches_open_resume_binding()
+- ghostty_cmd_shift_semicolon_sequence_matches_new_terminal_binding · function · L630-L639 — fn ghostty_cmd_shift_semicolon_sequence_matches_new_terminal_binding()
+- legacy_alt_shift_semicolon_sequence_matches_new_terminal_binding · function · L642-L648 — fn legacy_alt_shift_semicolon_sequence_matches_new_terminal_binding()
+- ctrl_shift_letter_matches_uppercase_and_lowercase_encodings · function · L651-L661 — fn ctrl_shift_letter_matches_uppercase_and_lowercase_encodings()
+- test_scroll_keys · function · L663-L702 — fn test_scroll_keys() -> ScrollKeys
+- test_scroll_amount_ctrl_fallback · function · L705-L724 — fn test_scroll_amount_ctrl_fallback()
+- test_scroll_amount_ctrl_fallback_disabled_when_rebound · function · L727-L738 — fn test_scroll_amount_ctrl_fallback_disabled_when_rebound()
+- test_scroll_amount_configured_fallback_keys · function · L741-L752 — fn test_scroll_amount_configured_fallback_keys()
+- test_line_scroll_keys_scroll_three_lines · function · L755-L767 — fn test_line_scroll_keys_scroll_three_lines()
+- test_scroll_amount_cmd_jk_not_line_scroll · function · L770-L785 — fn test_scroll_amount_cmd_jk_not_line_scroll()
+- test_scroll_amount_cmd_shift_jk_line_scroll · function · L788-L807 — fn test_scroll_amount_cmd_shift_jk_line_scroll()
+- test_scroll_amount_ctrl_shift_jk_line_scroll · function · L810-L829 — fn test_scroll_amount_ctrl_shift_jk_line_scroll()
+- test_prompt_jump_ctrl_jk · function · L832-L844 — fn test_prompt_jump_ctrl_jk()
+- test_prompt_jump_shifted_jk_is_not_prompt · function · L847-L869 — fn test_prompt_jump_shifted_jk_is_not_prompt()
+- test_prompt_jump_ctrl_bracket_fallback · function · L872-L882 — fn test_prompt_jump_ctrl_bracket_fallback()
+- test_prompt_jump_cmd_bracket_fallback · function · L885-L903 — fn test_prompt_jump_cmd_bracket_fallback()
+- test_prompt_jump_cmd_jk · function · L906-L916 — fn test_prompt_jump_cmd_jk()
+- test_prompt_jump_option_jk · function · L919-L938 — fn test_prompt_jump_option_jk()
+- test_prompt_jump_ctrl_digit_reserved_for_rank_jump · function · L941-L951 — fn test_prompt_jump_ctrl_digit_reserved_for_rank_jump()
+- test_parse_keybinding_command_and_meta_modifiers · function · L954-L976 — fn test_parse_keybinding_command_and_meta_modifiers()
+- key_binding_matches_macos_option_translated_characters · function · L979-L985 — fn key_binding_matches_macos_option_translated_characters()
+- macos_option_character_map_covers_default_alt_shortcuts · function · L988-L1022 — fn macos_option_character_map_covers_default_alt_shortcuts()
+- effort_switch_keys_match_macos_option_arrows_as_alt_arrows · function · L1025-L1047 — fn effort_switch_keys_match_macos_option_arrows_as_alt_arrows()
+- effort_switch_keys_match_macos_terminal_option_arrow_escape_encoding · function · L1050-L1070 — fn effort_switch_keys_match_macos_terminal_option_arrow_escape_encoding()
+- effort_switch_keys_do_not_apply_macos_escape_aliases_after_remap · function · L1073-L1087 — fn effort_switch_keys_do_not_apply_macos_escape_aliases_after_remap()
+- test_parse_function_keybinding_for_copilot_style_keys · function · L1090-L1096 — fn test_parse_function_keybinding_for_copilot_style_keys()
+- workspace_navigation_keys_match_super_bindings · function · L1099-L1139 — fn workspace_navigation_keys_match_super_bindings()
+- workspace_navigation_keys_support_multiple_aliases · function · L1142-L1234 — fn workspace_navigation_keys_support_multiple_aliases()

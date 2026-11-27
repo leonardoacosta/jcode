@@ -1,0 +1,50 @@
+# crates/jcode-base/src/background/tests.rs
+
+- silent_background_task_still_publishes_started_activity · function · L8-L30 — async fn silent_background_task_still_publishes_started_activity()
+- SignalDrop · struct · L32-L32 — struct SignalDrop(Option<tokio::sync::oneshot::Sender<()>>);
+- drop · function · L35-L39 — fn drop(&mut self)
+- assert_adopted_owner_cancelled · function · L42-L63 — async fn assert_adopted_owner_cancelled(reload: bool) -> Result<()>
+- adopted_task_cancellation_drops_actual_owner · function · L66-L68 — async fn adopted_task_cancellation_drops_actual_owner() -> Result<()>
+- adopted_task_reload_drops_owner · function · L71-L73 — async fn adopted_task_reload_drops_owner() -> Result<()>
+- adopted_task_output_exists_while_running_and_is_replaced_on_completion · function · L76-L108 — async fn adopted_task_output_exists_while_running_and_is_replaced_on_completion() -> Result<()>
+- spawn_with_notify_emits_started_ui_activity · function · L111-L154 — async fn spawn_with_notify_emits_started_ui_activity() -> Result<()>
+- delivery_subscription_serializes_with_spawn_and_adopt_completion · function · L157-L234 — async fn delivery_subscription_serializes_with_spawn_and_adopt_completion() -> Result<()>
+- update_delivery_applies_to_running_task_completion · function · L237-L279 — async fn update_delivery_applies_to_running_task_completion() -> Result<()>
+- update_progress_persists_status_and_emits_bus_event · function · L282-L339 — async fn update_progress_persists_status_and_emits_bus_event() -> Result<()>
+- update_progress_keeps_the_determinate_high_water_mark · function · L342-L381 — async fn update_progress_keeps_the_determinate_high_water_mark() -> Result<()>
+- update_progress_preserves_high_water_mark_through_reported_checkpoint · function · L384-L433 — async fn update_progress_preserves_high_water_mark_through_reported_checkpoint() -> Result<()>
+- concurrent_progress_updates_cannot_overwrite_the_high_water_mark · function · L436-L476 — async fn concurrent_progress_updates_cannot_overwrite_the_high_water_mark() -> Result<()>
+- wait_returns_when_task_finishes · function · L479-L507 — async fn wait_returns_when_task_finishes() -> Result<()>
+- wait_returns_on_progress_checkpoint · function · L510-L559 — async fn wait_returns_on_progress_checkpoint() -> Result<()>
+- wait_returns_on_timeout · function · L562-L588 — async fn wait_returns_on_timeout() -> Result<()>
+- running_status_fixture · function · L590-L614 — fn running_status_fixture(task_id: &str, session_id: &str) -> TaskStatusFile
+- write_status_fixture · function · L616-L620 — async fn write_status_fixture(manager: &BackgroundTaskManager, status: &TaskStatusFile)
+- tasks_map_prunes_entry_after_natural_completion · function · L623-L665 — async fn tasks_map_prunes_entry_after_natural_completion() -> Result<()>
+- reconcile_marks_orphan_from_reloaded_process_failed · function · L668-L694 — async fn reconcile_marks_orphan_from_reloaded_process_failed() -> Result<()>
+- reconcile_marks_orphan_from_dead_process_failed · function · L697-L722 — async fn reconcile_marks_orphan_from_dead_process_failed() -> Result<()>
+- reconcile_leaves_non_orphans_alone · function · L725-L766 — async fn reconcile_leaves_non_orphans_alone() -> Result<()>
+- status_read_self_heals_orphaned_task · function · L769-L796 — async fn status_read_self_heals_orphaned_task() -> Result<()>
+- abort_live_tasks_for_reload_finalizes_running_tasks · function · L799-L841 — async fn abort_live_tasks_for_reload_finalizes_running_tasks() -> Result<()>
+- abort_live_tasks_for_reload_keeps_naturally_finished_status · function · L844-L887 — async fn abort_live_tasks_for_reload_keeps_naturally_finished_status() -> Result<()>
+- stall_watchdog_fires_and_wait_returns_stalled · function · L890-L931 — async fn stall_watchdog_fires_and_wait_returns_stalled() -> Result<()>
+- stall_watchdog_does_not_fire_for_task_that_finishes · function · L934-L976 — async fn stall_watchdog_does_not_fire_for_task_that_finishes() -> Result<()>
+- disarm_stall_watchdog_clears_state · function · L979-L1011 — async fn disarm_stall_watchdog_clears_state() -> Result<()>
+- sweep_counts_tasks_and_skips_settled_files · function · L1014-L1045 — async fn sweep_counts_tasks_and_skips_settled_files() -> Result<()>
+- detached_fixture · function · L1047-L1057 — fn detached_fixture(task_id: &str, pid: u32) -> TaskStatusFile
+- reaped_pid · function · L1059-L1066 — fn reaped_pid() -> u32
+- completions_for · function · L1068-L1081 — fn completions_for(
+- reattach_keeps_live_detached_task_running_and_is_idempotent · function · L1084-L1103 — async fn reattach_keeps_live_detached_task_running_and_is_idempotent() -> Result<()>
+- reattach_marks_vanished_task_lost_once_never_success · function · L1106-L1133 — async fn reattach_marks_vanished_task_lost_once_never_success() -> Result<()>
+- reattach_uses_recorded_exit_marker_for_success_and_failure · function · L1136-L1156 — async fn reattach_uses_recorded_exit_marker_for_success_and_failure() -> Result<()>
+- reattach_treats_reused_pid_as_gone_without_touching_the_process · function · L1160-L1178 — async fn reattach_treats_reused_pid_as_gone_without_touching_the_process() -> Result<()>
+- concurrent_reconcilers_publish_a_single_completion · function · L1181-L1210 — async fn concurrent_reconcilers_publish_a_single_completion() -> Result<()>
+- legacy_status_file_without_generation_fields_still_loads · function · L1213-L1230 — fn legacy_status_file_without_generation_fields_still_loads()
+- spawn_group_leader_sleep · function · L1233-L1240 — fn spawn_group_leader_sleep() -> std::process::Child
+- cancel_of_reattached_task_kills_it_and_never_double_publishes · function · L1248-L1271 — async fn cancel_of_reattached_task_kills_it_and_never_double_publishes() -> Result<()>
+- cancel_never_signals_a_process_that_reused_the_pid · function · L1279-L1296 — async fn cancel_never_signals_a_process_that_reused_the_pid() -> Result<()>
+- stamping_generation_source · function · L1298-L1300 — fn stamping_generation_source(session_id: &str) -> Option<u64>
+- register_detached_task_stamps_start_time_and_owner_generation · function · L1303-L1354 — async fn register_detached_task_stamps_start_time_and_owner_generation() -> Result<()>
+- legacy_running_file_is_reattached_when_alive_and_lost_when_dead · function · L1357-L1383 — async fn legacy_running_file_is_reattached_when_alive_and_lost_when_dead() -> Result<()>
+- unreaped_zombie_with_reused_pid_is_not_reaped · function · L1387-L1419 — async fn unreaped_zombie_with_reused_pid_is_not_reaped() -> Result<()>
+- progress_and_delivery_writers_never_overwrite_a_terminal_status · function · L1422-L1464 — async fn progress_and_delivery_writers_never_overwrite_a_terminal_status() -> Result<()>
+- progress_update_racing_finalize_yields_one_completion_and_terminal_status · function · L1467-L1523 — async fn progress_update_racing_finalize_yields_one_completion_and_terminal_status() -> Result<()>

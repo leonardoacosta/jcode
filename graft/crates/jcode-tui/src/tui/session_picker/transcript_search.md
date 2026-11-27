@@ -1,0 +1,84 @@
+# crates/jcode-tui/src/tui/session_picker/transcript_search.rs
+
+- shard_search · module · L6-L6 — mod shard_search;
+- text_cache · module · L22-L22 — mod text_cache;
+- word_scores · module · L23-L23 — mod word_scores;
+- source · module · L25-L25 — pub(super) mod source;
+- token_cache · module · L26-L26 — mod token_cache;
+- warmup · module · L27-L27 — mod warmup;
+- IMMEDIATE_METADATA_BYTES · constant · L31-L31 — const IMMEDIATE_METADATA_BYTES: usize = 1024 * 1024;
+- SearchRank · struct · L37-L53 — pub(super) struct SearchRank
+- literal_metadata_rank · function · L55-L93 — pub(super) fn literal_metadata_rank(index: &str, tokens: &[String]) -> SearchRank
+- exact_metadata_field · function · L97-L105 — pub(super) fn exact_metadata_field(session: &SessionInfo, query: &str) -> bool
+- normalized_equals · function · L107-L114 — fn normalized_equals(field: &str, query: &str) -> bool
+- lowercase_field · function · L116-L122 — pub(super) fn lowercase_field(field: &str) -> std::borrow::Cow<'_, str>
+- with_intent_terms · function · L127-L130 — pub(super) fn with_intent_terms(mut self, terms: usize) -> Self
+- with_source_weight · function · L132-L135 — pub(super) fn with_source_weight(mut self, weight: u32) -> Self
+- with_exact_field · function · L137-L140 — pub(super) fn with_exact_field(mut self, exact: bool) -> Self
+- fuzzy_metadata_rank · function · L144-L146 — fn fuzzy_metadata_rank(index: &str, tokens: &[String]) -> SearchRank
+- fuzzy_metadata_rank_with_scores · function · L148-L161 — fn fuzzy_metadata_rank_with_scores(
+- Entry · struct · L165-L178 — pub(super) struct Entry
+- INDEX_PROBE_BYTES · constant · L181-L181 — const INDEX_PROBE_BYTES: usize = 64;
+- new · function · L184-L208 — fn new(session: &SessionInfo) -> Self
+- describes · function · L212-L230 — fn describes(&self, session: &SessionInfo) -> bool
+- exact_field · function · L232-L240 — fn exact_field(&self, query: &str) -> bool
+- identity_rank · function · L242-L255 — fn identity_rank(&self, tokens: &[String]) -> (bool, bool, bool)
+- Candidate · struct · L258-L264 — struct Candidate
+- Target · type · L267-L267 — type Target = Entry;
+- deref · function · L268-L270 — fn deref(&self) -> &Entry
+- build_candidates · function · L275-L305 — fn build_candidates(
+- metadata_source_weight · function · L311-L318 — pub(super) fn metadata_source_weight(
+- Evidence · struct · L322-L325 — struct Evidence
+- prioritize_candidates · function · L330-L360 — fn prioritize_candidates(
+- opening_prompt_rank · function · L366-L368 — fn opening_prompt_rank(prompt: &str, query: &str) -> usize
+- phrase_words · function · L370-L379 — fn phrase_words(text: &str, limit: usize) -> Vec<String>
+- PhraseQuery · struct · L382-L386 — struct PhraseQuery
+- new · function · L389-L402 — fn new(query: &str) -> Option<Self>
+- rank · function · L404-L432 — fn rank(&self, prompt: &str) -> usize
+- user_prompt_phrase_rank · function · L438-L459 — fn user_prompt_phrase_rank(paths: &[PathBuf], phrase: &PhraseQuery, cancel: &AtomicBool) -> usize
+- PhraseSink · struct · L461-L465 — struct PhraseSink<'a>
+- text · function · L468-L479 — fn text(&mut self, text: &str, source: Source) -> Result<(), &'static str>
+- stream_file · function · L483-L518 — fn stream_file<S: source::Sink>(path: &Path, sink: &mut S, cancel: &AtomicBool)
+- IdentityRanks · type · L520-L520 — type IdentityRanks = HashMap<String, (bool, bool, bool)>;
+- TranscriptSearch · struct · L523-L536 — pub(super) struct TranscriptSearch
+- drop · function · L539-L541 — fn drop(&mut self)
+- reset · function · L545-L574 — pub(super) fn reset<'a>(
+- contains · function · L576-L578 — pub(super) fn contains(&self, id: &str) -> bool
+- contains_literal · function · L581-L583 — pub(super) fn contains_literal(&self, id: &str) -> bool
+- rank · function · L585-L589 — pub(super) fn rank(&self, id: &str) -> SearchRank
+- identity_rank · function · L591-L596 — pub(super) fn identity_rank(&self, id: &str) -> (bool, bool, bool)
+- idf · function · L601-L603 — pub(super) fn idf(&self) -> &[u32]
+- has_results · function · L606-L608 — pub(super) fn has_results(&self) -> bool
+- defers_metadata · function · L610-L612 — pub(super) fn defers_metadata(&self) -> bool
+- pending · function · L614-L616 — pub(super) fn pending(&self) -> bool
+- search_workers · function · L621-L624 — fn search_workers(candidates: usize) -> usize
+- PREFETCH_SESSIONS · constant · L628-L628 — const PREFETCH_SESSIONS: usize = 96;
+- prefetch_recent · function · L632-L644 — pub(super) fn prefetch_recent<'a>(sessions: impl Iterator<Item = &'a SessionInfo>)
+- transcript_paths · function · L646-L677 — fn transcript_paths(session: &SessionInfo) -> Vec<PathBuf>
+- ScanMode · enum · L680-L688 — enum ScanMode
+- Scan · struct · L690-L700 — struct Scan<'a>
+- new · function · L704-L724 — fn new(
+- complete · function · L726-L734 — fn complete(&self) -> bool
+- all_found · function · L736-L738 — fn all_found(&self) -> bool
+- evidence · function · L740-L745 — fn evidence(&self) -> Option<Evidence>
+- normalized_text · function · L747-L796 — fn normalized_text<E: serde::de::Error>(
+- text · function · L802-L814 — fn text(&mut self, text: &str, source: Source) -> Result<(), &'static str>
+- fuzzy_prior · function · L818-L838 — fn fuzzy_prior(
+- CancellableReader · struct · L840-L843 — struct CancellableReader<'a>
+- read · function · L845-L850 — fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize>
+- paths_match · function · L854-L856 — fn paths_match(paths: &[PathBuf], tokens: &[String], cancel: &AtomicBool) -> bool
+- paths_match_scored · function · L859-L861 — fn paths_match_scored(paths: &[PathBuf], tokens: &[String], cancel: &AtomicBool) -> Option<i64>
+- paths_match_mode · function · L864-L871 — fn paths_match_mode(
+- mode · function · L874-L880 — fn mode(fuzzy: bool) -> ScanMode
+- scan_paths · function · L883-L898 — fn scan_paths(
+- scan_paths_with_scores · function · L900-L922 — fn scan_paths_with_scores(
+- apply_token_matches · function · L924-L938 — fn apply_token_matches(scan: &mut Scan<'_>, matches: Vec<Option<token_cache::Hit>>)
+- cached_paths_scan · function · L944-L959 — fn cached_paths_scan(
+- cached_paths_scan_with_scores · function · L961-L1000 — fn cached_paths_scan_with_scores(
+- scan_file · function · L1002-L1010 — fn scan_file(path: &Path, scan: &mut Scan<'_>)
+- scan_file_streaming · function · L1012-L1083 — fn scan_file_streaming(path: &Path, scan: &mut Scan<'_>)
+- log_scan_error · function · L1085-L1094 — fn log_scan_error(path: &Path, record: Option<usize>, scan: &Scan<'_>, error: &serde_json::Error)
+- tests · module · L1098-L1098 — mod tests;
+- relevance_tests · module · L1102-L1102 — mod relevance_tests;
+- queued_submission_tests · module · L1106-L1106 — mod queued_submission_tests;
+- search_speed_tests · module · L1110-L1110 — mod search_speed_tests;

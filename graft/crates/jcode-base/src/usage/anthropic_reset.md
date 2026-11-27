@@ -1,0 +1,41 @@
+# crates/jcode-base/src/usage/anthropic_reset.rs
+
+- API_BASE · constant · L10-L10 — const API_BASE: &str = "https://api.anthropic.com";
+- STATUS_PATH · constant · L11-L11 — const STATUS_PATH: &str = "/api/oauth/usage?at_wall=1&skip_spend=1";
+- PROFILE_PATH · constant · L12-L12 — const PROFILE_PATH: &str = "/api/oauth/profile";
+- PROGRAM · constant · L14-L14 — const PROGRAM: &str = "juniper_tide";
+- ResetRequest · struct · L17-L19 — struct ResetRequest
+- StatusEnvelope · struct · L24-L26 — struct StatusEnvelope
+- StatusBlock · struct · L29-L39 — struct StatusBlock
+- offer_from_status · function · L43-L59 — fn offer_from_status(
+- valid_timestamp · function · L61-L63 — fn valid_timestamp(value: &str) -> bool
+- authorize · function · L65-L81 — pub(super) fn authorize(
+- reset_client · function · L83-L90 — pub(super) fn reset_client() -> Result<reqwest::Client>
+- http_failure · function · L92-L105 — fn http_failure(status: reqwest::StatusCode) -> anyhow::Error
+- get_json · function · L107-L124 — pub(super) async fn get_json(
+- cached_limit_reset_offer · function · L128-L144 — pub(super) fn cached_limit_reset_offer(
+- explicitly_ineligible · function · L148-L153 — fn explicitly_ineligible(value: &serde_json::Value) -> bool
+- PendingAnthropicLimitReset · struct · L158-L164 — pub struct PendingAnthropicLimitReset
+- fmt · function · L168-L172 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- account_label · function · L176-L178 — pub fn account_label(&self) -> Option<&str>
+- account_display · function · L180-L182 — pub fn account_display(&self) -> &str
+- confirmation_details · function · L185-L194 — pub fn confirmation_details(&self) -> Vec<String>
+- AnthropicLimitResetUnavailable · enum · L199-L204 — pub enum AnthropicLimitResetUnavailable
+- message · function · L207-L218 — pub fn message(&self) -> String
+- ProfileResponse · struct · L222-L227 — struct ProfileResponse
+- ProfileOrganization · struct · L230-L232 — struct ProfileOrganization
+- ProfileAccount · struct · L235-L237 — struct ProfileAccount
+- display_text · function · L239-L245 — fn display_text(value: &str) -> String
+- fresh_access_token · function · L247-L271 — pub(super) async fn fresh_access_token(account_label: Option<&str>) -> Result<String>
+- prepare_anthropic_limit_reset · function · L274-L279 — pub async fn prepare_anthropic_limit_reset(
+- prepare_with_token · function · L281-L324 — async fn prepare_with_token(
+- ClaimResult · enum · L328-L335 — enum ClaimResult
+- AnthropicLimitResetOutcome · struct · L338-L342 — pub struct AnthropicLimitResetOutcome
+- limits_cleared · function · L346-L348 — pub fn limits_cleared(&self) -> bool
+- message · function · L350-L375 — pub fn message(&self) -> String
+- consume_anthropic_limit_reset · function · L380-L387 — pub async fn consume_anthropic_limit_reset(
+- consume_with_client · function · L389-L418 — async fn consume_with_client(
+- invalidate_anthropic_usage_reset_state · function · L422-L428 — pub fn invalidate_anthropic_usage_reset_state(account_label: Option<&str>)
+- tests · module · L432-L432 — mod tests;
+- request_serialization_tests · module · L435-L447 — mod request_serialization_tests
+- reset_request_matches_legacy_bytes_without_sending · function · L439-L446 — fn reset_request_matches_legacy_bytes_without_sending()

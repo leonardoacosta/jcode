@@ -1,0 +1,23 @@
+# crates/jcode-todo-policy/src/evidence.rs
+
+- MAX_CONTINUATION_EVIDENCE_BYTES · constant · L6-L6 — pub const MAX_CONTINUATION_EVIDENCE_BYTES: usize = 2048;
+- CheckResult · enum · L10-L15 — pub enum CheckResult
+- from · function · L18-L20 — fn from(passed: bool) -> Self
+- SchedulerChecks · struct · L26-L31 — pub struct SchedulerChecks
+- ContinuationReason · enum · L35-L52 — pub enum ContinuationReason
+- TodoCounts · struct · L56-L62 — pub struct TodoCounts
+- RequiredChecks · struct · L66-L69 — pub struct RequiredChecks
+- observe_batch · function · L72-L78 — pub fn observe_batch(&mut self, batch: jcode_task_types::RequiredCheckBatch, error: bool)
+- observe · function · L80-L106 — pub fn observe(&mut self, outcome: &jcode_task_types::RequiredCheckOutcome, tool_error: bool)
+- RequiredCheckEvidence · struct · L111-L115 — pub struct RequiredCheckEvidence
+- ContinuationEvidence · struct · L119-L136 — pub struct ContinuationEvidence
+- record_required_checks · function · L139-L152 — pub fn record_required_checks(&mut self, checks: &RequiredChecks)
+- new · function · L154-L176 — pub fn new(todos: &[TodoItem]) -> Self
+- tests · module · L180-L320 — mod tests
+- continuation_evidence_required_checks_redact_bound_deduplicate_and_preserve_failure · function · L185-L232 — fn continuation_evidence_required_checks_redact_bound_deduplicate_and_preserve_failure()
+- continuation_evidence_is_bounded_and_redacts_todo_text · function · L235-L251 — fn continuation_evidence_is_bounded_and_redacts_todo_text()
+- continuation_evidence_fixed_schema_bounds_worst_case_counts_and_reasons · function · L254-L282 — fn continuation_evidence_fixed_schema_bounds_worst_case_counts_and_reasons()
+- continuation_evidence_records_only_explicit_observed_checks · function · L285-L298 — fn continuation_evidence_records_only_explicit_observed_checks()
+- continuation_evidence_does_not_change_policy_or_fingerprints · function · L301-L319 — fn continuation_evidence_does_not_change_policy_or_fingerprints()
+- required_check_failure_tests · module · L323-L351 — mod required_check_failure_tests
+- continuation_evidence_required_checks_never_promote_missing_or_error_status · function · L327-L350 — fn continuation_evidence_required_checks_never_promote_missing_or_error_status()

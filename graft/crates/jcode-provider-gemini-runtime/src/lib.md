@@ -1,0 +1,38 @@
+# crates/jcode-provider-gemini-runtime/src/lib.rs
+
+- catalog · module · L7-L7 — mod catalog;
+- PersistedCatalog · struct · L39-L42 — struct PersistedCatalog
+- GeminiProvider · struct · L44-L49 — pub struct GeminiProvider
+- GeminiAuthMode · enum · L53-L60 — enum GeminiAuthMode
+- GeminiStateKey · struct · L63-L66 — struct GeminiStateKey
+- CachedGeminiState · struct · L69-L72 — struct CachedGeminiState
+- new · function · L75-L85 — pub fn new() -> Self
+- base_url · function · L87-L93 — fn base_url() -> String
+- developer_api_base_url · function · L96-L106 — fn developer_api_base_url() -> String
+- auth_mode · function · L115-L122 — fn auth_mode() -> GeminiAuthMode
+- ensure_state · function · L124-L147 — async fn ensure_state(&self) -> Result<GeminiRuntimeState>
+- state_key · function · L149-L159 — fn state_key() -> GeminiStateKey
+- setup_runtime_state · function · L161-L247 — async fn setup_runtime_state(&self) -> Result<GeminiRuntimeState>
+- send_with_retry · function · L252-L276 — async fn send_with_retry<F>(&self, make: F, url: &str) -> Result<reqwest::Response>
+- post_json · function · L278-L348 — async fn post_json<T: DeserializeOwned>(
+- post_json_api_key · function · L352-L388 — async fn post_json_api_key<T: DeserializeOwned>(
+- get_json_api_key · function · L392-L419 — async fn get_json_api_key<T: DeserializeOwned>(
+- get_operation · function · L421-L449 — async fn get_operation<T: DeserializeOwned>(&self, name: &str) -> Result<T>
+- retry_after_schema_rejection · function · L468-L493 — async fn retry_after_schema_rejection(
+- generate_content · function · L495-L559 — async fn generate_content(
+- canonical_payload · function · L562-L593 — fn canonical_payload(request: &CodeAssistGenerateRequest) -> Value
+- log_canonical_input · function · L596-L621 — fn log_canonical_input(model: &str, request: &CodeAssistGenerateRequest)
+- canonical_input_tests · module · L624-L714 — mod canonical_input_tests
+- canonical_payload_preserves_exact_schema_hashes_nulls_and_counts · function · L629-L713 — fn canonical_payload_preserves_exact_schema_hashes_nulls_and_counts()
+- default · function · L717-L719 — fn default() -> Self
+- provider_impl · module · L723-L723 — mod provider_impl;
+- clone · function · L725-L732 — fn clone(&self) -> Self
+- is_vpc_sc_error · function · L735-L737 — fn is_vpc_sc_error(err: &anyhow::Error) -> bool
+- MAX_HTTP_RETRIES · constant · L739-L739 — const MAX_HTTP_RETRIES: u32 = 5;
+- gemini_http_retry_delay · function · L741-L777 — fn gemini_http_retry_delay(
+- gemini_http_client · function · L779-L800 — fn gemini_http_client() -> reqwest::Client
+- gemini_user_agent · function · L804-L817 — fn gemini_user_agent() -> String
+- is_transient_gemini_transport_error · function · L819-L827 — fn is_transient_gemini_transport_error(err: &reqwest::Error) -> bool
+- is_gemini_model_not_found_error · function · L829-L834 — fn is_gemini_model_not_found_error(err: &anyhow::Error) -> bool
+- tests · module · L838-L838 — mod tests;
+- catalog_tests · module · L841-L841 — mod catalog_tests;

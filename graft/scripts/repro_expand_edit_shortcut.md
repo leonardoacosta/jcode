@@ -1,0 +1,23 @@
+# scripts/repro_expand_edit_shortcut.py
+
+- _recv_debug_response · function · L99-L116 — def _recv_debug_response(sock: socket.socket, timeout: float) -> dict
+- dbg · function · L119-L130 — def dbg(debug_sock: Path, command: str, session_id: str | None = None, timeout: float = 30.0) -> dict
+- dbg_output · function · L133-L140 — def dbg_output(debug_sock: Path, command: str, session_id: str | None = None, timeout: float = 30.0) -> str
+- wait_for_socket · function · L143-L156 — def wait_for_socket(path: Path, timeout_s: float = 25.0) -> None
+- LiveClient · class · L185-L252 — class LiveClient
+- _pump · method · L193-L222 — def _pump(self) -> None
+- start_pump · method · L224-L226 — def start_pump(self) -> None
+- alive · method · L228-L229 — def alive(self) -> bool
+- send_bytes · method · L231-L232 — def send_bytes(self, data: bytes) -> None
+- shutdown · method · L234-L252 — def shutdown(self) -> None
+- launch_client · function · L255-L279 — def launch_client(binary: str, env: dict, session_id: str, name: str, debug_cmd: Path, debug_resp: Path) -> LiveClient
+- client_cmd · function · L285-L300 — def client_cmd(debug_cmd: Path, debug_resp: Path, command: str, timeout_s: float = 6.0) -> str
+- client_diff_mode · function · L303-L305 — def client_diff_mode(debug_cmd: Path, debug_resp: Path) -> dict
+- reset_fixture · function · L308-L310 — def reset_fixture(debug_cmd: Path, debug_resp: Path) -> dict
+- now_iso · function · L316-L317 — def now_iso() -> str
+- seed_session · function · L320-L340 — def seed_session(home: Path, working_dir: str) -> str
+- settle_client · function · L344-L357 — def settle_client(debug_cmd: Path, debug_resp: Path, timeout_s: float = 20.0, verbose: bool = False) -> bool
+- try_raw_encoding · function · L360-L386 — def try_raw_encoding(client: LiveClient, debug_cmd: Path, debug_resp: Path, label: str, raw: bytes, verbose: bool) -> bool
+- negative_discriminator · function · L389-L409 — def negative_discriminator(client: LiveClient, debug_cmd: Path, debug_resp: Path, verbose: bool) -> bool
+- synthetic_positive_control · function · L412-L425 — def synthetic_positive_control(client: LiveClient, debug_cmd: Path, debug_resp: Path, verbose: bool) -> bool
+- main · function · L428-L561 — def main() -> int

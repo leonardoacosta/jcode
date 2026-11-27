@@ -1,0 +1,41 @@
+# crates/jcode-tui/src/tui/justrust_status.rs
+
+- RETRY_INTERVAL · constant · L11-L11 — const RETRY_INTERVAL: Duration = Duration::from_secs(10);
+- FIRST_LINE_TIMEOUT · constant · L12-L12 — const FIRST_LINE_TIMEOUT: Duration = Duration::from_secs(5);
+- MAX_RESPONSE · constant · L13-L13 — const MAX_RESPONSE: usize = 512 * 1024;
+- COMPLETION_RETENTION · constant · L14-L14 — const COMPLETION_RETENTION: Duration = Duration::from_secs(10 * 60);
+- Snapshot · struct · L17-L21 — pub(crate) struct Snapshot
+- Active · struct · L24-L42 — struct Active
+- Live · struct · L45-L54 — struct Live
+- Estimate · struct · L57-L59 — struct Estimate
+- Finished · struct · L62-L75 — struct Finished
+- Tone · enum · L78-L82 — pub enum Tone
+- StatusRow · struct · L85-L89 — pub struct StatusRow
+- clean · function · L91-L97 — fn clean(value: &str) -> String
+- duration · function · L99-L112 — fn duration(seconds: f64) -> String
+- location · function · L114-L121 — fn location(place: &str) -> &'static str
+- context · function · L123-L138 — fn context(cwd: &str, args: &[String], label: &str) -> String
+- relevance · function · L140-L155 — fn relevance(
+- row · function · L158-L237 — fn row(&self, session: Option<&str>, repo: Option<&str>, age: Duration) -> Option<StatusRow>
+- spawn_stream · function · L244-L260 — fn spawn_stream(
+- stream · function · L262-L308 — async fn stream(
+- Poller · struct · L311-L318 — pub(crate) struct Poller
+- row · function · L321-L323 — pub(crate) fn row(&self) -> Option<&StatusRow>
+- refresh · function · L326-L391 — pub(crate) fn refresh(
+- tests · module · L395-L694 — mod tests
+- ownership_distinguishes_session_from_repository_for_all_outcomes · function · L399-L430 — fn ownership_distinguishes_session_from_repository_for_all_outcomes()
+- old_waybar_api_remains_usable_without_resource_fields · function · L433-L443 — fn old_waybar_api_remains_usable_without_resource_fields()
+- session_match_wins_over_repo_and_global_builds · function · L446-L456 — fn session_match_wins_over_repo_and_global_builds()
+- additional_active_build_count_is_pluralized · function · L459-L486 — fn additional_active_build_count_is_pluralized()
+- unrelated_builds_are_hidden_and_not_counted · function · L489-L506 — fn unrelated_builds_are_hidden_and_not_counted()
+- unrelated_active_build_does_not_hide_scoped_completion · function · L509-L525 — fn unrelated_active_build_does_not_hide_scoped_completion()
+- repo_matching_respects_path_components · function · L528-L534 — fn repo_matching_respects_path_components()
+- stale_and_other_session_completions_are_hidden · function · L537-L552 — fn stale_and_other_session_completions_are_hidden()
+- unknown_cores_are_not_presented_as_zero · function · L555-L568 — fn unknown_cores_are_not_presented_as_zero()
+- feed · function · L570-L575 — fn feed(json: &str) -> tokio::sync::watch::Receiver<Option<Option<Arc<Snapshot>>>>
+- matching_completion_survives_unrelated_updates_and_expires · function · L578-L604 — fn matching_completion_survives_unrelated_updates_and_expires()
+- idle_snapshot_stays_current_without_new_lines · function · L607-L620 — fn idle_snapshot_stays_current_without_new_lines()
+- disabled_poller_clears_cached_builds_without_starting_queries · function · L623-L635 — fn disabled_poller_clears_cached_builds_without_starting_queries()
+- first · function · L637-L641 — async fn first(program: &std::path::Path) -> Option<Option<Arc<Snapshot>>>
+- missing_executable_is_optional · function · L644-L649 — async fn missing_executable_is_optional()
+- status_stream_is_bounded_and_streams_lines · function · L653-L693 — async fn status_stream_is_bounded_and_streams_lines()

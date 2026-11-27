@@ -1,0 +1,24 @@
+# crates/jcode-base/src/usage/api_keys.rs
+
+- HTTP_TIMEOUT · constant · L15-L15 — const HTTP_TIMEOUT: Duration = Duration::from_secs(10);
+- configured_key · function · L17-L19 — fn configured_key(env_key: &str, env_file: &str) -> Option<String>
+- push_local_spend · function · L22-L32 — fn push_local_spend(extra_info: &mut Vec<(String, String)>, source_key: &str)
+- key_status_from_response · function · L34-L44 — fn key_status_from_response(status: reqwest::StatusCode) -> String
+- probe_openai_compatible_key · function · L48-L68 — async fn probe_openai_compatible_key(api_base: &str, api_key: &str) -> String
+- month_start_utc · function · L70-L78 — fn month_start_utc() -> chrono::DateTime<chrono::Utc>
+- enqueue_api_key_usage_tasks · function · L82-L130 — pub(super) fn enqueue_api_key_usage_tasks(
+- fetch_anthropic_api_key_report · function · L132-L171 — async fn fetch_anthropic_api_key_report() -> ProviderUsage
+- fetch_openai_api_key_report · function · L173-L211 — async fn fetch_openai_api_key_report() -> ProviderUsage
+- fetch_compatible_profile_report · function · L213-L332 — async fn fetch_compatible_profile_report(
+- fetch_deepseek_balance · function · L335-L381 — async fn fetch_deepseek_balance(api_key: &str) -> Result<Vec<(String, String)>>
+- fetch_moonshot_balance · function · L384-L436 — async fn fetch_moonshot_balance(api_key: &str, api_base: &str) -> Result<Vec<(String, String)>>
+- fetch_kimi_usage_limits · function · L439-L454 — async fn fetch_kimi_usage_limits(api_key: &str) -> Result<Vec<UsageLimit>>
+- parse_kimi_usage_limits · function · L461-L539 — pub(super) fn parse_kimi_usage_limits(json: &serde_json::Value) -> Vec<UsageLimit>
+- kimi_parse_row · function · L541-L568 — fn kimi_parse_row(raw: &serde_json::Value, label: &str) -> Option<UsageLimit>
+- kimi_window_label · function · L570-L579 — fn kimi_window_label(minutes: Option<f64>, fallback: &str) -> String
+- kimi_fmt_num · function · L581-L587 — fn kimi_fmt_num(value: f64) -> String
+- zai_quota_url · function · L593-L604 — pub(super) fn zai_quota_url(api_base: &str) -> String
+- fetch_zai_coding_plan_limits · function · L609-L624 — async fn fetch_zai_coding_plan_limits(api_base: &str, api_key: &str) -> Result<Vec<UsageLimit>>
+- parse_zai_coding_plan_limits · function · L629-L690 — pub(super) fn parse_zai_coding_plan_limits(json: &serde_json::Value) -> Vec<UsageLimit>
+- fetch_anthropic_org_cost · function · L694-L730 — async fn fetch_anthropic_org_cost(admin_key: &str) -> Option<f64>
+- fetch_openai_org_cost · function · L733-L768 — async fn fetch_openai_org_cost(admin_key: &str) -> Option<f64>

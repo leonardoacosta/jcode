@@ -1,0 +1,36 @@
+# crates/jcode-base/src/auth/refresh_state.rs
+
+- REFRESH_STATUS_FILE · constant · L5-L5 — const REFRESH_STATUS_FILE: &str = "auth-refresh-state.json";
+- MAX_ERROR_CHARS · constant · L6-L6 — const MAX_ERROR_CHARS: usize = 240;
+- CredState · enum · L20-L32 — pub enum CredState
+- label · function · L37-L45 — pub fn label(self) -> &'static str
+- user_facing_label · function · L51-L59 — pub fn user_facing_label(self) -> &'static str
+- is_retryable · function · L62-L64 — pub fn is_retryable(self) -> bool
+- is_usable · function · L67-L72 — pub fn is_usable(self) -> bool
+- cred_state · function · L81-L98 — pub fn cred_state(provider_id: &str, refresh_token: Option<&str>) -> CredState
+- ensure_refresh_allowed · function · L105-L116 — pub fn ensure_refresh_allowed(
+- record_refresh_outcome · function · L124-L138 — pub fn record_refresh_outcome<T>(provider_id: &str, refresh_token: &str, result: &Result<T>)
+- status_path · function · L140-L142 — pub fn status_path() -> Result<PathBuf>
+- load_all · function · L144-L149 — pub fn load_all() -> BTreeMap<String, ProviderRefreshRecord>
+- get · function · L151-L153 — pub fn get(provider_id: &str) -> Option<ProviderRefreshRecord>
+- record_success · function · L155-L167 — pub fn record_success(provider_id: &str) -> Result<()>
+- record_failure · function · L169-L186 — pub fn record_failure(provider_id: &str, error: impl AsRef<str>) -> Result<()>
+- refresh_token_fingerprint · function · L192-L198 — pub fn refresh_token_fingerprint(refresh_token: &str) -> String
+- record_permanent_rejection · function · L202-L217 — pub fn record_permanent_rejection(
+- refresh_token_is_known_rejected · function · L223-L232 — pub fn refresh_token_is_known_rejected(provider_id: &str, refresh_token: &str) -> bool
+- error_is_permanent_rejection · function · L237-L257 — pub fn error_is_permanent_rejection(error: &str) -> bool
+- format_record_label · function · L259-L268 — pub fn format_record_label(record: &ProviderRefreshRecord) -> String
+- upsert · function · L270-L286 — fn upsert(provider_id: &str, mut record: ProviderRefreshRecord) -> Result<()>
+- age_label · function · L288-L298 — fn age_label(checked_at_ms: i64) -> String
+- tests · module · L301-L563 — mod tests
+- format_record_label_prefers_failure_details · function · L305-L315 — fn format_record_label_prefers_failure_details()
+- format_record_label_reports_success · function · L318-L328 — fn format_record_label_reports_success()
+- permanent_rejection_is_distinguished_from_transient_failure · function · L331-L359 — fn permanent_rejection_is_distinguished_from_transient_failure()
+- refresh_token_fingerprint_never_leaks_the_token · function · L362-L373 — fn refresh_token_fingerprint_never_leaks_the_token()
+- permanent_rejection_suppresses_retries_until_a_new_token_is_minted · function · L376-L412 — fn permanent_rejection_suppresses_retries_until_a_new_token_is_minted()
+- cred_state_tracks_the_credential_lifecycle · function · L415-L444 — fn cred_state_tracks_the_credential_lifecycle()
+- rejected_tokens_survive_other_account_rejection_and_success · function · L447-L478 — fn rejected_tokens_survive_other_account_rejection_and_success()
+- absent_and_rejected_never_share_a_user_facing_label · function · L481-L495 — fn absent_and_rejected_never_share_a_user_facing_label()
+- ensure_refresh_allowed_blocks_only_the_rejected_token · function · L498-L511 — fn ensure_refresh_allowed_blocks_only_the_rejected_token()
+- record_refresh_outcome_routes_permanent_and_transient_failures · function · L514-L532 — fn record_refresh_outcome_routes_permanent_and_transient_failures()
+- every_provider_permanent_phrasing_is_classified · function · L535-L562 — fn every_provider_permanent_phrasing_is_classified()

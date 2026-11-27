@@ -1,0 +1,40 @@
+# crates/jcode-app-core/src/update_dev_guard.rs
+
+- should_install_release · function · L10-L17 — pub(super) fn should_install_release(release_tag: &str) -> Result<bool>
+- should_install_release_with · function · L19-L31 — fn should_install_release_with(
+- validate_inputs · function · L33-L57 — fn validate_inputs(release_tag: &str, current_hash: &str) -> Result<()>
+- local_comparison · function · L62-L85 — fn local_comparison(repo: &Path, release_tag: &str, current_hash: &str) -> Option<bool>
+- git · function · L87-L91 — fn git(repo: &Path) -> Command
+- resolve_commit · function · L93-L111 — fn resolve_commit(repo: &Path, revision: &str) -> Option<String>
+- is_ancestor · function · L113-L124 — fn is_ancestor(repo: &Path, ancestor: &str, descendant: &str) -> Option<bool>
+- github_comparison · function · L126-L142 — fn github_comparison(release_tag: &str, current_hash: &str) -> Result<bool>
+- github_response · function · L144-L174 — fn github_response(
+- comparison_decision · function · L176-L186 — fn comparison_decision(comparison: &serde_json::Value) -> Result<bool>
+- tests · module · L189-L559 — mod tests
+- Repo · struct · L194-L194 — struct Repo(tempfile::TempDir);
+- new · function · L197-L203 — fn new() -> Self
+- path · function · L205-L207 — fn path(&self) -> &Path
+- run · function · L209-L225 — fn run(&self, args: &[&str]) -> String
+- commit · function · L227-L238 — fn commit(&self, message: &str) -> String
+- tag · function · L240-L242 — fn tag(&self, commit: &str)
+- local_ahead_retains_dev_build · function · L246-L255 — fn local_ahead_retains_dev_build()
+- local_behind_installs_release · function · L258-L267 — fn local_behind_installs_release()
+- local_identical_retains_dev_build · function · L270-L278 — fn local_identical_retains_dev_build()
+- local_diverged_retains_dev_build · function · L281-L292 — fn local_diverged_retains_dev_build()
+- compiled_commit_ahead_is_not_replaced_when_checkout_is_behind · function · L295-L307 — fn compiled_commit_ahead_is_not_replaced_when_checkout_is_behind()
+- compiled_commit_behind_can_update_when_checkout_is_ahead · function · L310-L321 — fn compiled_commit_behind_can_update_when_checkout_is_ahead()
+- annotated_release_tag_is_peeled_to_commit · function · L324-L341 — fn annotated_release_tag_is_peeled_to_commit()
+- branch_named_like_release_does_not_substitute_for_tag · function · L344-L350 — fn branch_named_like_release_does_not_substitute_for_tag()
+- hexadecimal_branch_name_cannot_substitute_for_compiled_hash · function · L353-L360 — fn hexadecimal_branch_name_cannot_substitute_for_compiled_hash()
+- missing_refs_fall_back_with_exact_compiled_hash · function · L363-L378 — fn missing_refs_fall_back_with_exact_compiled_hash()
+- absent_and_invalid_repositories_fall_back · function · L381-L389 — fn absent_and_invalid_repositories_fall_back()
+- definitive_local_result_never_calls_network · function · L392-L402 — fn definitive_local_result_never_calls_network()
+- unknown_hash_and_revision_injection_fail_before_network · function · L405-L426 — fn unknown_hash_and_revision_injection_fail_before_network()
+- invalid_tags_fail_before_network · function · L429-L454 — fn invalid_tags_fail_before_network()
+- network_errors_are_not_install_permissions · function · L457-L463 — fn network_errors_are_not_install_permissions()
+- github_status_direction_matches_release_base_and_compiled_head · function · L466-L479 — fn github_status_direction_matches_release_base_and_compiled_head()
+- missing_or_unknown_github_status_fails_closed · function · L482-L492 — fn missing_or_unknown_github_status_fails_closed()
+- mock_response · function · L494-L522 — fn mock_response(status: &str, body: &str) -> reqwest::blocking::Response
+- github_404_explains_unavailable_compiled_commit · function · L525-L530 — fn github_404_explains_unavailable_compiled_commit()
+- github_http_failure_and_malformed_body_fail_closed · function · L533-L542 — fn github_http_failure_and_malformed_body_fail_closed()
+- github_success_response_permits_only_behind · function · L545-L558 — fn github_success_response_permits_only_behind()

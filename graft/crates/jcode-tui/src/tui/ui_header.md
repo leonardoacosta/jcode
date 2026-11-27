@@ -1,0 +1,62 @@
+# crates/jcode-tui/src/tui/ui_header.rs
+
+- account_router · module · L11-L11 — mod account_router;
+- fit_header_lines · function · L15-L37 — fn fit_header_lines(lines: Vec<Line<'static>>, width: u16) -> Vec<Line<'static>>
+- product_header_line · function · L39-L54 — fn product_header_line(is_canary: bool, status_items: &[&str]) -> Line<'static>
+- client_header_text · function · L56-L61 — fn client_header_text(name: &str, icon: &str, connection: Option<&str>) -> String
+- model_header_span · function · L63-L65 — fn model_header_span(model: String) -> Span<'static>
+- model_is_placeholder · function · L67-L73 — fn model_is_placeholder(model: &str) -> bool
+- model_header_line · function · L76-L109 — fn model_header_line(
+- standalone_version_line · function · L111-L123 — fn standalone_version_line() -> Line<'static>
+- build_preview_header · function · L128-L171 — pub(crate) fn build_preview_header(
+- unseen_changelog_entries_override · function · L176-L179 — fn unseen_changelog_entries_override() -> &'static std::sync::Mutex<Option<Vec<String>>>
+- OVERRIDE · constant · L177-L177 — static OVERRIDE: OnceLock<std::sync::Mutex<Option<Vec<String>>>> = OnceLock::new();
+- with_unseen_changelog_entries · function · L181-L191 — fn with_unseen_changelog_entries<R>(render: impl FnOnce(&[String]) -> R) -> R
+- unseen_changelog_entries · function · L196-L198 — fn unseen_changelog_entries() -> Vec<String>
+- set_unseen_changelog_entries_override_for_tests · function · L201-L206 — pub(crate) fn set_unseen_changelog_entries_override_for_tests(entries: Option<Vec<String>>)
+- ChangelogEntriesOverrideGuard · struct · L211-L211 — pub(crate) struct ChangelogEntriesOverrideGuard;
+- scoped_unseen_changelog_entries_override_for_tests · function · L214-L219 — pub(crate) fn scoped_unseen_changelog_entries_override_for_tests(
+- drop · function · L223-L225 — fn drop(&mut self)
+- account_router_generation · function · L228-L233 — pub(super) fn account_router_generation() -> u64
+- capitalize · function · L235-L241 — pub(crate) fn capitalize(s: &str) -> String
+- compact_version_label · function · L245-L251 — fn compact_version_label(version: &str) -> String
+- header_version_label · function · L256-L262 — fn header_version_label(version: &str, include_hash: bool) -> String
+- format_model_name · function · L264-L306 — fn format_model_name(short: &str, provider_name: &str) -> String
+- format_gpt_name · function · L308-L323 — fn format_gpt_name(short: &str) -> String
+- prettify_model_id · function · L330-L389 — fn prettify_model_id(model: &str) -> String
+- is_acronym · function · L335-L350 — fn is_acronym(part: &str) -> bool
+- KNOWN · constant · L338-L338 — const KNOWN: &[&str] = &["oss", "ai", "moe", "vl", "it", "fp8", "awq", "exp"];
+- is_param_size · function · L352-L363 — fn is_param_size(part: &str) -> bool
+- header_model_display_name · function · L393-L441 — fn header_model_display_name(model: &str, provider_name: &str) -> String
+- claude_version_segment · function · L446-L466 — fn claude_version_segment(raw: &str, family: &str) -> Option<String>
+- auth_dot_color · function · L468-L474 — fn auth_dot_color(state: AuthState) -> Color
+- auth_dot_char · function · L477-L483 — fn auth_dot_char(state: AuthState) -> &'static str
+- ActiveCredentialOverrides · struct · L489-L492 — pub(super) struct ActiveCredentialOverrides
+- from_app · function · L495-L500 — fn from_app(app: &dyn TuiState) -> Self
+- get · function · L502-L511 — fn get(
+- header_provider_auth_tag · function · L514-L577 — fn header_provider_auth_tag(
+- header_provider_label · function · L579-L595 — fn header_provider_label(
+- abbreviate_home · function · L597-L608 — fn abbreviate_home(path: &str) -> String
+- truncate_to_width · function · L611-L629 — fn truncate_to_width(text: &str, width: usize) -> String
+- choose_header_candidate · function · L632-L645 — fn choose_header_candidate(width: usize, candidates: Vec<String>) -> String
+- semver_core · function · L648-L654 — fn semver_core() -> String
+- semver_minor · function · L657-L665 — fn semver_minor() -> String
+- version_display_candidates · function · L668-L674 — fn version_display_candidates() -> Vec<String>
+- configured_auth_count · function · L677-L693 — fn configured_auth_count(auth: &AuthStatus) -> usize
+- build_persistent_header · function · L696-L703 — pub(super) fn build_persistent_header(app: &dyn TuiState, width: u16) -> Vec<Line<'static>>
+- build_persistent_header_with_auth · function · L705-L866 — fn build_persistent_header_with_auth(
+- build_header_lines · function · L869-L876 — pub(crate) fn build_header_lines(app: &dyn TuiState, width: u16) -> Vec<Line<'static>>
+- build_header_lines_with_auth · function · L878-L975 — fn build_header_lines_with_auth(
+- MAX_SKILLS · constant · L940-L940 — const MAX_SKILLS: usize = 6;
+- build_updates_box_lines · function · L982-L988 — pub(super) fn build_updates_box_lines(width: u16, max_lines: usize) -> Vec<Line<'static>>
+- updates_box_lines_from_entries · function · L992-L1039 — fn updates_box_lines_from_entries(
+- build_header_sections · function · L1044-L1075 — pub(in crate::tui) fn build_header_sections(
+- mcp_header_text · function · L1079-L1144 — fn mcp_header_text(
+- MAX_MCPS · constant · L1085-L1085 — const MAX_MCPS: usize = 4;
+- mcp_header_tests · module · L1147-L1191 — mod mcp_header_tests
+- mcp_header_row_fits_width_without_wrapping · function · L1151-L1165 — fn mcp_header_row_fits_width_without_wrapping()
+- mcp_health_counts_zero_tool_connections_and_degraded_servers · function · L1168-L1190 — fn mcp_health_counts_zero_tool_connections_and_degraded_servers()
+- header_tests · module · L1195-L1195 — mod header_tests;
+- changelog_borrow_tests · module · L1198-L1264 — mod changelog_borrow_tests
+- changelog_borrow_matches_owned_snapshot_and_refreshes_override · function · L1202-L1233 — fn changelog_borrow_matches_owned_snapshot_and_refreshes_override()
+- changelog_borrow_eliminates_snapshot_allocations · function · L1236-L1263 — fn changelog_borrow_eliminates_snapshot_allocations()

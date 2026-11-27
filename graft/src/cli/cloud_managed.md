@@ -1,0 +1,67 @@
+# src/cli/cloud_managed.rs
+
+- HOST · constant · L22-L22 — pub(crate) const HOST: &str = "jcode-cloud";
+- DEFAULT_API_BASE · constant · L23-L23 — const DEFAULT_API_BASE: &str = "https://api.jcode.sh/v1";
+- PROVISION_DEADLINE · constant · L24-L24 — const PROVISION_DEADLINE: Duration = Duration::from_secs(10 * 60);
+- POLL_INTERVAL · constant · L25-L25 — const POLL_INTERVAL: Duration = Duration::from_secs(4);
+- is_managed · function · L27-L29 — pub(crate) fn is_managed(host: &str) -> bool
+- account_available · function · L33-L35 — pub(crate) fn account_available() -> bool
+- dir · function · L37-L39 — pub(super) fn dir() -> Result<PathBuf>
+- key_path · function · L41-L43 — fn key_path() -> Result<PathBuf>
+- known_hosts_path · function · L45-L47 — fn known_hosts_path() -> Result<PathBuf>
+- ssh_config_path · function · L49-L51 — pub(crate) fn ssh_config_path() -> Result<PathBuf>
+- prepare_ssh · function · L54-L56 — pub(crate) fn prepare_ssh() -> Result<()>
+- ssh_args · function · L60-L97 — pub(crate) fn ssh_args() -> Result<Vec<String>>
+- proxy_executable · function · L103-L118 — pub(super) fn proxy_executable(exe: PathBuf) -> PathBuf
+- preparation_namespace · function · L120-L123 — pub(crate) fn preparation_namespace() -> Result<String>
+- control_namespace · function · L125-L137 — fn control_namespace(key: &str, base: &str) -> Option<String>
+- managed_ssh_config · function · L139-L182 — fn managed_ssh_config(
+- ssh_quote · function · L184-L193 — pub(super) fn ssh_quote(value: &str) -> String
+- Reply · struct · L200-L215 — pub(crate) struct Reply
+- Usage · struct · L218-L223 — pub(crate) struct Usage
+- ErrorReply · struct · L226-L228 — struct ErrorReply
+- ErrorBody · struct · L231-L234 — struct ErrorBody
+- Account · struct · L236-L239 — struct Account
+- account · function · L241-L252 — fn account() -> Result<Account>
+- off_runtime · function · L255-L257 — fn off_runtime<T: Send>(f: impl FnOnce() -> T + Send) -> T
+- request · function · L259-L261 — fn request(method: &str, path: &str, body: Option<serde_json::Value>) -> Result<Reply>
+- api_client · function · L270-L280 — fn api_client() -> Result<&'static reqwest::blocking::Client>
+- CLIENT · constant · L271-L271 — static CLIENT: std::sync::OnceLock<reqwest::blocking::Client> = std::sync::OnceLock::new();
+- request_json · function · L282-L315 — pub(super) fn request_json<T: serde::de::DeserializeOwned + Send>(
+- describe_error · function · L317-L323 — fn describe_error(status: u16, code: &str, message: &str) -> String
+- public_key · function · L325-L334 — fn public_key() -> Result<String>
+- status · function · L336-L338 — pub(crate) fn status() -> Result<Reply>
+- stop · function · L340-L342 — pub(crate) fn stop() -> Result<Reply>
+- timed_managed_stage · function · L344-L353 — fn timed_managed_stage<T>(stage: &str, operation: impl FnOnce() -> Result<T>) -> Result<T>
+- connect · function · L357-L359 — pub(crate) fn connect(progress: &mut dyn FnMut(&str)) -> Result<Reply>
+- connect_unless · function · L363-L397 — fn connect_unless(progress: &mut dyn FnMut(&str), abandoned: &dyn Fn() -> bool) -> Result<Reply>
+- validated_host_keys · function · L399-L417 — fn validated_host_keys(reply: &Reply) -> Result<Vec<String>>
+- run_proxy · function · L422-L429 — pub(crate) fn run_proxy() -> Result<()>
+- ssh_parent_watch · function · L437-L454 — fn ssh_parent_watch() -> impl Fn() -> bool
+- relay_proxy · function · L456-L502 — pub(super) fn relay_proxy(reply: &Reply, host: &str, known_hosts: &std::path::Path) -> Result<()>
+- raw_stdout · function · L505-L510 — fn raw_stdout() -> std::fs::File
+- raw_stdout · function · L513-L515 — fn raw_stdout() -> std::io::Stdout
+- release_target · function · L519-L542 — fn release_target(
+- shell_quote · function · L544-L546 — fn shell_quote(value: &str) -> String
+- prepare_script · function · L552-L554 — pub(crate) fn prepare_script(home: &str) -> Result<String>
+- prepare_script_with_candidate · function · L556-L570 — pub(crate) fn prepare_script_with_candidate(home: &str, candidate: Option<&str>) -> Result<String>
+- prepare_script_for_paths · function · L573-L580 — fn prepare_script_for_paths(
+- prepare_script_for_paths_with_candidate · function · L582-L882 — fn prepare_script_for_paths_with_candidate(
+- describe · function · L885-L897 — pub(crate) fn describe(reply: &Reply) -> String
+- create_private_dir · function · L899-L907 — pub(super) fn create_private_dir(path: &std::path::Path) -> Result<()>
+- write_private · function · L909-L924 — pub(super) fn write_private(path: &std::path::Path, contents: &str) -> Result<()>
+- upgrade_tests · module · L928-L928 — mod upgrade_tests;
+- tests · module · L931-L1161 — mod tests
+- account_errors_name_the_next_step · function · L935-L947 — fn account_errors_name_the_next_step()
+- api_client_is_built_once_per_process · function · L950-L956 — fn api_client_is_built_once_per_process()
+- ssh_parent_watch_is_quiet_while_the_parent_lives · function · L960-L963 — fn ssh_parent_watch_is_quiet_while_the_parent_lives()
+- prepare_ssh_cli_is_hidden_and_only_prepares_local_files · function · L966-L1057 — fn prepare_ssh_cli_is_hidden_and_only_prepares_local_files()
+- RestoreEnv · struct · L975-L975 — struct RestoreEnv(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L977-L984 — fn drop(&mut self)
+- proxy_executable_survives_replaced_binary · function · L1060-L1075 — fn proxy_executable_survives_replaced_binary()
+- host_keys_reject_injection · function · L1078-L1092 — fn host_keys_reject_injection()
+- prepare_script_targets_release_and_home · function · L1095-L1105 — fn prepare_script_targets_release_and_home()
+- managed_config_multiplexes_in_private_directory · function · L1108-L1124 — fn managed_config_multiplexes_in_private_directory()
+- control_namespace_is_account_and_endpoint_scoped · function · L1127-L1144 — fn control_namespace_is_account_and_endpoint_scoped()
+- managed_config_disables_multiplexing_without_account · function · L1147-L1154 — fn managed_config_disables_multiplexing_without_account()
+- ssh_quote_wraps_spaces · function · L1157-L1160 — fn ssh_quote_wraps_spaces()

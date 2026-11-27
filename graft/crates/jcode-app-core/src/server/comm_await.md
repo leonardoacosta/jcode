@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/server/comm_await.rs
+
+- awaited_member_statuses · function · L13-L92 — pub(super) async fn awaited_member_statuses(
+- short_member_name · function · L94-L104 — fn short_member_name(member: &AwaitedMemberStatus) -> String
+- timeout_summary · function · L106-L116 — pub(super) fn timeout_summary(member_statuses: &[AwaitedMemberStatus]) -> String
+- completion_summary · function · L118-L125 — fn completion_summary(member_statuses: &[AwaitedMemberStatus]) -> String
+- completion_mode · function · L127-L132 — pub(super) fn completion_mode(mode: Option<&str>) -> &str
+- mode_satisfied · function · L134-L139 — pub(super) fn mode_satisfied(member_statuses: &[AwaitedMemberStatus], mode: Option<&str>) -> bool
+- mode_summary · function · L141-L158 — pub(super) fn mode_summary(member_statuses: &[AwaitedMemberStatus], mode: Option<&str>) -> String
+- deadline_to_instant · function · L160-L166 — pub(super) fn deadline_to_instant(deadline_unix_ms: u64) -> tokio::time::Instant
+- respond_to_waiters · function · L168-L185 — pub(super) async fn respond_to_waiters(
+- background_completion_notification · function · L192-L200 — fn background_completion_notification(
+- refresh_pending_state · function · L206-L210 — fn refresh_pending_state(state: &PersistedAwaitMembersState) -> Option<PersistedAwaitMembersState>
+- finalize_await · function · L216-L226 — async fn finalize_await(
+- finish_await · function · L230-L285 — async fn finish_await(
+- spawn_or_resume_await_members · function · L287-L377 — pub(super) async fn spawn_or_resume_await_members(
+- CommAwaitMembersContext · struct · L379-L385 — pub(super) struct CommAwaitMembersContext<'a>
+- handle_comm_await_members · function · L391-L650 — pub(super) async fn handle_comm_await_members(
+- background_started_summary · function · L654-L683 — fn background_started_summary(
+- publish_await_started_card · function · L687-L712 — fn publish_await_started_card(
+- resume_background_awaits · function · L719-L836 — pub(super) async fn resume_background_awaits(

@@ -1,0 +1,31 @@
+# crates/jcode-telemetry-core/src/usage_outbox.rs
+
+- REPLAY_HORIZON_SECONDS · constant · L15-L15 — const REPLAY_HORIZON_SECONDS: i64 = 7 * 24 * 60 * 60;
+- expired · function · L17-L24 — fn expired(payload: &Value, now: DateTime<Utc>) -> bool
+- warn_expired · function · L26-L37 — fn warn_expired()
+- LAST_WARNING · constant · L27-L27 — static LAST_WARNING: std::sync::Mutex<Option<Instant>> = std::sync::Mutex::new(None);
+- directory · function · L40-L44 — fn directory() -> io::Result<PathBuf>
+- acknowledged · function · L46-L61 — pub(super) fn acknowledged(response: reqwest::blocking::Response, payload: &Value) -> bool
+- persist · function · L63-L91 — fn persist(dir: &Path, payload: &Value) -> io::Result<()>
+- sync_directory · function · L93-L99 — fn sync_directory(dir: &Path) -> io::Result<()>
+- drain · function · L101-L103 — fn drain(dir: &Path, mut deliver: impl FnMut(Value) -> bool) -> io::Result<()>
+- drain_at · function · L105-L147 — fn drain_at(
+- clear · function · L149-L164 — fn clear(dir: &Path) -> io::Result<()>
+- clear_pending · function · L167-L175 — pub(super) fn clear_pending()
+- wake · function · L178-L214 — pub(super) fn wake()
+- WORKER · constant · L179-L179 — static WORKER: OnceLock<Option<SyncSender<()>>> = OnceLock::new();
+- has_pending · function · L217-L229 — pub(super) fn has_pending() -> bool
+- enqueue · function · L232-L245 — pub(super) fn enqueue(payload: Value) -> bool
+- tests · module · L248-L501 — mod tests
+- payload · function · L251-L254 — fn payload() -> Value
+- all_usage_versions_use_only_v2_endpoint · function · L257-L275 — fn all_usage_versions_use_only_v2_endpoint()
+- replay_age_boundary_is_strict_and_unknown_dates_are_not_evicted · function · L278-L296 — fn replay_age_boundary_is_strict_and_unknown_dates_are_not_evicted()
+- expired_reports_remain_byte_identical_while_fresh_reports_drain · function · L299-L326 — fn expired_reports_remain_byte_identical_while_fresh_reports_drain()
+- retries_keep_identical_payload_until_acknowledged · function · L329-L347 — fn retries_keep_identical_payload_until_acknowledged()
+- independent_events_survive_and_staging_files_are_not_delivered · function · L350-L378 — fn independent_events_survive_and_staging_files_are_not_delivered()
+- damaged_report_does_not_starve_valid_reports · function · L381-L394 — fn damaged_report_does_not_starve_valid_reports()
+- simultaneous_drainers_do_not_deliver_one_event_twice · function · L397-L414 — fn simultaneous_drainers_do_not_deliver_one_event_twice()
+- opt_out_deletion_removes_published_and_staged_reports · function · L417-L424 — fn opt_out_deletion_removes_published_and_staged_reports()
+- http_receipt_must_be_durable_and_match_both_ids · function · L427-L491 — fn http_receipt_must_be_durable_and_match_both_ids()
+- response · function · L429-L452 — fn response(status: &str, body: &str) -> reqwest::blocking::Response
+- unsafe_event_id_never_becomes_a_path · function · L494-L500 — fn unsafe_event_id_never_becomes_a_path()

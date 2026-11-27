@@ -1,0 +1,68 @@
+# crates/jcode-sdk/src/launch.rs
+
+- shared_upgrade · module · L22-L22 — mod shared_upgrade;
+- CREDENTIAL_FILES · constant · L24-L32 — const CREDENTIAL_FILES: &[&str] = &[
+- EXTERNAL_CREDENTIAL_FILES · constant · L34-L55 — const EXTERNAL_CREDENTIAL_FILES: &[&str] = &[
+- WakeMode · enum · L59-L63 — pub enum WakeMode
+- as_str · function · L66-L71 — fn as_str(self) -> &'static str
+- LaunchOptions · struct · L75-L114 — pub struct LaunchOptions
+- default · function · L117-L134 — fn default() -> Self
+- LaunchedInstance · struct · L139-L147 — pub struct LaunchedInstance
+- shutdown · function · L150-L164 — fn shutdown(&self)
+- drop · function · L168-L170 — fn drop(&mut self)
+- launch_instance · function · L175-L362 — pub fn launch_instance(options: &LaunchOptions) -> Result<LaunchedInstance>
+- user_jcode_home · function · L365-L369 — pub fn user_jcode_home() -> PathBuf
+- credential_links · module · L372-L372 — mod credential_links;
+- Progress · type · L375-L375 — pub type Progress<'a> = dyn Fn(&str) + 'a;
+- socket_accepts · function · L378-L380 — pub fn socket_accepts(path: &Path) -> bool
+- sibling_exe · function · L383-L385 — fn sibling_exe(name: &str) -> PathBuf
+- sibling_exe_next_to · function · L387-L393 — fn sibling_exe_next_to(current: Option<&Path>, name: &str) -> PathBuf
+- ensure_runtime · function · L396-L441 — pub fn ensure_runtime(options: &LaunchOptions, progress: &Progress<'_>) -> Result<()>
+- CLI_SERVES_API_BRIDGE · constant · L446-L446 — const CLI_SERVES_API_BRIDGE: bool = cfg!(unix);
+- shared_bridge_launch · function · L455-L469 — fn shared_bridge_launch<'a>(
+- spawn_detached · function · L471-L489 — fn spawn_detached(program: &Path, args: &[&str]) -> std::io::Result<()>
+- CREATE_NEW_PROCESS_GROUP · constant · L485-L485 — const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+- wait_for_socket · function · L492-L512 — pub fn wait_for_socket(path: &Path, what: &str, timeout: Duration) -> Result<()>
+- MAX_RETRY_DELAY · constant · L500-L500 — const MAX_RETRY_DELAY: Duration = Duration::from_millis(25);
+- read_daemon_pid · function · L515-L527 — fn read_daemon_pid(home: &Path, runtime_dir: &Path) -> Option<i32>
+- stop_instance_daemon · function · L530-L534 — fn stop_instance_daemon(home: &Path, runtime_dir: &Path)
+- registered_daemon_pid · function · L539-L541 — fn registered_daemon_pid(home: &Path, runtime_dir: &Path) -> Option<i32>
+- stop_daemon_started_by_failed_launch · function · L546-L556 — fn stop_daemon_started_by_failed_launch(
+- stop_daemon_pid · function · L559-L573 — fn stop_daemon_pid(pid: i32)
+- registered_daemon_pid · function · L576-L578 — fn registered_daemon_pid(_home: &Path, _runtime_dir: &Path) -> Option<i32>
+- stop_daemon_started_by_failed_launch · function · L581-L586 — fn stop_daemon_started_by_failed_launch(
+- stop_instance_daemon · function · L589-L589 — fn stop_instance_daemon(_home: &Path, _runtime_dir: &Path) {}
+- signal_process_group · function · L592-L599 — fn signal_process_group(pid: i32, signal: i32)
+- process_exists · function · L602-L605 — fn process_exists(pid: i32) -> bool
+- terminate_child · function · L608-L625 — fn terminate_child(child: &mut Child)
+- terminate_child · function · L628-L636 — fn terminate_child(child: &mut Child)
+- remove_ephemeral_home · function · L638-L655 — fn remove_ephemeral_home(home: &Path, timeout: Duration)
+- stderr_suffix · function · L657-L664 — fn stderr_suffix(stderr: &str) -> String
+- home_dir · function · L666-L670 — fn home_dir() -> PathBuf
+- user_app_config_dir · function · L673-L692 — pub fn user_app_config_dir() -> PathBuf
+- set_owner_only_dir · function · L695-L698 — fn set_owner_only_dir(path: &Path) -> Result<()>
+- set_owner_only_file · function · L701-L704 — fn set_owner_only_file(path: &Path) -> Result<()>
+- set_owner_only_dir · function · L707-L711 — fn set_owner_only_dir(_path: &Path) -> Result<()>
+- set_owner_only_file · function · L714-L716 — fn set_owner_only_file(_path: &Path) -> Result<()>
+- launch_io · function · L718-L720 — fn launch_io(error: std::io::Error) -> Error
+- executable_tests · module · L723-L809 — mod executable_tests
+- selected_runtime_bridge_wins_over_stale_standalone · function · L727-L742 — fn selected_runtime_bridge_wins_over_stale_standalone()
+- standalone_bridge_is_used_where_the_cli_cannot_serve_one · function · L748-L766 — fn standalone_bridge_is_used_where_the_cli_cannot_serve_one()
+- standalone_only_bundle_and_path_runtime_remain_supported · function · L769-L782 — fn standalone_only_bundle_and_path_runtime_remain_supported()
+- sibling_executable_uses_platform_suffix_in_bundle_with_spaces · function · L785-L795 — fn sibling_executable_uses_platform_suffix_in_bundle_with_spaces()
+- sibling_executable_fallback_uses_platform_suffix · function · L798-L808 — fn sibling_executable_fallback_uses_platform_suffix()
+- tests · module · L812-L1126 — mod tests
+- swarm_model_reaches_runtime_and_overrides_generic_environment · function · L817-L856 — fn swarm_model_reaches_runtime_and_overrides_generic_environment()
+- wake_mode_reaches_runtime_and_overrides_generic_environment · function · L860-L888 — fn wake_mode_reaches_runtime_and_overrides_generic_environment()
+- private_instances_disable_auto_update · function · L892-L929 — fn private_instances_disable_auto_update()
+- dropping_an_ephemeral_instance_stops_its_bridge_and_removes_its_home · function · L932-L959 — fn dropping_an_ephemeral_instance_stops_its_bridge_and_removes_its_home()
+- StandInDaemon · struct · L965-L968 — struct StandInDaemon
+- spawn · function · L971-L1000 — fn spawn() -> Self
+- is_running · function · L1002-L1007 — fn is_running(&self) -> bool
+- wait_for_exit · function · L1009-L1011 — fn wait_for_exit(&self, timeout: Duration) -> bool
+- drop · function · L1015-L1022 — fn drop(&mut self)
+- REGISTER_DAEMON · constant · L1026-L1026 — const REGISTER_DAEMON: &str = r#"printf '{"x":{"socket":"%s","pid":%s}}' "$JCODE_RUNTIME_DIR/jcode.sock" "$DAEMON_PID" > "$JCODE_HOME/servers.json""#;
+- launch_with_fake_runtime · function · L1029-L1054 — fn launch_with_fake_runtime(
+- failed_startup_stops_daemon_when_jcode_exits · function · L1057-L1074 — fn failed_startup_stops_daemon_when_jcode_exits()
+- failed_startup_stops_daemon_when_socket_never_appears · function · L1077-L1094 — fn failed_startup_stops_daemon_when_socket_never_appears()
+- failed_startup_leaves_a_daemon_registered_before_the_launch_running · function · L1097-L1125 — fn failed_startup_leaves_a_daemon_registered_before_the_launch_running()

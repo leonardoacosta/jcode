@@ -1,0 +1,38 @@
+# crates/jcode-provider-openai/src/stream.rs
+
+- FALLBACK_TOOL_CALL_COUNTER · constant · L14-L14 — static FALLBACK_TOOL_CALL_COUNTER: AtomicU64 = AtomicU64::new(1);
+- NORMALIZED_NULL_TOOL_ARGUMENTS · constant · L15-L15 — static NORMALIZED_NULL_TOOL_ARGUMENTS: AtomicU64 = AtomicU64::new(0);
+- truncated_stream_payload_context · function · L17-L19 — fn truncated_stream_payload_context(data: &str) -> String
+- extract_error_with_retry · function · L23-L86 — fn extract_error_with_retry(
+- ResponseSseEvent · struct · L88-L102 — struct ResponseSseEvent
+- StreamingToolCallState · struct · L105-L116 — pub struct StreamingToolCallState
+- normalize_openai_tool_arguments · function · L118-L130 — fn normalize_openai_tool_arguments(raw_arguments: String) -> String
+- streaming_tool_item_id · function · L132-L142 — fn streaming_tool_item_id(item: &Value) -> Option<String>
+- tool_call_state · function · L144-L189 — fn tool_call_state<'a>(
+- update_tool_call_from_item · function · L191-L223 — fn update_tool_call_from_item(
+- inconsistent_tool_arguments · function · L225-L230 — fn inconsistent_tool_arguments() -> Option<StreamEvent>
+- stream_tool_calls · function · L232-L291 — fn stream_tool_calls(
+- complete_tool_arguments · function · L293-L304 — fn complete_tool_arguments(state: &mut StreamingToolCallState, arguments: Option<String>) -> bool
+- parse_openai_response_event · function · L306-L333 — pub fn parse_openai_response_event(
+- parse_openai_response_event_inner · function · L335-L571 — fn parse_openai_response_event_inner(
+- cache_response_evidence · function · L575-L610 — fn cache_response_evidence(response: &Value) -> Value
+- extract_service_tier · function · L612-L618 — fn extract_service_tier(response: &Value) -> Option<StreamEvent>
+- extract_last_assistant_message_phase · function · L620-L633 — fn extract_last_assistant_message_phase(response: &Value) -> Option<String>
+- extract_stop_reason_from_response · function · L635-L656 — fn extract_stop_reason_from_response(response: &Value) -> Option<String>
+- handle_openai_output_item · function · L658-L803 — pub fn handle_openai_output_item(
+- handle_openai_image_generation_item · function · L805-L928 — fn handle_openai_image_generation_item(
+- OpenAIResponsesStream · struct · L930-L944 — pub struct OpenAIResponsesStream
+- new · function · L947-L961 — pub fn new(stream: impl Stream<Item = Result<Bytes, reqwest::Error>> + Send + 'static) -> Self
+- transport_idle_for · function · L964-L966 — pub fn transport_idle_for(&self) -> std::time::Duration
+- transport_bytes · function · L968-L970 — pub fn transport_bytes(&self) -> u64
+- parse_next_event · function · L972-L1006 — fn parse_next_event(&mut self) -> Option<StreamEvent>
+- extract_input_token_detail · function · L1009-L1015 — fn extract_input_token_detail(usage: &Value, field: &str) -> Option<u64>
+- extract_usage_from_response · function · L1018-L1041 — pub fn extract_usage_from_response(response: &Value) -> Option<StreamEvent>
+- Item · type · L1044-L1044 — type Item = Result<StreamEvent>;
+- poll_next · function · L1046-L1078 — fn poll_next(mut self: Pin<&mut Self>, cx: &mut TaskContext<'_>) -> Poll<Option<Self::Item>>
+- tests · module · L1083-L1083 — mod tests;
+- benchmarks · module · L1087-L1087 — mod benchmarks;
+- resolved_model_tests · module · L1091-L1091 — mod resolved_model_tests;
+- stream_tool_tests · module · L1095-L1095 — mod stream_tool_tests;
+- stream_citation_tests · module · L1099-L1099 — mod stream_citation_tests;
+- text_framing_tests · module · L1103-L1103 — mod text_framing_tests;

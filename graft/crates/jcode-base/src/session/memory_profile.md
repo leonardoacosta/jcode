@@ -1,0 +1,25 @@
+# crates/jcode-base/src/session/memory_profile.rs
+
+- CompactionJsonBytesCache · struct · L10-L12 — pub(super) struct CompactionJsonBytesCache(
+- clone · function · L15-L19 — fn clone(&self) -> Self
+- bytes · function · L23-L37 — pub(super) fn bytes(&self, state: Option<&Arc<super::StoredCompactionState>>) -> usize
+- LARGE_MEMORY_BLOB_THRESHOLD_BYTES · constant · L40-L40 — const LARGE_MEMORY_BLOB_THRESHOLD_BYTES: usize = 16 * 1024;
+- stored_message_metadata · module · L43-L43 — mod stored_message_metadata;
+- stored_message_json_bytes · function · L45-L47 — pub(super) fn stored_message_json_bytes(message: &super::StoredMessage) -> usize
+- cached_size_tests · module · L50-L200 — mod cached_size_tests
+- compaction · function · L53-L61 — fn compaction() -> Arc<super::super::StoredCompactionState>
+- assert_exact · function · L63-L74 — fn assert_exact(session: &mut super::super::Session)
+- compaction_accounting_mutation_replacement_clone_and_clear · function · L77-L104 — fn compaction_accounting_mutation_replacement_clone_and_clear()
+- compaction_accounting_drops_payload_and_bounds_weak_retention · function · L107-L129 — fn compaction_accounting_drops_payload_and_bounds_weak_retention()
+- compaction_accounting_microprobe · function · L136-L166 — fn compaction_accounting_microprobe()
+- stored_sizes_match_full_serialization_after_metadata_and_content_changes · function · L169-L199 — fn stored_sizes_match_full_serialization_after_metadata_and_content_changes()
+- ContentBlockMemoryStats · struct · L203-L223 — pub(super) struct ContentBlockMemoryStats
+- merge_from · function · L226-L246 — pub(super) fn merge_from(&mut self, other: &Self)
+- record_bytes · function · L248-L254 — fn record_bytes(&mut self, bytes: usize)
+- record_block · function · L256-L329 — fn record_block(&mut self, block: &ContentBlock)
+- payload_text_bytes · function · L331-L337 — pub(super) fn payload_text_bytes(&self) -> usize
+- to_json · function · L339-L362 — pub(super) fn to_json(&self) -> serde_json::Value
+- summarize_message_content · function · L365-L376 — pub(super) fn summarize_message_content<'a, I>(messages: I) -> ContentBlockMemoryStats
+- summarize_blocks · function · L378-L384 — pub(super) fn summarize_blocks(blocks: &[ContentBlock]) -> ContentBlockMemoryStats
+- SessionMemoryProfileCache · struct · L387-L401 — pub(super) struct SessionMemoryProfileCache
+- SessionMemoryProfileSnapshot · struct · L404-L417 — pub struct SessionMemoryProfileSnapshot

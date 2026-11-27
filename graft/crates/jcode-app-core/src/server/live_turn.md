@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/server/live_turn.rs
+
+- LiveTurnSwarmContext · struct · L36-L42 — pub(super) struct LiveTurnSwarmContext
+- new · function · L45-L59 — pub(super) fn new(
+- idle_live_agent · function · L68-L108 — pub(super) async fn idle_live_agent(
+- LiveTurnInput · struct · L111-L117 — pub(super) struct LiveTurnInput
+- spawn_tracked_live_turn · function · L126-L148 — pub(super) async fn spawn_tracked_live_turn(
+- spawn_tracked_live_turn_with_images · function · L150-L293 — pub(super) async fn spawn_tracked_live_turn_with_images(
+- run_live_turn_if_idle · function · L297-L318 — pub(super) async fn run_live_turn_if_idle(
+- run_live_system_turn_if_idle · function · L320-L340 — pub(super) async fn run_live_system_turn_if_idle(
+- catch_live_turn_panic · function · L343-L362 — async fn catch_live_turn_panic<F>(turn: F) -> (anyhow::Result<()>, crate::protocol::TurnStopReason)
+- stop_reason_tests · module · L365-L389 — mod stop_reason_tests
+- abnormal_stop_classifies_panics_without_parsing_error_strings · function · L370-L388 — async fn abnormal_stop_classifies_panics_without_parsing_error_strings()
+- context_tests · module · L393-L393 — mod context_tests;
+- durable_error_tests · module · L396-L588 — mod durable_error_tests
+- FAILURE · constant · L406-L406 — const FAILURE: &str = "invalid_request_error: No tool call found for function call output with call_id call_missing";
+- FailingProvider · struct · L409-L409 — struct FailingProvider(AtomicU64);
+- complete · function · L413-L422 — async fn complete(
+- name · function · L424-L426 — fn name(&self) -> &str
+- fork · function · L428-L430 — fn fork(&self) -> Arc<dyn Provider>
+- failed_wake_error_is_durable_before_live_terminal_event · function · L435-L587 — async fn failed_wake_error_is_durable_before_live_terminal_event()
+- RestoreHome · struct · L438-L438 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L440-L445 — fn drop(&mut self)

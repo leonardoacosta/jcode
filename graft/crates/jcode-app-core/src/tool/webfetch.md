@@ -1,0 +1,38 @@
+# crates/jcode-app-core/src/tool/webfetch.rs
+
+- MAX_SIZE · constant · L9-L9 — const MAX_SIZE: usize = 5 * 1024 * 1024; // 5MB
+- MAX_OUTPUT_CHARS · constant · L12-L12 — const MAX_OUTPUT_CHARS: usize = 40_000;
+- MAX_URL_CHARS · constant · L16-L16 — const MAX_URL_CHARS: usize = 300;
+- DEFAULT_TIMEOUT · constant · L17-L17 — const DEFAULT_TIMEOUT: u64 = 30;
+- MAX_TIMEOUT · constant · L18-L18 — const MAX_TIMEOUT: u64 = 120;
+- WebFetchTool · struct · L20-L20 — pub struct WebFetchTool;
+- new · function · L23-L25 — pub fn new() -> Self
+- WebFetchInput · struct · L29-L35 — struct WebFetchInput
+- name · function · L39-L41 — fn name(&self) -> &str
+- description · function · L43-L45 — fn description(&self) -> &str
+- parameters_schema · function · L47-L68 — fn parameters_schema(&self) -> Value
+- execute · function · L70-L175 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- truncate_output · function · L180-L194 — fn truncate_output(output: String) -> (String, bool)
+- html_regex · module · L196-L300 — mod html_regex
+- compile_regex · function · L200-L211 — fn compile_regex(pattern: &str, label: &str) -> Option<Regex>
+- static_regex · function · L213-L221 — macro_rules! static_regex
+- CHROME_TAGS · constant · L245-L248 — const CHROME_TAGS: [&str; 10] = [
+- CHROME · constant · L250-L250 — static CHROME: OnceLock<Vec<Regex>> = OnceLock::new();
+- chrome · function · L252-L261 — pub fn chrome() -> &'static [Regex]
+- H_OPEN · constant · L272-L272 — static H_OPEN: OnceLock<Option<[Regex; 6]>> = OnceLock::new();
+- H_CLOSE · constant · L273-L273 — static H_CLOSE: OnceLock<Option<[Regex; 6]>> = OnceLock::new();
+- h_open · function · L275-L286 — pub fn h_open() -> Option<&'static [Regex; 6]>
+- h_close · function · L288-L299 — pub fn h_close() -> Option<&'static [Regex; 6]>
+- html_to_text · function · L302-L343 — fn html_to_text(html: &str) -> String
+- render_link · function · L355-L365 — fn render_link(href: &str, text: &str) -> String
+- html_to_markdown · function · L367-L450 — fn html_to_markdown(html: &str) -> String
+- corpus_tests · module · L454-L454 — mod corpus_tests;
+- tests · module · L457-L537 — mod tests
+- strips_non_prose_elements · function · L461-L472 — fn strips_non_prose_elements()
+- keeps_article_header_and_footer_content · function · L475-L484 — fn keeps_article_header_and_footer_content()
+- drops_empty_links_and_overlong_targets · function · L487-L496 — fn drops_empty_links_and_overlong_targets()
+- strips_html_comments · function · L499-L503 — fn strips_html_comments()
+- does_not_leak_attributes_containing_angle_brackets · function · L506-L512 — fn does_not_leak_attributes_containing_angle_brackets()
+- caps_output_length · function · L515-L520 — fn caps_output_length()
+- keeps_short_output_intact · function · L523-L527 — fn keeps_short_output_intact()
+- truncation_respects_char_boundaries · function · L530-L536 — fn truncation_respects_char_boundaries()

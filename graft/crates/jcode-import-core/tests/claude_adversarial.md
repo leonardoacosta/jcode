@@ -1,0 +1,31 @@
+# crates/jcode-import-core/tests/claude_adversarial.rs
+
+- parse · function · L21-L23 — fn parse(line: &str) -> Result<ClaudeCodeEntry, serde_json::Error>
+- parse_ok · function · L26-L30 — fn parse_ok(line: &str) -> ClaudeCodeEntry
+- first_tool_result_content · function · L32-L42 — fn first_tool_result_content(entry: ClaudeCodeEntry) -> String
+- ordered_uuids · function · L44-L49 — fn ordered_uuids(entries: &[ClaudeCodeEntry]) -> Vec<Option<&str>>
+- tool_result_array_text_imports_text · function · L56-L61 — fn tool_result_array_text_imports_text()
+- tool_result_array_mixed_text_and_image_uses_placeholder_not_base64 · function · L64-L81 — fn tool_result_array_mixed_text_and_image_uses_placeholder_not_base64()
+- tool_result_array_image_only_uses_placeholder · function · L84-L88 — fn tool_result_array_image_only_uses_placeholder()
+- tool_result_content_null_parses_to_empty_not_dropped · function · L91-L94 — fn tool_result_content_null_parses_to_empty_not_dropped()
+- tool_result_content_missing_parses_to_empty_not_dropped · function · L97-L100 — fn tool_result_content_missing_parses_to_empty_not_dropped()
+- tool_result_content_plain_string_still_supported · function · L103-L110 — fn tool_result_content_plain_string_still_supported()
+- tool_result_array_nested_content_string_blocks_preserved · function · L113-L122 — fn tool_result_array_nested_content_string_blocks_preserved()
+- large_base64_image_does_not_bloat_imported_text · function · L129-L148 — fn large_base64_image_does_not_bloat_imported_text()
+- thinking_block_without_signature_parses · function · L155-L162 — fn thinking_block_without_signature_parses()
+- thinking_block_with_signature_parses · function · L165-L172 — fn thinking_block_with_signature_parses()
+- redacted_thinking_block_is_skipped_not_dropped · function · L175-L185 — fn redacted_thinking_block_is_skipped_not_dropped()
+- unknown_block_type_does_not_drop_sibling_text · function · L188-L197 — fn unknown_block_type_does_not_drop_sibling_text()
+- message_content_plain_string_parses · function · L204-L211 — fn message_content_plain_string_parses()
+- message_content_missing_defaults_to_empty · function · L214-L221 — fn message_content_missing_defaults_to_empty()
+- entry_with_system_role_parses_but_is_excluded_from_ordering · function · L224-L234 — fn entry_with_system_role_parses_but_is_excluded_from_ordering()
+- entry_with_tool_role_is_excluded_from_ordering · function · L237-L247 — fn entry_with_tool_role_is_excluded_from_ordering()
+- sidechain_entries_excluded_from_message_ordering · function · L254-L266 — fn sidechain_entries_excluded_from_message_ordering()
+- parent_chain_cycle_does_not_infinite_loop_and_keeps_all · function · L273-L292 — fn parent_chain_cycle_does_not_infinite_loop_and_keeps_all()
+- self_parent_entry_appears_exactly_once · function · L295-L300 — fn self_parent_entry_appears_exactly_once()
+- branching_chain_keeps_all_children · function · L303-L323 — fn branching_chain_keeps_all_children()
+- multiple_roots_all_preserved · function · L326-L339 — fn multiple_roots_all_preserved()
+- missing_root_orphan_chain_is_not_dropped · function · L342-L355 — fn missing_root_orphan_chain_is_not_dropped()
+- duplicate_uuids_do_not_loop_forever · function · L358-L375 — fn duplicate_uuids_do_not_loop_forever()
+- long_linear_chain_orders_correctly · function · L378-L395 — fn long_linear_chain_orders_correctly()
+- malformed_json_line_fails_to_parse_in_isolation · function · L402-L412 — fn malformed_json_line_fails_to_parse_in_isolation()

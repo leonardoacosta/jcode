@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/tui/app/misc_ui.rs
+
+- ResolvedTokenPricing · struct · L8-L20 — pub(crate) struct ResolvedTokenPricing
+- cost_for_usage · function · L33-L79 — pub fn cost_for_usage(
+- remote_provider_is_inherently_billed · function · L82-L91 — fn remote_provider_is_inherently_billed(provider_name: &str) -> bool
+- current_streaming_tps_elapsed · function · L95-L101 — pub(super) fn current_streaming_tps_elapsed(&self) -> Duration
+- snapshot_streaming_tps · function · L103-L107 — pub(super) fn snapshot_streaming_tps(&mut self)
+- resume_streaming_tps · function · L109-L114 — pub(super) fn resume_streaming_tps(&mut self)
+- pause_streaming_tps · function · L116-L121 — pub(super) fn pause_streaming_tps(&mut self, keep_collecting_output: bool)
+- reset_streaming_tps · function · L123-L131 — pub(super) fn reset_streaming_tps(&mut self)
+- open_usage_inline_loading · function · L133-L140 — pub(super) fn open_usage_inline_loading(&mut self)
+- request_usage_report · function · L142-L167 — pub(super) fn request_usage_report(&mut self)
+- update_cost_impl · function · L169-L252 — pub(super) fn update_cost_impl(&mut self)
+- accrue_remote_call_cost · function · L265-L290 — pub(super) fn accrue_remote_call_cost(
+- seed_cost_from_history_totals · function · L303-L322 — pub(super) fn seed_cost_from_history_totals(
+- record_api_key_spend · function · L328-L342 — fn record_api_key_spend(&self, call_cost: f32)
+- resolve_remote_cost_pricing · function · L348-L387 — fn resolve_remote_cost_pricing(&mut self) -> Option<ResolvedTokenPricing>
+- refresh_cached_pricing · function · L396-L443 — fn refresh_cached_pricing(&mut self, model: &str, is_anthropic: bool, is_openai: bool)
+- active_service_tier_for_pricing · function · L448-L458 — fn active_service_tier_for_pricing(&self) -> Option<String>
+- compute_streaming_tps · function · L460-L468 — pub(super) fn compute_streaming_tps(&self) -> Option<f32>
+- handle_changelog_key · function · L470-L497 — pub(super) fn handle_changelog_key(&mut self, code: KeyCode) -> Result<()>
+- handle_help_key · function · L499-L526 — pub(super) fn handle_help_key(&mut self, code: KeyCode) -> Result<()>
+- handle_model_status_key · function · L528-L565 — pub(super) fn handle_model_status_key(&mut self, code: KeyCode) -> Result<()>
+- tests · module · L569-L586 — mod tests
+- remote_billing_recognizes_deepseek_display_name · function · L573-L575 — fn remote_billing_recognizes_deepseek_display_name()
+- remote_billing_does_not_meter_no_auth_compatible_profiles · function · L578-L585 — fn remote_billing_does_not_meter_no_auth_compatible_profiles()
+- cache_cost_tests · module · L589-L607 — mod cache_cost_tests
+- openai_cache_writes_replace_uncached_input_cost · function · L593-L606 — fn openai_cache_writes_replace_uncached_input_cost()

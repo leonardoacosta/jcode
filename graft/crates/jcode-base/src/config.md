@@ -1,0 +1,75 @@
+# crates/jcode-base/src/config.rs
+
+- CONFIG_CACHE_CHECK_INTERVAL · constant · L26-L30 — const CONFIG_CACHE_CHECK_INTERVAL: Duration = if cfg!(test)
+- kagi_websearch_documented_config_parses · function · L34-L52 — fn kagi_websearch_documented_config_parses()
+- custom_websearch_config_toml_roundtrip · function · L56-L95 — fn custom_websearch_config_toml_roundtrip()
+- agents_jev_models_parse_and_default_unset · function · L99-L121 — fn agents_jev_models_parse_and_default_unset()
+- CONFIG_ENV_KEYS · constant · L123-L323 — const CONFIG_ENV_KEYS: &[&str] = &[
+- ConfigCacheFingerprint · struct · L326-L330 — struct ConfigCacheFingerprint
+- current · function · L333-L340 — fn current() -> Self
+- ConfigCache · struct · L343-L350 — struct ConfigCache
+- CONFIG_CACHE · constant · L352-L372 — static CONFIG_CACHE: LazyLock<RwLock<ConfigCache>> = LazyLock::new(||
+- load_for_cache · function · L378-L393 — fn load_for_cache() -> (Config, Option<String>)
+- config_strict · function · L400-L409 — pub fn config_strict() -> anyhow::Result<&'static Config>
+- leak_config · function · L411-L413 — fn leak_config(config: Config) -> &'static Config
+- populate_context_limits_from_config_ref · function · L420-L422 — fn populate_context_limits_from_config_ref(cfg: &Config)
+- config · function · L431-L507 — pub fn config() -> &'static Config
+- describe_config_reload · function · L509-L539 — fn describe_config_reload(
+- describe_env_changes · function · L541-L573 — fn describe_env_changes(previous: &[(String, String)], next: &[(String, String)]) -> Vec<String>
+- env_value_fingerprint · function · L575-L579 — fn env_value_fingerprint(value: &str) -> String
+- config_env_fingerprint · function · L581-L594 — fn config_env_fingerprint() -> Vec<(String, String)>
+- invalidate_config_cache · function · L596-L603 — pub fn invalidate_config_cache()
+- notify_config_reloaded · function · L605-L614 — fn notify_config_reloaded()
+- CONFIG_RELOAD_GENERATION · constant · L622-L623 — static CONFIG_RELOAD_GENERATION: std::sync::atomic::AtomicU64 =
+- config_reload_generation · function · L626-L628 — pub fn config_reload_generation() -> u64
+- ConfigReloadListener · type · L637-L637 — type ConfigReloadListener = fn();
+- CONFIG_RELOAD_LISTENERS · constant · L639-L640 — static CONFIG_RELOAD_LISTENERS: LazyLock<RwLock<Vec<ConfigReloadListener>>> =
+- on_config_reloaded · function · L647-L652 — pub fn on_config_reloaded(listener: fn())
+- JevConfig · struct · L657-L660 — pub struct JevConfig
+- JevSupervisionConfig · struct · L665-L668 — pub struct JevSupervisionConfig
+- CloudConfig · struct · L673-L675 — pub struct CloudConfig
+- default · function · L678-L682 — fn default() -> Self
+- cloud_config_tests · module · L686-L700 — mod cloud_config_tests
+- cloud_access_defaults_and_overrides · function · L690-L699 — fn cloud_access_defaults_and_overrides()
+- Config · struct · L705-L821 — pub struct Config
+- WakeMode · enum · L826-L832 — pub enum WakeMode
+- parse · function · L835-L841 — pub fn parse(value: &str) -> Option<Self>
+- ServerConfig · struct · L846-L852 — pub struct ServerConfig
+- AcpConfig · struct · L857-L862 — pub struct AcpConfig
+- default · function · L865-L870 — fn default() -> Self
+- McpToolsMode · enum · L876-L888 — pub enum McpToolsMode
+- as_str · function · L891-L897 — pub fn as_str(self) -> &'static str
+- parse · function · L899-L906 — pub fn parse(value: &str) -> Option<Self>
+- ToolConfig · struct · L912-L947 — pub struct ToolConfig
+- default · function · L950-L962 — fn default() -> Self
+- ToolSelection · struct · L966-L969 — pub struct ToolSelection
+- selection · function · L972-L991 — pub fn selection(&self) -> ToolSelection
+- allowed_tools · function · L993-L995 — pub fn allowed_tools(&self) -> Option<HashSet<String>>
+- apply_to_allowed_set · function · L997-L1005 — pub fn apply_to_allowed_set(&self, allowed: &mut HashSet<String>)
+- base_allowed_tools · function · L1007-L1036 — fn base_allowed_tools(&self) -> Option<HashSet<String>>
+- normalized_enabled_tools · function · L1038-L1055 — fn normalized_enabled_tools(&self) -> (HashSet<String>, bool)
+- normalize_tool_name · function · L1058-L1061 — fn normalize_tool_name(name: &str) -> String
+- CompanionConfig · struct · L1067-L1086 — pub struct CompanionConfig
+- default · function · L1089-L1100 — fn default() -> Self
+- JarvisConfig · struct · L1107-L1110 — pub struct JarvisConfig
+- JarvisListeningConfig · struct · L1116-L1121 — pub struct JarvisListeningConfig
+- default · function · L1124-L1131 — fn default() -> Self
+- JarvisSpeechConfig · struct · L1136-L1144 — pub struct JarvisSpeechConfig
+- default · function · L1147-L1154 — fn default() -> Self
+- jarvis_config_tests · module · L1158-L1198 — mod jarvis_config_tests
+- listening_limits_are_bounded_defaults_and_can_be_overridden · function · L1162-L1173 — fn listening_limits_are_bounded_defaults_and_can_be_overridden()
+- jarvis_endpoint_is_optional_and_serializes · function · L1176-L1197 — fn jarvis_endpoint_is_optional_and_serializes()
+- DictationConfig · struct · L1203-L1227 — pub struct DictationConfig
+- default · function · L1230-L1241 — fn default() -> Self
+- change_report · module · L1244-L1244 — pub mod change_report;
+- composition · module · L1245-L1245 — mod composition;
+- config_file · module · L1246-L1246 — mod config_file;
+- default_file · module · L1247-L1247 — mod default_file;
+- display_summary · module · L1248-L1248 — mod display_summary;
+- env_overrides · module · L1249-L1249 — mod env_overrides;
+- sparse_save · module · L1250-L1250 — mod sparse_save;
+- task_policy · module · L1251-L1251 — mod task_policy;
+- tests · module · L1255-L1255 — mod tests;
+- config_composition · module · L1259-L1259 — mod config_composition;
+- color_tests · module · L1263-L1263 — mod color_tests;
+- sponsors_is_default · function · L1270-L1272 — fn sponsors_is_default(sponsors: &SponsorsConfig) -> bool

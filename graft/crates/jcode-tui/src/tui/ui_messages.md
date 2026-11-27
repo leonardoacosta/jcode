@@ -1,0 +1,146 @@
+# crates/jcode-tui/src/tui/ui_messages.rs
+
+- gmail_drafts · module · L2-L2 — mod gmail_drafts;
+- tool_rendering · module · L5-L5 — mod tool_rendering;
+- todo_completion · module · L9-L9 — mod todo_completion;
+- todo_payload_cache_tests · module · L12-L12 — mod todo_payload_cache_tests;
+- todo_stages · module · L14-L14 — mod todo_stages;
+- cache_support · module · L21-L21 — mod cache_support;
+- MAX_INLINE_DIFF_LINES · constant · L33-L33 — const MAX_INLINE_DIFF_LINES: usize = 12;
+- MAX_DISCOVERY_DETAIL_LINES · constant · L34-L34 — const MAX_DISCOVERY_DETAIL_LINES: usize = 2;
+- MAX_DISCOVERY_SETUP_LINES · constant · L35-L35 — const MAX_DISCOVERY_SETUP_LINES: usize = 3;
+- prefer_width_stable_system_glyphs · function · L37-L46 — fn prefer_width_stable_system_glyphs() -> bool
+- width_stable_system_title · function · L48-L54 — fn width_stable_system_title<'a>(normal: &'a str, stable: &'a str) -> &'a str
+- normalize_system_content_for_display · function · L56-L75 — fn normalize_system_content_for_display(content: &str) -> Cow<'_, str>
+- render_single_line_system_notice · function · L77-L167 — fn render_single_line_system_notice(
+- render_assistant_message · function · L175-L191 — pub(crate) fn render_assistant_message(
+- AssistantSegment · enum · L196-L199 — enum AssistantSegment
+- plan_card · module · L205-L205 — mod plan_card;
+- render_reasoning_message · function · L211-L223 — pub(crate) fn render_reasoning_message(
+- render_plaintext_lines · function · L233-L308 — fn render_plaintext_lines(content: &str, wrap_width: usize) -> Vec<Line<'static>>
+- render_agentgrep_output_body · function · L314-L364 — fn render_agentgrep_output_body(content: &str, row_width: usize) -> Vec<Line<'static>>
+- MAX_BODY_LINES · constant · L315-L315 — const MAX_BODY_LINES: usize = 400;
+- kv_cache_footer · module · L367-L367 — mod kv_cache_footer;
+- is_kv_cache_footer · function · L373-L375 — pub(super) fn is_kv_cache_footer(msg: &DisplayMessage) -> bool
+- needs_message_separator · function · L378-L385 — pub(super) fn needs_message_separator(msg: &DisplayMessage) -> bool
+- is_swarm_await_started · function · L387-L393 — pub(crate) fn is_swarm_await_started(msg: &DisplayMessage) -> bool
+- starts_with_reasoning · function · L398-L400 — pub(super) fn starts_with_reasoning(content: &str) -> bool
+- render_system_message · function · L402-L520 — pub(crate) fn render_system_message(
+- content_has_markdown_formatting · function · L530-L556 — fn content_has_markdown_formatting(content: &str) -> bool
+- preserve_hard_line_breaks_for_markdown · function · L565-L608 — fn preserve_hard_line_breaks_for_markdown(content: &str) -> Cow<'_, str>
+- usage · module · L611-L611 — mod usage;
+- render_overnight_message · function · L614-L792 — pub(crate) fn render_overnight_message(
+- TodoCardBackgroundTask · struct · L796-L800 — pub(crate) struct TodoCardBackgroundTask
+- TodoCardPayload · enum · L804-L819 — enum TodoCardPayload
+- todo_group_color · function · L825-L827 — fn todo_group_color() -> Color
+- todo_label_color · function · L829-L831 — fn todo_label_color() -> Color
+- todo_meta_color · function · L833-L835 — fn todo_meta_color() -> Color
+- todo_score_color · function · L837-L839 — fn todo_score_color() -> Color
+- todo_warning_color · function · L841-L843 — fn todo_warning_color() -> Color
+- todo_failure_color · function · L845-L847 — fn todo_failure_color() -> Color
+- todo_confidence_color · function · L849-L851 — fn todo_confidence_color() -> Color
+- MAX_CACHED_TODO_PAYLOAD_BYTES · constant · L855-L855 — const MAX_CACHED_TODO_PAYLOAD_BYTES: usize = 256 * 1024;
+- TodoPayloadCache · struct · L858-L860 — struct TodoPayloadCache
+- get · function · L863-L875 — fn get(&mut self, content: &str) -> Option<std::sync::Arc<TodoCardPayload>>
+- cached_todo_payload · function · L883-L885 — fn cached_todo_payload(content: &str) -> Option<std::sync::Arc<TodoCardPayload>>
+- todos · function · L888-L892 — fn todos(&self) -> &[crate::todo::TodoItem]
+- into_parts · function · L894-L919 — fn into_parts(
+- ParsedTodoToolOutput · struct · L922-L928 — struct ParsedTodoToolOutput
+- parse_todo_tool_output · function · L930-L995 — fn parse_todo_tool_output(content: &str) -> Option<ParsedTodoToolOutput>
+- strip_todo_tool_output_headers · function · L997-L1015 — pub(crate) fn strip_todo_tool_output_headers(content: &str) -> &str
+- strip_todo_tool_name_header · function · L1017-L1023 — fn strip_todo_tool_name_header(content: &str) -> Option<&str>
+- strip_tool_result_timestamp_header · function · L1025-L1040 — fn strip_tool_result_timestamp_header(content: &str) -> &str
+- render_todos_message · function · L1045-L1051 — pub(crate) fn render_todos_message(
+- todo_blocker_footer · function · L1055-L1060 — pub(super) fn todo_blocker_footer(payload: Option<&str>, width: u16) -> Vec<Line<'static>>
+- render_todo_blocker_footer · function · L1062-L1114 — fn render_todo_blocker_footer(payload: &TodoCardPayload, width: u16) -> Vec<Line<'static>>
+- todo_blocker_notes · function · L1117-L1144 — pub(super) fn todo_blocker_notes(payload: Option<&str>) -> Vec<Line<'static>>
+- render_pinned_todos_message · function · L1149-L1158 — pub(crate) fn render_pinned_todos_message(
+- render_todos_message_with_cap · function · L1160-L1337 — fn render_todos_message_with_cap(
+- render_finished_todo_summary · function · L1341-L1413 — fn render_finished_todo_summary(
+- todo_card_line · function · L1415-L1426 — fn todo_card_line(
+- todo_card_goal_for_group · function · L1428-L1440 — fn todo_card_goal_for_group<'a>(
+- todo_goal_score_segments · function · L1442-L1520 — fn todo_goal_score_segments(goal: &crate::todo::TodoGoal) -> Vec<Vec<Span<'static>>>
+- push_todo_status_pips · function · L1522-L1562 — fn push_todo_status_pips<'a>(
+- push_todo_count_pips · function · L1564-L1617 — fn push_todo_count_pips(
+- render_todo_stage_status_header · function · L1621-L1639 — fn render_todo_stage_status_header(
+- push_todo_item_lines · function · L1641-L1659 — fn push_todo_item_lines(
+- wrap_todo_detail · function · L1661-L1697 — fn wrap_todo_detail(value: &str, width: usize) -> Vec<String>
+- push_todo_plan_details · function · L1700-L1741 — fn push_todo_plan_details(
+- push_todo_detail · function · L1743-L1765 — fn push_todo_detail(
+- push_todo_wrapped_detail · function · L1768-L1795 — fn push_todo_wrapped_detail(
+- push_todo_goal_details · function · L1797-L1833 — fn push_todo_goal_details(
+- render_todo_assessment_updates · function · L1837-L1845 — fn render_todo_assessment_updates(
+- render_todo_plan_update · function · L1847-L1926 — fn render_todo_plan_update(
+- render_todo_goal_updates · function · L1928-L2109 — fn render_todo_goal_updates(
+- push_todo_score_update · function · L2111-L2141 — fn push_todo_score_update(
+- push_todo_text_update · function · L2143-L2175 — fn push_todo_text_update(
+- todo_card_confidence_label · function · L2177-L2190 — fn todo_card_confidence_label(todo: &crate::todo::TodoItem) -> Option<String>
+- render_todo_card_item_line · function · L2192-L2198 — fn render_todo_card_item_line(
+- todo_running_dependencies · function · L2200-L2211 — fn todo_running_dependencies<'a>(
+- render_todo_item_line_with_background · function · L2213-L2261 — fn render_todo_item_line_with_background(
+- todo_dependency_progress · function · L2266-L2326 — fn todo_dependency_progress(tasks: &[&TodoCardBackgroundTask], width: usize) -> Line<'static>
+- todo_card_item_spans · function · L2330-L2379 — fn todo_card_item_spans(todo: &crate::todo::TodoItem, with_confidence: bool) -> Vec<Span<'static>>
+- todo_complete_blocker_detail · function · L2383-L2393 — pub(super) fn todo_complete_blocker_detail(todo: &crate::todo::TodoItem) -> String
+- compact_run_id · function · L2395-L2402 — fn compact_run_id(run_id: &str) -> String
+- render_overnight_progress_line · function · L2404-L2439 — fn render_overnight_progress_line(
+- push_wrapped_kv_line · function · L2441-L2475 — fn push_wrapped_kv_line(
+- format_overnight_task_counts · function · L2477-L2488 — fn format_overnight_task_counts(card: &crate::overnight::OvernightProgressCard) -> String
+- ParsedScheduledSessionMessage · struct · L2491-L2499 — struct ParsedScheduledSessionMessage
+- ParsedScheduledToolMessage · struct · L2502-L2509 — struct ParsedScheduledToolMessage
+- parse_prefixed_value · function · L2511-L2517 — fn parse_prefixed_value(line: &str, prefix: &str) -> Option<String>
+- push_card_section · function · L2519-L2538 — fn push_card_section(
+- parse_scheduled_session_message · function · L2540-L2587 — fn parse_scheduled_session_message(content: &str) -> Option<ParsedScheduledSessionMessage>
+- render_scheduled_session_message · function · L2589-L2680 — fn render_scheduled_session_message(
+- parse_scheduled_tool_message · function · L2682-L2734 — fn parse_scheduled_tool_message(msg: &DisplayMessage) -> Option<ParsedScheduledToolMessage>
+- render_scheduled_tool_message · function · L2736-L2808 — fn render_scheduled_tool_message(msg: &DisplayMessage, width: u16) -> Option<Vec<Line<'static>>>
+- connection · module · L2811-L2811 — mod connection;
+- render_background_task_message · function · L2814-L3070 — pub(crate) fn render_background_task_message(
+- compact_swarm_operation_label · function · L3072-L3078 — fn compact_swarm_operation_label(label: &str) -> String
+- compact_swarm_progress_fraction · function · L3080-L3091 — fn compact_swarm_progress_fraction(summary: &str) -> Option<&str>
+- render_compact_swarm_background_progress · function · L3093-L3107 — fn render_compact_swarm_background_progress(
+- render_compact_swarm_background_completion · function · L3109-L3134 — fn render_compact_swarm_background_completion(
+- render_compact_swarm_operation_line · function · L3136-L3148 — fn render_compact_swarm_operation_line(text: &str, width: u16, color: Color) -> Vec<Line<'static>>
+- progress_summary_without_leading_percent · function · L3150-L3162 — fn progress_summary_without_leading_percent(summary: &str) -> &str
+- render_compact_progress_line · function · L3164-L3208 — fn render_compact_progress_line(
+- render_background_task_progress_message · function · L3210-L3267 — fn render_background_task_progress_message(
+- swarm_notification_style · function · L3269-L3287 — fn swarm_notification_style(title: Option<&str>) -> (&'static str, Color, Color)
+- SWARM_EXPAND_BADGE · constant · L3291-L3291 — pub(crate) const SWARM_EXPAND_BADGE: &str = "⊞";
+- SWARM_COLLAPSE_BADGE · constant · L3292-L3292 — pub(crate) const SWARM_COLLAPSE_BADGE: &str = "⊟";
+- SWARM_DIFF_EXPAND_BADGE · constant · L3293-L3293 — pub(crate) const SWARM_DIFF_EXPAND_BADGE: &str = "▸ diff";
+- SWARM_DIFF_COLLAPSE_BADGE · constant · L3294-L3294 — pub(crate) const SWARM_DIFF_COLLAPSE_BADGE: &str = "▾ hide";
+- SWARM_AGENT_SNAPSHOT_TITLE · constant · L3295-L3295 — pub(crate) const SWARM_AGENT_SNAPSHOT_TITLE: &str = "swarm-agent-snapshot";
+- compact_swarm_await_summary · function · L3297-L3398 — pub(crate) fn compact_swarm_await_summary(message: &str) -> String
+- encode_swarm_agent_snapshot · function · L3400-L3410 — pub(crate) fn encode_swarm_agent_snapshot(
+- swarm_agent_color · function · L3415-L3432 — fn swarm_agent_color(sender: &str) -> Color
+- ACCENTS · constant · L3417-L3425 — const ACCENTS: [Role; 7] = [
+- CompactSwarmNotification · struct · L3434-L3440 — struct CompactSwarmNotification<'a>
+- compact_swarm_notification · function · L3442-L3483 — fn compact_swarm_notification(title: &str) -> Option<CompactSwarmNotification<'_>>
+- render_completion_lane_body · function · L3487-L3493 — fn render_completion_lane_body(
+- render_completion_lanes · function · L3495-L3609 — fn render_completion_lanes(
+- is_collapsed_agent_dm · function · L3611-L3619 — pub(crate) fn is_collapsed_agent_dm(msg: &DisplayMessage) -> bool
+- render_agent_dm_run · function · L3621-L3666 — pub(crate) fn render_agent_dm_run(messages: &[DisplayMessage], width: u16) -> Line<'static>
+- render_compact_agent_notification · function · L3668-L3849 — fn render_compact_agent_notification(
+- swarm_notification_usage_label · function · L3853-L3868 — fn swarm_notification_usage_label(content: &str, since_last_secs: Option<f32>) -> Option<String>
+- swarm_notification_token_count · function · L3870-L3875 — fn swarm_notification_token_count(content: &str) -> usize
+- render_compact_swarm_await · function · L3877-L3907 — fn render_compact_swarm_await(
+- render_compact_plan_graph · function · L3909-L3941 — fn render_compact_plan_graph(title: &str, content: &str, width: u16) -> Option<Vec<Line<'static>>>
+- render_compact_plan_update · function · L3943-L3964 — fn render_compact_plan_update(
+- render_swarm_message · function · L3966-L4148 — pub(crate) fn render_swarm_message(
+- edit_tool_inline_diff_lines · function · L4150-L4158 — fn edit_tool_inline_diff_lines(tc: &ToolCall, content: &str) -> Option<Vec<ParsedDiffLine>>
+- edit_tool_has_inline_diff · function · L4160-L4162 — pub(super) fn edit_tool_has_inline_diff(tc: &ToolCall, content: &str) -> bool
+- edit_tool_inline_diff_is_expandable · function · L4164-L4183 — pub(super) fn edit_tool_inline_diff_is_expandable(
+- discovery · module · L4186-L4186 — mod discovery;
+- inline_diff_header · function · L4190-L4226 — fn inline_diff_header(
+- expanded_diff_row · function · L4230-L4299 — fn expanded_diff_row(
+- render_tool_failure_reason · function · L4301-L4314 — fn render_tool_failure_reason(content: &str, width: usize, indent: usize) -> Line<'static>
+- ToolOutputTokenBadge · struct · L4316-L4319 — struct ToolOutputTokenBadge
+- tool_output_token_badge · function · L4321-L4324 — fn tool_output_token_badge(content: &str) -> ToolOutputTokenBadge
+- token_badge_for_count · function · L4326-L4336 — fn token_badge_for_count(tokens: usize) -> ToolOutputTokenBadge
+- agent_color_tests · module · L4340-L4340 — mod agent_color_tests;
+- tests · module · L4344-L4344 — mod tests;
+- kv_cache_footer_tests · module · L4347-L4468 — mod kv_cache_footer_tests
+- preserves_prefix_evidence_tag_and_keeps_footer_width_bounded · function · L4349-L4370 — fn preserves_prefix_evidence_tag_and_keeps_footer_width_bounded()
+- cache_miss_footer_colors_only_the_label_by_absolute_token_loss · function · L4373-L4411 — fn cache_miss_footer_colors_only_the_label_by_absolute_token_loss()
+- missing_amount_stays_amber_and_refreshes_are_not_loss_severity · function · L4414-L4432 — fn missing_amount_stays_amber_and_refreshes_are_not_loss_severity()
+- only_system_cache_notices_attach · function · L4435-L4456 — fn only_system_cache_notices_attach()
+- summarizes_miss_reason_missed_and_hit_pct · function · L4459-L4467 — fn summarizes_miss_reason_missed_and_hit_pct()

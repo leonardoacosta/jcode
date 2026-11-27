@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/theme_detect.rs
+
+- DETECTED · constant · L20-L20 — static DETECTED: OnceLock<ThemeMode> = OnceLock::new();
+- PREWARM · constant · L24-L24 — static PREWARM: Mutex<Option<std::thread::JoinHandle<ThemeMode>>> = Mutex::new(None);
+- prewarm_theme_mode · function · L33-L49 — pub fn prewarm_theme_mode()
+- take_prewarmed_theme_mode · function · L52-L55 — fn take_prewarmed_theme_mode() -> Option<ThemeMode>
+- init_theme_mode · function · L60-L72 — pub fn init_theme_mode() -> ThemeMode
+- init_theme_mode_for_resume · function · L81-L102 — pub fn init_theme_mode_for_resume(inherited_theme: Option<&str>) -> ThemeMode
+- init_palette · function · L109-L120 — pub fn init_palette()
+- current_theme_label · function · L122-L127 — pub fn current_theme_label() -> &'static str
+- resolve_theme_mode · function · L129-L131 — fn resolve_theme_mode() -> ThemeMode
+- resolve_theme_mode_without_terminal_query · function · L133-L135 — fn resolve_theme_mode_without_terminal_query() -> ThemeMode
+- configured_theme · function · L137-L142 — fn configured_theme() -> String
+- is_auto_theme · function · L144-L149 — fn is_auto_theme(configured: &str) -> bool
+- auto_theme_enabled · function · L151-L153 — pub(super) fn auto_theme_enabled() -> bool
+- runtime_queries_enabled · function · L155-L172 — pub(super) fn runtime_queries_enabled() -> bool
+- resolve_configured_theme · function · L174-L194 — fn resolve_configured_theme(query_terminal: bool) -> ThemeMode
+- detect_terminal_theme · function · L199-L259 — fn detect_terminal_theme() -> Option<ThemeMode>
+- terminal_identity · function · L263-L271 — fn terminal_identity() -> String
+- silent_terminal_cache_path · function · L273-L280 — fn silent_terminal_cache_path() -> Option<std::path::PathBuf>
+- SILENT_TERMINAL_CACHE_TTL · constant · L284-L285 — const SILENT_TERMINAL_CACHE_TTL: std::time::Duration =
+- SILENT_TERMINAL_CACHE_MAX · constant · L288-L288 — const SILENT_TERMINAL_CACHE_MAX: usize = 32;
+- silent_terminal_is_cached_at · function · L290-L307 — fn silent_terminal_is_cached_at(path: Option<&std::path::Path>, identity: &str) -> bool
+- cache_silent_terminal_at · function · L309-L348 — fn cache_silent_terminal_at(path: Option<&std::path::Path>, identity: &str)
+- terminal_background_query_supported · function · L354-L367 — fn terminal_background_query_supported(
+- tests · module · L370-L444 — mod tests
+- explicit_theme_overrides_disable_runtime_detection · function · L377-L384 — fn explicit_theme_overrides_disable_runtime_detection()
+- skips_terminals_without_osc_query_support · function · L387-L391 — fn skips_terminals_without_osc_query_support()
+- queries_terminal_emulators_and_honors_program_hints · function · L394-L410 — fn queries_terminal_emulators_and_honors_program_hints()
+- caches_a_non_answering_terminal_so_only_the_first_launch_pays_the_timeout · function · L413-L422 — fn caches_a_non_answering_terminal_so_only_the_first_launch_pays_the_timeout()
+- silent_terminal_cache_is_bounded_and_keeps_the_newest_entries · function · L425-L436 — fn silent_terminal_cache_is_bounded_and_keeps_the_newest_entries()
+- missing_cache_path_never_skips_the_query · function · L439-L443 — fn missing_cache_path_never_skips_the_query()

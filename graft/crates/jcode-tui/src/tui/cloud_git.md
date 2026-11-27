@@ -1,0 +1,37 @@
+# crates/jcode-tui/src/tui/cloud_git.rs
+
+- stderr_timing · module · L12-L12 — mod stderr_timing;
+- RepoState · enum · L15-L21 — pub enum RepoState
+- DualGitInfo · struct · L24-L28 — pub struct DualGitInfo
+- SCRIPT · constant · L32-L46 — const SCRIPT: &str = r#"
+- quote · function · L48-L50 — fn quote(value: &str) -> String
+- command · function · L52-L58 — fn command(
+- script_command · function · L60-L67 — pub(crate) fn script_command(
+- compressed_script_command · function · L71-L78 — pub(crate) fn compressed_script_command(
+- script_command_inner · function · L80-L151 — fn script_command_inner(
+- probe · function · L153-L155 — async fn probe(command: tokio::process::Command) -> RepoState
+- probe_workspace · function · L159-L168 — pub(crate) async fn probe_workspace(
+- probe_with_timeout · function · L170-L178 — async fn probe_with_timeout(command: tokio::process::Command, deadline: Duration) -> RepoState
+- WorkspaceOperation · enum · L182-L189 — pub(crate) enum WorkspaceOperation
+- label · function · L192-L201 — fn label(self) -> &'static str
+- bounded_output · function · L205-L211 — pub(crate) async fn bounded_output(
+- bounded_output_for · function · L213-L300 — pub(crate) async fn bounded_output_for(
+- parse · function · L302-L365 — fn parse(bytes: &[u8]) -> Option<GitInfo>
+- CLIENT_FOCUSED · constant · L367-L367 — static CLIENT_FOCUSED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+- probe_wake · function · L369-L372 — fn probe_wake() -> &'static tokio::sync::Notify
+- WAKE · constant · L370-L370 — static WAKE: std::sync::OnceLock<tokio::sync::Notify> = std::sync::OnceLock::new();
+- probe_period · function · L378-L392 — fn probe_period() -> Duration
+- SEED · constant · L381-L381 — static SEED: std::sync::Once = std::sync::Once::new();
+- note_client_focus · function · L394-L399 — pub(crate) fn note_client_focus(focused: bool)
+- refresh_soon · function · L402-L404 — pub(crate) fn refresh_soon()
+- wait_for_next_probe · function · L409-L411 — pub(crate) async fn wait_for_next_probe()
+- gather · function · L416-L476 — pub(crate) fn gather() -> Option<DualGitInfo>
+- CACHE · constant · L421-L421 — static CACHE: OnceLock<Arc<Mutex<DualGitInfo>>> = OnceLock::new();
+- gather · function · L479-L481 — pub(crate) fn gather() -> Option<DualGitInfo>
+- tests · module · L484-L655 — mod tests
+- snapshot_handles_rename_newline_and_independent_counts · function · L487-L505 — fn snapshot_handles_rename_newline_and_independent_counts()
+- live_independent_repositories_and_missing_path · function · L507-L550 — async fn live_independent_repositories_and_missing_path()
+- failed_or_oversized_probes_never_look_clean_and_timeout_is_bounded · function · L552-L576 — async fn failed_or_oversized_probes_never_look_clean_and_timeout_is_bounded()
+- transcript_compression_does_not_change_workspace_probe_transport · function · L579-L606 — fn transcript_compression_does_not_change_workspace_probe_transport()
+- managed_cloud_reads_borrow_mux_but_custom_transports_remain_isolated · function · L609-L633 — fn managed_cloud_reads_borrow_mux_but_custom_transports_remain_isolated()
+- ssh_command_quotes_workspace_and_reuses_private_config · function · L636-L654 — fn ssh_command_quotes_workspace_and_reuses_private_config()

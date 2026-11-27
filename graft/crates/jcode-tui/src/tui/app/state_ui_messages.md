@@ -1,0 +1,68 @@
+# crates/jcode-tui/src/tui/app/state_ui_messages.rs
+
+- compacted_history · module · L3-L3 — mod compacted_history;
+- COMPACTED_HISTORY_CHUNK_MESSAGES · constant · L12-L12 — const COMPACTED_HISTORY_CHUNK_MESSAGES: usize = 64;
+- COMPACTED_HISTORY_LOAD_SCROLL_THRESHOLD · constant · L13-L13 — const COMPACTED_HISTORY_LOAD_SCROLL_THRESHOLD: usize = 2;
+- OVERNIGHT_CARD_REFRESH_INTERVAL · constant · L14-L14 — const OVERNIGHT_CARD_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
+- reminder_tests · module · L18-L18 — mod reminder_tests;
+- display_message_from_stored_message · function · L20-L65 — fn display_message_from_stored_message(
+- is_background_task_lifecycle_message · function · L67-L73 — fn is_background_task_lifecycle_message(content: &str) -> bool
+- is_attempt_provider_native_row · function · L77-L82 — pub(super) fn is_attempt_provider_native_row(message: &DisplayMessage) -> bool
+- stored_message_visible_text · function · L84-L113 — fn stored_message_visible_text(message: &crate::session::StoredMessage) -> String
+- apply_status_detail · function · L119-L134 — pub(super) fn apply_status_detail(&mut self, detail: String)
+- OVERLOAD_PREFIX · constant · L120-L120 — const OVERLOAD_PREFIX: &str = "OpenAI reported server overload";
+- push_display_message · function · L136-L176 — pub fn push_display_message(&mut self, mut message: DisplayMessage)
+- replace_display_messages · function · L178-L199 — pub(super) fn replace_display_messages(&mut self, mut messages: Vec<DisplayMessage>)
+- replace_display_message_content · function · L201-L211 — pub(super) fn replace_display_message_content(&mut self, idx: usize, content: String) -> bool
+- replace_display_message_title_and_content · function · L213-L229 — pub(super) fn replace_display_message_title_and_content(
+- set_latest_tool_duration · function · L231-L241 — pub(super) fn set_latest_tool_duration(&mut self, tool_call_id: &str, seconds: f32)
+- replace_latest_tool_display_message · function · L243-L266 — pub(super) fn replace_latest_tool_display_message(
+- background_task_rows_ref · function · L268-L270 — pub(super) fn background_task_rows_ref(&self) -> &[crate::tui::BackgroundTaskRow]
+- todo_is_paused_for_auto_followup · function · L275-L289 — pub(super) fn todo_is_paused_for_auto_followup(&self, todo: &crate::todo::TodoItem) -> bool
+- running_todo_await_dependency · function · L291-L297 — pub(super) fn running_todo_await_dependency(&self, task_id: &str) -> bool
+- running_todo_background_dependency · function · L299-L351 — pub(super) fn running_todo_background_dependency(
+- all_open_todos_are_paused · function · L353-L359 — pub(super) fn all_open_todos_are_paused(&self) -> bool
+- retain_latest_background_tasks · function · L361-L367 — fn retain_latest_background_tasks(&mut self)
+- MAX_TRACKED_BACKGROUND_TASKS · constant · L362-L362 — const MAX_TRACKED_BACKGROUND_TASKS: usize = 8;
+- upsert_running_background_task · function · L369-L404 — pub(super) fn upsert_running_background_task(
+- upsert_running_background_task_progress · function · L406-L418 — pub(super) fn upsert_running_background_task_progress(&mut self, content: &str) -> bool
+- upsert_running_background_task_started · function · L420-L428 — pub(super) fn upsert_running_background_task_started(&mut self, content: &str) -> bool
+- finish_background_task · function · L430-L463 — pub(super) fn finish_background_task(
+- prune_irrelevant_background_tasks · function · L468-L478 — pub(super) fn prune_irrelevant_background_tasks(&mut self) -> bool
+- COMPLETED_TASK_VISIBILITY · constant · L469-L469 — const COMPLETED_TASK_VISIBILITY: std::time::Duration = std::time::Duration::from_secs(12);
+- upsert_overnight_display_card · function · L480-L499 — pub(super) fn upsert_overnight_display_card(
+- maybe_refresh_overnight_display_card · function · L501-L531 — pub(super) fn maybe_refresh_overnight_display_card(&mut self) -> bool
+- maybe_tail_overnight_current_session_transcript · function · L533-L559 — fn maybe_tail_overnight_current_session_transcript(
+- move_display_message_to_end · function · L564-L573 — pub(super) fn move_display_message_to_end(&mut self, idx: usize) -> usize
+- remove_display_message · function · L575-L583 — pub(super) fn remove_display_message(&mut self, idx: usize) -> Option<DisplayMessage>
+- append_reload_message · function · L585-L603 — pub(super) fn append_reload_message(&mut self, line: &str)
+- is_client_maintenance_message · function · L605-L607 — pub(super) fn is_client_maintenance_message(message: &DisplayMessage, title: &str) -> bool
+- is_reload_message · function · L609-L615 — pub(super) fn is_reload_message(message: &DisplayMessage) -> bool
+- try_coalesce_repeated_display_message · function · L617-L643 — fn try_coalesce_repeated_display_message(&mut self, message: &DisplayMessage) -> bool
+- is_repeat_compactable_display_message · function · L645-L652 — fn is_repeat_compactable_display_message(message: &DisplayMessage) -> bool
+- split_repeat_suffix · function · L654-L673 — fn split_repeat_suffix(content: &str) -> (&str, u32)
+- REPEAT_PREFIX · constant · L655-L655 — const REPEAT_PREFIX: &str = " [×";
+- format_repeated_display_content · function · L675-L681 — fn format_repeated_display_content(content: &str, repeat_count: u32) -> String
+- clear_display_messages · function · L683-L693 — pub(super) fn clear_display_messages(&mut self)
+- clear_view_terminal_style · function · L701-L714 — pub(super) fn clear_view_terminal_style(&mut self)
+- terminal_clear_collapsed · function · L722-L731 — pub(crate) fn terminal_clear_collapsed(&self) -> bool
+- clear_view_keep_context · function · L738-L748 — pub(super) fn clear_view_keep_context(&mut self)
+- compacted_history_prefetch_threshold · function · L754-L761 — fn compacted_history_prefetch_threshold(&self) -> usize
+- capture_history_anchor · function · L769-L794 — pub(super) fn capture_history_anchor(&mut self, overshoot: usize)
+- reconcile_history_anchor · function · L798-L814 — pub(super) fn reconcile_history_anchor(&mut self) -> bool
+- capture_resize_anchor · function · L819-L852 — pub(super) fn capture_resize_anchor(&mut self)
+- reconcile_resize_anchor · function · L857-L877 — pub(super) fn reconcile_resize_anchor(&mut self) -> bool
+- maybe_queue_compacted_history_load · function · L879-L881 — pub(super) fn maybe_queue_compacted_history_load(&mut self)
+- maybe_queue_compacted_history_load_with_overshoot · function · L883-L931 — pub(super) fn maybe_queue_compacted_history_load_with_overshoot(&mut self, overshoot: usize)
+- maybe_backfill_expanded_prompt_history · function · L937-L983 — pub(super) fn maybe_backfill_expanded_prompt_history(&mut self) -> bool
+- MAX_LOADS_PER_TOGGLE · constant · L938-L938 — const MAX_LOADS_PER_TOGGLE: u8 = 8;
+- take_pending_compacted_history_load · function · L985-L995 — pub(super) fn take_pending_compacted_history_load(&mut self) -> Option<usize>
+- recent_history_window_active · function · L997-L1004 — pub(super) fn recent_history_window_active(&self) -> bool
+- accept_recent_history_response · function · L1008-L1025 — pub(super) fn accept_recent_history_response(&mut self, id: u64) -> bool
+- recent_history_page_contains_visible_tail · function · L1027-L1059 — pub(super) fn recent_history_page_contains_visible_tail(
+- compacted_history_has_remaining · function · L1063-L1065 — pub(super) fn compacted_history_has_remaining(&self) -> bool
+- restore_pending_compacted_history_load · function · L1067-L1069 — pub(super) fn restore_pending_compacted_history_load(&mut self, visible_messages: usize)
+- compacted_history_lazy_state · function · L1072-L1074 — pub(super) fn compacted_history_lazy_state(&self) -> &CompactedHistoryLazyState
+- sync_compacted_history_lazy_from_display_messages · function · L1076-L1122 — fn sync_compacted_history_lazy_from_display_messages(&mut self)
+- apply_local_compacted_history_window · function · L1124-L1152 — fn apply_local_compacted_history_window(&mut self, visible_messages: usize)
+- carry_over_tool_durations · function · L1161-L1186 — fn carry_over_tool_durations(previous: &[DisplayMessage], incoming: &mut [DisplayMessage])

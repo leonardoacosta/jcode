@@ -1,0 +1,65 @@
+# crates/jcode-base/src/auth/google.rs
+
+- setup · module · L4-L4 — pub mod setup;
+- AUTHORIZE_URL · constant · L6-L6 — const AUTHORIZE_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+- TOKEN_URL · constant · L7-L7 — const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
+- DEFAULT_PORT · constant · L8-L8 — pub const DEFAULT_PORT: u16 = 8456;
+- SCOPE_READONLY · constant · L10-L10 — pub const SCOPE_READONLY: &str = "https://www.googleapis.com/auth/gmail.readonly";
+- SCOPE_COMPOSE · constant · L11-L11 — pub const SCOPE_COMPOSE: &str = "https://www.googleapis.com/auth/gmail.compose";
+- SCOPE_SEND · constant · L12-L12 — pub const SCOPE_SEND: &str = "https://www.googleapis.com/auth/gmail.send";
+- SCOPE_MODIFY · constant · L13-L13 — pub const SCOPE_MODIFY: &str = "https://www.googleapis.com/auth/gmail.modify";
+- SCOPE_CALENDAR_EVENTS · constant · L15-L15 — pub const SCOPE_CALENDAR_EVENTS: &str = "https://www.googleapis.com/auth/calendar.events";
+- SCOPE_CALENDAR_LIST_READONLY · constant · L17-L18 — pub const SCOPE_CALENDAR_LIST_READONLY: &str =
+- GoogleService · enum · L27-L30 — pub enum GoogleService
+- ALL · constant · L33-L33 — pub const ALL: [GoogleService; 2] = [GoogleService::Gmail, GoogleService::Calendar];
+- id · function · L35-L40 — pub fn id(&self) -> &'static str
+- label · function · L42-L47 — pub fn label(&self) -> &'static str
+- api_service_name · function · L51-L56 — pub fn api_service_name(&self) -> &'static str
+- api_library_url · function · L59-L64 — pub fn api_library_url(&self) -> String
+- parse · function · L66-L72 — pub fn parse(value: &str) -> Option<Self>
+- parse_list · function · L75-L95 — pub fn parse_list(value: &str) -> Result<Vec<GoogleService>>
+- normalize_services · function · L99-L103 — pub fn normalize_services(mut services: Vec<GoogleService>) -> Vec<GoogleService>
+- default_services · function · L106-L108 — fn default_services() -> Vec<GoogleService>
+- scopes_for · function · L111-L123 — pub fn scopes_for(services: &[GoogleService], tier: GmailAccessTier) -> Vec<&'static str>
+- describe_services · function · L126-L135 — pub fn describe_services(services: &[GoogleService], tier: GmailAccessTier) -> String
+- GmailAccessTier · enum · L138-L143 — pub enum GmailAccessTier
+- scopes · function · L146-L151 — pub fn scopes(&self) -> Vec<&'static str>
+- can_send · function · L153-L155 — pub fn can_send(&self) -> bool
+- can_delete · function · L157-L159 — pub fn can_delete(&self) -> bool
+- label · function · L161-L166 — pub fn label(&self) -> &'static str
+- GoogleCredentials · struct · L170-L173 — pub struct GoogleCredentials
+- GoogleTokens · struct · L176-L186 — pub struct GoogleTokens
+- is_expired · function · L189-L192 — pub fn is_expired(&self) -> bool
+- has_service · function · L194-L196 — pub fn has_service(&self, service: GoogleService) -> bool
+- has_service · function · L200-L204 — pub fn has_service(service: GoogleService) -> bool
+- login_command_adding · function · L208-L222 — pub fn login_command_adding(service: GoogleService) -> String
+- credentials_path · function · L224-L226 — pub fn credentials_path() -> Result<std::path::PathBuf>
+- tokens_path · function · L228-L230 — pub fn tokens_path() -> Result<std::path::PathBuf>
+- load_credentials · function · L232-L265 — pub fn load_credentials() -> Result<GoogleCredentials>
+- GCloudFormat · struct · L245-L248 — struct GCloudFormat
+- GCloudInstalled · struct · L250-L253 — struct GCloudInstalled
+- save_credentials · function · L267-L270 — pub fn save_credentials(creds: &GoogleCredentials) -> Result<()>
+- load_tokens · function · L272-L280 — pub fn load_tokens() -> Result<GoogleTokens>
+- save_tokens · function · L282-L285 — pub fn save_tokens(tokens: &GoogleTokens) -> Result<()>
+- build_auth_url · function · L287-L305 — pub fn build_auth_url(
+- has_tokens · function · L307-L309 — pub fn has_tokens() -> bool
+- login · function · L311-L383 — pub async fn login(
+- read_manual_callback_code · function · L385-L404 — fn read_manual_callback_code(expected_state: &str) -> Result<String>
+- exchange_callback_input · function · L406-L420 — pub async fn exchange_callback_input(
+- exchange_code · function · L422-L490 — async fn exchange_code(
+- TokenResponse · struct · L450-L456 — struct TokenResponse
+- refresh_tokens · function · L494-L508 — pub async fn refresh_tokens(tokens: &GoogleTokens) -> Result<GoogleTokens>
+- refresh_tokens_uncoordinated · function · L510-L553 — async fn refresh_tokens_uncoordinated(tokens: &GoogleTokens) -> Result<GoogleTokens>
+- get_valid_token · function · L555-L563 — pub async fn get_valid_token() -> Result<String>
+- granted_services · function · L566-L583 — pub fn granted_services(
+- fetch_email · function · L585-L590 — async fn fetch_email(access_token: &str, services: &[GoogleService]) -> Result<String>
+- fetch_primary_calendar_id · function · L593-L608 — async fn fetch_primary_calendar_id(access_token: &str) -> Result<String>
+- Entry · struct · L604-L606 — struct Entry
+- fetch_gmail_email · function · L610-L630 — async fn fetch_gmail_email(access_token: &str) -> Result<String>
+- Profile · struct · L623-L626 — struct Profile
+- tests · module · L633-L711 — mod tests
+- legacy_token_file_defaults_to_gmail_only · function · L637-L643 — fn legacy_token_file_defaults_to_gmail_only()
+- parse_list_accepts_aliases_all_and_dedupes · function · L646-L657 — fn parse_list_accepts_aliases_all_and_dedupes()
+- scopes_combine_gmail_tier_and_calendar · function · L660-L676 — fn scopes_combine_gmail_tier_and_calendar()
+- auth_url_requests_selected_scopes · function · L679-L695 — fn auth_url_requests_selected_scopes()
+- granted_services_drops_services_whose_scopes_were_unticked · function · L698-L710 — fn granted_services_drops_services_whose_scopes_were_unticked()

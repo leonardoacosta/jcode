@@ -1,0 +1,21 @@
+# crates/jcode-provider-copilot-runtime/src/lib_provider_impl.rs
+
+- complete · function · L5-L81 — async fn complete(
+- name · function · L83-L85 — fn name(&self) -> &str
+- model · function · L87-L92 — fn model(&self) -> String
+- set_model · function · L94-L114 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L116-L118 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L120-L130 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L132-L134 — fn available_models_for_switching(&self) -> Vec<String>
+- prefetch_models · function · L136-L148 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L150-L165 — async fn refresh_model_catalog(
+- supports_compaction · function · L167-L169 — fn supports_compaction(&self) -> bool
+- model_catalog_detail · function · L171-L173 — fn model_catalog_detail(&self) -> String
+- set_premium_mode · function · L175-L177 — fn set_premium_mode(&self, mode: PremiumMode)
+- premium_mode · function · L179-L181 — fn premium_mode(&self) -> PremiumMode
+- context_window · function · L183-L186 — fn context_window(&self) -> usize
+- fork · function · L188-L206 — fn fork(&self) -> Arc<dyn Provider>
+- reasoning_effort · function · L208-L210 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L212-L236 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L238-L245 — fn available_efforts(&self) -> Vec<&'static str>
+- KNOWN · constant · L239-L239 — const KNOWN: [&str; 7] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];

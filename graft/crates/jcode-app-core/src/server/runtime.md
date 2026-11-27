@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/server/runtime.rs
+
+- ChannelSubscriptions · type · L24-L24 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- RuntimeTaskScope · struct · L33-L36 — struct RuntimeTaskScope
+- spawn · function · L39-L58 — async fn spawn<F, Fut>(&self, task: F) -> bool
+- shutdown · function · L60-L73 — async fn shutdown(&self)
+- task_count · function · L76-L78 — async fn task_count(&self) -> usize
+- log_task_completion · function · L81-L87 — fn log_task_completion(result: Result<(), tokio::task::JoinError>)
+- ServerRuntime · struct · L90-L119 — pub(super) struct ServerRuntime
+- from_server · function · L122-L153 — pub(super) fn from_server(server: &super::Server) -> Self
+- spawn_main_accept_loop · function · L155-L185 — pub(super) fn spawn_main_accept_loop(&self, listener: Listener) -> tokio::task::JoinHandle<()>
+- spawn_debug_accept_loop · function · L187-L219 — pub(super) fn spawn_debug_accept_loop(
+- spawn_gateway_accept_loop · function · L221-L250 — pub(super) async fn spawn_gateway_accept_loop(
+- spawn_background_task · function · L252-L264 — pub(super) async fn spawn_background_task<Fut>(&self, task: Fut) -> bool
+- spawn_client_task · function · L266-L280 — async fn spawn_client_task(
+- spawn_gateway_client_task · function · L282-L296 — async fn spawn_gateway_client_task(&self, gw_client: GatewayClient) -> bool
+- spawn_debug_client_task · function · L298-L307 — async fn spawn_debug_client_task(&self, stream: Stream, server_start_time: Instant) -> bool
+- shutdown · function · L309-L311 — pub(super) async fn shutdown(&self)
+- increment_client_count · function · L313-L321 — async fn increment_client_count(&self)
+- decrement_client_count · function · L323-L331 — async fn decrement_client_count(&self)
+- run_client_stream · function · L333-L391 — async fn run_client_stream(
+- run_debug_stream · function · L393-L438 — async fn run_debug_stream(
+- tests · module · L442-L484 — mod tests
+- DropFlag · struct · L448-L448 — struct DropFlag(Arc<AtomicBool>);
+- drop · function · L451-L453 — fn drop(&mut self)
+- runtime_task_scope_cancels_and_joins_owned_tasks · function · L457-L483 — async fn runtime_task_scope_cancels_and_joins_owned_tasks()

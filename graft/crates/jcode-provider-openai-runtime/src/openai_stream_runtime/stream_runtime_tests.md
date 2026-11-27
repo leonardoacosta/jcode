@@ -1,0 +1,22 @@
+# crates/jcode-provider-openai-runtime/src/openai_stream_runtime/stream_runtime_tests.rs
+
+- service_tier_headers_follow_serialized_tier_on_both_transports · function · L4-L91 — fn service_tier_headers_follow_serialized_tier_on_both_transports()
+- dummy_credentials · function · L93-L101 — fn dummy_credentials() -> Arc<RwLock<CodexCredentials>>
+- rotated_tokens · function · L103-L111 — fn rotated_tokens() -> oauth::OAuthTokens
+- refresh_commit_survives_caller_cancellation · function · L116-L145 — async fn refresh_commit_survives_caller_cancellation()
+- refresh_failure_leaves_in_memory_credentials_untouched · function · L148-L159 — async fn refresh_failure_leaves_in_memory_credentials_untouched()
+- cancelled_accepted_refresh_persists_commits_and_skips_transport · function · L163-L229 — async fn cancelled_accepted_refresh_persists_commits_and_skips_transport()
+- RestoreHome · struct · L166-L166 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L168-L173 — fn drop(&mut self)
+- terminal_http_errors_render_kind_specific_remedies · function · L232-L247 — fn terminal_http_errors_render_kind_specific_remedies()
+- terminal_stream_error_events_get_shared_remedy_once · function · L250-L272 — fn terminal_stream_error_events_get_shared_remedy_once()
+- unauthorized_triggers_token_refresh · function · L275-L277 — fn unauthorized_triggers_token_refresh()
+- forbidden_triggers_refresh_only_for_token_bodies · function · L280-L289 — fn forbidden_triggers_refresh_only_for_token_bodies()
+- refreshed_token_marker_is_retryable · function · L292-L298 — fn refreshed_token_marker_is_retryable()
+- missing_or_failed_refresh_is_not_retryable · function · L301-L308 — fn missing_or_failed_refresh_is_not_retryable()
+- tls_transient_errors_are_retryable · function · L311-L330 — fn tls_transient_errors_are_retryable()
+- rate_limit_is_retryable · function · L333-L339 — fn rate_limit_is_retryable()
+- auth_errors_remain_non_retryable · function · L342-L345 — fn auth_errors_remain_non_retryable()
+- cache_affinity_https_matches_websocket_session_header · function · L347-L395 — fn cache_affinity_https_matches_websocket_session_header()
+- taxonomy_blocks_quota_revocation_and_permanent_retries · function · L398-L424 — fn taxonomy_blocks_quota_revocation_and_permanent_retries()
+- auth_refresh_is_claimed_once_across_request_retries · function · L427-L451 — fn auth_refresh_is_claimed_once_across_request_retries()

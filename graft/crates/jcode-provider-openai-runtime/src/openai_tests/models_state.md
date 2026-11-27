@@ -1,0 +1,27 @@
+# crates/jcode-provider-openai-runtime/src/openai_tests/models_state.rs
+
+- test_openai_supports_codex_models · function · L2-L40 — fn test_openai_supports_codex_models()
+- test_openai_switching_models_include_dynamic_catalog_entries · function · L43-L66 — fn test_openai_switching_models_include_dynamic_catalog_entries()
+- test_openai_scoped_future_model_is_available_for_switching_and_display · function · L69-L99 — fn test_openai_scoped_future_model_is_available_for_switching_and_display()
+- test_chatgpt_web_model_bypasses_live_api_catalog · function · L102-L130 — fn test_chatgpt_web_model_bypasses_live_api_catalog()
+- test_chatgpt_browser_only_runtime_rejects_api_models_and_uses_local_compaction · function · L133-L152 — fn test_chatgpt_browser_only_runtime_rejects_api_models_and_uses_local_compaction()
+- test_chatgpt_web_model_environment_override_is_trimmed · function · L155-L166 — fn test_chatgpt_web_model_environment_override_is_trimmed()
+- test_summarize_ws_input_counts_tool_outputs · function · L169-L200 — fn test_summarize_ws_input_counts_tool_outputs()
+- test_persistent_ws_idle_policy_thresholds · function · L203-L227 — fn test_persistent_ws_idle_policy_thresholds()
+- persistent_ws_response_idle_expiry_ignores_recent_ping_activity · function · L230-L247 — async fn persistent_ws_response_idle_expiry_ignores_recent_ping_activity()
+- persistent_ws_background_keepalive_round_trips_and_answers_server_ping · function · L250-L283 — async fn persistent_ws_background_keepalive_round_trips_and_answers_server_ping()
+- test_set_model_clears_persistent_ws_state · function · L290-L317 — async fn test_set_model_clears_persistent_ws_state()
+- test_switching_to_https_clears_persistent_ws_state · function · L323-L348 — async fn test_switching_to_https_clears_persistent_ws_state()
+- test_service_tier_can_be_changed_while_a_request_snapshot_is_held · function · L351-L386 — fn test_service_tier_can_be_changed_while_a_request_snapshot_is_held()
+- openai_catalog_and_chat_endpoints_agree_on_credential_shape · function · L395-L443 — fn openai_catalog_and_chat_endpoints_agree_on_credential_shape()
+- responses_url_honors_api_base_override_in_api_key_mode · function · L449-L485 — fn responses_url_honors_api_base_override_in_api_key_mode()
+- responses_url_ignores_override_in_chatgpt_mode · function · L488-L504 — fn responses_url_ignores_override_in_chatgpt_mode()
+- resolve_api_base_precedence_and_validation · function · L507-L529 — fn resolve_api_base_precedence_and_validation()
+- test_ultrafast_service_tier_round_trips_into_request_payload · function · L532-L564 — fn test_ultrafast_service_tier_round_trips_into_request_payload()
+- test_ultrafast_rejects_unsupported_models_and_filters_saved_or_retained_tiers · function · L567-L602 — fn test_ultrafast_rejects_unsupported_models_and_filters_saved_or_retained_tiers()
+- advertised_service_tiers_filter_selection_badge_and_actual_request_model · function · L605-L692 — fn advertised_service_tiers_filter_selection_badge_and_actual_request_model()
+- service_tier_capability_refresh_only_for_unknown_oauth_metadata · function · L695-L729 — fn service_tier_capability_refresh_only_for_unknown_oauth_metadata()
+- api_key_creds · function · L731-L739 — fn api_key_creds(key: &str) -> CodexCredentials
+- oauth_creds · function · L741-L749 — fn oauth_creds() -> CodexCredentials
+- oauth_catalog_refresh_does_not_clobber_api_key_catalog · function · L756-L805 — fn oauth_catalog_refresh_does_not_clobber_api_key_catalog()
+- openai_api_key_scope_is_per_key · function · L808-L816 — fn openai_api_key_scope_is_per_key()

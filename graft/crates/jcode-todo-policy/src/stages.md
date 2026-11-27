@@ -1,0 +1,45 @@
+# crates/jcode-todo-policy/src/stages.rs
+
+- lane_dependency_tests · module · L16-L16 — mod lane_dependency_tests;
+- TodoLane · struct · L21-L24 — pub struct TodoLane
+- TodoStage · struct · L28-L32 — pub struct TodoStage
+- item_indices · function · L35-L39 — pub fn item_indices(&self) -> impl Iterator<Item = usize> + '_
+- len · function · L41-L43 — pub fn len(&self) -> usize
+- is_empty · function · L45-L47 — pub fn is_empty(&self) -> bool
+- lane_group · function · L51-L57 — pub fn lane_group(todo: &TodoItem) -> Option<String>
+- has_stages · function · L61-L63 — pub fn has_stages<'a>(todos: impl IntoIterator<Item = &'a TodoItem>) -> bool
+- LANE_ID_PREFIX · constant · L66-L66 — pub const LANE_ID_PREFIX: &str = "lane:";
+- lane_id · function · L70-L78 — pub fn lane_id(todo: &TodoItem) -> String
+- stage_layout · function · L81-L120 — pub fn stage_layout(todos: &[&TodoItem]) -> Vec<TodoStage>
+- validate_lane_dependencies · function · L124-L174 — pub fn validate_lane_dependencies(todos: &[TodoItem]) -> Result<(), String>
+- lane_requests_worker · function · L177-L179 — pub fn lane_requests_worker(todo: &TodoItem) -> bool
+- normalize_lane_owners · function · L184-L198 — pub fn normalize_lane_owners(todos: &mut [TodoItem])
+- tests · module · L201-L245 — mod tests
+- todo · function · L204-L214 — fn todo(id: &str, stage: Option<u32>, group: Option<&str>) -> TodoItem
+- shape · function · L216-L222 — fn shape(todos: &[TodoItem]) -> Vec<Vec<Vec<usize>>>
+- unstaged_list_is_sequential · function · L225-L228 — fn unstaged_list_is_sequential()
+- groups_become_lanes_and_stage_numbers_collect_across_the_list · function · L231-L244 — fn groups_become_lanes_and_stage_numbers_collect_across_the_list()
+- LaneLink · struct · L250-L254 — pub struct LaneLink
+- lane_todos_for_worker · function · L258-L270 — pub fn lane_todos_for_worker(coordinator_todos: &[TodoItem], lane: &str) -> Vec<TodoItem>
+- canonicalize_worker_lane · function · L275-L298 — pub fn canonicalize_worker_lane(
+- merge_worker_lane · function · L306-L364 — pub fn merge_worker_lane(
+- lane_sync_tests · module · L367-L511 — mod lane_sync_tests
+- item · function · L370-L380 — fn item(id: &str, status: &str, stage: Option<u32>, group: Option<&str>) -> TodoItem
+- coordinator · function · L382-L389 — fn coordinator() -> Vec<TodoItem>
+- link · function · L391-L397 — fn link() -> LaneLink
+- lane_id_covers_grouped_ungrouped_and_unstaged · function · L400-L411 — fn lane_id_covers_grouped_ungrouped_and_unstaged()
+- merge_rejects_renaming_an_ungrouped_lane · function · L414-L423 — fn merge_rejects_renaming_an_ungrouped_lane()
+- worker_is_seeded_with_exactly_its_lane · function · L426-L431 — fn worker_is_seeded_with_exactly_its_lane()
+- canonical_worker_lane_preserves_unstaged_and_ungrouped_assignments · function · L434-L448 — fn canonical_worker_lane_preserves_unstaged_and_ungrouped_assignments()
+- session_local_dependencies_never_cross_lane_mirrors · function · L451-L472 — fn session_local_dependencies_never_cross_lane_mirrors()
+- worker_edits_replace_the_lane_in_place · function · L475-L497 — fn worker_edits_replace_the_lane_in_place()
+- removed_items_disappear_and_missing_lane_is_ignored · function · L500-L510 — fn removed_items_disappear_and_missing_lane_is_ignored()
+- default_phase · function · L516-L529 — pub fn default_phase(todos: &[TodoItem]) -> Option<u32>
+- ensure_spawn_lane · function · L538-L581 — pub fn ensure_spawn_lane(
+- spawn_lane_tests · module · L584-L668 — mod spawn_lane_tests
+- item · function · L587-L596 — fn item(id: &str, status: &str, stage: Option<u32>, group: Option<&str>) -> TodoItem
+- new_lane_joins_the_active_phase_by_default · function · L599-L612 — fn new_lane_joins_the_active_phase_by_default()
+- explicit_phase_wins_and_existing_lane_is_adopted · function · L615-L626 — fn explicit_phase_wins_and_existing_lane_is_adopted()
+- unstaged_list_gets_an_unstaged_lane · function · L629-L634 — fn unstaged_list_gets_an_unstaged_lane()
+- spawn_lane_title_becomes_content_prompt_becomes_details · function · L640-L655 — fn spawn_lane_title_becomes_content_prompt_becomes_details()
+- spawn_lane_name_stays_unique_within_the_plan · function · L660-L667 — fn spawn_lane_name_stays_unique_within_the_plan()

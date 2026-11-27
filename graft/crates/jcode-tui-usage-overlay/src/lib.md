@@ -1,0 +1,54 @@
+# crates/jcode-tui-usage-overlay/src/lib.rs
+
+- UsageOverlayStatus · enum · L10-L17 — pub enum UsageOverlayStatus
+- label_for_display · function · L20-L22 — pub fn label_for_display(self) -> &'static str
+- label · function · L24-L33 — pub fn label(self) -> &'static str
+- color · function · L35-L44 — pub fn color(self) -> Color
+- icon · function · L46-L55 — pub fn icon(self) -> &'static str
+- UsageOverlayItem · struct · L60-L66 — pub struct UsageOverlayItem
+- new · function · L69-L83 — pub fn new(
+- UsageOverlaySummary · struct · L88-L94 — pub struct UsageOverlaySummary
+- item_matches_filter · function · L96-L114 — pub fn item_matches_filter(item: &UsageOverlayItem, filter: &str) -> bool
+- PANEL_BG · constant · L116-L116 — const PANEL_BG: Color = Color::Rgb(24, 28, 40);
+- PANEL_BORDER · constant · L117-L117 — const PANEL_BORDER: Color = Color::Rgb(90, 95, 110);
+- PANEL_BORDER_ACTIVE · constant · L118-L118 — const PANEL_BORDER_ACTIVE: Color = Color::Rgb(120, 140, 190);
+- SECTION_BORDER · constant · L119-L119 — const SECTION_BORDER: Color = Color::Rgb(70, 78, 94);
+- SELECTED_BG · constant · L120-L120 — const SELECTED_BG: Color = Color::Rgb(38, 42, 56);
+- MUTED · constant · L121-L121 — const MUTED: Color = Color::Rgb(140, 146, 163);
+- MUTED_DARK · constant · L122-L122 — const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
+- OVERLAY_PERCENT_X · constant · L123-L123 — const OVERLAY_PERCENT_X: u16 = 88;
+- OVERLAY_PERCENT_Y · constant · L124-L124 — const OVERLAY_PERCENT_Y: u16 = 74;
+- UsageOverlay · struct · L127-L134 — pub struct UsageOverlay
+- OverlayAction · enum · L136-L139 — pub enum OverlayAction
+- loading · function · L142-L159 — pub fn loading() -> Self
+- from_progress · function · L161-L169 — pub fn from_progress(progress: &jcode_usage_types::ProviderUsageProgress) -> Self
+- from_provider_reports · function · L171-L247 — pub fn from_provider_reports(
+- debug_memory_profile · function · L249-L267 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- new · function · L269-L284 — pub fn new(
+- selected_item_title · function · L286-L288 — pub fn selected_item_title(&self) -> Option<&str>
+- replace_preserving_view · function · L290-L303 — pub fn replace_preserving_view(&mut self, mut next: Self)
+- selected_item_detail_text · function · L305-L309 — pub fn selected_item_detail_text(&self) -> String
+- selected_item · function · L311-L315 — fn selected_item(&self) -> Option<&UsageOverlayItem>
+- apply_filter · function · L317-L327 — fn apply_filter(&mut self)
+- handle_overlay_key · function · L329-L384 — pub fn handle_overlay_key(
+- render · function · L386-L438 — pub fn render(&self, frame: &mut Frame)
+- render_header · function · L440-L505 — fn render_header(&self, frame: &mut Frame, area: Rect)
+- render_item_list · function · L507-L588 — fn render_item_list(&self, frame: &mut Frame, area: Rect)
+- render_detail_pane · function · L590-L638 — fn render_detail_pane(&self, frame: &mut Frame, area: Rect)
+- estimate_item_bytes · function · L641-L650 — fn estimate_item_bytes(item: &UsageOverlayItem) -> usize
+- hotkey · function · L652-L654 — fn hotkey(text: &'static str) -> Span<'static>
+- metric_span · function · L656-L661 — fn metric_span(label: &'static str, value: usize, color: Color) -> Span<'static>
+- provider_item · function · L663-L673 — fn provider_item(report: &jcode_usage_types::ProviderUsage) -> UsageOverlayItem
+- provider_status · function · L675-L696 — fn provider_status(report: &jcode_usage_types::ProviderUsage) -> UsageOverlayStatus
+- provider_subtitle · function · L698-L729 — fn provider_subtitle(report: &jcode_usage_types::ProviderUsage) -> String
+- parse_reset_timestamp · function · L731-L741 — fn parse_reset_timestamp(timestamp: &str) -> Option<chrono::DateTime<chrono::Utc>>
+- format_reset_time · function · L743-L771 — pub fn format_reset_time(timestamp: &str) -> String
+- format_usage_bar · function · L773-L781 — pub fn format_usage_bar(percent: f32, width: usize) -> String
+- provider_detail_lines · function · L783-L847 — fn provider_detail_lines(report: &jcode_usage_types::ProviderUsage) -> Vec<String>
+- truncate_with_ellipsis · function · L849-L863 — fn truncate_with_ellipsis(input: &str, width: usize) -> String
+- centered_rect · function · L865-L882 — fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect
+- tests · module · L885-L973 — mod tests
+- status_labels_match_display_copy · function · L889-L892 — fn status_labels_match_display_copy()
+- item_filter_searches_details_and_status · function · L895-L906 — fn item_filter_searches_details_and_status()
+- provider_reports_build_searchable_overlay_items · function · L909-L936 — fn provider_reports_build_searchable_overlay_items()
+- limit_lines_align_bars_to_longest_name · function · L939-L972 — fn limit_lines_align_bars_to_longest_name()

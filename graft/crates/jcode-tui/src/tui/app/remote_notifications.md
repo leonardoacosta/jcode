@@ -1,0 +1,60 @@
+# crates/jcode-tui/src/tui/app/remote_notifications.rs
+
+- presentation · module · L3-L3 — mod presentation;
+- SwarmNotificationPresentation · struct · L11-L15 — pub(super) struct SwarmNotificationPresentation
+- compact_swarm_session_label · function · L17-L21 — fn compact_swarm_session_label(session: &str) -> String
+- compact_swarm_summary · function · L23-L25 — fn compact_swarm_summary(summary: &str) -> String
+- strip_message_prefix · function · L27-L29 — fn strip_message_prefix<'a>(message: &'a str, prefix: &str) -> Option<&'a str>
+- compact_direct_message_body · function · L31-L39 — fn compact_direct_message_body(message: &str) -> String
+- compact_channel_message_body · function · L41-L49 — fn compact_channel_message_body(message: &str) -> String
+- compact_broadcast_message_body · function · L51-L59 — fn compact_broadcast_message_body(message: &str) -> String
+- compact_plan_message_body · function · L61-L97 — fn compact_plan_message_body(message: &str) -> String
+- compact_swarm_path · function · L99-L111 — fn compact_swarm_path(path: &str) -> String
+- sanitize_code_fence_content · function · L113-L115 — fn sanitize_code_fence_content(text: &str) -> String
+- file_activity_summary_line · function · L117-L126 — fn file_activity_summary_line(operation: &str, summary: Option<&str>) -> String
+- format_file_activity_message_compact · function · L130-L140 — fn format_file_activity_message_compact(
+- FileActivityEdit · struct · L145-L155 — pub(super) struct FileActivityEdit
+- parse_file_activity_count · function · L157-L168 — fn parse_file_activity_count<T: std::str::FromStr>(text: &str) -> Option<T>
+- non_empty · function · L170-L175 — fn non_empty(value: Option<&str>) -> Option<String>
+- from_notification · function · L178-L204 — pub(super) fn from_notification(
+- is_conflict · function · L206-L212 — fn is_conflict(&self) -> bool
+- change_label · function · L215-L220 — fn change_label(&self) -> String
+- stack_file_activity_edit · function · L224-L245 — pub(super) fn stack_file_activity_edit(stack: &mut Vec<FileActivityEdit>, edit: FileActivityEdit)
+- push_file_activity · function · L251-L282 — pub(super) fn push_file_activity(
+- parse_file_activity_notice_entry · function · L287-L324 — fn parse_file_activity_notice_entry(line: &str) -> Option<FileActivityEdit>
+- parse_file_activity_notice · function · L329-L350 — pub(super) fn parse_file_activity_notice(content: &str) -> Option<Vec<FileActivityEdit>>
+- CompletionNotice · struct · L354-L359 — struct CompletionNotice<'a>
+- parse_completion_notice · function · L362-L386 — fn parse_completion_notice(trimmed: &str) -> Option<CompletionNotice<'_>>
+- completion_lane_label · function · L389-L412 — fn completion_lane_label(details: &str) -> Option<String>
+- completion_response_line · function · L415-L425 — fn completion_response_line(details: &str) -> Option<String>
+- completion_notice_content · function · L432-L456 — fn completion_notice_content(trimmed: &str, tldr: Option<&str>) -> Option<String>
+- present_swarm_notification · function · L458-L500 — pub(super) fn present_swarm_notification(
+- collapses_to_one_row · function · L505-L514 — fn collapses_to_one_row(notification_type: &NotificationType) -> bool
+- swarm_display_full_body · function · L518-L524 — pub(super) fn swarm_display_full_body(content: &str) -> &str
+- typed_file_activity_display_message · function · L526-L531 — pub(super) fn typed_file_activity_display_message(
+- file_activity_delivery_display_message · function · L535-L574 — pub(super) fn file_activity_delivery_display_message(
+- normalize_swarm_delivery_messages · function · L579-L602 — pub(super) fn normalize_swarm_delivery_messages(messages: &mut [crate::tui::DisplayMessage])
+- tests · module · L605-L1187 — mod tests
+- file_activity_counts_reject_overflow_and_invalid_wire_values · function · L607-L623 — fn file_activity_counts_reject_overflow_and_invalid_wire_values()
+- restored_file_activity_is_compact_and_retains_full_body · function · L629-L655 — fn restored_file_activity_is_compact_and_retains_full_body()
+- file_activity_normalizer_preserves_user_prose_and_unrecognized_notices · function · L658-L676 — fn file_activity_normalizer_preserves_user_prose_and_unrecognized_notices()
+- file_activity_is_single_row_with_details_hidden_for_both_settings · function · L679-L717 — fn file_activity_is_single_row_with_details_hidden_for_both_settings()
+- completion_rows_show_lane_progress_and_report_not_generic_intro · function · L720-L789 — fn completion_rows_show_lane_progress_and_report_not_generic_intro()
+- compact_plan_message_body_drops_redundant_plan_prefix · function · L792-L803 — fn compact_plan_message_body_drops_redundant_plan_prefix()
+- present_swarm_notification_with_tldr_encodes_collapsed_content · function · L806-L828 — fn present_swarm_notification_with_tldr_encodes_collapsed_content()
+- present_swarm_notification_without_tldr_collapses_long_body · function · L831-L849 — fn present_swarm_notification_without_tldr_collapses_long_body()
+- swarm_delivery_display_message_collapses_injected_dm · function · L852-L868 — fn swarm_delivery_display_message_collapses_injected_dm()
+- present_swarm_notification_without_tldr_keeps_plain_content · function · L871-L886 — fn present_swarm_notification_without_tldr_keeps_plain_content()
+- present_swarm_notification_formats_task_assignments_as_tasks · function · L889-L907 — fn present_swarm_notification_formats_task_assignments_as_tasks()
+- present_swarm_notification_compacts_swarm_await_without_report_prose · function · L910-L927 — fn present_swarm_notification_compacts_swarm_await_without_report_prose()
+- present_swarm_notification_formats_background_task_scope_cleanly · function · L930-L948 — fn present_swarm_notification_formats_background_task_scope_cleanly()
+- present_swarm_notification_formats_background_task_progress_notice · function · L951-L968 — fn present_swarm_notification_formats_background_task_progress_notice()
+- present_swarm_notification_strips_redundant_dm_prefix · function · L971-L986 — fn present_swarm_notification_strips_redundant_dm_prefix()
+- present_swarm_notification_compacts_plan_titles_and_bodies · function · L989-L1004 — fn present_swarm_notification_compacts_plan_titles_and_bodies()
+- edit · function · L1006-L1020 — fn edit(sender: &str, path: &str, delta: (u64, u64), intent: &str) -> super::FileActivityEdit
+- collapsed · function · L1022-L1027 — fn collapsed(message: &crate::tui::DisplayMessage) -> (String, String)
+- single_file_activity_shows_line_counts_and_intent_with_diff_behind_expand · function · L1030-L1062 — fn single_file_activity_shows_line_counts_and_intent_with_diff_behind_expand()
+- file_activity_without_counts_or_intent_falls_back_to_summary_and_path · function · L1065-L1081 — fn file_activity_without_counts_or_intent_falls_back_to_summary_and_path()
+- stacked_file_activity_shows_only_agent_emojis_and_summed_line_counts · function · L1084-L1117 — fn stacked_file_activity_shows_only_agent_emojis_and_summed_line_counts()
+- consecutive_peer_edits_stack_into_one_transcript_row · function · L1120-L1151 — fn consecutive_peer_edits_stack_into_one_transcript_row()
+- delivered_model_notice_restores_as_the_same_compact_row · function · L1154-L1186 — fn delivered_model_notice_restores_as_the_same_compact_row()

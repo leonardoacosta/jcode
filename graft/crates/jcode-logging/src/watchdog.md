@@ -1,0 +1,42 @@
+# crates/jcode-logging/src/watchdog.rs
+
+- DEFAULT_STALL_SECS · constant · L28-L28 — const DEFAULT_STALL_SECS: u64 = 90;
+- DEFAULT_HEARTBEAT_SECS · constant · L30-L30 — const DEFAULT_HEARTBEAT_SECS: u64 = 300;
+- POLL_INTERVAL · constant · L32-L32 — const POLL_INTERVAL: Duration = Duration::from_secs(5);
+- MAX_THREADS_IN_DUMP · constant · L34-L34 — const MAX_THREADS_IN_DUMP: usize = 48;
+- STARTED · constant · L36-L36 — static STARTED: AtomicBool = AtomicBool::new(false);
+- LAST_BEAT_MS · constant · L37-L37 — static LAST_BEAT_MS: AtomicU64 = AtomicU64::new(0);
+- BEAT_COUNT · constant · L38-L38 — static BEAT_COUNT: AtomicU64 = AtomicU64::new(0);
+- PHASE · constant · L39-L39 — static PHASE: AtomicUsize = AtomicUsize::new(0);
+- PROCESS_START · constant · L40-L40 — static PROCESS_START: OnceLock<Instant> = OnceLock::new();
+- BUSY · constant · L43-L43 — static BUSY: AtomicUsize = AtomicUsize::new(0);
+- DETAIL · constant · L46-L46 — static DETAIL: OnceLock<std::sync::Mutex<String>> = OnceLock::new();
+- detail_slot · function · L48-L50 — fn detail_slot() -> &'static std::sync::Mutex<String>
+- WorkGuard · struct · L56-L56 — pub struct WorkGuard(());
+- new · function · L59-L63 — fn new(phase: &'static str) -> Self
+- drop · function · L67-L70 — fn drop(&mut self)
+- begin_work · function · L74-L76 — pub fn begin_work(phase: &'static str) -> WorkGuard
+- is_busy · function · L79-L81 — pub fn is_busy() -> bool
+- set_detail · function · L85-L89 — pub fn set_detail(detail: impl Into<String>)
+- current_detail · function · L91-L96 — fn current_detail() -> String
+- PHASES · constant · L100-L100 — static PHASES: OnceLock<std::sync::Mutex<Vec<&'static str>>> = OnceLock::new();
+- phases · function · L102-L104 — fn phases() -> &'static std::sync::Mutex<Vec<&'static str>>
+- process_start · function · L106-L108 — fn process_start() -> Instant
+- now_ms · function · L110-L112 — fn now_ms() -> u64
+- env_secs · function · L114-L119 — fn env_secs(key: &str, default: u64) -> u64
+- beat · function · L123-L146 — pub fn beat(phase: &'static str)
+- current_phase · function · L148-L155 — fn current_phase() -> &'static str
+- ResourceSnapshot · struct · L159-L163 — pub struct ResourceSnapshot
+- resource_snapshot · function · L165-L171 — pub fn resource_snapshot() -> ResourceSnapshot
+- read_rss_mb · function · L173-L182 — fn read_rss_mb() -> u64
+- count_entries · function · L184-L188 — fn count_entries(path: &str) -> usize
+- thread_states · function · L191-L216 — pub fn thread_states() -> Vec<String>
+- read_trimmed · function · L218-L223 — fn read_trimmed(path: std::path::PathBuf) -> Option<String>
+- start · function · L229-L249 — pub fn start()
+- monitor_loop · function · L251-L311 — fn monitor_loop(stall: Duration, heartbeat: Duration)
+- emit_heartbeat_if_due · function · L315-L340 — fn emit_heartbeat_if_due(
+- tests · module · L343-L390 — mod tests
+- beat_records_phase_and_advances_counter · function · L347-L354 — fn beat_records_phase_and_advances_counter()
+- work_guard_tracks_busy_state · function · L357-L366 — fn work_guard_tracks_busy_state()
+- resource_snapshot_reports_live_process_state · function · L369-L375 — fn resource_snapshot_reports_live_process_state()
+- thread_states_are_parsed_into_compact_records · function · L378-L389 — fn thread_states_are_parsed_into_compact_records()

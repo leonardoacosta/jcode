@@ -1,0 +1,98 @@
+# crates/jcode-base/src/mcp/notifications_tests.rs
+
+- caps · function · L6-L8 — fn caps(v: Value) -> ServerCapabilities
+- full_caps · function · L10-L16 — fn full_caps() -> ServerCapabilities
+- cfg · function · L18-L24 — fn cfg(refresh: &[NotificationClass], wake: &[NotificationClass]) -> McpNotificationConfig
+- note · function · L28-L30 — fn note(method: &str, params: Value) -> Value
+- list_changed · function · L32-L34 — fn list_changed(class: NotificationClass) -> Value
+- updated · function · L36-L38 — fn updated(uri: &str) -> Value
+- Call · type · L42-L42 — type Call = (String, Option<Value>);
+- FakeBackend · struct · L45-L50 — struct FakeBackend
+- methods · function · L53-L60 — fn methods(&self) -> Vec<String>
+- count · function · L61-L63 — fn count(&self, method: &str) -> usize
+- set_failing · function · L64-L71 — fn set_failing(&self, method: &str, failing: bool)
+- ok · function · L74-L81 — fn ok(result: Value) -> JsonRpcResponse
+- request · function · L85-L102 — async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse>
+- refresh_tools · function · L104-L110 — async fn refresh_tools(&self) -> Result<()>
+- WakeLog · struct · L114-L114 — struct WakeLog(StdMutex<Vec<WakeRequest>>);
+- wake · function · L117-L120 — fn wake(&self, request: WakeRequest) -> WakeOutcome
+- engine · function · L123-L150 — fn engine(
+- counters · function · L152-L154 — fn counters(status: &SharedNotificationStatus) -> NotificationCounters
+- parse_accepts_known_methods_and_reads_only_uri_and_subscription · function · L159-L168 — fn parse_accepts_known_methods_and_reads_only_uri_and_subscription()
+- parse_rejects_malformed_and_unknown · function · L171-L209 — fn parse_rejects_malformed_and_unknown()
+- legacy_enables_only_advertised_list_changed · function · L214-L230 — fn legacy_enables_only_advertised_list_changed()
+- legacy_subscribes_only_when_server_advertises_subscribe · function · L233-L251 — fn legacy_subscribes_only_when_server_advertises_subscribe()
+- modern_never_plans_resources_subscribe · function · L254-L264 — fn modern_never_plans_resources_subscribe()
+- modern_without_listen_transport_stays_inactive · function · L267-L280 — fn modern_without_listen_transport_stays_inactive()
+- unknown_version_enables_nothing · function · L283-L296 — fn unknown_version_enables_nothing()
+- opted_out_config_enables_nothing · function · L299-L308 — fn opted_out_config_enables_nothing()
+- modern_session · function · L312-L317 — fn modern_session(filter_cfg: &McpNotificationConfig) -> NotificationSession
+- ack · function · L319-L324 — fn ack(id: Value, notifications: Value) -> Value
+- with_sub · function · L326-L335 — fn with_sub(mut msg: Value, id: Value) -> Value
+- modern_rejects_everything_before_ack · function · L338-L342 — fn modern_rejects_everything_before_ack()
+- modern_ack_activates_acknowledged_subset_only · function · L345-L363 — fn modern_ack_activates_acknowledged_subset_only()
+- modern_rejects_wrong_missing_and_duplicate_subscription · function · L366-L393 — fn modern_rejects_wrong_missing_and_duplicate_subscription()
+- modern_ack_unrequested_filters_are_not_activated · function · L396-L405 — fn modern_ack_unrequested_filters_are_not_activated()
+- modern_resource_ack_subset_and_unacked_uri_rejected · function · L408-L430 — fn modern_resource_ack_subset_and_unacked_uri_rejected()
+- legacy_accepts_only_negotiated_classes_and_subscribed_uris · function · L433-L455 — fn legacy_accepts_only_negotiated_classes_and_subscribed_uris()
+- legacy_ack_is_rejected · function · L458-L472 — fn legacy_ack_is_rejected()
+- ev · function · L476-L481 — fn ev(class: NotificationClass, uri: Option<&str>) -> NotificationEvent
+- dispatcher_coalesces_by_key · function · L484-L498 — fn dispatcher_coalesces_by_key()
+- dispatcher_overflow_drops_newest_and_flags_reconcile · function · L501-L516 — fn dispatcher_overflow_drops_newest_and_flags_reconcile()
+- dispatcher_rate_limit_rolls_over_after_a_minute · function · L519-L534 — fn dispatcher_rate_limit_rolls_over_after_a_minute()
+- dispatchers_are_independent_per_server · function · L537-L553 — fn dispatchers_are_independent_per_server()
+- inbound_slot_discards_until_installed_and_never_blocks_when_full · function · L558-L572 — fn inbound_slot_discards_until_installed_and_never_blocks_when_full()
+- legacy_establish_subscribes_then_reconciles_without_wake · function · L577-L600 — async fn legacy_establish_subscribes_then_reconciles_without_wake()
+- establish_without_subscribe_capability_sends_no_subscribe · function · L603-L619 — async fn establish_without_subscribe_capability_sends_no_subscribe()
+- modern_establish_never_sends_resources_subscribe · function · L622-L628 — async fn modern_establish_never_sends_resources_subscribe()
+- failed_subscribe_is_recorded_and_uri_stays_unaccepted · function · L631-L648 — async fn failed_subscribe_is_recorded_and_uri_stays_unaccepted()
+- refresh_and_wake_allowlists_are_independent · function · L651-L672 — async fn refresh_and_wake_allowlists_are_independent()
+- unlisted_class_is_ignored_and_cannot_wake · function · L675-L690 — async fn unlisted_class_is_ignored_and_cannot_wake()
+- wake_only_resource_outside_config_is_ignored · function · L693-L704 — async fn wake_only_resource_outside_config_is_ignored()
+- wake_carries_identifiers_only_and_never_payload · function · L707-L730 — async fn wake_carries_identifiers_only_and_never_payload()
+- burst_coalesces_into_single_refresh_and_wake · function · L733-L747 — async fn burst_coalesces_into_single_refresh_and_wake()
+- overflow_triggers_reconcile_without_extra_wakes · function · L750-L769 — async fn overflow_triggers_reconcile_without_extra_wakes()
+- rate_limited_events_are_counted_and_reconciled · function · L772-L789 — async fn rate_limited_events_are_counted_and_reconciled()
+- failed_refresh_keeps_last_known_state_then_recovers · function · L792-L820 — async fn failed_refresh_keeps_last_known_state_then_recovers()
+- failed_tools_refresh_is_recorded · function · L823-L840 — async fn failed_tools_refresh_is_recorded()
+- duplicate_and_reordered_notifications_converge · function · L843-L860 — async fn duplicate_and_reordered_notifications_converge()
+- reconnect_reestablishes_with_new_capabilities · function · L863-L888 — async fn reconnect_reestablishes_with_new_capabilities()
+- malformed_and_unknown_messages_are_counted_not_acted_on · function · L891-L909 — async fn malformed_and_unknown_messages_are_counted_not_acted_on()
+- PagedBackend · struct · L914-L916 — struct PagedBackend
+- request · function · L920-L928 — async fn request(&self, _: &str, _: Option<Value>) -> Result<JsonRpcResponse>
+- refresh_tools · function · L929-L931 — async fn refresh_tools(&self) -> Result<()>
+- list_paged_follows_cursors_and_detects_cycles · function · L935-L956 — async fn list_paged_follows_cursors_and_detects_cycles()
+- read_resource_truncates_text_and_measures_blobs · function · L959-L978 — async fn read_resource_truncates_text_and_measures_blobs()
+- Big · struct · L960-L960 — struct Big;
+- request · function · L963-L969 — async fn request(&self, _: &str, p: Option<Value>) -> Result<JsonRpcResponse>
+- refresh_tools · function · L970-L972 — async fn refresh_tools(&self) -> Result<()>
+- FakeListen · struct · L982-L987 — struct FakeListen
+- new · function · L990-L997 — fn new(items: Vec<Result<Value>>, keep_open: bool) -> Self
+- open_listen · function · L1002-L1015 — async fn open_listen(
+- cancel_listen · function · L1016-L1018 — async fn cancel_listen(&self, id: u64)
+- listen_engine · function · L1021-L1033 — fn listen_engine() -> (
+- listen_request_shape_and_graceful_end · function · L1036-L1063 — async fn listen_request_shape_and_graceful_end()
+- listen_ignores_notifications_before_ack_and_with_wrong_id · function · L1066-L1085 — async fn listen_ignores_notifications_before_ack_and_with_wrong_id()
+- listen_abrupt_close_and_stream_error · function · L1088-L1098 — async fn listen_abrupt_close_and_stream_error()
+- listen_server_error_response_fails · function · L1101-L1113 — async fn listen_server_error_response_fails()
+- listen_cancel_cancels_transport · function · L1116-L1129 — async fn listen_cancel_cancels_transport()
+- listen_without_filter_or_transport_support_is_unsupported · function · L1132-L1145 — async fn listen_without_filter_or_transport_support_is_unsupported()
+- listen_open_failure_is_reported · function · L1148-L1161 — async fn listen_open_failure_is_reported()
+- Refuse · struct · L1149-L1149 — struct Refuse;
+- open_listen · function · L1152-L1154 — async fn open_listen(&self, _: u64, _: Value) -> Result<BoxStream<'static, Result<Value>>>
+- cancel_listen · function · L1155-L1155 — async fn cancel_listen(&self, _: u64) {}
+- pump_processes_slot_messages_and_counts_inbound_drops · function · L1166-L1190 — async fn pump_processes_slot_messages_and_counts_inbound_drops()
+- sanitize_server_name_strips_control_chars_and_bounds_length · function · L1195-L1209 — fn sanitize_server_name_strips_control_chars_and_bounds_length()
+- wake_request_server_name_is_sanitized_by_the_engine · function · L1212-L1232 — async fn wake_request_server_name_is_sanitized_by_the_engine()
+- wake_cooldown_defers_then_releases_per_server · function · L1235-L1275 — async fn wake_cooldown_defers_then_releases_per_server()
+- default_wake_cooldown_is_sixty_seconds · function · L1278-L1299 — async fn default_wake_cooldown_is_sixty_seconds()
+- permitted_wake_without_handler_fails_closed_and_is_reported · function · L1302-L1331 — async fn permitted_wake_without_handler_fails_closed_and_is_reported()
+- DroppingHandler · struct · L1333-L1333 — struct DroppingHandler;
+- wake · function · L1335-L1337 — fn wake(&self, _: WakeRequest) -> WakeOutcome
+- handler_reported_drop_is_not_counted_as_a_wake · function · L1341-L1353 — async fn handler_reported_drop_is_not_counted_as_a_wake()
+- pump_reconciles_after_a_final_dropped_burst_with_no_later_message · function · L1356-L1387 — async fn pump_reconciles_after_a_final_dropped_burst_with_no_later_message()
+- pump_releases_a_deferred_wake_on_its_own_timer · function · L1390-L1409 — async fn pump_releases_a_deferred_wake_on_its_own_timer()
+- wait_until · function · L1411-L1419 — async fn wait_until(mut done: impl FnMut() -> bool)
+- tools_refresh_publishes_catalog_change_only_on_success · function · L1422-L1449 — async fn tools_refresh_publishes_catalog_change_only_on_success()
+- NAME · constant · L1424-L1424 — const NAME: &str = "catalog-change-test-server";
+- config_roundtrips_and_defaults_are_opted_out · function · L1454-L1471 — fn config_roundtrips_and_defaults_are_opted_out()

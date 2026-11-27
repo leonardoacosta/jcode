@@ -1,0 +1,32 @@
+# crates/jcode-app-core/src/tool/patch.rs
+
+- PatchTool · struct · L9-L9 — pub struct PatchTool;
+- new · function · L12-L14 — pub fn new() -> Self
+- PatchInput · struct · L18-L20 — struct PatchInput
+- FilePatch · struct · L23-L28 — struct FilePatch
+- Hunk · struct · L31-L40 — struct Hunk
+- name · function · L44-L46 — fn name(&self) -> &str
+- description · function · L48-L50 — fn description(&self) -> &str
+- parameters_schema · function · L52-L64 — fn parameters_schema(&self) -> Value
+- execute · function · L66-L118 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- parse_patch · function · L121-L201 — fn parse_patch(text: &str) -> Result<Vec<FilePatch>>
+- parse_hunk · function · L203-L281 — fn parse_hunk(lines: &[&str], i: &mut usize) -> Result<Hunk>
+- render_patch · function · L285-L389 — fn render_patch(patch: &FilePatch, old: &str) -> Result<String>
+- PreparedPatch · struct · L391-L397 — struct PreparedPatch
+- prepare_patch · function · L399-L439 — async fn prepare_patch(patch: &FilePatch, path: PathBuf) -> Result<PreparedPatch>
+- verify_unchanged · function · L442-L454 — async fn verify_unchanged(&self) -> Result<()>
+- apply · function · L456-L474 — async fn apply(
+- generate_diff · function · L478-L523 — fn generate_diff(old: &str, new: &str, start_line: usize) -> String
+- MAX_LINES · constant · L482-L482 — const MAX_LINES: usize = 30;
+- tests · module · L526-L741 — mod tests
+- context · function · L529-L539 — fn context(dir: &Path) -> ToolContext
+- render · function · L541-L544 — fn render(diff: &str, old: &str) -> Result<String>
+- unified_line_endings_survive_both_tool_paths · function · L547-L585 — async fn unified_line_endings_survive_both_tool_paths()
+- unified_crlf_multiple_hunks_preserve_untouched_bytes · function · L588-L597 — fn unified_crlf_multiple_hunks_preserve_untouched_bytes()
+- unified_hunks_reject_offsets_even_when_context_exists_elsewhere · function · L600-L606 — fn unified_hunks_reject_offsets_even_when_context_exists_elsewhere()
+- unified_hunks_reject_malformed_ranges_counts_overlap_and_unanchored_insertions · function · L609-L623 — fn unified_hunks_reject_malformed_ranges_counts_overlap_and_unanchored_insertions()
+- unified_hunks_use_original_coordinates_and_preserve_eof · function · L626-L637 — fn unified_hunks_use_original_coordinates_and_preserve_eof()
+- unified_apply_patch_fallback_rejects_stale_context_without_writing · function · L640-L669 — async fn unified_apply_patch_fallback_rejects_stale_context_without_writing()
+- unified_batch_preflights_all_files_before_creating_modifying_or_deleting · function · L672-L700 — async fn unified_batch_preflights_all_files_before_creating_modifying_or_deleting()
+- unified_later_hunk_failure_and_delete_mismatch_leave_original_bytes · function · L703-L719 — async fn unified_later_hunk_failure_and_delete_mismatch_leave_original_bytes()
+- unified_verified_batch_applies_creation_modification_and_deletion · function · L722-L740 — async fn unified_verified_batch_applies_creation_modification_and_deletion()

@@ -1,0 +1,57 @@
+# crates/jcode-task-types/src/lib.rs
+
+- GoalScope · enum · L6-L10 — pub enum GoalScope
+- parse · function · L13-L19 — pub fn parse(value: &str) -> Option<Self>
+- as_str · function · L21-L26 — pub fn as_str(&self) -> &'static str
+- GoalStatus · enum · L31-L40 — pub enum GoalStatus
+- parse · function · L43-L54 — pub fn parse(value: &str) -> Option<Self>
+- as_str · function · L56-L66 — pub fn as_str(&self) -> &'static str
+- sort_rank · function · L68-L78 — pub fn sort_rank(self) -> u8
+- is_resumable · function · L80-L82 — pub fn is_resumable(self) -> bool
+- GoalStep · struct · L86-L91 — pub struct GoalStep
+- GoalMilestone · struct · L94-L101 — pub struct GoalMilestone
+- GoalUpdate · struct · L104-L107 — pub struct GoalUpdate
+- Goal · struct · L110-L137 — pub struct Goal
+- new · function · L140-L160 — pub fn new(title: &str, scope: GoalScope) -> Self
+- current_milestone · function · L162-L165 — pub fn current_milestone(&self) -> Option<&GoalMilestone>
+- sanitize_goal_id · function · L168-L175 — pub fn sanitize_goal_id(id: &str) -> String
+- slugify · function · L177-L191 — fn slugify(input: &str) -> String
+- default_pending_status · function · L193-L195 — fn default_pending_status() -> String
+- semantic_state · function · L200-L297 — macro_rules! semantic_state
+- permits_completion · function · L329-L337 — pub fn permits_completion(self) -> bool
+- TodoUserAuth · struct · L436-L439 — pub struct TodoUserAuth
+- deserialize_nonempty_auth_reason · function · L441-L452 — fn deserialize_nonempty_auth_reason<'de, D>(deserializer: D) -> Result<String, D::Error>
+- LANE_OWNER_WORKER · constant · L455-L455 — pub const LANE_OWNER_WORKER: &str = "worker";
+- TodoItem · struct · L458-L539 — pub struct TodoItem
+- deserialize_waiting_on · function · L541-L550 — fn deserialize_waiting_on<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+- deserialize_optional_stage · function · L555-L561 — fn deserialize_optional_stage<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+- parse_stage_value · function · L563-L580 — pub fn parse_stage_value(value: &serde_json::Value) -> Option<u32>
+- TodoPlan · struct · L589-L617 — pub struct TodoPlan
+- TodoPlanField · enum · L622-L627 — pub enum TodoPlanField
+- TodoPlanChange · struct · L631-L637 — pub struct TodoPlanChange
+- TodoGoal · struct · L648-L740 — pub struct TodoGoal
+- TodoGoalField · enum · L746-L759 — pub enum TodoGoalField
+- TodoGoalChange · struct · L763-L769 — pub struct TodoGoalChange
+- PersistedCatchupState · struct · L774-L777 — pub struct PersistedCatchupState
+- CatchupBrief · struct · L780-L791 — pub struct CatchupBrief
+- semantic_state_tests · module · L794-L1039 — mod semantic_state_tests
+- todo_waiting_on_is_backward_compatible_and_nullable · function · L798-L835 — fn todo_waiting_on_is_backward_compatible_and_nullable()
+- legacy_item_blockers_are_ignored_on_load · function · L838-L852 — fn legacy_item_blockers_are_ignored_on_load()
+- states_serialize_as_snake_case_strings · function · L855-L888 — fn states_serialize_as_snake_case_strings()
+- states_round_trip_and_parse_case_insensitively · function · L891-L910 — fn states_round_trip_and_parse_case_insensitively()
+- legacy_numeric_scores_deserialize_onto_states · function · L913-L936 — fn legacy_numeric_scores_deserialize_onto_states()
+- every_legacy_score_maps_and_ordering_matches_scores · function · L939-L969 — fn every_legacy_score_maps_and_ordering_matches_scores()
+- legacy_numeric_todo_payloads_still_load · function · L972-L1017 — fn legacy_numeric_todo_payloads_still_load()
+- goal_serializes_new_field_names_only · function · L1020-L1032 — fn goal_serializes_new_field_names_only()
+- legacy_goal_field_alias_deserializes · function · L1035-L1038 — fn legacy_goal_field_alias_deserializes()
+- RequiredCheckOutcome · struct · L1043-L1049 — pub struct RequiredCheckOutcome
+- valid_id · function · L1052-L1058 — pub fn valid_id(id: &str) -> bool
+- from_process · function · L1060-L1091 — pub fn from_process(
+- passed · function · L1093-L1095 — pub fn passed(&self) -> bool
+- required_check_tests · module · L1099-L1142 — mod required_check_tests
+- required_check_outcome_requires_real_foreground_exit · function · L1103-L1141 — fn required_check_outcome_requires_real_foreground_exit()
+- RequiredCheckBatch · struct · L1145-L1149 — pub struct RequiredCheckBatch
+- push · function · L1152-L1170 — pub fn push(&mut self, outcome: RequiredCheckOutcome)
+- bounded · function · L1172-L1181 — pub fn bounded(self) -> Self
+- required_check_batch_tests · module · L1185-L1214 — mod required_check_batch_tests
+- required_check_batch_caps_deduplicates_and_preserves_failure · function · L1188-L1213 — fn required_check_batch_caps_deduplicates_and_preserves_failure()

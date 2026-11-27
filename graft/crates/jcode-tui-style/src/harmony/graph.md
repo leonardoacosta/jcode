@@ -1,0 +1,23 @@
+# crates/jcode-tui-style/src/harmony/graph.rs
+
+- NodeWeight · struct · L37-L41 — pub struct NodeWeight
+- Edge · struct · L45-L50 — pub struct Edge
+- Topology · struct · L54-L57 — pub struct Topology
+- total_cells · function · L61-L63 — pub fn total_cells(&self) -> u32
+- area_fraction · function · L66-L75 — pub fn area_fraction(&self, role: Role) -> f32
+- from_counts · function · L78-L96 — pub fn from_counts(
+- uniform · function · L101-L110 — pub fn uniform() -> Self
+- default_topology · function · L122-L142 — pub fn default_topology() -> Topology
+- hue_concentration · function · L154-L175 — pub fn hue_concentration(palette: &Palette, topology: &Topology) -> f32
+- NEUTRAL_CHROMA · constant · L178-L178 — const NEUTRAL_CHROMA: f32 = 0.04;
+- area_chroma · function · L189-L197 — pub fn area_chroma(palette: &Palette, topology: &Topology) -> f32
+- adjacent_separation · function · L206-L230 — pub fn adjacent_separation(
+- tests · module · L233-L392 — mod tests
+- two_role_topology · function · L236-L238 — fn two_role_topology(left: Role, right: Role) -> Topology
+- uniform_topology_has_no_edges_and_equal_weights · function · L241-L247 — fn uniform_topology_has_no_edges_and_equal_weights()
+- area_fraction_reflects_measured_cells · function · L250-L256 — fn area_fraction_reflects_measured_cells()
+- hue_concentration_sees_area_weighted_collapse · function · L262-L322 — fn hue_concentration_sees_area_weighted_collapse()
+- hue_concentration_ignores_neutrals · function · L325-L333 — fn hue_concentration_ignores_neutrals()
+- adjacent_separation_flags_touching_lookalikes · function · L336-L345 — fn adjacent_separation_flags_touching_lookalikes()
+- adjacent_separation_is_neutral_without_measured_edges · function · L348-L355 — fn adjacent_separation_is_neutral_without_measured_edges()
+- adjacent_separation_weights_frequent_contacts_more · function · L358-L391 — fn adjacent_separation_weights_frequent_contacts_more()

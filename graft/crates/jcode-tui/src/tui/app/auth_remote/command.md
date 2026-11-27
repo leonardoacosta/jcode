@@ -1,0 +1,36 @@
+# crates/jcode-tui/src/tui/app/auth_remote/command.rs
+
+- OUTPUT_LIMIT · constant · L10-L10 — const OUTPUT_LIMIT: usize = 64 * 1024;
+- INPUT_LIMIT · constant · L11-L11 — pub(super) const INPUT_LIMIT: usize = 16 * 1024;
+- Target · struct · L14-L20 — pub(super) struct Target
+- host · function · L23-L25 — pub(super) fn host(&self) -> &str
+- from_env · function · L27-L47 — pub(super) fn from_env() -> Result<Self, &'static str>
+- with_account_label · function · L49-L52 — pub(super) fn with_account_label(mut self, label: &str) -> Self
+- command · function · L54-L129 — fn command(&self, provider: &str, flow: &str, operation: Operation) -> tokio::process::Command
+- Operation · enum · L133-L141 — pub(super) enum Operation
+- flag · function · L143-L153 — fn flag(self) -> &'static str
+- Reply · enum · L156-L170 — pub(super) enum Reply
+- ProviderStatus · struct · L175-L179 — pub(super) struct ProviderStatus
+- parse_status · function · L181-L229 — fn parse_status(value: &serde_json::Value) -> Result<Reply, &'static str>
+- parse_reply · function · L231-L285 — fn parse_reply(bytes: &[u8], operation: Operation, provider: &str) -> Result<Reply, &'static str>
+- Payload · enum · L288-L291 — enum Payload
+- as_bytes · function · L294-L299 — fn as_bytes(&self) -> &[u8]
+- execute · function · L302-L387 — async fn execute(
+- Task · struct · L389-L392 — pub(super) struct Task
+- cleanup_detached · function · L394-L409 — pub(super) fn cleanup_detached(target: Target, provider: String, flow: String)
+- ready · function · L412-L419 — pub(super) fn ready(result: Result<Reply, &'static str>) -> Self
+- spawn · function · L420-L484 — pub(super) fn spawn(
+- cancel · function · L485-L489 — pub(super) fn cancel(&mut self)
+- drop · function · L492-L494 — fn drop(&mut self)
+- tests · module · L498-L800 — mod tests
+- named_ssh_login_only_passes_account_during_begin · function · L501-L532 — fn named_ssh_login_only_passes_account_during_begin()
+- ssh_status_reuses_hardened_target_without_login_or_import_arguments · function · L535-L577 — fn ssh_status_reuses_hardened_target_without_login_or_import_arguments()
+- ssh_status_only_returns_known_provider_states_and_fixed_method_labels · function · L580-L623 — fn ssh_status_only_returns_known_provider_states_and_fixed_method_labels()
+- ssh_status_missing_providers_are_not_invented_as_signed_out · function · L626-L637 — fn ssh_status_missing_providers_are_not_invented_as_signed_out()
+- ssh_status_unknown_credentials_cannot_make_a_newer_host_look_empty · function · L640-L661 — fn ssh_status_unknown_credentials_cannot_make_a_newer_host_look_empty()
+- ssh_status_rejects_invalid_duplicate_or_unknown_states_without_echoing_input · function · L664-L678 — fn ssh_status_rejects_invalid_duplicate_or_unknown_states_without_echoing_input()
+- ssh_status_cannot_be_mistaken_for_login_or_import_success · function · L681-L693 — fn ssh_status_cannot_be_mistaken_for_login_or_import_success()
+- ssh_login_command_quotes_paths_and_never_carries_payload · function · L696-L717 — fn ssh_login_command_quotes_paths_and_never_carries_payload()
+- ssh_login_json_only_accepts_expected_safe_fields · function · L719-L735 — fn ssh_login_json_only_accepts_expected_safe_fields()
+- ssh_import_reuses_target_and_hardening_without_oauth_or_secret_arguments · function · L738-L778 — fn ssh_import_reuses_target_and_hardening_without_oauth_or_secret_arguments()
+- ssh_import_accepts_only_matching_import_success_and_ignores_remote_error_text · function · L781-L799 — fn ssh_import_accepts_only_matching_import_success_and_ignores_remote_error_text()

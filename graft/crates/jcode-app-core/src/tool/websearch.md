@@ -1,0 +1,42 @@
+# crates/jcode-app-core/src/tool/websearch.rs
+
+- kagi · module · L9-L9 — mod kagi;
+- WebSearchTool · struct · L12-L14 — pub struct WebSearchTool
+- new · function · L17-L21 — pub fn new() -> Self
+- WebSearchInput · struct · L25-L29 — struct WebSearchInput
+- SearchResult · struct · L32-L36 — struct SearchResult
+- BingSearchOptions · struct · L39-L43 — struct BingSearchOptions<'a>
+- BackendClients · struct · L45-L48 — struct BackendClients<'a>
+- name · function · L52-L54 — fn name(&self) -> &str
+- description · function · L56-L58 — fn description(&self) -> &str
+- parameters_schema · function · L60-L76 — fn parameters_schema(&self) -> Value
+- execute · function · L78-L165 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- search_with_engine · function · L169-L206 — async fn search_with_engine(
+- search_duckduckgo · function · L208-L258 — async fn search_duckduckgo(
+- search_bing · function · L260-L287 — async fn search_bing(
+- search_bing_api · function · L289-L323 — async fn search_bing_api(
+- search_bing_html · function · L325-L369 — async fn search_bing_html(
+- search_searxng · function · L376-L436 — async fn search_searxng(&self, query: &str, num_results: usize) -> Result<Vec<SearchResult>>
+- validate_custom · function · L439-L484 — fn validate_custom(config: &CustomWebSearchConfig) -> Result<reqwest::Url>
+- custom_request · function · L486-L562 — fn custom_request(
+- search_custom · function · L565-L572 — async fn search_custom(
+- search_custom_with_client · function · L574-L614 — async fn search_custom_with_client(
+- parse_custom_results · function · L616-L651 — fn parse_custom_results(
+- parse_searxng_results · function · L655-L671 — fn parse_searxng_results(response: SearxngResponse, num_results: usize) -> Vec<SearchResult>
+- search_regex · module · L673-L721 — mod search_regex
+- compile_regex · function · L677-L688 — fn compile_regex(pattern: &str, label: &str) -> Option<Regex>
+- static_regex · function · L690-L698 — macro_rules! static_regex
+- SearxngResponse · struct · L724-L727 — struct SearxngResponse
+- SearxngResult · struct · L730-L737 — struct SearxngResult
+- BingApiResponse · struct · L740-L743 — struct BingApiResponse
+- BingWebPages · struct · L746-L748 — struct BingWebPages
+- BingWebPage · struct · L751-L756 — struct BingWebPage
+- parse_bing_api_results · function · L758-L774 — fn parse_bing_api_results(response: BingApiResponse, max_results: usize) -> Vec<SearchResult>
+- parse_bing_html_results · function · L776-L811 — fn parse_bing_html_results(html: &str, max_results: usize) -> Vec<SearchResult>
+- parse_ddg_results · function · L813-L854 — fn parse_ddg_results(html: &str, max_results: usize) -> Vec<SearchResult>
+- detect_anti_bot_page · function · L861-L881 — fn detect_anti_bot_page(html: &str) -> Option<&'static str>
+- MARKERS · constant · L863-L874 — const MARKERS: &[(&str, &str)] = &[
+- decode_ddg_url · function · L883-L898 — fn decode_ddg_url(url: &str) -> String
+- html_decode · function · L900-L911 — fn html_decode(s: &str) -> String
+- local_engine_order · function · L916-L930 — fn local_engine_order(
+- tests · module · L934-L934 — mod tests;

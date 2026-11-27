@@ -1,0 +1,22 @@
+# sdk/typescript/src/structured.ts
+
+- StructuredOutputSchema · type · L11-L11 — type StructuredOutputSchema<T = unknown> = JSONSchemaType<T> | AnySchema;
+- StructuredValidationIssue · interface · L14-L23 — interface StructuredValidationIssue
+- StructuredOutputAttempt · interface · L26-L33 — interface StructuredOutputAttempt
+- StructuredOutputError · class · L36-L54 — class StructuredOutputError extends HarnessError
+- constructor · method · L41-L53 — constructor(attempts: StructuredOutputAttempt[])
+- compileStructuredSchema · function · L65-L72 — function compileStructuredSchema<T>(schema: StructuredOutputSchema<T>): ValidateFunction<T>
+- StructuredValidationResult · type · L74-L76 — type StructuredValidationResult<T> = | { ok: true; data: T; errors: [] } | { ok: false; data?: undefined; errors: StructuredValidationIssue[] };
+- validateStructuredText · function · L78-L90 — function validateStructuredText<T>( text: string, validate: ValidateFunction<T>, ): StructuredValidationResult<T>
+- buildStructuredPrompt · function · L92-L94 — function buildStructuredPrompt<T>(content: string, schema: StructuredOutputSchema<T>): string
+- buildStructuredCorrectionPrompt · function · L96-L114 — function buildStructuredCorrectionPrompt<T>( schema: StructuredOutputSchema<T>, attempt: StructuredOutputAttempt, ): string
+- assertRetryCount · function · L116-L120 — function assertRetryCount(maxRetries: number): void
+- formatIssue · function · L122-L125 — function formatIssue(issue: StructuredValidationIssue): string
+- structuredInstructions · function · L127-L135 — function structuredInstructions<T>(schema: StructuredOutputSchema<T>): string
+- normalizeAjvErrors · function · L137-L144 — function normalizeAjvErrors(errors: ErrorObject[]): StructuredValidationIssue[]
+- parseJsonFromText · function · L146-L166 — function parseJsonFromText(text: string): | { ok: true; value: unknown } | { ok: false; error: StructuredValidationIssue }
+- jsonCandidates · function · L168-L179 — function jsonCandidates(text: string): string[]
+- firstJsonContainer · function · L181-L215 — function firstJsonContainer(text: string): string | undefined
+- stableStringify · function · L217-L219 — function stableStringify(value: unknown): string
+- sortJson · function · L221-L226 — function sortJson(value: unknown): unknown
+- truncate · function · L228-L231 — function truncate(value: string, maxChars: number): string

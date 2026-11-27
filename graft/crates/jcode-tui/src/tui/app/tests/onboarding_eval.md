@@ -1,0 +1,135 @@
+# crates/jcode-tui/src/tui/app/tests/onboarding_eval.rs
+
+- ScreenSurface · enum · L43-L52 — enum ScreenSurface
+- classify_phase_surface · function · L54-L65 — fn classify_phase_surface(phase: &OnboardingPhase) -> ScreenSurface
+- all_onboarding_phases · function · L69-L98 — fn all_onboarding_phases() -> Vec<(&'static str, OnboardingPhase)>
+- Step · struct · L107-L118 — struct Step
+- Path · struct · L120-L131 — struct Path
+- entry_paths · function · L133-L182 — fn entry_paths() -> Vec<Path>
+- PathMetrics · struct · L184-L190 — struct PathMetrics
+- path_metrics · function · L192-L200 — fn path_metrics(path: &Path) -> PathMetrics
+- tier1_path_score · function · L205-L207 — fn tier1_path_score(m: &PathMetrics) -> f64
+- Tier1Weights · struct · L213-L218 — struct Tier1Weights
+- default · function · L221-L228 — fn default() -> Self
+- tier1_path_score_w · function · L231-L240 — fn tier1_path_score_w(m: &PathMetrics, w: &Tier1Weights) -> f64
+- CANONICAL_YESNO_PILL · constant · L251-L251 — const CANONICAL_YESNO_PILL: &str = "Yes \u{25D7}";
+- YESNO_PILL_CHEVRON · constant · L253-L253 — const YESNO_PILL_CHEVRON: &str = "\u{25D6}";
+- ScreenMetrics · struct · L255-L262 — struct ScreenMetrics
+- render_phase_screen · function · L264-L306 — fn render_phase_screen(label: &'static str, phase: OnboardingPhase) -> ScreenMetrics
+- tier3_screen_score · function · L310-L312 — fn tier3_screen_score(m: &ScreenMetrics) -> f64
+- Tier3Weights · struct · L316-L321 — struct Tier3Weights
+- default · function · L324-L331 — fn default() -> Self
+- tier3_screen_score_w · function · L334-L349 — fn tier3_screen_score_w(m: &ScreenMetrics, w: &Tier3Weights) -> f64
+- tier3_screens · function · L352-L373 — fn tier3_screens() -> Vec<ScreenMetrics>
+- Tier4Metrics · struct · L396-L405 — struct Tier4Metrics
+- terminology_is_consistent · function · L411-L449 — fn terminology_is_consistent(screens: &[(&'static str, String)]) -> bool
+- tier4_metrics · function · L453-L520 — fn tier4_metrics() -> Tier4Metrics
+- Tier4Weights · struct · L524-L529 — struct Tier4Weights
+- default · function · L532-L539 — fn default() -> Self
+- tier4_score · function · L542-L544 — fn tier4_score(m: &Tier4Metrics) -> f64
+- tier4_score_w · function · L546-L561 — fn tier4_score_w(m: &Tier4Metrics, w: &Tier4Weights) -> f64
+- GraphNode · enum · L587-L597 — enum GraphNode
+- phase_to_node · function · L601-L612 — fn phase_to_node(phase: &OnboardingPhase) -> GraphNode
+- NodeProps · struct · L615-L624 — struct NodeProps
+- node_props · function · L626-L645 — fn node_props(n: GraphNode) -> NodeProps
+- Edge · struct · L648-L653 — struct Edge
+- flow_edges · function · L658-L685 — fn flow_edges() -> Vec<Edge>
+- min_keystrokes_to · function · L689-L715 — fn min_keystrokes_to<F: Fn(GraphNode) -> bool>(
+- graph_is_acyclic · function · L718-L757 — fn graph_is_acyclic(edges: &[Edge]) -> bool
+- dfs · function · L729-L750 — fn dfs(
+- Tier5Metrics · struct · L760-L772 — struct Tier5Metrics
+- entry_node_for · function · L776-L788 — fn entry_node_for(path: &Path) -> GraphNode
+- tier5_metrics · function · L790-L861 — fn tier5_metrics() -> Tier5Metrics
+- Tier5Weights · struct · L865-L871 — struct Tier5Weights
+- default · function · L874-L884 — fn default() -> Self
+- tier5_score · function · L887-L889 — fn tier5_score(m: &Tier5Metrics) -> f64
+- tier5_score_w · function · L891-L901 — fn tier5_score_w(m: &Tier5Metrics, w: &Tier5Weights) -> f64
+- body_prose_lines · function · L920-L965 — fn body_prose_lines(text: &str) -> Vec<String>
+- syllables · function · L969-L989 — fn syllables(word: &str) -> u32
+- JARGON_TERMS · constant · L993-L995 — const JARGON_TERMS: &[&str] = &[
+- CONCEPT_GROUPS · constant · L1003-L1015 — const CONCEPT_GROUPS: &[&[&str]] = &[
+- ScreenLoad · struct · L1018-L1026 — struct ScreenLoad
+- screen_load · function · L1028-L1081 — fn screen_load(label: &'static str, text: &str) -> ScreenLoad
+- tier6_screen_loads · function · L1084-L1089 — fn tier6_screen_loads() -> Vec<ScreenLoad>
+- Tier6Weights · struct · L1094-L1104 — struct Tier6Weights
+- default · function · L1107-L1123 — fn default() -> Self
+- tier6_screen_score · function · L1127-L1129 — fn tier6_screen_score(m: &ScreenLoad) -> f64
+- tier6_screen_score_w · function · L1131-L1148 — fn tier6_screen_score_w(m: &ScreenLoad, w: &Tier6Weights) -> f64
+- ACTION_VERBS · constant · L1167-L1170 — const ACTION_VERBS: &[&str] = &[
+- NEXT_STEP_CUES · constant · L1173-L1178 — const NEXT_STEP_CUES: &[&str] = &[
+- ScreenClarity · struct · L1181-L1194 — struct ScreenClarity
+- looks_like_instruction · function · L1200-L1212 — fn looks_like_instruction(line: &str) -> bool
+- screen_clarity · function · L1214-L1259 — fn screen_clarity(label: &'static str, text: &str) -> ScreenClarity
+- tier7_screen_clarities · function · L1261-L1266 — fn tier7_screen_clarities() -> Vec<ScreenClarity>
+- Tier7Weights · struct · L1269-L1277 — struct Tier7Weights
+- default · function · L1280-L1288 — fn default() -> Self
+- tier7_screen_score · function · L1291-L1293 — fn tier7_screen_score(m: &ScreenClarity) -> f64
+- tier7_screen_score_w · function · L1295-L1314 — fn tier7_screen_score_w(m: &ScreenClarity, w: &Tier7Weights) -> f64
+- Tier8Metrics · struct · L1335-L1346 — struct Tier8Metrics
+- tier8_metrics · function · L1348-L1465 — fn tier8_metrics() -> Tier8Metrics
+- phase_is_destructive · function · L1421-L1431 — fn phase_is_destructive(p: &OnboardingPhase) -> bool
+- Tier8Weights · struct · L1468-L1474 — struct Tier8Weights
+- default · function · L1477-L1485 — fn default() -> Self
+- tier8_score · function · L1488-L1490 — fn tier8_score(m: &Tier8Metrics) -> f64
+- tier8_score_w · function · L1492-L1509 — fn tier8_score_w(m: &Tier8Metrics, w: &Tier8Weights) -> f64
+- READING_WPS · constant · L1533-L1533 — const READING_WPS: f64 = 4.0;
+- Tier9Metrics · struct · L1536-L1544 — struct Tier9Metrics
+- tier9_metrics · function · L1546-L1584 — fn tier9_metrics() -> Tier9Metrics
+- timed_phase_screens · function · L1587-L1604 — fn timed_phase_screens() -> Vec<ScreenMetrics>
+- timed_phases_accept_immediate_commit · function · L1608-L1648 — fn timed_phases_accept_immediate_commit() -> bool
+- Tier9Weights · struct · L1651-L1659 — struct Tier9Weights
+- default · function · L1662-L1669 — fn default() -> Self
+- tier9_score · function · L1672-L1674 — fn tier9_score(m: &Tier9Metrics) -> f64
+- tier9_score_w · function · L1676-L1688 — fn tier9_score_w(m: &Tier9Metrics, w: &Tier9Weights) -> f64
+- Tier10Metrics · struct · L1709-L1719 — struct Tier10Metrics
+- tier10_metrics · function · L1721-L1753 — fn tier10_metrics() -> Tier10Metrics
+- is_unicode_dependence_char · function · L1758-L1771 — fn is_unicode_dependence_char(c: char) -> bool
+- GRACEFUL · constant · L1763-L1769 — const GRACEFUL: &[char] = &[
+- selection_uses_noncolor_attribute · function · L1776-L1837 — fn selection_uses_noncolor_attribute() -> bool
+- render_modifiers_on_yesno_row · function · L1781-L1822 — fn render_modifiers_on_yesno_row(yes_highlighted: bool) -> Option<(Modifier, Modifier)>
+- action_row_follows_prose · function · L1841-L1859 — fn action_row_follows_prose() -> bool
+- Tier10Weights · struct · L1862-L1866 — struct Tier10Weights
+- default · function · L1869-L1875 — fn default() -> Self
+- tier10_score · function · L1878-L1880 — fn tier10_score(m: &Tier10Metrics) -> f64
+- tier10_score_w · function · L1882-L1892 — fn tier10_score_w(m: &Tier10Metrics, w: &Tier10Weights) -> f64
+- onboarding_eval_scorecard · function · L1899-L2182 — fn onboarding_eval_scorecard()
+- onboarding_eval_fidelity_real_transitions · function · L2188-L2227 — fn onboarding_eval_fidelity_real_transitions()
+- truncate · function · L2229-L2235 — fn truncate(s: &str, n: usize) -> String
+- onboarding_eval_graph_fidelity · function · L2243-L2303 — fn onboarding_eval_graph_fidelity()
+- pm · function · L2330-L2338 — fn pm(keystrokes: u32, decisions: u32, screens: u32, reaches_ready: bool) -> PathMetrics
+- sm · function · L2341-L2355 — fn sm(
+- meta_tier1_is_monotonic_in_each_signal · function · L2360-L2373 — fn meta_tier1_is_monotonic_in_each_signal()
+- meta_tier3_is_monotonic_in_each_signal · function · L2376-L2391 — fn meta_tier3_is_monotonic_in_each_signal()
+- meta_tier4_is_monotonic_in_each_signal · function · L2394-L2409 — fn meta_tier4_is_monotonic_in_each_signal()
+- meta_tier5_is_monotonic_in_each_signal · function · L2412-L2427 — fn meta_tier5_is_monotonic_in_each_signal()
+- meta_tier6_is_monotonic_in_each_signal · function · L2430-L2447 — fn meta_tier6_is_monotonic_in_each_signal()
+- meta_tier7_is_monotonic_in_each_signal · function · L2450-L2464 — fn meta_tier7_is_monotonic_in_each_signal()
+- meta_tier8_is_monotonic_in_each_signal · function · L2467-L2481 — fn meta_tier8_is_monotonic_in_each_signal()
+- meta_tier9_is_monotonic_in_each_signal · function · L2484-L2494 — fn meta_tier9_is_monotonic_in_each_signal()
+- meta_tier10_is_monotonic_in_each_signal · function · L2497-L2507 — fn meta_tier10_is_monotonic_in_each_signal()
+- anchor_paths · function · L2512-L2519 — fn anchor_paths() -> (PathMetrics, PathMetrics)
+- anchor_screens · function · L2521-L2527 — fn anchor_screens() -> (ScreenMetrics, ScreenMetrics)
+- meta_anchors_land_in_expected_bands · function · L2530-L2543 — fn meta_anchors_land_in_expected_bands()
+- meta_metric_discriminates_good_from_bad · function · L2546-L2560 — fn meta_metric_discriminates_good_from_bad()
+- MIN_SEPARATION · constant · L2547-L2547 — const MIN_SEPARATION: f64 = 40.0;
+- Lcg · struct · L2565-L2565 — struct Lcg(u64);
+- next_f64 · function · L2567-L2572 — fn next_f64(&mut self) -> f64
+- jitter · function · L2574-L2576 — fn jitter(&mut self, amount: f64) -> f64
+- jittered_tier1_weights · function · L2579-L2587 — fn jittered_tier1_weights(rng: &mut Lcg, amount: f64) -> Tier1Weights
+- jittered_tier3_weights · function · L2589-L2598 — fn jittered_tier3_weights(rng: &mut Lcg, amount: f64) -> Tier3Weights
+- meta_ranking_is_robust_to_weight_perturbation · function · L2601-L2646 — fn meta_ranking_is_robust_to_weight_perturbation()
+- TRIALS · constant · L2602-L2602 — const TRIALS: usize = 400;
+- JITTER · constant · L2603-L2603 — const JITTER: f64 = 0.5; // +/- 50%
+- is_nondecreasing · function · L2648-L2650 — fn is_nondecreasing(xs: &[f64]) -> bool
+- meta_every_signal_moves_the_score · function · L2655-L2671 — fn meta_every_signal_moves_the_score()
+- onboarding_meta_scorecard · function · L2676-L2768 — fn onboarding_meta_scorecard()
+- SignalStatus · enum · L2791-L2798 — enum SignalStatus
+- FeatureClass · enum · L2803-L2817 — enum FeatureClass
+- SignalSpec · struct · L2819-L2828 — struct SignalSpec
+- signal_registry · function · L2831-L2904 — fn signal_registry() -> Vec<SignalSpec>
+- detect_feature_classes · function · L2907-L2940 — fn detect_feature_classes(text: &str) -> Vec<FeatureClass>
+- all_welcome_screen_texts · function · L2943-L2967 — fn all_welcome_screen_texts() -> Vec<(&'static str, String)>
+- all_probe_surface_texts · function · L2975-L2979 — fn all_probe_surface_texts() -> Vec<(&'static str, String)>
+- render_login_picker_overlay_text · function · L2983-L3012 — fn render_login_picker_overlay_text() -> String
+- signal_coverage_scorecard · function · L3015-L3108 — fn signal_coverage_scorecard()
+- signal_coverage_scored_signals_are_all_live · function · L3115-L3305 — fn signal_coverage_scored_signals_are_all_live()

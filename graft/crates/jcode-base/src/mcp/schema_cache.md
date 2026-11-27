@@ -1,0 +1,33 @@
+# crates/jcode-base/src/mcp/schema_cache.rs
+
+- CACHE_FILE · constant · L31-L31 — const CACHE_FILE: &str = "mcp-schema-cache.json";
+- CACHE_VERSION · constant · L32-L32 — const CACHE_VERSION: u32 = 1;
+- CachedServerSchemas · struct · L37-L42 — pub struct CachedServerSchemas
+- McpSchemaCache · struct · L46-L51 — pub struct McpSchemaCache
+- shared_servers · module · L56-L79 — mod shared_servers
+- serialize · function · L60-L69 — pub fn serialize<S: serde::Serializer>(
+- deserialize · function · L71-L78 — pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+- default · function · L82-L87 — fn default() -> Self
+- fingerprint_config · function · L93-L122 — pub fn fingerprint_config(config: &McpServerConfig) -> String
+- cache_path · function · L124-L126 — fn cache_path() -> Option<PathBuf>
+- load · function · L131-L160 — pub fn load() -> Self
+- Memo · type · L138-L138 — type Memo = Option<(PathBuf, std::time::SystemTime, u64, McpSchemaCache)>;
+- MEMO · constant · L139-L140 — static MEMO: std::sync::LazyLock<std::sync::Mutex<Memo>> =
+- load_uncached · function · L162-L171 — fn load_uncached(path: &std::path::Path) -> Self
+- tools_for · function · L176-L183 — pub fn tools_for(&self, server: &str, config: &McpServerConfig) -> Option<&[McpToolDef]>
+- sync_server · function · L190-L229 — pub fn sync_server(server: &str, config: &McpServerConfig, tools: &[McpToolDef]) -> bool
+- SEEN · constant · L192-L193 — static SEEN: std::sync::LazyLock<std::sync::Mutex<BTreeMap<String, u64>>> =
+- update · function · L234-L254 — pub fn update(
+- retain_servers · function · L258-L270 — pub fn retain_servers(&mut self, current_servers: &[String]) -> bool
+- save · function · L274-L295 — pub fn save(&self)
+- server_count · function · L298-L300 — pub fn server_count(&self) -> usize
+- tool_defs_equal · function · L305-L321 — fn tool_defs_equal(a: &[McpToolDef], b: &[McpToolDef]) -> bool
+- schema_cache_tests · module · L325-L325 — mod schema_cache_tests;
+- shared_snapshot_tests · module · L328-L464 — mod shared_snapshot_tests
+- catalog · function · L332-L355 — fn catalog() -> (McpSchemaCache, McpServerConfig)
+- large_schema_snapshots_share_and_mutate_in_isolation · function · L358-L391 — fn large_schema_snapshots_share_and_mutate_in_isolation()
+- large_schema_json_is_byte_identical_to_legacy · function · L394-L419 — fn large_schema_json_is_byte_identical_to_legacy()
+- LegacyCache · struct · L396-L399 — struct LegacyCache
+- large_schema_load_memo_shares_and_respects_path_and_file_changes · function · L422-L463 — fn large_schema_load_memo_shares_and_respects_path_and_file_changes()
+- RestoreHome · struct · L424-L424 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L426-L433 — fn drop(&mut self)

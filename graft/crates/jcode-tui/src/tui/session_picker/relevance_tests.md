@@ -1,0 +1,24 @@
+# crates/jcode-tui/src/tui/session_picker/relevance_tests.rs
+
+- session · function · L6-L43 — fn session(id: &str, title: &str, age: i64, path: &Path) -> SessionInfo
+- ids · function · L45-L51 — fn ids(picker: &SessionPicker) -> Vec<String>
+- wait · function · L53-L60 — fn wait(picker: &mut SessionPicker)
+- relevance_overrides_recency_and_clearing_restores_default_order_and_selection · function · L63-L82 — fn relevance_overrides_recency_and_clearing_restores_default_order_and_selection()
+- progressive_transcript_hits_keep_metadata_rank_and_selected_session · function · L85-L102 — fn progressive_transcript_hits_keep_metadata_rank_and_selected_session()
+- relevance_ties_keep_recency_and_multiword_matches_score_every_term · function · L105-L116 — fn relevance_ties_keep_recency_and_multiword_matches_score_every_term()
+- async_rank_updates_never_replace_stronger_evidence · function · L119-L138 — fn async_rank_updates_never_replace_stronger_evidence()
+- fuzzy_rank_sums_literal_and_fuzzy_terms · function · L141-L158 — fn fuzzy_rank_sums_literal_and_fuzzy_terms()
+- global_search_does_not_boost_saved_or_server_sections · function · L161-L200 — fn global_search_does_not_boost_saved_or_server_sections()
+- negative_fuzzy_scores_survive_async_merge · function · L203-L214 — fn negative_fuzzy_scores_survive_async_merge()
+- newly_discovered_stronger_hit_reorders_without_moving_manually_scrolled_selection · function · L217-L259 — fn newly_discovered_stronger_hit_reorders_without_moving_manually_scrolled_selection()
+- optimized_literal_rank_preserves_unicode_and_punctuation_boundaries · function · L262-L310 — fn optimized_literal_rank_preserves_unicode_and_punctuation_boundaries()
+- retyped_wake_prompt_beats_incidental_literal_transcript_hits · function · L313-L342 — fn retyped_wake_prompt_beats_incidental_literal_transcript_hits()
+- opening_prompt_evidence_requires_a_local_multiword_match · function · L345-L367 — fn opening_prompt_evidence_requires_a_local_multiword_match()
+- mxabox_literal_transcript_hit_beats_recent_fuzzy_metadata_and_transcripts · function · L370-L385 — fn mxabox_literal_transcript_hit_beats_recent_fuzzy_metadata_and_transcripts()
+- fuzzy_transcript_search_rejects_distant_spellings_regardless_of_recency · function · L388-L407 — fn fuzzy_transcript_search_rejects_distant_spellings_regardless_of_recency()
+- fork_basten_does_not_find_an_incidental_tuning_fork_essay · function · L410-L446 — fn fork_basten_does_not_find_an_incidental_tuning_fork_essay()
+- user_prompt_transcript_hit_beats_recent_tool_output_hit · function · L449-L476 — fn user_prompt_transcript_hit_beats_recent_tool_output_hit()
+- repeated_rendering_requests_outrank_recent_rendering_bug_title · function · L479-L501 — fn repeated_rendering_requests_outrank_recent_rendering_bug_title()
+- user_mention_frequency_is_bounded_and_ignores_generated_text · function · L504-L517 — fn user_mention_frequency_is_bounded_and_ignores_generated_text()
+- retyped_later_user_prompt_beats_scattered_literal_hits · function · L520-L553 — fn retyped_later_user_prompt_beats_scattered_literal_hits()
+- typo_in_user_prompt_beats_literal_words_scattered_in_tool_output · function · L556-L589 — fn typo_in_user_prompt_beats_literal_words_scattered_in_tool_output()

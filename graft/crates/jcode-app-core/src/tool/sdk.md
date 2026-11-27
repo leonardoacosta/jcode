@@ -1,0 +1,35 @@
+# crates/jcode-app-core/src/tool/sdk.rs
+
+- Overlay · struct · L8-L12 — struct Overlay
+- Pending · struct · L13-L17 — struct Pending
+- State · struct · L19-L22 — struct State
+- STATE · constant · L23-L23 — static STATE: LazyLock<StdRwLock<State>> = LazyLock::new(|| StdRwLock::new(State::default()));
+- NEXT_CALL · constant · L24-L24 — static NEXT_CALL: AtomicU64 = AtomicU64::new(1);
+- ConnectionGuard · struct · L26-L26 — pub(crate) struct ConnectionGuard(pub String);
+- drop · function · L28-L56 — fn drop(&mut self)
+- remove_session · function · L59-L66 — pub(crate) fn remove_session(session: &str)
+- configure · function · L68-L162 — pub(crate) fn configure(
+- owns_jarvis · function · L165-L177 — pub(crate) fn owns_jarvis(session: &str, owner: &str) -> bool
+- config · function · L179-L186 — pub(crate) fn config(session: &str) -> Option<SessionToolConfig>
+- has_runtime_overlays · function · L190-L193 — pub(crate) fn has_runtime_overlays() -> bool
+- custom · function · L195-L197 — pub(crate) fn custom(session: &str, name: &str) -> bool
+- apply_definitions · function · L199-L218 — pub(crate) fn apply_definitions(
+- wire_definitions · function · L220-L229 — pub(crate) fn wire_definitions(tools: Vec<ToolDefinition>) -> Vec<SessionToolDefinition>
+- PendingGuard · struct · L231-L231 — struct PendingGuard(String);
+- drop · function · L233-L239 — fn drop(&mut self)
+- execute · function · L242-L244 — pub(crate) async fn execute(session: &str, name: &str, input: Value) -> Result<ToolOutput>
+- execute_with_timeout · function · L246-L295 — async fn execute_with_timeout(
+- complete · function · L297-L325 — pub(crate) fn complete(
+- CallbackTool · struct · L329-L329 — pub(super) struct CallbackTool(pub String);
+- name · function · L332-L334 — fn name(&self) -> &str
+- description · function · L335-L337 — fn description(&self) -> &str
+- parameters_schema · function · L338-L340 — fn parameters_schema(&self) -> Value
+- execute · function · L341-L343 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L347-L613 — mod tests
+- custom_definition · function · L349-L355 — fn custom_definition(name: &str) -> SessionToolDefinition
+- disconnect_removes_temporary_speech_but_preserves_other_overlays · function · L358-L455 — async fn disconnect_removes_temporary_speech_but_preserves_other_overlays()
+- speak_callback_roundtrip_requires_matching_owner_and_session · function · L458-L501 — async fn speak_callback_roundtrip_requires_matching_owner_and_session()
+- disconnect_removes_only_temporary_cloud_overlay · function · L504-L534 — fn disconnect_removes_only_temporary_cloud_overlay()
+- owner_clear_cancels_pending_callbacks · function · L536-L561 — async fn owner_clear_cancels_pending_callbacks()
+- empty_config_only_clears_same_owner · function · L563-L582 — fn empty_config_only_clears_same_owner()
+- sdk_callback_timeout_removes_pending · function · L584-L612 — async fn sdk_callback_timeout_removes_pending()

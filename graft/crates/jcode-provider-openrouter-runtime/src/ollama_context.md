@@ -1,0 +1,25 @@
+# crates/jcode-provider-openrouter-runtime/src/ollama_context.rs
+
+- OLLAMA_DEFAULT_SERVING_CONTEXT · constant · L30-L30 — pub(crate) const OLLAMA_DEFAULT_SERVING_CONTEXT: u64 = 4096;
+- is_cloud_model · function · L35-L40 — pub(crate) fn is_cloud_model(model: &str) -> bool
+- PROBE_TIMEOUT · constant · L44-L44 — const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+- is_ollama_api_base · function · L47-L53 — pub(crate) fn is_ollama_api_base(api_base: &str, profile_id: Option<&str>) -> bool
+- ollama_native_root · function · L57-L64 — pub(crate) fn ollama_native_root(api_base: &str) -> String
+- effective_serving_context · function · L75-L78 — pub(crate) fn effective_serving_context(trained: Option<u64>, server_default: Option<u64>) -> u64
+- effective_context_for_model · function · L83-L95 — pub(crate) fn effective_context_for_model(
+- parse_server_default_from_ps · function · L101-L110 — fn parse_server_default_from_ps(body: &str) -> Result<Option<u64>>
+- parse_trained_context_from_show · function · L114-L125 — fn parse_trained_context_from_show(body: &str) -> Result<Option<u64>>
+- fetch_server_default · function · L127-L138 — async fn fetch_server_default(client: &Client, root: &str) -> Result<Option<u64>>
+- fetch_trained_context · function · L140-L152 — async fn fetch_trained_context(client: &Client, root: &str, model: &str) -> Result<Option<u64>>
+- probe_or_log · function · L156-L166 — fn probe_or_log<T>(what: &str, result: Result<Option<T>>) -> Option<T>
+- maybe_enrich · function · L172-L182 — pub(crate) async fn maybe_enrich(
+- enrich_ollama_context_lengths · function · L191-L224 — async fn enrich_ollama_context_lengths(client: &Client, api_base: &str, models: &mut [ModelInfo])
+- tests · module · L227-L325 — mod tests
+- detects_ollama_endpoints · function · L231-L240 — fn detects_ollama_endpoints()
+- strips_openai_version_segment_for_native_routes · function · L243-L256 — fn strips_openai_version_segment_for_native_routes()
+- serving_context_is_clamped_by_server_default · function · L259-L263 — fn serving_context_is_clamped_by_server_default()
+- cloud_model_uses_remote_trained_context_instead_of_local_clamp · function · L266-L279 — fn cloud_model_uses_remote_trained_context_instead_of_local_clamp()
+- unknown_server_default_never_trusts_the_trained_window · function · L282-L294 — fn unknown_server_default_never_trusts_the_trained_window()
+- parses_server_default_from_ps_payload · function · L297-L301 — fn parses_server_default_from_ps_payload()
+- missing_loaded_models_yields_no_server_default · function · L304-L311 — fn missing_loaded_models_yields_no_server_default()
+- parses_trained_context_from_show_payload · function · L314-L324 — fn parses_trained_context_from_show_payload()

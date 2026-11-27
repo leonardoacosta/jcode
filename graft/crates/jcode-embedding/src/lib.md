@@ -1,0 +1,40 @@
+# crates/jcode-embedding/src/lib.rs
+
+- MODEL_NAME · constant · L10-L10 — pub const MODEL_NAME: &str = "all-MiniLM-L6-v2";
+- RunnableEmbeddingModel · type · L13-L13 — type RunnableEmbeddingModel = std::sync::Arc<RunnableModel<TypedFact, Box<dyn TypedOp>>>;
+- TopKItem · struct · L16-L20 — struct TopKItem<T>
+- eq · function · L23-L25 — fn eq(&self, other: &Self) -> bool
+- partial_cmp · function · L31-L33 — fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering>
+- cmp · function · L37-L41 — fn cmp(&self, other: &Self) -> std::cmp::Ordering
+- top_k_scored · function · L44-L84 — fn top_k_scored<T, I>(items: I, limit: usize) -> Vec<(T, f32)>
+- EMBEDDING_DIM · constant · L85-L85 — const EMBEDDING_DIM: usize = 384;
+- MAX_SEQ_LENGTH · constant · L86-L86 — const MAX_SEQ_LENGTH: usize = 256;
+- MODEL_URL · constant · L88-L89 — const MODEL_URL: &str =
+- TOKENIZER_URL · constant · L90-L91 — const TOKENIZER_URL: &str =
+- EmbeddingVec · type · L93-L93 — pub type EmbeddingVec = Vec<f32>;
+- Embedder · struct · L95-L103 — pub struct Embedder
+- InputRole · enum · L106-L110 — enum InputRole
+- classify_input · function · L112-L121 — fn classify_input(name: &str) -> InputRole
+- load_from_dir · function · L124-L170 — pub fn load_from_dir(model_dir: &Path) -> Result<Self>
+- embed · function · L172-L240 — pub fn embed(&self, text: &str) -> Result<EmbeddingVec>
+- embed_batch · function · L242-L244 — pub fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbeddingVec>>
+- build_bert_inputs · function · L249-L280 — fn build_bert_inputs(
+- CrossEncoder · struct · L285-L289 — pub struct CrossEncoder
+- load_from_dir · function · L292-L326 — pub fn load_from_dir(model_dir: &Path) -> Result<Self>
+- score · function · L329-L346 — pub fn score(&self, query: &str, passage: &str) -> Result<f32>
+- rerank · function · L350-L362 — pub fn rerank(
+- embedding_dim · function · L365-L367 — pub const fn embedding_dim() -> usize
+- cosine_similarity · function · L369-L383 — pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32
+- batch_cosine_similarity · function · L385-L401 — pub fn batch_cosine_similarity(query: &[f32], candidates: &[&[f32]]) -> Vec<f32>
+- find_similar · function · L403-L419 — pub fn find_similar(
+- is_model_available · function · L421-L423 — pub fn is_model_available(model_dir: &Path) -> bool
+- download_model · function · L425-L440 — fn download_model(model_dir: &Path) -> Result<()>
+- download_model_blocking · function · L442-L473 — fn download_model_blocking(model_dir: &Path) -> Result<()>
+- tests · module · L476-L635 — mod tests
+- cosine_similarity_handles_basic_cases · function · L480-L489 — fn cosine_similarity_handles_basic_cases()
+- find_similar_returns_only_top_k_sorted_hits · function · L492-L504 — fn find_similar_returns_only_top_k_sorted_hits()
+- related_beats_unrelated · function · L506-L518 — fn related_beats_unrelated(model_dir: &Path)
+- minilm_embedding_is_numerically_stable_across_inference_engines · function · L538-L570 — fn minilm_embedding_is_numerically_stable_across_inference_engines()
+- minilm_related_beats_unrelated_if_present · function · L576-L584 — fn minilm_related_beats_unrelated_if_present()
+- alt_model_related_beats_unrelated_if_present · function · L592-L610 — fn alt_model_related_beats_unrelated_if_present()
+- cross_encoder_scores_relevant_higher_if_present · function · L615-L634 — fn cross_encoder_scores_relevant_higher_if_present()

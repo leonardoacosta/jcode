@@ -1,0 +1,56 @@
+# crates/jcode-tui/src/tui/app/tests/support_failover/part_01.rs
+
+- cleanup_background_task_files · function · L15-L19 — fn cleanup_background_task_files(task_id: &str)
+- cleanup_reload_context_file · function · L21-L25 — pub(super) fn cleanup_reload_context_file(session_id: &str)
+- MockProvider · struct · L28-L28 — struct MockProvider;
+- NamedMockProvider · struct · L31-L34 — struct NamedMockProvider
+- RefreshSummaryProvider · struct · L37-L39 — struct RefreshSummaryProvider
+- OpenRouterSpecCaptureProvider · struct · L42-L44 — struct OpenRouterSpecCaptureProvider
+- complete · function · L48-L56 — async fn complete(
+- name · function · L58-L60 — fn name(&self) -> &str
+- fork · function · L62-L64 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L69-L77 — async fn complete(
+- name · function · L79-L81 — fn name(&self) -> &str
+- model · function · L83-L85 — fn model(&self) -> String
+- fork · function · L87-L89 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L94-L102 — async fn complete(
+- name · function · L104-L106 — fn name(&self) -> &str
+- fork · function · L108-L110 — fn fork(&self) -> Arc<dyn Provider>
+- refresh_model_catalog · function · L112-L114 — async fn refresh_model_catalog(&self) -> Result<crate::provider::ModelCatalogRefreshSummary>
+- complete · function · L119-L127 — async fn complete(
+- name · function · L129-L131 — fn name(&self) -> &str
+- model · function · L133-L135 — fn model(&self) -> String
+- model_routes · function · L137-L147 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- available_providers_for_model · function · L149-L155 — fn available_providers_for_model(&self, model: &str) -> Vec<String>
+- available_efforts · function · L157-L159 — fn available_efforts(&self) -> Vec<&'static str>
+- reasoning_effort · function · L161-L163 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L165-L167 — fn set_reasoning_effort(&self, _effort: &str) -> Result<()>
+- set_model · function · L169-L172 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L174-L176 — fn fork(&self) -> Arc<dyn Provider>
+- create_test_app · function · L179-L204 — pub(crate) fn create_test_app() -> App
+- create_named_provider_test_app · function · L206-L222 — fn create_named_provider_test_app(name: &'static str, model: &'static str) -> App
+- wait_for_model_picker_load · function · L224-L234 — fn wait_for_model_picker_load(app: &mut App)
+- create_refresh_summary_test_app · function · L236-L252 — fn create_refresh_summary_test_app(summary: crate::provider::ModelCatalogRefreshSummary) -> App
+- create_openrouter_spec_capture_test_app · function · L254-L273 — fn create_openrouter_spec_capture_test_app() -> (App, StdArc<StdMutex<Vec<String>>>)
+- local_add_provider_message_does_not_retain_local_provider_copy · function · L276-L280 — fn local_add_provider_message_does_not_retain_local_provider_copy()
+- remote_add_provider_message_retains_remote_provider_copy · function · L283-L290 — fn remote_add_provider_message_retains_remote_provider_copy()
+- debug_memory_profile_includes_app_owned_summary_for_large_client_state · function · L293-L337 — fn debug_memory_profile_includes_app_owned_summary_for_large_client_state()
+- debug_state_exposes_pending_interrupt_lifecycle · function · L340-L358 — fn debug_state_exposes_pending_interrupt_lifecycle()
+- test_side_panel_snapshot · function · L360-L375 — fn test_side_panel_snapshot(page_id: &str, title: &str) -> crate::side_panel::SidePanelSnapshot
+- shared_test_jcode_home · function · L401-L408 — fn shared_test_jcode_home() -> &'static std::path::Path
+- TEST_HOME · constant · L402-L402 — static TEST_HOME: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+- ensure_test_jcode_home_if_unset · function · L410-L431 — fn ensure_test_jcode_home_if_unset()
+- clear_persisted_test_ui_state · function · L433-L451 — fn clear_persisted_test_ui_state()
+- EnvRestoreGuard · struct · L453-L453 — struct EnvRestoreGuard(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- capture · function · L456-L462 — fn capture(keys: impl IntoIterator<Item = &'static str>) -> Self
+- set · function · L464-L468 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L472-L480 — fn drop(&mut self)
+- with_temp_jcode_home · function · L483-L510 — fn with_temp_jcode_home<T>(f: impl FnOnce() -> T) -> T
+- with_reasoning_current_home · function · L521-L528 — fn with_reasoning_current_home<T>(f: impl FnOnce() -> T) -> T
+- create_jcode_repo_fixture · function · L530-L539 — fn create_jcode_repo_fixture() -> tempfile::TempDir
+- create_real_git_repo_fixture · function · L541-L570 — fn create_real_git_repo_fixture() -> tempfile::TempDir
+- test_handle_turn_error_failover_prompt_manual_mode_shows_system_notice · function · L573-L601 — fn test_handle_turn_error_failover_prompt_manual_mode_shows_system_notice()
+- test_handle_turn_error_failover_prompt_countdown_can_switch_and_retry · function · L604-L679 — fn test_handle_turn_error_failover_prompt_countdown_can_switch_and_retry()
+- test_first_failure_immediate_switch_and_manual_safety · function · L682-L722 — fn test_first_failure_immediate_switch_and_manual_safety()
+- auto_poke_config_sets_the_session_default_and_poke_on_still_overrides · function · L731-L751 — fn auto_poke_config_sets_the_session_default_and_poke_on_still_overrides()
+- auto_poke_defaults_on_when_config_does_not_disable_it · function · L755-L764 — fn auto_poke_defaults_on_when_config_does_not_disable_it()

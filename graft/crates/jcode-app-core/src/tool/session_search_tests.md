@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/tool/session_search_tests.rs
+
+- with_temp_home · function · L9-L25 — fn with_temp_home<T>(f: impl FnOnce(&Path) -> T) -> T
+- text · function · L27-L32 — fn text(text: &str) -> ContentBlock
+- save_test_session · function · L34-L43 — fn save_test_session(id: &str, messages: Vec<(Role, Vec<ContentBlock>)>) -> Session
+- run_report · function · L45-L53 — fn run_report(home: &Path, query: &str, options: &SearchOptions) -> SearchReport
+- run_search · function · L55-L57 — fn run_search(home: &Path, query: &str, options: &SearchOptions) -> Vec<SearchResult>
+- token_overlap_matches_when_exact_phrase_is_absent · function · L60-L80 — fn token_overlap_matches_when_exact_phrase_is_absent()
+- tool_use_input_is_hidden_by_default_and_searchable_when_requested · function · L83-L113 — fn tool_use_input_is_hidden_by_default_and_searchable_when_requested()
+- tool_intents_are_searchable_by_default_without_raw_arguments · function · L116-L140 — fn tool_intents_are_searchable_by_default_without_raw_arguments()
+- todo_task_names_and_descriptions_are_searchable_by_default · function · L143-L190 — fn todo_task_names_and_descriptions_are_searchable_by_default()
+- journal_entries_are_searchable · function · L193-L220 — fn journal_entries_are_searchable()
+- empty_sessions_dir_returns_no_results_instead_of_panicking · function · L223-L229 — fn empty_sessions_dir_returns_no_results_instead_of_panicking()
+- timestamped_session_collection_respects_recent_limit_without_mtime_stat · function · L232-L260 — fn timestamped_session_collection_respects_recent_limit_without_mtime_stat()
+- bench_real_session_search_corpus · function · L264-L322 — fn bench_real_session_search_corpus()
+- stop_word_only_query_is_not_actionable · function · L325-L344 — fn stop_word_only_query_is_not_actionable()
+- current_session_is_excluded_by_default_but_can_be_included · function · L347-L363 — fn current_session_is_excluded_by_default_but_can_be_included()
+- metadata_is_searchable_and_returned_with_locator · function · L366-L384 — fn metadata_is_searchable_and_returned_with_locator()
+- system_reminders_are_hidden_by_default_and_opt_in_searchable · function · L387-L415 — fn system_reminders_are_hidden_by_default_and_opt_in_searchable()
+- working_dir_filter_is_case_insensitive_and_prefix_based · function · L418-L433 — fn working_dir_filter_is_case_insensitive_and_prefix_based()
+- results_are_grouped_by_session_by_default · function · L436-L460 — fn results_are_grouped_by_session_by_default()
+- formatter_emits_stable_locators_and_safe_code_fences · function · L463-L483 — fn formatter_emits_stable_locators_and_safe_code_fences()
+- filters_cover_role_provider_model_flags_and_dates · function · L486-L539 — fn filters_cover_role_provider_model_flags_and_dates()
+- role_all_searches_user_assistant_and_metadata · function · L542-L579 — fn role_all_searches_user_assistant_and_metadata()
+- role_parser_accepts_all_as_default_all_roles_filter · function · L582-L592 — fn role_parser_accepts_all_as_default_all_roles_filter()
+- context_expansion_returns_neighboring_messages_without_matching_hit · function · L595-L617 — fn context_expansion_returns_neighboring_messages_without_matching_hit()
+- external_codex_sessions_are_searchable_without_jcode_session_dir · function · L620-L691 — fn external_codex_sessions_are_searchable_without_jcode_session_dir()
+- external_cursor_sessions_are_searchable_without_jcode_session_dir · function · L694-L736 — fn external_cursor_sessions_are_searchable_without_jcode_session_dir()
+- limit_validation_reports_friendly_errors · function · L739-L750 — fn limit_validation_reports_friendly_errors()
+- debug_sessions_are_excluded_unless_opted_in_and_deleted_ids_drop_out · function · L753-L777 — fn debug_sessions_are_excluded_unless_opted_in_and_deleted_ids_drop_out()

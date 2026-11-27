@@ -1,0 +1,67 @@
+# crates/jcode-tui/src/tui/ui_pinned.rs
+
+- ui_pinned_table · module · L2-L2 — mod ui_pinned_table;
+- layout_support · module · L6-L6 — mod layout_support;
+- util_support · module · L8-L8 — mod util_support;
+- SIDE_PANEL_HEADER_HEIGHT · constant · L22-L22 — const SIDE_PANEL_HEADER_HEIGHT: u16 = 1;
+- side_panel_border_style · function · L24-L27 — fn side_panel_border_style(focused: bool) -> Style
+- side_panel_inner · function · L29-L33 — fn side_panel_inner(area: Rect) -> Rect
+- side_panel_content_area · function · L35-L47 — fn side_panel_content_area(area: Rect) -> Option<Rect>
+- side_panel_content_may_contain_mermaid · function · L49-L56 — fn side_panel_content_may_contain_mermaid(content: &str) -> bool
+- side_panel_mermaid_preferred_aspect_ratio · function · L58-L67 — fn side_panel_mermaid_preferred_aspect_ratio(
+- side_panel_mermaid_profile_area · function · L69-L78 — fn side_panel_mermaid_profile_area(inner: Rect, reserve_native_scrollbar: bool) -> Rect
+- selection_support · module · L81-L81 — mod selection_support;
+- SidePanelMarkdownKey · struct · L85-L94 — struct SidePanelMarkdownKey
+- SidePanelMarkdownCacheState · struct · L97-L100 — struct SidePanelMarkdownCacheState
+- SidePanelRenderKey · struct · L103-L114 — struct SidePanelRenderKey
+- SidePanelRenderCacheState · struct · L117-L120 — struct SidePanelRenderCacheState
+- side_panel_cache_keys_include_link_url_visibility · function · L123-L157 — fn side_panel_cache_keys_include_link_url_visibility()
+- mermaid_debug_support · module · L160-L160 — mod mermaid_debug_support;
+- SidePanelDebugState · struct · L168-L171 — struct SidePanelDebugState
+- RenderedSidePanelMarkdown · struct · L174-L178 — struct RenderedSidePanelMarkdown
+- RenderedSidePanelCache · struct · L181-L190 — struct RenderedSidePanelCache
+- estimate_lines_bytes · function · L192-L205 — fn estimate_lines_bytes(lines: &[Line<'static>]) -> usize
+- estimate_arc_string_vec_bytes · function · L207-L211 — fn estimate_arc_string_vec_bytes(values: &std::sync::Arc<Vec<String>>) -> usize
+- estimate_arc_usize_vec_bytes · function · L213-L215 — fn estimate_arc_usize_vec_bytes(values: &std::sync::Arc<Vec<usize>>) -> usize
+- estimate_arc_wrapped_line_map_bytes · function · L217-L220 — fn estimate_arc_wrapped_line_map_bytes(values: &std::sync::Arc<Vec<WrappedLineMap>>) -> usize
+- estimate_side_panel_rendered_cache_bytes · function · L222-L230 — fn estimate_side_panel_rendered_cache_bytes(cache: &RenderedSidePanelCache) -> usize
+- estimate_rendered_side_panel_markdown_bytes · function · L232-L236 — fn estimate_rendered_side_panel_markdown_bytes(value: &RenderedSidePanelMarkdown) -> usize
+- estimate_side_panel_markdown_key_bytes · function · L238-L240 — fn estimate_side_panel_markdown_key_bytes(key: &SidePanelMarkdownKey) -> usize
+- estimate_side_panel_render_key_bytes · function · L242-L244 — fn estimate_side_panel_render_key_bytes(key: &SidePanelRenderKey) -> usize
+- debug_memory_profile · function · L246-L303 — pub(crate) fn debug_memory_profile() -> serde_json::Value
+- SidePanelImagePlacement · struct · L306-L311 — struct SidePanelImagePlacement
+- SidePanelImageRenderMode · enum · L314-L317 — enum SidePanelImageRenderMode
+- is_scrollable · function · L320-L322 — fn is_scrollable(self) -> bool
+- SidePanelImageLayout · struct · L326-L329 — struct SidePanelImageLayout
+- FitImageRenderPlan · enum · L332-L341 — enum FitImageRenderPlan
+- SIDE_PANEL_INLINE_IMAGE_MIN_ROWS · constant · L343-L343 — const SIDE_PANEL_INLINE_IMAGE_MIN_ROWS: u16 = 4;
+- SIDE_PANEL_INLINE_IMAGE_MIN_ZOOM_PERCENT · constant · L344-L344 — const SIDE_PANEL_INLINE_IMAGE_MIN_ZOOM_PERCENT: u16 = 70;
+- SidePaneSnapshotCache · type · L346-L352 — type SidePaneSnapshotCache = (
+- build_side_pane_snapshot_cache · function · L354-L378 — fn build_side_pane_snapshot_cache(
+- SIDE_PANEL_MARKDOWN_CACHE · constant · L380-L380 — static SIDE_PANEL_MARKDOWN_CACHE: OnceLock<Mutex<SidePanelMarkdownCacheState>> = OnceLock::new();
+- SIDE_PANEL_RENDER_CACHE · constant · L382-L382 — static SIDE_PANEL_RENDER_CACHE: OnceLock<Mutex<SidePanelRenderCacheState>> = OnceLock::new();
+- SIDE_PANEL_DEBUG · constant · L384-L384 — static SIDE_PANEL_DEBUG: OnceLock<Mutex<SidePanelDebugState>> = OnceLock::new();
+- SIDE_PANEL_MARKDOWN_CACHE_LIMIT · constant · L393-L393 — const SIDE_PANEL_MARKDOWN_CACHE_LIMIT: usize = 12;
+- SIDE_PANEL_RENDER_CACHE_LIMIT · constant · L394-L394 — const SIDE_PANEL_RENDER_CACHE_LIMIT: usize = 12;
+- side_panel_markdown_cache · function · L397-L399 — fn side_panel_markdown_cache() -> &'static Mutex<SidePanelMarkdownCacheState>
+- side_panel_render_cache · function · L402-L404 — fn side_panel_render_cache() -> &'static Mutex<SidePanelRenderCacheState>
+- side_panel_debug · function · L407-L409 — fn side_panel_debug() -> &'static Mutex<SidePanelDebugState>
+- with_side_panel_markdown_cache · function · L411-L423 — fn with_side_panel_markdown_cache<R>(f: impl FnOnce(&SidePanelMarkdownCacheState) -> R) -> R
+- with_side_panel_markdown_cache_mut · function · L425-L439 — fn with_side_panel_markdown_cache_mut<R>(
+- with_side_panel_render_cache · function · L441-L453 — fn with_side_panel_render_cache<R>(f: impl FnOnce(&SidePanelRenderCacheState) -> R) -> R
+- with_side_panel_render_cache_mut · function · L455-L467 — fn with_side_panel_render_cache_mut<R>(f: impl FnOnce(&mut SidePanelRenderCacheState) -> R) -> R
+- with_side_panel_debug · function · L469-L481 — fn with_side_panel_debug<R>(f: impl FnOnce(&SidePanelDebugState) -> R) -> R
+- with_side_panel_debug_mut · function · L483-L495 — fn with_side_panel_debug_mut<R>(f: impl FnOnce(&mut SidePanelDebugState) -> R) -> R
+- side_panel_debug_stats · function · L497-L502 — pub(crate) fn side_panel_debug_stats() -> SidePanelDebugStats
+- side_panel_debug_json · function · L504-L512 — pub(crate) fn side_panel_debug_json() -> Option<serde_json::Value>
+- clear_side_panel_debug_snapshot · function · L514-L518 — pub(crate) fn clear_side_panel_debug_snapshot()
+- reset_side_panel_debug_stats · function · L520-L525 — pub(crate) fn reset_side_panel_debug_stats()
+- clear_side_panel_render_caches · function · L527-L534 — pub(crate) fn clear_side_panel_render_caches()
+- prewarm_focused_side_panel · function · L536-L559 — pub(crate) fn prewarm_focused_side_panel(
+- draw_side_panel_markdown · function · L561-L947 — pub(super) fn draw_side_panel_markdown(
+- render_side_panel_markdown_cached · function · L949-L956 — fn render_side_panel_markdown_cached(
+- render_side_panel_markdown_cached_with_zoom · function · L958-L973 — fn render_side_panel_markdown_cached_with_zoom(
+- render_side_panel_markdown_cached_with_zoom_and_profile_area · function · L975-L1121 — fn render_side_panel_markdown_cached_with_zoom_and_profile_area(
+- render_side_panel_markdown_lines_cached · function · L1123-L1224 — fn render_side_panel_markdown_lines_cached(
+- image_paths · module · L1227-L1227 — mod image_paths;
+- tests · module · L1233-L1233 — mod tests;

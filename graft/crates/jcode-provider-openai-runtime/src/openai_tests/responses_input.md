@@ -1,0 +1,29 @@
+# crates/jcode-provider-openai-runtime/src/openai_tests/responses_input.rs
+
+- assistant_tool_use · function · L1-L14 — fn assistant_tool_use(id: &str, name: &str, input: serde_json::Value) -> ChatMessage
+- user_text · function · L16-L27 — fn user_text(text: &str) -> ChatMessage
+- response_item_type · function · L29-L31 — fn response_item_type(item: &serde_json::Value) -> Option<&str>
+- response_item_call_id · function · L33-L35 — fn response_item_call_id(item: &serde_json::Value) -> Option<&str>
+- function_call_pos · function · L37-L42 — fn function_call_pos(items: &[serde_json::Value], call_id: &str) -> Option<usize>
+- function_call_output_pos · function · L44-L49 — fn function_call_output_pos(items: &[serde_json::Value], call_id: &str) -> Option<usize>
+- function_call_outputs · function · L51-L61 — fn function_call_outputs(items: &[serde_json::Value], call_id: &str) -> Vec<String>
+- build_test_response_request · function · L67-L90 — fn build_test_response_request(
+- test_build_responses_input_injects_missing_tool_output · function · L93-L106 — fn test_build_responses_input_injects_missing_tool_output()
+- test_build_responses_input_preserves_tool_output · function · L109-L117 — fn test_build_responses_input_preserves_tool_output()
+- test_build_responses_input_reorders_early_tool_output · function · L120-L134 — fn test_build_responses_input_reorders_early_tool_output()
+- test_build_responses_input_keeps_image_context_after_tool_output · function · L137-L212 — fn test_build_responses_input_keeps_image_context_after_tool_output()
+- test_build_responses_input_replaces_oversized_native_compaction_with_text · function · L215-L245 — fn test_build_responses_input_replaces_oversized_native_compaction_with_text()
+- test_build_responses_input_injects_only_missing_outputs · function · L248-L263 — fn test_build_responses_input_injects_only_missing_outputs()
+- test_openai_retryable_error_patterns · function · L266-L283 — fn test_openai_retryable_error_patterns()
+- test_parse_max_output_tokens_defaults_to_safe_value · function · L286-L295 — fn test_parse_max_output_tokens_defaults_to_safe_value()
+- test_parse_max_output_tokens_allows_disable_and_override · function · L298-L308 — fn test_parse_max_output_tokens_allows_disable_and_override()
+- test_build_response_request_for_gpt_5_4_1m_uses_base_model_without_extra_flags · function · L311-L339 — fn test_build_response_request_for_gpt_5_4_1m_uses_base_model_without_extra_flags()
+- plan_mode_omits_hosted_image_generation · function · L342-L386 — async fn plan_mode_omits_hosted_image_generation()
+- test_build_response_request_omits_image_generation_for_codex_models · function · L389-L410 — fn test_build_response_request_omits_image_generation_for_codex_models()
+- test_build_response_request_keeps_image_generation_for_non_codex_chatgpt_models · function · L413-L432 — fn test_build_response_request_keeps_image_generation_for_non_codex_chatgpt_models()
+- test_build_response_request_omits_long_context_for_plain_gpt_5_4 · function · L435-L448 — fn test_build_response_request_omits_long_context_for_plain_gpt_5_4()
+- test_build_response_request_uses_default_30m_cache_for_gpt_5_6 · function · L451-L465 — fn test_build_response_request_uses_default_30m_cache_for_gpt_5_6()
+- test_build_response_request_defaults_extended_cache_retention_for_gpt_5_5 · function · L468-L485 — fn test_build_response_request_defaults_extended_cache_retention_for_gpt_5_5()
+- test_build_response_request_respects_configured_cache_retention · function · L488-L504 — fn test_build_response_request_respects_configured_cache_retention()
+- test_build_response_request_cache_policy_matches_shared_ttl · function · L507-L533 — fn test_build_response_request_cache_policy_matches_shared_ttl()
+- test_oauth_requests_never_send_api_cache_retention_controls · function · L536-L554 — fn test_oauth_requests_never_send_api_cache_retention_controls()

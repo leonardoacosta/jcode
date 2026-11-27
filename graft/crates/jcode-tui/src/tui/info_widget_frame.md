@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/info_widget_frame.rs
+
+- label · function · L22-L24 — pub(crate) fn label(text: impl Into<String>) -> Span<'static>
+- dim · function · L27-L29 — pub(crate) fn dim(text: impl Into<String>) -> Span<'static>
+- more · function · L32-L37 — pub(crate) fn more(hidden: usize) -> Span<'static>
+- Framed · struct · L41-L47 — pub(crate) struct Framed
+- body · function · L50-L55 — pub(crate) fn body(lines: Vec<Line<'static>>) -> Self
+- title · function · L57-L60 — pub(crate) fn title(mut self, line: impl Into<Line<'static>>) -> Self
+- title_right · function · L62-L65 — pub(crate) fn title_right(mut self, line: impl Into<Line<'static>>) -> Self
+- footer · function · L67-L70 — pub(crate) fn footer(mut self, line: impl Into<Line<'static>>) -> Self
+- footer_right · function · L72-L75 — pub(crate) fn footer_right(mut self, line: impl Into<Line<'static>>) -> Self
+- footer_if_empty · function · L79-L92 — pub(crate) fn footer_if_empty(mut self, line: impl Into<Line<'static>>) -> Self
+- settle · function · L97-L106 — pub(crate) fn settle(mut self) -> Self
+- is_empty · function · L108-L110 — pub(crate) fn is_empty(&self) -> bool
+- apply · function · L114-L118 — pub(crate) fn apply<'a>(&self, block: Block<'a>, outer_width: u16) -> Block<'a>
+- all_lines · function · L123-L131 — pub(crate) fn all_lines(&self) -> Vec<Line<'static>>
+- padded · function · L134-L140 — fn padded(line: &Line<'static>) -> Line<'static>
+- place · function · L142-L174 — fn place<'a>(
+- fit · function · L179-L206 — pub(crate) fn fit(line: &Line<'static>, max: usize) -> Option<Line<'static>>
+- tests · module · L209-L337 — mod tests
+- render · function · L214-L236 — fn render(framed: &Framed, width: u16) -> Vec<String>
+- left_and_right_titles_share_the_top_border · function · L239-L246 — fn left_and_right_titles_share_the_top_border()
+- right_slot_is_dropped_before_it_collides · function · L249-L256 — fn right_slot_is_dropped_before_it_collides()
+- left_slot_is_cut_at_the_edge_without_ellipsis · function · L259-L265 — fn left_slot_is_cut_at_the_edge_without_ellipsis()
+- footer_renders_on_bottom_border · function · L268-L275 — fn footer_renders_on_bottom_border()
+- missing_or_blank_footers_receive_fallback_text · function · L278-L292 — fn missing_or_blank_footers_receive_fallback_text()
+- fallback_preserves_existing_footer_slots · function · L295-L307 — fn fallback_preserves_existing_footer_slots()
+- lone_right_footer_is_cut_at_the_edge_without_ellipsis · function · L310-L317 — fn lone_right_footer_is_cut_at_the_edge_without_ellipsis()
+- settle_moves_title_into_empty_body · function · L320-L324 — fn settle_moves_title_into_empty_body()
+- tiny_widths_never_panic · function · L327-L336 — fn tiny_widths_never_panic()

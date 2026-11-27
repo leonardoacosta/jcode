@@ -1,0 +1,44 @@
+# crates/jcode-app-core/src/server/comm_control.rs
+
+- assignment_targets · module · L34-L34 — mod assignment_targets;
+- ActiveAssignmentConflict · struct · L43-L46 — struct ActiveAssignmentConflict
+- active_assignment_conflict · function · L62-L84 — fn active_assignment_conflict(
+- active_assignment_error · function · L88-L98 — fn active_assignment_error(task_id: &str, conflict: &ActiveAssignmentConflict) -> String
+- turn_end_should_auto_complete · function · L102-L104 — fn turn_end_should_auto_complete(status: &str) -> bool
+- TaskSnapshot · struct · L107-L112 — struct TaskSnapshot
+- task_snapshot_for · function · L114-L128 — async fn task_snapshot_for(
+- plan_graph_status_for · function · L130-L141 — async fn plan_graph_status_for(
+- requeue_existing_assignment · function · L152-L180 — async fn requeue_existing_assignment(
+- active_swarm_member · function · L182-L188 — async fn active_swarm_member(
+- ensure_assignable · function · L192-L196 — fn ensure_assignable(session_id: &str) -> Result<(), String>
+- admit_explicit_work · function · L202-L207 — fn admit_explicit_work(requester: &str, target: &str) -> Result<(), String>
+- task_agent_session · function · L211-L217 — async fn task_agent_session(
+- resolve_assignment_target_session · function · L219-L274 — async fn resolve_assignment_target_session(
+- task_id_for_target_session · function · L276-L287 — async fn task_id_for_target_session(
+- next_unassigned_runnable_task_id · function · L289-L296 — async fn next_unassigned_runnable_task_id(
+- next_runnable_task_id_reclaiming_stranded_for_test · function · L312-L318 — pub(crate) async fn next_runnable_task_id_reclaiming_stranded_for_test(
+- next_runnable_task_id_reclaiming_stranded · function · L320-L365 — async fn next_runnable_task_id_reclaiming_stranded(
+- resolve_assignment_target_for_task · function · L367-L436 — async fn resolve_assignment_target_for_task(
+- spawn_assigned_task_run · function · L442-L739 — fn spawn_assigned_task_run(
+- format_salvage_message · function · L741-L774 — fn format_salvage_message(
+- TaskProgressEvents · struct · L778-L782 — struct TaskProgressEvents
+- sender · function · L785-L787 — fn sender(&self) -> mpsc::UnboundedSender<ServerEvent>
+- finish · function · L789-L796 — async fn finish(mut self)
+- drop · function · L800-L802 — fn drop(&mut self)
+- task_progress_event_sender · function · L809-L903 — fn task_progress_event_sender(
+- handle_comm_assign_role · function · L909-L1065 — pub(super) async fn handle_comm_assign_role(
+- AssignDedupMode · enum · L1069-L1080 — enum AssignDedupMode
+- handle_comm_assign_task · function · L1086-L1126 — pub(super) async fn handle_comm_assign_task(
+- handle_comm_assign_task_with_mode · function · L1132-L1548 — async fn handle_comm_assign_task_with_mode(
+- handle_comm_assign_next · function · L1554-L1746 — pub(super) async fn handle_comm_assign_next(
+- handle_comm_task_control · function · L1752-L2309 — pub(super) async fn handle_comm_task_control(
+- tests · module · L2313-L2313 — mod tests;
+- handle_client_debug_command · function · L2315-L2324 — pub(super) async fn handle_client_debug_command(
+- handle_client_debug_response · function · L2326-L2332 — pub(super) fn handle_client_debug_response(
+- resolve_swarm_member_target · function · L2336-L2365 — async fn resolve_swarm_member_target(
+- action_wakes_without_plan · function · L2370-L2378 — fn action_wakes_without_plan(action: TaskControlAction) -> bool
+- requester_owns_target · function · L2383-L2412 — async fn requester_owns_target(
+- target_has_plan_assignment · function · L2416-L2431 — async fn target_has_plan_assignment(
+- wake_session_without_plan · function · L2442-L2541 — async fn wake_session_without_plan(
+- require_plan_driver_swarm · function · L2547-L2588 — async fn require_plan_driver_swarm(
+- close_reporter_task_on_terminal_report · function · L2596-L2659 — pub(super) async fn close_reporter_task_on_terminal_report(

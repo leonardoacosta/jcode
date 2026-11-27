@@ -1,0 +1,26 @@
+# crates/jcode-base/src/hooks_lifecycle_tests.rs
+
+- entry · function · L4-L9 — fn entry(command: &str) -> HookEntry
+- config · function · L11-L22 — fn config(event: LifecycleEvent, entries: Vec<HookEntry>) -> HooksConfig
+- script · function · L25-L31 — fn script(dir: &std::path::Path, name: &str, body: &str) -> String
+- resolved · function · L33-L38 — fn resolved(event: LifecycleEvent, entry: HookEntry) -> ResolvedHook
+- default_modes_follow_event_semantics · function · L41-L49 — fn default_modes_follow_event_semantics()
+- blocking_mode_on_a_non_blocking_event_degrades_with_a_warning · function · L52-L66 — fn blocking_mode_on_a_non_blocking_event_degrades_with_a_warning()
+- bad_entries_are_disabled_individually · function · L69-L94 — fn bad_entries_are_disabled_individually()
+- matcher_is_whole_string_and_case_insensitive · function · L97-L117 — fn matcher_is_whole_string_and_case_insensitive()
+- path_glob_matches_absolute_and_cwd_relative_paths · function · L120-L135 — fn path_glob_matches_absolute_and_cwd_relative_paths()
+- legacy_command_also_configured_as_lifecycle_runs_once · function · L138-L147 — fn legacy_command_also_configured_as_lifecycle_runs_once()
+- payload_is_claude_code_compatible · function · L150-L161 — fn payload_is_claude_code_compatible()
+- pre_tool_use_exit_two_blocks_with_stderr_reason · function · L165-L176 — async fn pre_tool_use_exit_two_blocks_with_stderr_reason()
+- pre_tool_use_json_rewrite_chains_and_deny_drops_it · function · L180-L205 — async fn pre_tool_use_json_rewrite_chains_and_deny_drops_it()
+- timeout_fails_open_unless_fail_closed · function · L209-L228 — async fn timeout_fails_open_unless_fail_closed()
+- timeout_kills_the_hook_process_group · function · L232-L250 — async fn timeout_kills_the_hook_process_group()
+- observe_hooks_ignore_exit_two · function · L254-L264 — async fn observe_hooks_ignore_exit_two()
+- stop_hook_json_block_returns_reason_and_continue_false_halts · function · L268-L292 — async fn stop_hook_json_block_returns_reason_and_continue_false_halts()
+- CountingOwner · struct · L294-L297 — struct CountingOwner
+- Lease · struct · L299-L299 — struct Lease;
+- set_pid · function · L301-L301 — fn set_pid(&mut self, _pid: u32) {}
+- own · function · L305-L311 — fn own(&self) -> anyhow::Result<Box<dyn ChildLease>>
+- revoked_owner_prevents_the_hook_from_running · function · L316-L339 — async fn revoked_owner_prevents_the_hook_from_running()
+- json_ask_blocks_context_is_collected_and_observe_ignores_decisions · function · L343-L369 — async fn json_ask_blocks_context_is_collected_and_observe_ignores_decisions()
+- async_hook_does_not_delay_the_caller · function · L373-L391 — async fn async_hook_does_not_delay_the_caller()

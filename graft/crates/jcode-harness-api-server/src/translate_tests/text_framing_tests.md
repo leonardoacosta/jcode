@@ -1,0 +1,12 @@
+# crates/jcode-harness-api-server/src/translate_tests/text_framing_tests.rs
+
+- text_framing_preserves_chunks_and_reasoning_then_separates_messages · function · L4-L51 — fn text_framing_preserves_chunks_and_reasoning_then_separates_messages()
+- citation_suffix_replacements_preserve_messages_across_native_search_and_retry · function · L54-L135 — fn citation_suffix_replacements_preserve_messages_across_native_search_and_retry()
+- citation_suffix_replacement_preserves_unicode_prefix_and_accepts_empty_retraction · function · L138-L170 — fn citation_suffix_replacement_preserves_unicode_prefix_and_accepts_empty_retraction()
+- citation_suffix_replacement_ignores_malformed_mismatched_and_closed_messages · function · L173-L213 — fn citation_suffix_replacement_ignores_malformed_mismatched_and_closed_messages()
+- provider_native_web_search_reaches_sdk_as_tool_events_without_tool_call · function · L216-L244 — fn provider_native_web_search_reaches_sdk_as_tool_events_without_tool_call()
+- text_framing_tools_and_turn_fallback_close_once_without_phantom_messages · function · L247-L310 — fn text_framing_tools_and_turn_fallback_close_once_without_phantom_messages()
+- text_retry_retracts_completed_and_live_messages_and_late_replacements_keep_ids · function · L313-L335 — fn text_retry_retracts_completed_and_live_messages_and_late_replacements_keep_ids()
+- new_request_retry_does_not_retract_previous_response · function · L338-L357 — fn new_request_retry_does_not_retract_previous_response()
+- request_boundary_closes_provider_without_message_end_and_ids_survive_turns · function · L360-L376 — fn request_boundary_closes_provider_without_message_end_and_ids_survive_turns()
+- late_recovered_suffix_completes_previously_empty_or_unseen_text · function · L379-L415 — fn late_recovered_suffix_completes_previously_empty_or_unseen_text()

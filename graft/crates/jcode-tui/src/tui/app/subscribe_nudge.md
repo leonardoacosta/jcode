@@ -1,0 +1,31 @@
+# crates/jcode-tui/src/tui/app/subscribe_nudge.rs
+
+- NUDGE_INTERVAL · constant · L22-L22 — const NUDGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+- LONG_TASK_MIN_ELAPSED · constant · L25-L25 — const LONG_TASK_MIN_ELAPSED: Duration = Duration::from_secs(60 * 60);
+- RATE_LIMIT_NUDGE_LINE · constant · L28-L29 — pub(super) const RATE_LIMIT_NUDGE_LINE: &str =
+- SUPPORT_NUDGE_NOTICE · constant · L31-L31 — const SUPPORT_NUDGE_NOTICE: &str = "Try Jcode hosted models: /hosted";
+- SubscribeNudgeTrigger · enum · L36-L41 — pub(super) enum SubscribeNudgeTrigger
+- as_str · function · L44-L49 — fn as_str(self) -> &'static str
+- NudgeState · struct · L54-L61 — struct NudgeState
+- state_path · function · L63-L67 — fn state_path() -> Option<PathBuf>
+- load_state · function · L69-L77 — fn load_state() -> NudgeState
+- store_state · function · L79-L86 — fn store_state(state: &NudgeState)
+- now_unix · function · L88-L93 — fn now_unix() -> u64
+- weekly_gate_allows · function · L96-L98 — fn weekly_gate_allows(last_shown_unix: u64, now_unix: u64) -> bool
+- long_task_todos_qualify · function · L103-L113 — fn long_task_todos_qualify(todos: &[crate::todo::TodoItem]) -> bool
+- format_elapsed · function · L116-L127 — fn format_elapsed(elapsed: Duration) -> String
+- long_task_message · function · L130-L136 — fn long_task_message(elapsed: Duration) -> String
+- subscribe_pitch_markdown · function · L140-L165 — pub(super) fn subscribe_pitch_markdown() -> String
+- SubscribeNudgeState · struct · L169-L175 — pub(super) struct SubscribeNudgeState
+- claim_subscribe_nudge · function · L181-L208 — pub(super) fn claim_subscribe_nudge(&mut self, trigger: SubscribeNudgeTrigger) -> bool
+- note_todo_update_for_subscribe_nudge · function · L214-L249 — pub(super) fn note_todo_update_for_subscribe_nudge(&mut self, session_id: &str)
+- show_subscribe_pitch · function · L252-L255 — pub(super) fn show_subscribe_pitch(&mut self)
+- rate_limit_notice_with_nudge · function · L261-L270 — pub(super) fn rate_limit_notice_with_nudge(&mut self, reset_secs: u64) -> String
+- tests · module · L274-L368 — mod tests
+- todo · function · L277-L289 — fn todo(
+- weekly_gate_blocks_within_a_week_and_allows_after · function · L292-L302 — fn weekly_gate_blocks_within_a_week_and_allows_after()
+- long_task_qualification_requires_all_completed_and_gated_confidence · function · L305-L326 — fn long_task_qualification_requires_all_completed_and_gated_confidence()
+- long_task_message_reads_support_wording_with_elapsed · function · L329-L337 — fn long_task_message_reads_support_wording_with_elapsed()
+- rate_limit_copy_leads_with_the_hosted_model_value_prop · function · L340-L343 — fn rate_limit_copy_leads_with_the_hosted_model_value_prop()
+- pitch_explains_limits_warnings_tranches_and_next_step · function · L346-L360 — fn pitch_explains_limits_warnings_tranches_and_next_step()
+- elapsed_formatting_covers_minute_and_hour_shapes · function · L363-L367 — fn elapsed_formatting_covers_minute_and_hour_shapes()

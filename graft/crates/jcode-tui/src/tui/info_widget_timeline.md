@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/info_widget_timeline.rs
+
+- MAX_EVENTS · constant · L18-L18 — const MAX_EVENTS: usize = 48;
+- TimelineEventKind · enum · L22-L29 — pub enum TimelineEventKind
+- TimelineEvent · struct · L33-L41 — pub struct TimelineEvent
+- TimelineStore · struct · L43-L51 — struct TimelineStore
+- new · function · L54-L60 — fn new() -> Self
+- push · function · L62-L74 — fn push(&mut self, event: TimelineEvent)
+- TIMELINE · constant · L77-L77 — static TIMELINE: Mutex<Option<TimelineStore>> = Mutex::new(None);
+- with_store · function · L79-L85 — fn with_store<R>(f: impl FnOnce(&mut TimelineStore) -> R) -> Option<R>
+- humanize_tool · function · L89-L91 — fn humanize_tool(name: &str) -> String
+- timeline_record_tool · function · L98-L118 — pub fn timeline_record_tool(name: &str, intent: Option<&str>, edit_file: Option<&str>)
+- short_path · function · L122-L130 — fn short_path(path: &str) -> String
+- timeline_record_commit_if_changed · function · L137-L177 — pub fn timeline_record_commit_if_changed()
+- timeline_snapshot · function · L180-L182 — pub fn timeline_snapshot() -> Vec<TimelineEvent>
+- clear_timeline_for_tests · function · L186-L192 — pub fn clear_timeline_for_tests()
+- NOW_MARKER · constant · L194-L194 — const NOW_MARKER: &str = " ◀";
+- render_event_line · function · L196-L243 — fn render_event_line(ev: &TimelineEvent, width: usize, is_last: bool) -> Line<'static>
+- render_timeline_widget · function · L246-L281 — pub(super) fn render_timeline_widget(data: &InfoWidgetData, inner: Rect) -> Vec<Line<'static>>
+- render_timeline_compact · function · L284-L324 — pub(super) fn render_timeline_compact(data: &InfoWidgetData) -> Vec<Line<'static>>
+- timeline_content_height · function · L328-L334 — pub(super) fn timeline_content_height(data: &InfoWidgetData, max_rows: u16) -> u16

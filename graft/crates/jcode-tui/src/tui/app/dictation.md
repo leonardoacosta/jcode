@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/app/dictation.rs
+
+- ActiveDictation · struct · L9-L14 — pub(crate) struct ActiveDictation
+- new · function · L17-L24 — fn new(_pid: u32, _child: Arc<Mutex<Option<Child>>>) -> Self
+- request_stop · function · L26-L42 — async fn request_stop(&self) -> Result<(), String>
+- DictationExit · enum · L46-L50 — enum DictationExit
+- handle_dictation_trigger · function · L53-L166 — pub(crate) fn handle_dictation_trigger(&mut self) -> bool
+- dictation_key_matches · function · L168-L174 — pub(crate) fn dictation_key_matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- dictation_key_label · function · L176-L178 — pub(crate) fn dictation_key_label(&self) -> Option<&str>
+- handle_dictation_failure · function · L180-L187 — pub(crate) fn handle_dictation_failure(&mut self, message: String)
+- handle_local_dictation_completed · function · L189-L196 — pub(crate) fn handle_local_dictation_completed(
+- mark_dictation_delivered · function · L198-L200 — pub(crate) fn mark_dictation_delivered(&mut self)
+- owns_dictation_event · function · L202-L210 — pub(crate) fn owns_dictation_event(
+- clear_dictation_tracking · function · L212-L217 — fn clear_dictation_tracking(&mut self)
+- read_stream_into_buffer · function · L220-L232 — async fn read_stream_into_buffer<R>(mut reader: R, buffer: Arc<Mutex<Vec<u8>>>)
+- wait_for_dictation_exit · function · L234-L300 — async fn wait_for_dictation_exit(
+- publish_dictation_result · function · L302-L356 — async fn publish_dictation_result(
+- run_dictation_command · function · L359-L391 — async fn run_dictation_command(command: &str, timeout_secs: u64) -> Result<String, String>
+- transcript_from_command_output · function · L393-L425 — fn transcript_from_command_output(stdout: &str) -> Option<String>
+- strip_transcript_prefixes · function · L427-L441 — fn strip_transcript_prefixes(line: &str) -> &str
+- is_status_only_line · function · L443-L459 — fn is_status_only_line(line: &str) -> bool
+- strip_ansi · function · L461-L492 — fn strip_ansi(text: &str) -> String
+- shell_command · function · L494-L516 — fn shell_command(command: &str) -> Command
+- tests · module · L519-L549 — mod tests
+- dictation_command_trims_trailing_newlines · function · L523-L528 — async fn dictation_command_trims_trailing_newlines()
+- transcript_from_output_strips_live_transcribe_status_lines · function · L531-L548 — fn transcript_from_output_strips_live_transcribe_status_lines()

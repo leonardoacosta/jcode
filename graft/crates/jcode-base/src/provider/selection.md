@@ -1,0 +1,33 @@
+# crates/jcode-base/src/provider/selection.rs
+
+- ConfigProviderSelection · enum · L6-L10 — pub(crate) enum ConfigProviderSelection
+- active_provider · function · L13-L19 — pub(crate) fn active_provider(&self) -> ActiveProvider
+- display_label · function · L21-L37 — pub(crate) fn display_label(&self) -> String
+- DefaultModelSelection · struct · L41-L44 — pub struct DefaultModelSelection
+- auto_default_provider · function · L47-L49 — pub(super) fn auto_default_provider(availability: ProviderAvailability) -> ActiveProvider
+- parse_provider_hint · function · L51-L53 — pub(super) fn parse_provider_hint(value: &str) -> Option<ActiveProvider>
+- initial_provider_from_env · function · L55-L71 — pub(super) fn initial_provider_from_env() -> Option<ActiveProvider>
+- provider_label · function · L73-L75 — pub(super) fn provider_label(provider: ActiveProvider) -> &'static str
+- provider_key · function · L77-L79 — pub(super) fn provider_key(provider: ActiveProvider) -> &'static str
+- set_active_provider · function · L81-L87 — pub(super) fn set_active_provider(&self, provider: ActiveProvider)
+- config_default_provider_for_login_provider · function · L89-L108 — pub fn config_default_provider_for_login_provider(
+- openai_compatible_profile_id_from_route · function · L110-L129 — pub fn openai_compatible_profile_id_from_route<'a>(
+- default_model_selection_from_route · function · L131-L212 — pub fn default_model_selection_from_route(
+- canonical_session_provider_key · function · L232-L240 — pub(crate) fn canonical_session_provider_key(provider_key: &str) -> &str
+- explicit_session_provider_key_for_model_request · function · L242-L278 — fn explicit_session_provider_key_for_model_request(model_request: &str) -> Option<String>
+- session_provider_key_for_model_request · function · L280-L292 — pub fn session_provider_key_for_model_request(
+- session_provider_key_after_model_switch · function · L294-L318 — pub fn session_provider_key_after_model_switch(
+- session_provider_key_from_provider_name · function · L320-L336 — fn session_provider_key_from_provider_name(provider_name: &str) -> Option<String>
+- session_provider_key_matches_provider_name · function · L338-L369 — fn session_provider_key_matches_provider_name(provider_key: &str, provider_name: &str) -> bool
+- model_switch_request_for_session_model · function · L371-L470 — pub fn model_switch_request_for_session_model(
+- model_switch_request_for_session_route · function · L472-L535 — pub fn model_switch_request_for_session_route(
+- resolve_config_provider_selection · function · L537-L577 — pub(super) fn resolve_config_provider_selection(
+- tests · module · L581-L981 — mod tests
+- login_provider_defaults_are_canonical_config_keys · function · L585-L616 — fn login_provider_defaults_are_canonical_config_keys()
+- default_model_selection_preserves_route_identity_state_space · function · L619-L673 — fn default_model_selection_preserves_route_identity_state_space()
+- session_model_route_identity_helpers_preserve_auth_mode_and_profiles · function · L676-L766 — fn session_model_route_identity_helpers_preserve_auth_mode_and_profiles()
+- session_route_explicit_model_override_wins_over_inherited_transport · function · L769-L786 — fn session_route_explicit_model_override_wins_over_inherited_transport()
+- bare_session_provider_key_restores_auto_credential_not_oauth_pin · function · L789-L846 — fn bare_session_provider_key_restores_auto_credential_not_oauth_pin()
+- session_provider_key_picker_vocabulary_preserves_auth_mode_without_route · function · L849-L905 — fn session_provider_key_picker_vocabulary_preserves_auth_mode_without_route()
+- route_defaults_are_derived_consistently · function · L908-L954 — fn route_defaults_are_derived_consistently()
+- config_provider_resolution_handles_all_config_namespaces · function · L957-L980 — fn config_provider_resolution_handles_all_config_namespaces()

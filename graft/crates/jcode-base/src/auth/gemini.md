@@ -1,0 +1,60 @@
+# crates/jcode-base/src/auth/gemini.rs
+
+- GOOGLE_AUTHORIZE_URL · constant · L5-L5 — const GOOGLE_AUTHORIZE_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+- GOOGLE_TOKEN_URL · constant · L6-L6 — const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
+- GOOGLE_USERINFO_URL · constant · L7-L7 — const GOOGLE_USERINFO_URL: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
+- GEMINI_MANUAL_REDIRECT_URI · constant · L8-L8 — pub const GEMINI_MANUAL_REDIRECT_URI: &str = "https://codeassist.google.com/authcode";
+- GEMINI_CLI_AUTH_SOURCE_ID · constant · L9-L9 — pub const GEMINI_CLI_AUTH_SOURCE_ID: &str = "gemini_cli_oauth_creds";
+- GEMINI_CLIENT_ID · constant · L14-L15 — const GEMINI_CLIENT_ID: &str =
+- GEMINI_CLIENT_SECRET · constant · L16-L16 — const GEMINI_CLIENT_SECRET: &str = "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"; // gitleaks:allow
+- GEMINI_CLIENT_ID_ENV · constant · L18-L18 — const GEMINI_CLIENT_ID_ENV: &str = "GEMINI_CLIENT_ID";
+- GEMINI_CLIENT_SECRET_ENV · constant · L19-L19 — const GEMINI_CLIENT_SECRET_ENV: &str = "GEMINI_CLIENT_SECRET";
+- GEMINI_SCOPES · constant · L20-L24 — const GEMINI_SCOPES: &[&str] = &[
+- GEMINI_API_KEY_ENV_VARS · constant · L28-L28 — pub const GEMINI_API_KEY_ENV_VARS: &[&str] = &["GEMINI_API_KEY", "GOOGLE_API_KEY"];
+- GEMINI_API_KEY_ENV_FILE · constant · L30-L30 — pub const GEMINI_API_KEY_ENV_FILE: &str = "gemini.env";
+- api_key · function · L39-L49 — pub fn api_key() -> Option<String>
+- has_api_key · function · L52-L54 — pub fn has_api_key() -> bool
+- force_oauth · function · L60-L62 — pub fn force_oauth() -> bool
+- cloud_project · function · L65-L73 — pub fn cloud_project() -> Option<String>
+- uses_api_key · function · L78-L80 — pub fn uses_api_key() -> bool
+- save_api_key · function · L84-L96 — pub fn save_api_key(key: &str) -> Result<()>
+- gemini_client_id · function · L98-L100 — fn gemini_client_id() -> String
+- gemini_client_secret · function · L102-L104 — fn gemini_client_secret() -> String
+- GeminiCliCommand · struct · L107-L110 — pub struct GeminiCliCommand
+- display · function · L113-L119 — pub fn display(&self) -> String
+- GeminiTokens · struct · L123-L129 — pub struct GeminiTokens
+- is_expired · function · L132-L135 — pub fn is_expired(&self) -> bool
+- GoogleTokenResponse · struct · L139-L144 — struct GoogleTokenResponse
+- GoogleUserInfo · struct · L147-L151 — struct GoogleUserInfo
+- GeminiCliOAuthCredentials · struct · L154-L160 — struct GeminiCliOAuthCredentials
+- gemini_cli_command · function · L168-L173 — pub fn gemini_cli_command() -> GeminiCliCommand
+- gemini_cli_path · function · L176-L178 — pub fn gemini_cli_path() -> String
+- has_gemini_cli · function · L181-L184 — pub fn has_gemini_cli() -> bool
+- has_cached_auth · function · L187-L189 — pub fn has_cached_auth() -> bool
+- tokens_path · function · L191-L193 — pub fn tokens_path() -> Result<std::path::PathBuf>
+- gemini_cli_oauth_path · function · L195-L197 — pub fn gemini_cli_oauth_path() -> Result<std::path::PathBuf>
+- gemini_cli_auth_source_exists · function · L199-L203 — pub fn gemini_cli_auth_source_exists() -> bool
+- has_unconsented_cli_auth · function · L205-L216 — pub fn has_unconsented_cli_auth() -> bool
+- trust_cli_auth_for_future_use · function · L218-L225 — pub fn trust_cli_auth_for_future_use() -> Result<()>
+- load_tokens · function · L227-L282 — pub fn load_tokens() -> Result<GeminiTokens>
+- save_tokens · function · L284-L288 — pub fn save_tokens(tokens: &GeminiTokens) -> Result<()>
+- clear_tokens · function · L290-L296 — pub fn clear_tokens() -> Result<()>
+- load_or_refresh_tokens · function · L298-L305 — pub async fn load_or_refresh_tokens() -> Result<GeminiTokens>
+- refresh_tokens · function · L309-L323 — pub async fn refresh_tokens(tokens: &GeminiTokens) -> Result<GeminiTokens>
+- refresh_tokens_uncoordinated · function · L325-L351 — async fn refresh_tokens_uncoordinated(tokens: &GeminiTokens) -> Result<GeminiTokens>
+- login · function · L353-L416 — pub async fn login(no_browser: bool) -> Result<GeminiTokens>
+- manual_login · function · L418-L457 — async fn manual_login(
+- exchange_callback_input · function · L459-L470 — pub async fn exchange_callback_input(
+- resolve_callback_or_manual_code · function · L472-L487 — fn resolve_callback_or_manual_code(input: &str, expected_state: Option<&str>) -> Result<String>
+- looks_like_callback_input · function · L489-L496 — fn looks_like_callback_input(input: &str) -> bool
+- exchange_callback_code · function · L498-L506 — pub async fn exchange_callback_code(
+- authorization_code_request · function · L508-L531 — fn authorization_code_request(
+- exchange_authorization_code · function · L533-L574 — async fn exchange_authorization_code(
+- fetch_email · function · L576-L598 — pub async fn fetch_email(access_token: &str) -> Result<String>
+- build_web_auth_url · function · L600-L612 — pub fn build_web_auth_url(redirect_uri: &str, challenge: &str, state: &str) -> Result<String>
+- build_manual_auth_url · function · L614-L626 — pub fn build_manual_auth_url(redirect_uri: &str, challenge: &str, state: &str) -> Result<String>
+- resolve_gemini_cli_command_with · function · L628-L657 — fn resolve_gemini_cli_command_with<F>(env_spec: Option<&str>, command_exists: F) -> GeminiCliCommand
+- parse_command_spec · function · L659-L700 — fn parse_command_spec(raw: &str) -> Option<Vec<String>>
+- tests · module · L704-L704 — mod tests;
+- authorization_code_request_tests · module · L707-L748 — mod authorization_code_request_tests
+- serialized_exchange_survives_source_release · function · L711-L747 — fn serialized_exchange_survives_source_release()

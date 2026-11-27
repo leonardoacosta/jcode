@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/protocol_tests/comm_requests.rs
+
+- test_comm_propose_plan_roundtrip · function · L2-L26 — fn test_comm_propose_plan_roundtrip() -> Result<()>
+- test_stdin_response_roundtrip · function · L29-L51 — fn test_stdin_response_roundtrip() -> Result<()>
+- test_stdin_response_deserialize_from_json · function · L54-L67 — fn test_stdin_response_deserialize_from_json() -> Result<()>
+- test_stdin_request_event_roundtrip · function · L70-L96 — fn test_stdin_request_event_roundtrip() -> Result<()>
+- test_stdin_request_event_defaults · function · L99-L108 — fn test_stdin_request_event_defaults() -> Result<()>
+- test_comm_await_members_roundtrip · function · L111-L150 — fn test_comm_await_members_roundtrip() -> Result<()>
+- test_comm_await_members_defaults · function · L153-L179 — fn test_comm_await_members_defaults() -> Result<()>
+- test_comm_report_roundtrip · function · L182-L214 — fn test_comm_report_roundtrip() -> Result<()>
+- test_comm_report_response_roundtrip · function · L217-L238 — fn test_comm_report_response_roundtrip() -> Result<()>
+- test_comm_await_members_response_roundtrip · function · L241-L287 — fn test_comm_await_members_response_roundtrip() -> Result<()>
+- test_comm_task_control_roundtrip · function · L290-L320 — fn test_comm_task_control_roundtrip() -> Result<()>
+- test_comm_assign_task_roundtrip_without_explicit_task_id · function · L323-L354 — fn test_comm_assign_task_roundtrip_without_explicit_task_id() -> Result<()>
+- test_comm_assign_task_response_roundtrip · function · L357-L378 — fn test_comm_assign_task_response_roundtrip() -> Result<()>
+- test_comm_assign_next_roundtrip · function · L381-L421 — fn test_comm_assign_next_roundtrip() -> Result<()>
+- test_comm_stop_roundtrip_with_force · function · L424-L449 — fn test_comm_stop_roundtrip_with_force() -> Result<()>
+- test_comm_spawn_roundtrip_with_optional_nonce · function · L452-L506 — fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()>
+- test_comm_spawn_and_assign_next_decode_model_without_effort · function · L509-L537 — fn test_comm_spawn_and_assign_next_decode_model_without_effort() -> Result<()>
+- test_comm_spawn_and_assign_next_roundtrip_omitted_or_null_model · function · L540-L578 — fn test_comm_spawn_and_assign_next_roundtrip_omitted_or_null_model() -> Result<()>
+- test_comm_list_models_roundtrip · function · L581-L596 — fn test_comm_list_models_roundtrip() -> Result<()>
+- test_reload_force_defaults_true_for_legacy_clients · function · L599-L611 — fn test_reload_force_defaults_true_for_legacy_clients() -> Result<()>
+- test_reload_force_roundtrip · function · L614-L631 — fn test_reload_force_roundtrip() -> Result<()>

@@ -1,0 +1,21 @@
+# crates/jcode-harness-api/src/client.rs
+
+- MAX_FRAME_BYTES · constant · L8-L8 — const MAX_FRAME_BYTES: usize = 256 * 1024 * 1024;
+- FrameError · enum · L12-L17 — pub enum FrameError
+- fmt · function · L20-L26 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- from · function · L32-L34 — fn from(e: io::Error) -> Self
+- from · function · L38-L40 — fn from(e: serde_json::Error) -> Self
+- write_frame · function · L44-L53 — pub fn write_frame<W: Write, T: serde::Serialize>(
+- read_frame · function · L56-L60 — pub fn read_frame<R: BufRead, T: serde::de::DeserializeOwned>(
+- read_frame_with_limit · function · L62-L98 — fn read_frame_with_limit<R: BufRead, T: serde::de::DeserializeOwned>(
+- HarnessClient · struct · L104-L108 — pub struct HarnessClient<R: BufRead, W: Write>
+- new · function · L111-L117 — pub fn new(reader: R, writer: W) -> Self
+- hello · function · L120-L128 — pub fn hello(&mut self, client_name: &str) -> Result<ServerFrame, FrameError>
+- send · function · L131-L136 — pub fn send(&mut self, request: ApiRequest) -> Result<u64, FrameError>
+- recv · function · L139-L147 — pub fn recv(&mut self) -> Result<ServerFrame, FrameError>
+- framing_limits · module · L151-L205 — mod framing_limits
+- unterminated_frames_are_retryable_transport_failures · function · L156-L167 — fn unterminated_frames_are_retryable_transport_failures()
+- newline_terminated_invalid_json_is_a_protocol_failure · function · L170-L174 — fn newline_terminated_invalid_json_is_a_protocol_failure()
+- over_limit_frame_stops_reading_without_waiting_for_newline · function · L177-L188 — fn over_limit_frame_stops_reading_without_waiting_for_newline()
+- valid_frame_at_limit_and_blank_lines_are_supported · function · L191-L195 — fn valid_frame_at_limit_and_blank_lines_are_supported()
+- large_whitespace_frame_is_not_allowed_to_bypass_the_limit · function · L198-L204 — fn large_whitespace_frame_is_not_allowed_to_bypass_the_limit()

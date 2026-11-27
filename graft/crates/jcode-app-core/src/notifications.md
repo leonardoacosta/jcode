@@ -1,0 +1,50 @@
+# crates/jcode-app-core/src/notifications.rs
+
+- MACOS_NOTIFICATION_SCHEMA_VERSION · constant · L22-L22 — pub const MACOS_NOTIFICATION_SCHEMA_VERSION: u32 = 1;
+- MacosTerminalKind · enum · L33-L38 — pub enum MacosTerminalKind
+- MacosNotificationOrigin · struct · L41-L46 — pub struct MacosNotificationOrigin
+- MacosNotificationEnvelope · struct · L49-L57 — pub struct MacosNotificationEnvelope
+- Priority · enum · L61-L68 — pub enum Priority
+- ntfy_value · function · L71-L77 — fn ntfy_value(self) -> &'static str
+- ntfy_tags · function · L79-L85 — fn ntfy_tags(self) -> &'static str
+- NotificationDispatcher · struct · L90-L94 — pub struct NotificationDispatcher
+- default · function · L97-L99 — fn default() -> Self
+- new · function · L103-L110 — pub fn new() -> Self
+- from_config · function · L113-L119 — pub fn from_config(config: SafetyConfig) -> Self
+- dispatch_cycle_summary · function · L122-L143 — pub fn dispatch_cycle_summary(&self, transcript: &AmbientTranscript)
+- dispatch_permission_request · function · L146-L170 — pub fn dispatch_permission_request(&self, action: &str, description: &str, request_id: &str)
+- send_all · function · L177-L193 — fn send_all(
+- send_all_with_email_override · function · L198-L281 — fn send_all_with_email_override(
+- send_ntfy · function · L288-L312 — async fn send_ntfy(
+- MACOS_NOTIFICATION_BROKER_APP_NAME · constant · L319-L319 — const MACOS_NOTIFICATION_BROKER_APP_NAME: &str = "Jcode Notifications.app";
+- MACOS_NOTIFICATION_BROKER_EXECUTABLE · constant · L321-L321 — const MACOS_NOTIFICATION_BROKER_EXECUTABLE: &str = "jcode-notification-broker";
+- detect · function · L325-L336 — pub fn detect() -> Self
+- from_values · function · L338-L382 — fn from_values(
+- valid_tty · function · L385-L391 — fn valid_tty(value: &str) -> bool
+- valid_route_identifier · function · L393-L395 — fn valid_route_identifier(value: &str) -> bool
+- controlling_tty · function · L398-L412 — fn controlling_tty() -> Option<String>
+- controlling_tty · function · L415-L417 — fn controlling_tty() -> Option<String>
+- macos_notification_broker_app_path · function · L420-L441 — fn macos_notification_broker_app_path() -> Option<std::path::PathBuf>
+- macos_notification_inbox_dir · function · L444-L454 — pub fn macos_notification_inbox_dir() -> Option<std::path::PathBuf>
+- send_macos_turn_notification · function · L459-L529 — pub fn send_macos_turn_notification(
+- next_macos_notification_id · function · L532-L546 — fn next_macos_notification_id() -> String
+- SEQUENCE · constant · L536-L536 — static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+- enqueue_macos_notification · function · L549-L574 — fn enqueue_macos_notification(
+- reap_notification_child · function · L576-L582 — fn reap_notification_child(mut child: std::process::Child)
+- macos_notification_activation_command · function · L586-L649 — pub fn macos_notification_activation_command(
+- applescript_string · function · L589-L591 — fn applescript_string(value: &str) -> String
+- activate_macos_notification_origin · function · L653-L666 — pub fn activate_macos_notification_origin(origin: &MacosNotificationOrigin)
+- send_desktop_notification · function · L673-L675 — pub fn send_desktop_notification(title: &str, body: &str)
+- applescript_escape · function · L679-L691 — fn applescript_escape(s: &str) -> String
+- build_macos_notification_script · function · L700-L726 — fn build_macos_notification_script(
+- macos_terminal_bundle_id · function · L730-L741 — fn macos_terminal_bundle_id(terminal: &str) -> Option<&'static str>
+- macos_host_terminal_bundle_id · function · L748-L760 — fn macos_host_terminal_bundle_id() -> Option<String>
+- CACHE · constant · L750-L750 — static CACHE: OnceLock<Option<String>> = OnceLock::new();
+- resolve_macos_host_terminal_bundle_id · function · L767-L782 — fn resolve_macos_host_terminal_bundle_id(
+- send_desktop_notification_rich · function · L789-L834 — pub fn send_desktop_notification_rich(
+- send_desktop · function · L840-L872 — fn send_desktop(title: &str, body: &str, urgency: &str)
+- imap_reply_loop · function · L880-L969 — pub async fn imap_reply_loop(config: SafetyConfig)
+- format_cycle_body_safe · function · L977-L996 — fn format_cycle_body_safe(transcript: &AmbientTranscript) -> String
+- format_cycle_body_detailed · function · L1001-L1041 — fn format_cycle_body_detailed(transcript: &AmbientTranscript) -> String
+- tests · module · L1045-L1045 — mod tests;
+- notification_process_tests · module · L1048-L1053 — mod notification_process_tests

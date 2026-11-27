@@ -1,0 +1,27 @@
+# crates/jcode-companion/src/screen.rs
+
+- DEBOUNCE · constant · L10-L10 — const DEBOUNCE: Duration = Duration::from_millis(500);
+- RATE · constant · L11-L11 — const RATE: Duration = Duration::from_millis(2_050);
+- HEARTBEAT · constant · L12-L12 — const HEARTBEAT: Duration = Duration::from_secs(15);
+- MAX_IPC_BYTES · constant · L13-L13 — const MAX_IPC_BYTES: usize = 1024 * 1024;
+- now_ms · function · L15-L20 — fn now_ms() -> u64
+- text · function · L22-L31 — fn text(value: &Value, max: usize) -> Option<String>
+- geometry · function · L32-L53 — fn geometry(value: &Value, fields: &[&str]) -> Option<Value>
+- snapshot · function · L55-L143 — fn snapshot(
+- Schedule · struct · L146-L150 — struct Schedule
+- event · function · L152-L155 — fn event(&mut self, now: Instant)
+- deadline · function · L156-L166 — fn deadline(&self, now: Instant) -> Instant
+- published · function · L167-L171 — fn published(&mut self, now: Instant)
+- relevant · function · L173-L191 — fn relevant(event: &Value) -> bool
+- same_metadata · function · L192-L198 — fn same_metadata(a: &ScreenSnapshot, b: &ScreenSnapshot) -> bool
+- line_bounded · function · L201-L221 — async fn line_bounded<R: tokio::io::AsyncBufRead + Unpin>(
+- query · function · L223-L238 — async fn query(path: &std::path::Path, kind: &str) -> Result<Value>
+- run · function · L242-L246 — pub async fn run(sender: watch::Sender<Option<ScreenSnapshot>>) -> Result<()>
+- run_at · function · L249-L301 — async fn run_at(
+- run · function · L303-L305 — pub async fn run(_sender: watch::Sender<Option<ScreenSnapshot>>) -> Result<()>
+- tests · module · L308-L440 — mod tests
+- screen_burst_scheduler_is_bounded_debounced_and_trailing · function · L311-L326 — fn screen_burst_scheduler_is_bounded_debounced_and_trailing()
+- screen_niri_schema_bounds_and_unknowns · function · L328-L344 — fn screen_niri_schema_bounds_and_unknowns()
+- screen_latest_total_bound_and_dedupe · function · L346-L357 — fn screen_latest_total_bound_and_dedupe()
+- screen_niri_socket_feed_is_readonly_and_stops_with_receiver · function · L360-L428 — async fn screen_niri_socket_feed_is_readonly_and_stops_with_receiver()
+- screen_line_reader_bounds_local_ipc · function · L432-L439 — async fn screen_line_reader_bounds_local_ipc()

@@ -1,0 +1,25 @@
+# src/cli/tui_launch.rs
+
+- MAX_INTERACTIVE_SWARM_REPLAY_PANES · constant · L5-L5 — const MAX_INTERACTIVE_SWARM_REPLAY_PANES: usize = 16;
+- run_client · function · L21-L70 — pub async fn run_client() -> Result<()>
+- emit_terminal_client_event · function · L72-L91 — fn emit_terminal_client_event(
+- turn_envelope_tests · module · L94-L135 — mod turn_envelope_tests
+- envelope · function · L98-L106 — fn envelope(event: ServerEvent) -> ServerEvent
+- terminal_client_prints_wrapped_text_and_honors_wrapped_done · function · L109-L134 — fn terminal_client_prints_wrapped_text_and_honors_wrapped_done()
+- run_tui_client · function · L137-L290 — pub async fn run_tui_client(
+- should_show_server_spawning · function · L292-L307 — async fn should_show_server_spawning(server_spawning: bool) -> bool
+- apply_startup_hints · function · L309-L322 — fn apply_startup_hints(app: &mut tui::App, hints: setup_hints::StartupHints)
+- run_replay_command · function · L328-L549 — pub async fn run_replay_command(
+- resume_target_cloud_handoff · function · L559-L571 — fn resume_target_cloud_handoff(
+- cloud_resume_target_args · function · L573-L593 — fn cloud_resume_target_args(
+- picker_resume_exe · function · L599-L604 — fn picker_resume_exe() -> Result<std::path::PathBuf>
+- list_sessions · function · L606-L952 — pub fn list_sessions() -> Result<()>
+- build_resume_target_command · function · L607-L655 — fn build_resume_target_command(
+- command_display · function · L657-L662 — fn command_display(program: &std::path::Path, args: &[String]) -> String
+- spawn_target_in_new_terminal · function · L664-L705 — fn spawn_target_in_new_terminal(
+- moved_existing_window · function · L709-L715 — fn moved_existing_window(target: &jcode_tui_session_picker::ResumeTarget) -> bool
+- tests · module · L955-L955 — mod tests;
+- cloud_resume_tests · module · L958-L1016 — mod cloud_resume_tests
+- standalone_cloud_resume_uses_passive_handoff_and_ssh_args · function · L962-L1015 — fn standalone_cloud_resume_uses_passive_handoff_and_ssh_args()
+- RestoreHome · struct · L965-L965 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L967-L973 — fn drop(&mut self)

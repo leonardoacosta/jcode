@@ -1,0 +1,31 @@
+# crates/jcode-tui/src/tui/ui_memory_estimates.rs
+
+- estimate_lines_bytes · function · L13-L26 — fn estimate_lines_bytes(lines: &[Line<'static>]) -> usize
+- estimate_arc_string_vec_bytes · function · L28-L32 — fn estimate_arc_string_vec_bytes(values: &Arc<Vec<String>>) -> usize
+- estimate_arc_usize_vec_bytes · function · L34-L36 — fn estimate_arc_usize_vec_bytes(values: &Arc<Vec<usize>>) -> usize
+- estimate_arc_wrapped_line_map_bytes · function · L38-L41 — fn estimate_arc_wrapped_line_map_bytes(values: &Arc<Vec<WrappedLineMap>>) -> usize
+- estimate_copy_target_kind_bytes · function · L43-L53 — fn estimate_copy_target_kind_bytes(kind: &CopyTargetKind) -> usize
+- estimate_copy_targets_bytes · function · L55-L61 — fn estimate_copy_targets_bytes(values: &Vec<CopyTarget>) -> usize
+- estimate_edit_tool_ranges_bytes · function · L63-L69 — fn estimate_edit_tool_ranges_bytes(values: &Vec<EditToolRange>) -> usize
+- estimate_string_vec_bytes · function · L71-L74 — fn estimate_string_vec_bytes(values: &Vec<String>) -> usize
+- estimate_image_regions_bytes · function · L76-L78 — fn estimate_image_regions_bytes(values: &Vec<ImageRegion>) -> usize
+- estimate_usize_vec_bytes · function · L80-L82 — fn estimate_usize_vec_bytes(values: &Vec<usize>) -> usize
+- estimate_prepared_messages_bytes · function · L84-L97 — pub(super) fn estimate_prepared_messages_bytes(prepared: &PreparedMessages) -> usize
+- estimate_shared_prepared_messages_bytes · function · L103-L126 — fn estimate_shared_prepared_messages_bytes(prepared: &Arc<PreparedMessages>) -> usize
+- MEMO_CAP · constant · L106-L106 — const MEMO_CAP: usize = 8;
+- estimate_prepared_chat_frame_bytes · function · L128-L146 — pub(super) fn estimate_prepared_chat_frame_bytes(prepared: &PreparedChatFrame) -> usize
+- estimate_visible_copy_targets_bytes · function · L148-L158 — fn estimate_visible_copy_targets_bytes(values: &Vec<VisibleCopyTarget>) -> usize
+- prepared_messages_breakdown · function · L160-L215 — fn prepared_messages_breakdown(prepared: &PreparedMessages) -> serde_json::Value
+- DiagnosticAllocations · struct · L220-L222 — struct DiagnosticAllocations
+- diagnostic_aux_profile · function · L224-L240 — pub(super) fn diagnostic_aux_profile<'a>(
+- arc · function · L243-L250 — fn arc<T>(&mut self, value: &Arc<T>, payload: impl FnOnce(&mut Self, &T) -> usize) -> usize
+- messages · function · L252-L284 — fn messages(&mut self, value: &Arc<PreparedMessages>) -> usize
+- frame · function · L286-L301 — fn frame(&mut self, value: &Arc<PreparedChatFrame>) -> usize
+- debug_memory_profile · function · L304-L335 — pub(crate) fn debug_memory_profile() -> serde_json::Value
+- prepared_cache_profile · function · L337-L396 — fn prepared_cache_profile(
+- debug_side_panel_memory_profile · function · L398-L400 — pub(crate) fn debug_side_panel_memory_profile() -> serde_json::Value
+- diagnostic_tests · module · L403-L584 — mod diagnostic_tests
+- diagnostic_aux_known_capacities_and_aliases · function · L408-L431 — fn diagnostic_aux_known_capacities_and_aliases()
+- fixture · function · L433-L460 — fn fixture() -> PreparedMessages
+- diagnostic_known_capacities_and_nested_arc_aliases · function · L463-L499 — fn diagnostic_known_capacities_and_nested_arc_aliases()
+- diagnostic_oversized_and_cross_cache_shared_frames · function · L502-L583 — fn diagnostic_oversized_and_cross_cache_shared_frames()

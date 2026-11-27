@@ -1,0 +1,32 @@
+# crates/jcode-voice/src/speech.rs
+
+- http · module · L13-L13 — mod http;
+- MAX_TEXT_BYTES · constant · L15-L15 — pub const MAX_TEXT_BYTES: usize = 4096;
+- MAX_QUEUED_UTTERANCES · constant · L16-L16 — pub const MAX_QUEUED_UTTERANCES: usize = 16;
+- POLL · constant · L17-L17 — const POLL: Duration = Duration::from_millis(10);
+- MAX_PLAYBACK · constant · L18-L18 — const MAX_PLAYBACK: Duration = Duration::from_secs(300);
+- SpeechError · enum · L21-L29 — pub enum SpeechError
+- fmt · function · L31-L45 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- Backend · type · L49-L49 — type Backend = Arc<dyn Fn(&str) -> std::io::Result<Child> + Send + Sync>;
+- State · struct · L51-L58 — struct State
+- stop_child · function · L60-L65 — fn stop_child(&mut self)
+- drop · function · L68-L70 — fn drop(&mut self)
+- SpeechPlayer · struct · L77-L80 — pub struct SpeechPlayer
+- new · function · L84-L101 — pub fn new() -> Result<Self, SpeechError>
+- with_endpoint · function · L104-L106 — pub fn with_endpoint(endpoint: &str) -> Result<Self, SpeechError>
+- with_http · function · L111-L118 — pub fn with_http(
+- with_backend · function · L120-L131 — fn with_backend(backend: Backend) -> Result<Self, SpeechError>
+- enqueue · function · L135-L150 — pub fn enqueue(&self, text: &str) -> Result<(), SpeechError>
+- is_idle · function · L153-L156 — pub fn is_idle(&self) -> bool
+- take_error · function · L159-L166 — pub fn take_error(&self) -> Option<&'static str>
+- cancel · function · L169-L176 — pub fn cancel(&self)
+- drop · function · L179-L191 — fn drop(&mut self)
+- run · function · L194-L224 — fn run(shared: Arc<(Mutex<State>, Condvar)>, backend: Backend)
+- probe · function · L226-L246 — fn probe(executable: &str) -> bool
+- tests · module · L249-L347 — mod tests
+- wait_until · function · L251-L257 — fn wait_until(mut condition: impl FnMut() -> bool)
+- validates_text_without_invoking_backend · function · L259-L265 — fn validates_text_without_invoking_backend()
+- fifo_and_spawn_failure_recovery · function · L267-L280 — fn fifo_and_spawn_failure_recovery()
+- bounded_cancel_reusable_and_drop_reaps_real_fake_child · function · L283-L324 — fn bounded_cancel_reusable_and_drop_reaps_real_fake_child()
+- successful_children_advance_fifo · function · L327-L342 — fn successful_children_advance_fifo()
+- missing_executable_is_unavailable · function · L344-L346 — fn missing_executable_is_unavailable()

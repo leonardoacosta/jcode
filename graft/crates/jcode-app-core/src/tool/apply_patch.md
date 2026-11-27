@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/tool/apply_patch.rs
+
+- FILE_TOUCH_PREVIEW_MAX_LINES · constant · L10-L10 — const FILE_TOUCH_PREVIEW_MAX_LINES: usize = 6;
+- FILE_TOUCH_PREVIEW_MAX_BYTES · constant · L11-L11 — const FILE_TOUCH_PREVIEW_MAX_BYTES: usize = 240;
+- ApplyPatchTool · struct · L13-L13 — pub struct ApplyPatchTool;
+- new · function · L16-L18 — pub fn new() -> Self
+- ApplyPatchInput · struct · L22-L26 — struct ApplyPatchInput
+- UpdateFileChunk · struct · L29-L34 — struct UpdateFileChunk
+- PatchHunk · enum · L41-L54 — enum PatchHunk
+- is_unified_diff · function · L57-L68 — fn is_unified_diff(text: &str) -> bool
+- name · function · L72-L74 — fn name(&self) -> &str
+- description · function · L76-L78 — fn description(&self) -> &str
+- parameters_schema · function · L80-L92 — fn parameters_schema(&self) -> Value
+- execute · function · L94-L417 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- publish_file_touch · function · L420-L444 — fn publish_file_touch(
+- build_file_touch_preview · function · L446-L472 — fn build_file_touch_preview(diff: &str) -> Option<String>
+- apply_update_chunks · function · L474-L489 — async fn apply_update_chunks(path: &Path, chunks: &[UpdateFileChunk]) -> Result<(String, String)>
+- generate_diff_summary · function · L492-L537 — fn generate_diff_summary(old: &str, new: &str) -> String
+- MAX_LINES · constant · L496-L496 — const MAX_LINES: usize = 30;
+- compute_replacements · function · L539-L604 — fn compute_replacements(
+- nearest_hint · function · L606-L610 — fn nearest_hint(original_lines: &[String], needle: &[String]) -> String
+- apply_replacements · function · L612-L632 — fn apply_replacements(
+- seek_sequence · function · L634-L682 — fn seek_sequence(lines: &[String], pattern: &[String], start: usize, eof: bool) -> Option<usize>
+- parse_apply_patch · function · L684-L847 — fn parse_apply_patch(input: &str) -> Result<Vec<PatchHunk>>
+- apply_patch_tests · module · L851-L851 — mod apply_patch_tests;

@@ -1,0 +1,37 @@
+# crates/jcode-app-core/src/ambient/scheduler.rs
+
+- SAVE_INTERVAL · constant · L21-L21 — const SAVE_INTERVAL: usize = 10;
+- PRUNE_AGE_HOURS · constant · L24-L24 — const PRUNE_AGE_HOURS: i64 = 24;
+- UsageLog · struct · L26-L30 — pub struct UsageLog
+- load · function · L34-L46 — pub fn load() -> Self
+- default_path · function · L48-L53 — fn default_path() -> PathBuf
+- record · function · L56-L68 — pub fn record(&mut self, record: UsageRecord)
+- user_rate_per_minute · function · L71-L73 — pub fn user_rate_per_minute(&self, window: Duration) -> f32
+- ambient_rate_per_minute · function · L76-L78 — pub fn ambient_rate_per_minute(&self, window: Duration) -> f32
+- total_tokens_in_window · function · L81-L88 — pub fn total_tokens_in_window(&self, source: &UsageSource, window: Duration) -> u64
+- avg_tokens_per_ambient_cycle · function · L91-L105 — pub fn avg_tokens_per_ambient_cycle(&self, last_n: usize) -> Option<f64>
+- save · function · L108-L113 — pub fn save(&mut self) -> anyhow::Result<()>
+- rate_per_minute · function · L117-L131 — fn rate_per_minute(&self, source: UsageSource, window: Duration) -> f32
+- prune · function · L133-L136 — fn prune(&mut self)
+- AmbientSchedulerConfig · struct · L144-L151 — pub struct AmbientSchedulerConfig
+- default · function · L154-L161 — fn default() -> Self
+- AdaptiveScheduler · struct · L168-L175 — pub struct AdaptiveScheduler
+- new · function · L178-L185 — pub fn new(config: AmbientSchedulerConfig) -> Self
+- calculate_interval · function · L188-L247 — pub fn calculate_interval(&self, rate_limit_info: Option<&RateLimitInfo>) -> Duration
+- should_pause · function · L250-L252 — pub fn should_pause(&self) -> bool
+- set_user_active · function · L255-L257 — pub fn set_user_active(&mut self, active: bool)
+- on_rate_limit_hit · function · L260-L262 — pub fn on_rate_limit_hit(&mut self)
+- on_successful_cycle · function · L265-L267 — pub fn on_successful_cycle(&mut self)
+- apply_backoff · function · L271-L276 — fn apply_backoff(&self, interval: Duration) -> Duration
+- tests · module · L284-L497 — mod tests
+- make_record · function · L287-L295 — fn make_record(source: UsageSource, tokens: u32, mins_ago: i64) -> UsageRecord
+- test_usage_log_rate_per_minute · function · L298-L314 — fn test_usage_log_rate_per_minute()
+- test_total_tokens_in_window · function · L317-L334 — fn test_total_tokens_in_window()
+- test_avg_tokens_per_ambient_cycle · function · L337-L356 — fn test_avg_tokens_per_ambient_cycle()
+- test_scheduler_no_rate_limit_returns_max · function · L359-L368 — fn test_scheduler_no_rate_limit_returns_max()
+- test_scheduler_no_remaining_tokens_returns_max · function · L371-L384 — fn test_scheduler_no_remaining_tokens_returns_max()
+- test_scheduler_plenty_of_headroom · function · L387-L413 — fn test_scheduler_plenty_of_headroom()
+- test_backoff_doubles · function · L416-L443 — fn test_backoff_doubles()
+- test_backoff_resets_on_success · function · L446-L456 — fn test_backoff_resets_on_success()
+- test_should_pause · function · L459-L471 — fn test_should_pause()
+- test_prune_removes_old_records · function · L474-L496 — fn test_prune_removes_old_records()

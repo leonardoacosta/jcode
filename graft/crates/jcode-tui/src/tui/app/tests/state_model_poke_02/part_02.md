@@ -1,0 +1,18 @@
+# crates/jcode-tui/src/tui/app/tests/state_model_poke_02/part_02.rs
+
+- test_agents_review_picker_saves_session_override_without_global_write · function · L2-L82 — fn test_agents_review_picker_saves_session_override_without_global_write()
+- test_agents_ctrl_g_toggles_scope_and_saves_to_the_chosen_scope · function · L88-L157 — fn test_agents_ctrl_g_toggles_scope_and_saves_to_the_chosen_scope()
+- test_agents_global_scope_and_distinct_session_clear_and_inherit · function · L160-L243 — fn test_agents_global_scope_and_distinct_session_clear_and_inherit()
+- test_agents_remote_feedback_honors_session_global_and_inherit · function · L246-L330 — fn test_agents_remote_feedback_honors_session_global_and_inherit()
+- test_model_command_suggestions_include_matching_models · function · L333-L342 — fn test_model_command_suggestions_include_matching_models()
+- test_model_command_trailing_space_shows_model_suggestions · function · L345-L355 — fn test_model_command_trailing_space_shows_model_suggestions()
+- test_model_command_provider_suggestions_include_openrouter_routes · function · L358-L371 — fn test_model_command_provider_suggestions_include_openrouter_routes()
+- test_model_command_provider_suggestions_rank_matching_provider_prefix · function · L374-L383 — fn test_model_command_provider_suggestions_rank_matching_provider_prefix()
+- test_model_command_provider_suggestions_normalize_bare_openai_model_to_openrouter_catalog_id · function · L386-L394 — fn test_model_command_provider_suggestions_normalize_bare_openai_model_to_openrouter_catalog_id()
+- test_model_command_provider_suggestions_include_auto_for_normalized_bare_openai_model · function · L397-L408 — fn test_model_command_provider_suggestions_include_auto_for_normalized_bare_openai_model()
+- test_remote_fallback_provider_suggestions_normalize_bare_openai_openrouter_routes · function · L411-L439 — fn test_remote_fallback_provider_suggestions_normalize_bare_openai_openrouter_routes()
+- test_login_command_suggestions_follow_provider_catalog · function · L442-L456 — fn test_login_command_suggestions_follow_provider_catalog()
+- test_model_autocomplete_completes_unique_match · function · L459-L467 — fn test_model_autocomplete_completes_unique_match()
+- test_model_autocomplete_completes_unique_provider_match · function · L470-L479 — fn test_model_autocomplete_completes_unique_provider_match()
+- test_model_picker_preview_stays_open_and_updates_filter · function · L482-L504 — fn test_model_picker_preview_stays_open_and_updates_filter()
+- test_model_picker_preview_enter_selects_model · function · L507-L522 — fn test_model_picker_preview_enter_selects_model()

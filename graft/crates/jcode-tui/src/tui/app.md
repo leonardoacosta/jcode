@@ -1,0 +1,202 @@
+# crates/jcode-tui/src/tui/app.rs
+
+- cache_fingerprints · module · L2-L2 — mod cache_fingerprints;
+- cache_request · module · L3-L3 — mod cache_request;
+- kv_cache_summary · module · L6-L6 — mod kv_cache_summary;
+- AppRuntimeMode · enum · L51-L58 — pub enum AppRuntimeMode
+- auth · module · L60-L60 — mod auth;
+- auth_account_picker_saved_accounts · module · L61-L61 — mod auth_account_picker_saved_accounts;
+- auth_remote · module · L62-L62 — mod auth_remote;
+- cache_diagnostics · module · L63-L63 — mod cache_diagnostics;
+- catchup · module · L64-L64 — mod catchup;
+- commands · module · L65-L65 — mod commands;
+- commit_log · module · L66-L66 — mod commit_log;
+- cloud_environment · module · L68-L68 — mod cloud_environment;
+- commands_cloud · module · L69-L69 — mod commands_cloud;
+- commands_colors · module · L70-L70 — mod commands_colors;
+- commands_desktop · module · L71-L71 — mod commands_desktop;
+- commands_dispatch · module · L72-L72 — mod commands_dispatch;
+- commands_improve · module · L73-L73 — mod commands_improve;
+- commands_mcp · module · L74-L74 — pub(crate) mod commands_mcp;
+- commands_overnight · module · L75-L75 — mod commands_overnight;
+- commands_plan · module · L76-L76 — mod commands_plan;
+- commands_remote · module · L77-L77 — mod commands_remote;
+- commands_review · module · L78-L78 — mod commands_review;
+- conversation_state · module · L79-L79 — mod conversation_state;
+- copy_selection · module · L80-L80 — mod copy_selection;
+- debug · module · L81-L81 — mod debug;
+- dictation · module · L82-L82 — mod dictation;
+- event_wrappers · module · L83-L83 — mod event_wrappers;
+- handterm_native_scroll · module · L84-L84 — mod handterm_native_scroll;
+- helpers · module · L85-L85 — pub(crate) mod helpers;
+- hotkey_feedback · module · L86-L86 — mod hotkey_feedback;
+- idle_animation_repaint · module · L87-L87 — pub(crate) mod idle_animation_repaint;
+- idle_heap_release · module · L88-L88 — mod idle_heap_release;
+- idle_hibernation · module · L89-L89 — mod idle_hibernation;
+- inline_interactive · module · L90-L90 — mod inline_interactive;
+- input · module · L91-L91 — mod input;
+- input_help · module · L92-L92 — mod input_help;
+- jarvis · module · L93-L93 — mod jarvis;
+- jarvis_listen · module · L94-L94 — mod jarvis_listen;
+- jarvis_status · module · L95-L95 — mod jarvis_status;
+- local · module · L96-L96 — mod local;
+- misc_ui · module · L97-L97 — mod misc_ui;
+- model_context · module · L98-L98 — mod model_context;
+- navigation · module · L99-L99 — mod navigation;
+- oauth_telemetry · module · L100-L100 — pub(crate) mod oauth_telemetry;
+- observe · module · L101-L101 — mod observe;
+- onboarding_flow · module · L102-L102 — pub(crate) mod onboarding_flow;
+- onboarding_flow_control · module · L103-L103 — mod onboarding_flow_control;
+- onboarding_graph · module · L104-L104 — pub(crate) mod onboarding_graph;
+- onboarding_repair · module · L105-L105 — mod onboarding_repair;
+- onboarding_sim · module · L106-L106 — mod onboarding_sim;
+- productivity · module · L107-L107 — mod productivity;
+- prompt_history · module · L108-L108 — mod prompt_history;
+- remote · module · L109-L109 — mod remote;
+- remote_header_hint · module · L110-L110 — mod remote_header_hint;
+- remote_notifications · module · L111-L111 — mod remote_notifications;
+- replay · module · L112-L112 — mod replay;
+- replay_export · module · L113-L113 — mod replay_export;
+- response_output · module · L114-L114 — mod response_output;
+- run_shell · module · L115-L115 — pub(crate) mod run_shell;
+- runtime_memory · module · L116-L116 — mod runtime_memory;
+- shortcut_hints · module · L117-L117 — mod shortcut_hints;
+- slash_command_parser · module · L118-L118 — mod slash_command_parser;
+- spinner_ticker · module · L119-L119 — mod spinner_ticker;
+- split_view · module · L120-L120 — mod split_view;
+- state_ui · module · L121-L121 — mod state_ui;
+- state_ui_input_helpers · module · L122-L122 — mod state_ui_input_helpers;
+- update_rehearsal · module · L123-L123 — mod update_rehearsal;
+- update_sim · module · L124-L124 — mod update_sim;
+- usage_reset · module · L125-L125 — mod usage_reset;
+- voice_input · module · L126-L126 — mod voice_input;
+- binary_watch · module · L129-L129 — mod binary_watch;
+- justrust_status · module · L130-L130 — mod justrust_status;
+- state_ui_history_marker · module · L131-L131 — mod state_ui_history_marker;
+- state_ui_maintenance · module · L132-L132 — mod state_ui_maintenance;
+- state_ui_messages · module · L133-L133 — mod state_ui_messages;
+- state_ui_runtime · module · L134-L134 — mod state_ui_runtime;
+- state_ui_storage · module · L135-L135 — mod state_ui_storage;
+- subscribe_nudge · module · L136-L136 — mod subscribe_nudge;
+- support · module · L137-L137 — mod support;
+- swarm_hint · module · L138-L138 — mod swarm_hint;
+- terminal_liveness · module · L139-L139 — mod terminal_liveness;
+- terminal_setup_command · module · L140-L140 — mod terminal_setup_command;
+- terminal_title · module · L141-L141 — mod terminal_title;
+- todo_completion · module · L142-L142 — mod todo_completion;
+- todos_view · module · L143-L143 — mod todos_view;
+- wake_stats · module · L144-L144 — mod wake_stats;
+- tui_lifecycle · module · L146-L146 — mod tui_lifecycle;
+- tui_lifecycle_runtime · module · L147-L147 — mod tui_lifecycle_runtime;
+- tui_state · module · L148-L148 — mod tui_state;
+- turn · module · L149-L149 — mod turn;
+- turn_memory · module · L150-L150 — mod turn_memory;
+- turn_notify · module · L151-L151 — mod turn_notify;
+- ui_prefs · module · L152-L152 — mod ui_prefs;
+- extract_input_shell_command · function · L156-L158 — pub(crate) fn extract_input_shell_command(input: &str) -> Option<&str>
+- has_safe_slash_command_token · function · L160-L162 — pub(crate) fn has_safe_slash_command_token(input: &str) -> bool
+- COMMAND_SUGGESTION_VISIBLE_LIMIT · constant · L164-L164 — pub(crate) const COMMAND_SUGGESTION_VISIBLE_LIMIT: usize = 8;
+- active_runtime_provider_key · function · L166-L171 — fn active_runtime_provider_key() -> Option<String>
+- PendingRemoteMessage · struct · L174-L184 — struct PendingRemoteMessage
+- PendingSplitPrompt · struct · L187-L190 — struct PendingSplitPrompt
+- PendingLocalTransfer · struct · L192-L194 — struct PendingLocalTransfer
+- TurnReasoningTrace · struct · L202-L205 — struct TurnReasoningTrace
+- LocalRewindUndoSnapshot · struct · L208-L213 — struct LocalRewindUndoSnapshot
+- PendingRemoteRewindNotice · struct · L216-L220 — struct PendingRemoteRewindNotice
+- KvCacheRequestSignature · struct · L223-L236 — pub(in crate::tui::app) struct KvCacheRequestSignature
+- KvCacheBaseline · struct · L239-L267 — struct KvCacheBaseline
+- PendingKvCacheRequest · struct · L270-L286 — struct PendingKvCacheRequest
+- KvCacheMissReason · enum · L289-L303 — enum KvCacheMissReason
+- label · function · L306-L322 — fn label(self) -> &'static str
+- KvCacheMissSample · struct · L326-L331 — struct KvCacheMissSample
+- PendingSessionPickerLoad · struct · L333-L335 — struct PendingSessionPickerLoad
+- StartupTranscript · type · L338-L342 — type StartupTranscript = (
+- PendingModelPickerLoad · struct · L344-L353 — struct PendingModelPickerLoad
+- ModelPickerBuildContext · struct · L357-L365 — struct ModelPickerBuildContext
+- ModelPickerBuildOutcome · enum · L367-L374 — enum ModelPickerBuildOutcome
+- ModelPickerCacheSignature · struct · L377-L394 — struct ModelPickerCacheSignature
+- ModelPickerCache · struct · L397-L402 — struct ModelPickerCache
+- ModelPickerRoutesResult · struct · L404-L406 — struct ModelPickerRoutesResult
+- PreparedTransferSession · struct · L409-L412 — struct PreparedTransferSession
+- PendingProviderFailover · struct · L415-L419 — struct PendingProviderFailover
+- PendingFallbackOffer · struct · L429-L440 — struct PendingFallbackOffer
+- FallbackResendPayload · struct · L445-L463 — struct FallbackResendPayload
+- PendingMergeOffer · struct · L472-L478 — struct PendingMergeOffer
+- SessionPickerMode · enum · L481-L490 — pub(super) enum SessionPickerMode
+- PendingCatchupResume · struct · L493-L498 — pub(super) struct PendingCatchupResume
+- RemoteResumeActivity · struct · L501-L505 — pub(super) struct RemoteResumeActivity
+- PendingReloadReconnectStatus · enum · L508-L510 — pub(super) enum PendingReloadReconnectStatus
+- MEMORY_INJECTION_SUPPRESSION_SECS · constant · L512-L512 — const MEMORY_INJECTION_SUPPRESSION_SECS: u64 = 90;
+- STATUS_NOTICE_TTL · constant · L514-L514 — const STATUS_NOTICE_TTL: Duration = Duration::from_secs(3);
+- ProcessingStatus · enum · L518-L533 — pub enum ProcessingStatus
+- RemoteStartupPhase · enum · L536-L542 — pub(crate) enum RemoteStartupPhase
+- header_label · function · L545-L553 — pub(crate) fn header_label(&self) -> String
+- header_label_with_elapsed · function · L555-L568 — pub(crate) fn header_label_with_elapsed(&self, elapsed: Duration) -> String
+- reload_persisted_background_tasks_note · function · L571-L573 — pub(super) fn reload_persisted_background_tasks_note(session_id: &str) -> String
+- CopyBadgeUiState · struct · L576-L585 — pub struct CopyBadgeUiState
+- CopyBadgeFeedback · struct · L588-L592 — pub struct CopyBadgeFeedback
+- copy_badge_state · module · L595-L595 — mod copy_badge_state;
+- RunResult · struct · L598-L615 — pub struct RunResult
+- CloudHandoff · enum · L619-L634 — pub enum CloudHandoff
+- SendAction · enum · L637-L641 — enum SendAction
+- ImproveMode · enum · L644-L649 — pub(super) enum ImproveMode
+- status_label · function · L652-L659 — pub(super) fn status_label(self) -> &'static str
+- is_improve · function · L661-L663 — pub(super) fn is_improve(self) -> bool
+- is_refactor · function · L665-L667 — pub(super) fn is_refactor(self) -> bool
+- MouseScrollTarget · enum · L671-L680 — pub(super) enum MouseScrollTarget
+- CompactedHistoryLazyState · struct · L683-L691 — pub(super) struct CompactedHistoryLazyState
+- HistoryScrollAnchor · struct · L699-L708 — pub(super) struct HistoryScrollAnchor
+- PendingResizeAnchor · struct · L719-L730 — pub(super) struct PendingResizeAnchor
+- OvernightAutoPokeFingerprint · struct · L733-L746 — pub(super) struct OvernightAutoPokeFingerprint
+- OvernightAutoPokeState · struct · L749-L758 — pub(super) struct OvernightAutoPokeState
+- CommandCandidatesCache · struct · L761-L763 — struct CommandCandidatesCache
+- CommandSuggestionsCache · struct · L775-L788 — struct CommandSuggestionsCache
+- CommandSuggestionsSignature · struct · L793-L800 — struct CommandSuggestionsSignature
+- TokenAccounting · struct · L808-L824 — struct TokenAccounting
+- KvCacheState · struct · L832-L850 — struct KvCacheState
+- ColdCacheWarningTrigger · enum · L856-L862 — enum ColdCacheWarningTrigger
+- text_hash · function · L865-L878 — fn text_hash(&self) -> u64
+- streaming_text_mut · function · L881-L884 — fn streaming_text_mut(&mut self) -> &mut String
+- StreamingProgress · struct · L889-L938 — struct StreamingProgress
+- CostState · struct · L946-L956 — struct CostState
+- AdvertisedHistoryBase · struct · L961-L968 — pub(crate) struct AdvertisedHistoryBase
+- App · struct · L970-L1957 — pub struct App
+- InertRuntimeProvider · struct · L1963-L1965 — struct InertRuntimeProvider
+- new · function · L1968-L1970 — fn new(runtime_mode: AppRuntimeMode) -> Self
+- provider_label · function · L1972-L1978 — fn provider_label(&self) -> &'static str
+- name · function · L1983-L1985 — fn name(&self) -> &str
+- model · function · L1986-L1988 — fn model(&self) -> String
+- complete · function · L1990-L2001 — async fn complete(
+- fork · function · L2003-L2005 — fn fork(&self) -> Arc<dyn Provider>
+- AUTO_RETRY_BASE_DELAY_SECS · constant · L2009-L2009 — const AUTO_RETRY_BASE_DELAY_SECS: u64 = 2;
+- AUTO_RETRY_MAX_ATTEMPTS · constant · L2010-L2010 — const AUTO_RETRY_MAX_ATTEMPTS: u8 = 3;
+- TODO_COMPLETION_GATE_MAX_ATTEMPTS · constant · L2016-L2016 — const TODO_COMPLETION_GATE_MAX_ATTEMPTS: u8 = 5;
+- GUARDRAIL_STOP_MAX_CONSECUTIVE · constant · L2022-L2022 — const GUARDRAIL_STOP_MAX_CONSECUTIVE: u8 = 2;
+- CREDENTIAL_FAILURE_BREAKER_THRESHOLD · constant · L2030-L2030 — const CREDENTIAL_FAILURE_BREAKER_THRESHOLD: u32 = 3;
+- INPUT_UNDO_LIMIT · constant · L2031-L2031 — const INPUT_UNDO_LIMIT: usize = 128;
+- CLIENT_FOCUS_RECORD_DEBOUNCE · constant · L2032-L2032 — const CLIENT_FOCUS_RECORD_DEBOUNCE: Duration = Duration::from_secs(2);
+- KV_CACHE_OPTIMAL_OK_PCT · constant · L2033-L2033 — const KV_CACHE_OPTIMAL_OK_PCT: u8 = 85;
+- kv_cache_min_missed_tokens · function · L2034-L2036 — fn kv_cache_min_missed_tokens(provider: &str) -> u64
+- KV_CACHE_MAX_MISS_SAMPLES · constant · L2037-L2037 — const KV_CACHE_MAX_MISS_SAMPLES: usize = 12;
+- begin_remote_kv_cache_request · function · L2039-L2092 — pub(in crate::tui::app) fn begin_remote_kv_cache_request(
+- kv_cache_session_id · function · L2099-L2105 — fn kv_cache_session_id(&self) -> Option<String>
+- kv_cache_baseline_for_current_session · function · L2113-L2123 — fn kv_cache_baseline_for_current_session(&self) -> Option<KvCacheBaseline>
+- maybe_push_cold_cache_warning · function · L2125-L2138 — fn maybe_push_cold_cache_warning(
+- maybe_push_idle_cold_cache_warning · function · L2145-L2182 — pub(super) fn maybe_push_idle_cold_cache_warning(&mut self) -> bool
+- push_cold_cache_warning_for_baseline · function · L2187-L2240 — fn push_cold_cache_warning_for_baseline(
+- record_completed_stream_cache_usage · function · L2242-L2357 — pub(super) fn record_completed_stream_cache_usage(&mut self) -> bool
+- fallback_pending_kv_cache_request · function · L2359-L2383 — fn fallback_pending_kv_cache_request(&self) -> PendingKvCacheRequest
+- record_kv_cache_miss_sample · function · L2385-L2433 — fn record_kv_cache_miss_sample(&mut self, request: &PendingKvCacheRequest)
+- maybe_push_kv_cache_miss_notice · function · L2438-L2504 — fn maybe_push_kv_cache_miss_notice(
+- kv_cache_checked_prefix_unchanged · function · L2506-L2524 — fn kv_cache_checked_prefix_unchanged(request: &PendingKvCacheRequest) -> bool
+- kv_cache_miss_detail · function · L2528-L2588 — fn kv_cache_miss_detail(
+- push_kv_cache_notice · function · L2591-L2594 — pub(super) fn push_kv_cache_notice(&mut self, message: String)
+- classify_kv_cache_miss_reason · function · L2596-L2666 — fn classify_kv_cache_miss_reason(
+- kv_cache_provider_name · function · L2676-L2685 — fn kv_cache_provider_name(&self) -> String
+- kv_cache_provider_label · function · L2692-L2700 — fn kv_cache_provider_label(&self) -> String
+- kv_cache_account · function · L2704-L2713 — fn kv_cache_account(&self) -> Option<String>
+- kv_cache_provider_model · function · L2715-L2723 — fn kv_cache_provider_model(&self) -> String
+- kv_cache_request_signature · function · L2725-L2758 — fn kv_cache_request_signature(
+- kv_cache_signatures_prefix_match · function · L2760-L2777 — fn kv_cache_signatures_prefix_match(
+- kv_cache_common_prefix_messages · function · L2779-L2789 — fn kv_cache_common_prefix_messages(
+- tests · module · L2800-L2800 — mod tests;

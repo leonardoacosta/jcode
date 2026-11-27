@@ -1,0 +1,23 @@
+# crates/jcode-base/src/registry.rs
+
+- ServerInfo · struct · L17-L39 — pub struct ServerInfo
+- display_name · function · L43-L45 — pub fn display_name(&self) -> String
+- ServerRegistry · struct · L50-L54 — pub struct ServerRegistry
+- load · function · L58-L67 — pub async fn load() -> Result<Self>
+- save · function · L70-L95 — pub async fn save(&self) -> Result<()>
+- register · function · L98-L100 — pub fn register(&mut self, info: ServerInfo)
+- unregister · function · L103-L105 — pub fn unregister(&mut self, name: &str)
+- find_by_name · function · L108-L110 — pub fn find_by_name(&self, name: &str) -> Option<&ServerInfo>
+- servers_by_time · function · L113-L117 — pub fn servers_by_time(&self) -> Vec<&ServerInfo>
+- cleanup_stale · function · L125-L170 — pub async fn cleanup_stale(&mut self) -> Result<Vec<String>>
+- add_session · function · L173-L179 — pub fn add_session(&mut self, server_name: &str, session_name: &str)
+- remove_session · function · L182-L186 — pub fn remove_session(&mut self, server_name: &str, session_name: &str)
+- registry_path · function · L190-L192 — pub fn registry_path() -> Result<PathBuf>
+- socket_dir · function · L195-L197 — pub fn socket_dir() -> Result<PathBuf>
+- server_socket_path · function · L200-L204 — pub fn server_socket_path(name: &str) -> PathBuf
+- server_debug_socket_path · function · L207-L211 — pub fn server_debug_socket_path(name: &str) -> PathBuf
+- is_process_running · function · L214-L216 — fn is_process_running(pid: u32) -> bool
+- unregister_server · function · L219-L224 — pub async fn unregister_server(name: &str) -> Result<()>
+- list_servers · function · L227-L231 — pub async fn list_servers() -> Result<Vec<ServerInfo>>
+- find_server_by_socket_sync · function · L237-L246 — pub fn find_server_by_socket_sync(socket: &std::path::Path) -> Option<ServerInfo>
+- registry_tests · module · L250-L250 — mod registry_tests;

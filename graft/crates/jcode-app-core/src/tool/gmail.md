@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/tool/gmail.rs
+
+- GmailTool · struct · L9-L11 — pub struct GmailTool
+- new · function · L14-L18 — pub fn new() -> Self
+- resolve_reply · function · L27-L61 — async fn resolve_reply(
+- GmailInput · struct · L65-L99 — struct GmailInput
+- name · function · L103-L105 — fn name(&self) -> &str
+- description · function · L107-L109 — fn description(&self) -> &str
+- parameters_schema · function · L111-L153 — fn parameters_schema(&self) -> Value
+- execute · function · L155-L760 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- recipient_summary · function · L764-L772 — fn recipient_summary(recipients: &gmail::Recipients<'_>) -> String
+- DraftFieldInput · struct · L777-L783 — struct DraftFieldInput<'a>
+- MergedDraft · struct · L788-L795 — struct MergedDraft
+- merge_draft_fields · function · L797-L822 — fn merge_draft_fields(current: Option<&gmail::Message>, input: DraftFieldInput<'_>) -> MergedDraft
+- draft_merge_tests · module · L825-L932 — mod draft_merge_tests
+- schema_advertises_search_without_legacy_list_alias · function · L829-L844 — fn schema_advertises_search_without_legacy_list_alias()
+- draft_message · function · L846-L862 — fn draft_message() -> gmail::Message
+- omitted_fields_keep_current_values_and_threading · function · L865-L880 — fn omitted_fields_keep_current_values_and_threading()
+- explicit_fields_override · function · L883-L898 — fn explicit_fields_override()
+- empty_bcc_clears_existing · function · L901-L911 — fn empty_bcc_clears_existing()
+- recipient_summary_lists_only_set_headers · function · L914-L924 — fn recipient_summary_lists_only_set_headers()
+- no_current_message · function · L927-L931 — fn no_current_message()

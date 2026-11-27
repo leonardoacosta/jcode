@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/app/commands_tests.rs
+
+- parse_diff_mode_name_maps_known_aliases · function · L6-L20 — fn parse_diff_mode_name_maps_known_aliases()
+- parse_diff_mode_name_is_case_insensitive_and_trims · function · L23-L26 — fn parse_diff_mode_name_is_case_insensitive_and_trims()
+- parse_diff_mode_name_rejects_unknown · function · L29-L35 — fn parse_diff_mode_name_rejects_unknown()
+- parse_manual_subagent_spec_accepts_flags_and_prompt · function · L38-L48 — fn parse_manual_subagent_spec_accepts_flags_and_prompt()
+- parse_manual_subagent_spec_rejects_missing_prompt · function · L51-L55 — fn parse_manual_subagent_spec_rejects_missing_prompt()
+- swarm_prompt_edit_path_prefers_nonblank_project_override · function · L58-L71 — fn swarm_prompt_edit_path_prefers_nonblank_project_override()
+- swarm_prompt_edit_path_falls_back_to_nonblank_global_override · function · L74-L87 — fn swarm_prompt_edit_path_falls_back_to_nonblank_global_override()
+- swarm_prompt_edit_path_materializes_builtin_default_globally · function · L90-L99 — fn swarm_prompt_edit_path_materializes_builtin_default_globally()
+- openrouter_402_payment_required_is_non_retryable · function · L102-L111 — fn openrouter_402_payment_required_is_non_retryable()
+- transient_server_error_remains_retryable_for_auto_poke · function · L114-L118 — fn transient_server_error_remains_retryable_for_auto_poke()
+- rejected_refresh_token_is_non_retryable_for_auto_poke · function · L121-L128 — fn rejected_refresh_token_is_non_retryable_for_auto_poke()
+- openai_usage_limit_reached_is_non_retryable · function · L131-L140 — fn openai_usage_limit_reached_is_non_retryable()
+- volcengine_ark_unsupported_model_is_fatal_model_endpoint_error · function · L143-L154 — fn volcengine_ark_unsupported_model_is_fatal_model_endpoint_error()
+- transient_5xx_is_not_a_fatal_model_endpoint_error · function · L157-L161 — fn transient_5xx_is_not_a_fatal_model_endpoint_error()
+- model_not_found_is_fatal_model_endpoint_error · function · L164-L168 — fn model_not_found_is_fatal_model_endpoint_error()
+- colors · module · L176-L368 — mod colors
+- lock_shared_state · function · L186-L188 — fn lock_shared_state() -> std::sync::MutexGuard<'static, ()>
+- with_clean_config · function · L192-L210 — fn with_clean_config(body: impl FnOnce())
+- Restore · struct · L193-L193 — struct Restore;
+- drop · function · L195-L200 — fn drop(&mut self)
+- last_message · function · L213-L218 — fn last_message(app: &crate::tui::app::App) -> String
+- colors_lists_every_role_with_its_hex_value · function · L221-L239 — fn colors_lists_every_role_with_its_hex_value()
+- colors_harmony_reports_a_score_and_named_criteria · function · L242-L262 — fn colors_harmony_reports_a_score_and_named_criteria()
+- setting_a_role_persists_it_and_reports_the_new_score · function · L265-L298 — fn setting_a_role_persists_it_and_reports_the_new_score()
+- generate_writes_a_complete_palette_and_scores_it · function · L301-L332 — fn generate_writes_a_complete_palette_and_scores_it()
+- bad_input_is_rejected_without_touching_the_config · function · L335-L356 — fn bad_input_is_rejected_without_touching_the_config()
+- unrelated_commands_are_not_swallowed · function · L359-L367 — fn unrelated_commands_are_not_swallowed()
+- cache_extend_saves_preference_and_reset_survives_reload · function · L371-L427 — fn cache_extend_saves_preference_and_reset_survives_reload()
+- Restore · struct · L375-L375 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L377-L383 — fn drop(&mut self)

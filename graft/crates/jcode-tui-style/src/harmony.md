@@ -1,0 +1,67 @@
+# crates/jcode-tui-style/src/harmony.rs
+
+- generate · module · L31-L31 — mod generate;
+- graph · module · L32-L32 — pub mod graph;
+- measured · module · L33-L33 — mod measured;
+- Oklab · struct · L43-L47 — pub struct Oklab
+- srgb_to_linear · function · L49-L56 — fn srgb_to_linear(channel: u8) -> f32
+- linear_to_srgb · function · L58-L66 — fn linear_to_srgb(channel: f32) -> u8
+- from_rgb · function · L70-L81 — pub fn from_rgb((r, g, b): (u8, u8, u8)) -> Self
+- to_rgb · function · L89-L99 — pub fn to_rgb(self) -> (u8, u8, u8)
+- in_gamut · function · L102-L107 — fn in_gamut(self) -> bool
+- to_linear_rgb · function · L109-L119 — fn to_linear_rgb(self) -> (f32, f32, f32)
+- to_rgb_clamped · function · L121-L124 — fn to_rgb_clamped(self) -> (u8, u8, u8)
+- distance · function · L127-L132 — pub fn distance(self, other: Self) -> f32
+- chroma · function · L135-L137 — pub fn chroma(self) -> f32
+- hue_degrees · function · L140-L147 — pub fn hue_degrees(self) -> f32
+- Criterion · struct · L152-L166 — pub struct Criterion
+- HarmonyReport · struct · L170-L176 — pub struct HarmonyReport
+- grade · function · L180-L188 — pub fn grade(&self) -> &'static str
+- top_findings · function · L191-L203 — pub fn top_findings(&self, limit: usize) -> Vec<String>
+- MUST_DISTINGUISH · constant · L208-L220 — pub(crate) const MUST_DISTINGUISH: &[(Role, Role)] = &[
+- DISTINCT_TARGET · constant · L230-L230 — pub(crate) const DISTINCT_TARGET: f32 = 0.20;
+- CONTRAST_TARGET · constant · L235-L235 — pub(crate) const CONTRAST_TARGET: f32 = 0.40;
+- ratio_score · function · L237-L239 — fn ratio_score(actual: f32, target: f32) -> f32
+- as_percent · function · L241-L243 — fn as_percent(value: f32) -> u8
+- aggregate · function · L251-L258 — fn aggregate(scores: &[f32]) -> f32
+- analyze · function · L265-L307 — pub fn analyze(palette: &Palette, background: (u8, u8, u8)) -> HarmonyReport
+- analyze_active · function · L311-L318 — pub fn analyze_active() -> HarmonyReport
+- readability · function · L320-L373 — fn readability(palette: &Palette, background: (u8, u8, u8)) -> Criterion
+- distinctness · function · L375-L403 — fn distinctness(palette: &Palette) -> Criterion
+- SCHEMES · constant · L406-L413 — const SCHEMES: &[(&str, &[f32])] = &[
+- hue_delta · function · L415-L418 — pub(crate) fn hue_delta(a: f32, b: f32) -> f32
+- hue_harmony · function · L420-L537 — fn hue_harmony(palette: &Palette) -> (Criterion, &'static str)
+- Fit · struct · L448-L452 — struct Fit
+- chroma_coherence · function · L539-L641 — fn chroma_coherence(palette: &Palette) -> Criterion
+- COMFORTABLE_CHROMA · constant · L583-L583 — const COMFORTABLE_CHROMA: std::ops::RangeInclusive<f32> = 0.045..=0.20;
+- simulate_cvd · function · L646-L662 — pub(crate) fn simulate_cvd(rgb: (u8, u8, u8), deuteranopia: bool) -> (u8, u8, u8)
+- colorblind_safety · function · L664-L698 — fn colorblind_safety(palette: &Palette) -> Criterion
+- tests · module · L701-L898 — mod tests
+- DARK_BG · constant · L704-L704 — const DARK_BG: (u8, u8, u8) = (18, 18, 18);
+- oklab_round_trips_within_one_step · function · L707-L723 — fn oklab_round_trips_within_one_step()
+- oklab_lightness_orders_colors_as_the_eye_does · function · L726-L733 — fn oklab_lightness_orders_colors_as_the_eye_does()
+- hue_is_stable_for_saturated_primaries · function · L736-L743 — fn hue_is_stable_for_saturated_primaries()
+- default_palette_is_at_least_reasonable · function · L746-L754 — fn default_palette_is_at_least_reasonable()
+- unreadable_palette_is_flagged_by_readability · function · L757-L776 — fn unreadable_palette_is_flagged_by_readability()
+- colliding_semantic_roles_are_flagged_by_distinctness · function · L779-L798 — fn colliding_semantic_roles_are_flagged_by_distinctness()
+- red_green_pairs_are_flagged_for_colorblind_users · function · L801-L816 — fn red_green_pairs_are_flagged_for_colorblind_users()
+- a_deliberately_harmonious_palette_beats_a_random_one · function · L819-L854 — fn a_deliberately_harmonious_palette_beats_a_random_one()
+- scores_are_stable_and_bounded · function · L857-L865 — fn scores_are_stable_and_bounded()
+- grade_labels_track_the_score · function · L868-L874 — fn grade_labels_track_the_score()
+- light_background_changes_readability_verdicts · function · L877-L897 — fn light_background_changes_readability_verdicts()
+- calibration · module · L909-L1108 — pub(crate) mod calibration
+- DARK_BG · constant · L913-L913 — const DARK_BG: (u8, u8, u8) = (18, 18, 18);
+- build · function · L915-L921 — fn build(pairs: &[(Role, &str)]) -> Palette
+- solarized_dark · function · L923-L939 — pub(super) fn solarized_dark() -> Palette
+- gruvbox_dark · function · L941-L957 — pub(super) fn gruvbox_dark() -> Palette
+- dracula · function · L959-L975 — pub(super) fn dracula() -> Palette
+- nord · function · L977-L993 — pub(super) fn nord() -> Palette
+- all_mud · function · L996-L1009 — pub(super) fn all_mud() -> Palette
+- neon_chaos · function · L1012-L1023 — pub(super) fn neon_chaos() -> Palette
+- score · function · L1025-L1027 — fn score(palette: &Palette) -> u8
+- respected_community_palettes_all_score_well · function · L1030-L1045 — fn respected_community_palettes_all_score_well()
+- hostile_palettes_score_far_below_good_ones · function · L1048-L1066 — fn hostile_palettes_score_far_below_good_ones()
+- an_unreadable_palette_is_ranked_below_a_merely_garish_one · function · L1069-L1078 — fn an_unreadable_palette_is_ranked_below_a_merely_garish_one()
+- every_role_is_covered_by_at_least_one_criterion · function · L1081-L1107 — fn every_role_is_covered_by_at_least_one_criterion()
+- score_probe · module · L1111-L1130 — mod score_probe
+- print_documented_scores · function · L1118-L1129 — fn print_documented_scores()

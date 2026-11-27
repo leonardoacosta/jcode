@@ -1,0 +1,43 @@
+# scripts/test_benchmark_discovery_rate.py
+
+- ExecutableIdentityTests · class · L24-L61 — class ExecutableIdentityTests(unittest.TestCase)
+- test_provenance_bearing_reports_use_version_two · method · L25-L26 — def test_provenance_bearing_reports_use_version_two(self) -> None
+- test_records_exact_path_version_commit_and_checksum · method · L28-L43 — def test_records_exact_path_version_commit_and_checksum(self) -> None
+- test_extracts_base_commit_from_dirty_build_version · method · L45-L57 — def test_extracts_base_commit_from_dirty_build_version(self) -> None
+- test_rejects_missing_executable · method · L59-L61 — def test_rejects_missing_executable(self) -> None
+- DetectBypassTests · class · L64-L114 — class DetectBypassTests(unittest.TestCase)
+- test_real_commitments_are_flagged · method · L65-L80 — def test_real_commitments_are_flagged(self) -> None
+- test_local_work_is_not_flagged · method · L82-L104 — def test_local_work_is_not_flagged(self) -> None
+- test_only_scanned_tools_participate · method · L106-L107 — def test_only_scanned_tools_participate(self) -> None
+- test_mcp_connect_counts_as_bypass · method · L109-L114 — def test_mcp_connect_counts_as_bypass(self) -> None
+- InvalidTrialTests · class · L117-L134 — class InvalidTrialTests(unittest.TestCase)
+- test_provider_failures_are_recognized · method · L118-L129 — def test_provider_failures_are_recognized(self) -> None
+- test_ordinary_agent_noise_is_not_invalid · method · L131-L134 — def test_ordinary_agent_noise_is_not_invalid(self) -> None
+- CaseFileTests · class · L137-L241 — class CaseFileTests(unittest.TestCase)
+- setUp · method · L138-L139 — def setUp(self) -> None
+- test_shipped_suite_is_valid_and_balanced · method · L141-L157 — def test_shipped_suite_is_valid_and_balanced(self) -> None
+- test_suite_covers_most_categories · method · L159-L163 — def test_suite_covers_most_categories(self) -> None
+- _write · method · L165-L168 — def _write(self, cases: list[dict]) -> Path
+- test_prompt_leaking_discovery_is_rejected · method · L170-L175 — def test_prompt_leaking_discovery_is_rejected(self) -> None
+- test_prompt_leaking_category_slug_is_rejected · method · L177-L189 — def test_prompt_leaking_category_slug_is_rejected(self) -> None
+- test_control_may_not_declare_a_category · method · L191-L196 — def test_control_may_not_declare_a_category(self) -> None
+- test_selection_case_requires_complete_expected_receipt · method · L198-L211 — def test_selection_case_requires_complete_expected_receipt(self) -> None
+- test_selection_case_requires_boolean_listed_status · method · L213-L227 — def test_selection_case_requires_boolean_listed_status(self) -> None
+- test_call_cases_cannot_declare_selection_fields · method · L229-L241 — def test_call_cases_cannot_declare_selection_fields(self) -> None
+- SelectionTests · class · L244-L338 — class SelectionTests(unittest.TestCase)
+- setUp · method · L245-L256 — def setUp(self) -> None
+- test_tool_input_parser_normalizes_selection · method · L258-L270 — def test_tool_input_parser_normalizes_selection(self) -> None
+- test_exact_input_and_output_match_is_correct · method · L272-L281 — def test_exact_input_and_output_match_is_correct(self) -> None
+- test_selection_requires_action_tool_category_and_listed_status · method · L283-L308 — def test_selection_requires_action_tool_category_and_listed_status(self) -> None
+- test_off_catalog_selection_can_match · method · L310-L330 — def test_off_catalog_selection_can_match(self) -> None
+- test_any_selection_stops_all_case_kinds_immediately · method · L332-L338 — def test_any_selection_stops_all_case_kinds_immediately(self) -> None
+- ScoringTests · class · L341-L434 — class ScoringTests(unittest.TestCase)
+- _case · method · L342-L343 — def _case(self, expect: str = "call", category: str | None = "payments") -> rate.RateCase
+- _trial · method · L345-L348 — def _trial(self, **kwargs) -> rate.TrialResult
+- test_invalid_trials_are_excluded_from_rates · method · L350-L360 — def test_invalid_trials_are_excluded_from_rates(self) -> None
+- test_all_invalid_case_cannot_pass · method · L362-L368 — def test_all_invalid_case_cannot_pass(self) -> None
+- test_control_false_positive_fails · method · L370-L376 — def test_control_false_positive_fails(self) -> None
+- test_aggregate_ignores_unscored_cases · method · L378-L386 — def test_aggregate_ignores_unscored_cases(self) -> None
+- test_selection_accuracy_counts_missing_and_incorrect_selections · method · L388-L399 — def test_selection_accuracy_counts_missing_and_incorrect_selections(self) -> None
+- test_selection_only_aggregate_passes_and_fails_its_own_gate · method · L401-L423 — def test_selection_only_aggregate_passes_and_fails_its_own_gate(self) -> None
+- test_no_scored_trials_never_pass_any_filtered_gate · method · L425-L434 — def test_no_scored_trials_never_pass_any_filtered_gate(self) -> None

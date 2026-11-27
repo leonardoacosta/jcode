@@ -1,0 +1,113 @@
+# sdk/typescript/src/client.ts
+
+- RuntimeInfo · interface · L43-L53 — interface RuntimeInfo
+- FileContent · interface · L55-L60 — interface FileContent
+- FileStatus · interface · L62-L68 — interface FileStatus
+- Transport · interface · L73-L78 — interface Transport
+- unixSocketTransport · function · L80-L124 — function unixSocketTransport(socketPath: string): Promise<Transport>
+- onConnectError · function · L90-L91 — onConnectError = (cause: NodeJS.ErrnoException)
+- connectError · function · L127-L142 — function connectError(socketPath: string, cause: NodeJS.ErrnoException): HarnessError
+- ConnectOptions · interface · L144-L155 — interface ConnectOptions
+- CreateSessionOptions · interface · L157-L168 — interface CreateSessionOptions
+- GlobalEventsOptions · interface · L170-L177 — interface GlobalEventsOptions
+- RunOptions · interface · L179-L189 — interface RunOptions
+- SendMessageOptions · interface · L191-L200 — interface SendMessageOptions
+- RunStructuredOptions · interface · L202-L207 — interface RunStructuredOptions<T = unknown> extends RunOptions
+- Pending · interface · L209-L214 — interface Pending
+- JcodeClient · class · L223-L1497 — class JcodeClient extends EventEmitter
+- supports · method · L252-L254 — supports(capability: string): boolean
+- constructor · method · L256-L270 — private constructor( transport: Transport, requestTimeoutMs: number, socketPath: string | undefined, clientName: string, )
+- instanceHome · method · L276-L278 — get instanceHome(): string | undefined
+- launch · method · L292-L307 — static async launch(options: LaunchOptions & ConnectOptions = {}): Promise<JcodeClient>
+- connect · method · L317-L341 — static async connect(options: ConnectOptions = {}): Promise<JcodeClient>
+- ingest · method · L343-L383 — private ingest(chunk: Buffer | string): void
+- emitSafe · method · L386-L389 — private emitSafe(event: string, payload: unknown): void
+- handleClose · method · L391-L401 — private handleClose(error?: Error): void
+- request · method · L404-L406 — request(request: ApiRequest): Promise<ServerFrame>
+- requestFrame · method · L408-L429 — private requestFrame(request: ApiRequest, onReply?: (frame: ServerFrame) => void): Promise<ServerFrame>
+- requestOk · method · L432-L438 — private async requestOk(request: ApiRequest): Promise<ServerFrame>
+- expectReply · method · L447-L456 — private async expectReply<K extends ApiEvent["ev"]>( request: ApiRequest, kind: K, ): Promise<Extract<ApiEvent, { ev: K }>>
+- listSessions · method · L460-L466 — async listSessions(options: { includeArchived?: boolean; limit?: number } = {}): Promise<SessionInfo[]>
+- listSessionsLimited · method · L468-L470 — async listSessionsLimited(limit: number): Promise<SessionInfo[]>
+- archiveSession · method · L473-L475 — async archiveSession(sessionId: string): Promise<void>
+- restoreSession · method · L477-L479 — async restoreSession(sessionId: string): Promise<void>
+- setRetentionPolicy · method · L482-L484 — async setRetentionPolicy(archiveAfterDays?: number): Promise<void>
+- createSession · method · L486-L498 — async createSession(options?: string | CreateSessionOptions): Promise<SessionInfo>
+- requireSessionTools · method · L500-L504 — private requireSessionTools(): void
+- configureTools · method · L507-L534 — async configureTools(sessionId: string, options: SessionToolsOptions): Promise<void>
+- listTools · method · L537-L540 — async listTools(sessionId: string): Promise<SessionToolDefinition[]>
+- submitToolResult · method · L543-L547 — async submitToolResult(sessionId: string, callId: string, result: string | ToolResult): Promise<void>
+- attachSession · method · L549-L555 — async attachSession(sessionId: string): Promise<SessionInfo>
+- forkSession · method · L558-L564 — async forkSession(sessionId: string): Promise<SessionInfo>
+- detachSession · method · L566-L570 — async detachSession(sessionId: string): Promise<void>
+- sendMessage · method · L592-L621 — async sendMessage( sessionId: string, content: string, imagesOrOptions: ImageAttachment[] | SendMessageOptions = [], legacyOptions: Omit<SendMessageOptions, "images"> = {}, ): Promise<void>
+- sendSystemReminder · method · L624-L626 — async sendSystemReminder(sessionId: string, reminder: string): Promise<void>
+- sendMessageWithReminder · method · L633-L656 — async sendMessageWithReminder( sessionId: string, content: string, images: ImageAttachment[] = [], systemReminder?: string, options: Pick<SendMessageOptions, "waitForAccept" | "acceptTimeoutMs"> = {}, ): Promise<void>
+- notify · method · L659-L663 — notify(request: ApiRequest): void
+- waitForEvent · method · L666-L687 — private waitForEvent( predicate: (frame: ServerFrame) => boolean, timeoutMs: number, ): Promise<void>
+- finish · function · L671-L676 — finish = ()
+- onEvent · function · L677-L679 — onEvent = (frame: ServerFrame)
+- cancel · method · L689-L692 — async cancel(sessionId: string): Promise<void>
+- softInterrupt · method · L694-L696 — async softInterrupt(sessionId: string, content: string, urgent = false): Promise<void>
+- softInterruptWithImages · method · L698-L705 — async softInterruptWithImages( sessionId: string, content: string, images: ImageAttachment[], urgent = false, ): Promise<void>
+- softInterruptWithId · method · L715-L729 — async softInterruptWithId( sessionId: string, content: string, options: { clientId?: string; images?: ImageAttachment[]; urgent?: boolean } = {}, ): Promise<void>
+- getHistory · method · L731-L734 — async getHistory(sessionId: string): Promise<HistoryMessage[]>
+- getHistoryWithImages · method · L736-L744 — async getHistoryWithImages( sessionId: string, ): Promise<{ messages: HistoryMessage[]; images: RenderedImage[] }>
+- peekSession · method · L746-L752 — async peekSession(sessionId: string, limit?: number): Promise<HistoryMessage[]>
+- clear · method · L754-L756 — async clear(sessionId: string): Promise<void>
+- rewind · method · L758-L760 — async rewind(sessionId: string, messageIndex: number): Promise<void>
+- respondToPermission · method · L762-L773 — async respondToPermission( sessionId: string, requestId: string, decision: PermissionDecision, ): Promise<void>
+- listModels · method · L781-L784 — async listModels(sessionId: string): Promise<{ models: string[]; current?: string }>
+- runtimeCommand · method · L787-L796 — async runtimeCommand(sessionId: string, command: RuntimeCommand, args: string[] = []): Promise<{ session_id: string; command: RuntimeCommand; data: unknown; message: string; }>
+- transferSession · method · L798-L801 — async transferSession(sessionId: string): Promise<SessionInfo>
+- getRuntimeInfo · method · L803-L827 — async getRuntimeInfo(sessionId: string): Promise<RuntimeInfo>
+- setApiKey · method · L830-L832 — async setApiKey(provider: string, apiKey: string): Promise<void>
+- clearApiKey · method · L834-L836 — async clearApiKey(provider: string): Promise<void>
+- notifyAuthChanged · method · L839-L841 — async notifyAuthChanged(provider: string): Promise<void>
+- invalidateUsage · method · L847-L854 — async invalidateUsage(provider: string, accountLabel?: string): Promise<void>
+- readFile · method · L856-L862 — async readFile(sessionId: string, path: string, maxBytes?: number): Promise<FileContent>
+- findFiles · method · L864-L870 — async findFiles(sessionId: string, query: string, limit?: number): Promise<string[]>
+- searchText · method · L872-L882 — async searchText( sessionId: string, query: string, options: { path?: string; limit?: number } = {}, ): Promise<TextMatch[]>
+- todoState · method · L886-L892 — async todoState(sessionId: string): Promise<TodoSnapshot>
+- ackTodoFollowUp · method · L895-L903 — async ackTodoFollowUp(sessionId: string, effects: TodoEffects): Promise<void>
+- fileStatus · method · L905-L917 — async fileStatus(sessionId: string, path: string): Promise<FileStatus>
+- setModel · method · L926-L928 — async setModel(sessionId: string, model: string): Promise<void>
+- setContextCap · method · L931-L937 — async setContextCap(sessionId: string, maxContextTokens: number | null): Promise<number>
+- setReasoningEffort · method · L946-L948 — async setReasoningEffort(sessionId: string, effort: string): Promise<void>
+- compact · method · L958-L961 — async compact(sessionId: string): Promise<string>
+- renameSession · method · L964-L966 — async renameSession(sessionId: string, title?: string): Promise<void>
+- setSessionEnv · method · L969-L971 — async setSessionEnv(sessionId: string, env: Record<string, string>): Promise<void>
+- setSessionSaved · method · L974-L976 — async setSessionSaved(sessionId: string, saved: boolean, label?: string): Promise<void>
+- appletAction · method · L979-L994 — async appletAction( sessionId: string, instance: string, action: AppletAction, state: Record<string, unknown> = {}, sourceKey?: string, ): Promise<void>
+- closeApplet · method · L997-L999 — async closeApplet(sessionId: string, instance: string): Promise<void>
+- rewindUndo · method · L1002-L1004 — async rewindUndo(sessionId: string): Promise<void>
+- cancelSoftInterrupts · method · L1007-L1009 — async cancelSoftInterrupts(sessionId: string): Promise<void>
+- cancelSoftInterruptsById · method · L1018-L1027 — async cancelSoftInterruptsById( sessionId: string, clientIds: string[], ): Promise<{ cancelled: string[]; notQueued: string[] }>
+- cancelSoftInterrupt · method · L1033-L1036 — async cancelSoftInterrupt(sessionId: string, clientId: string): Promise<boolean>
+- backgroundTool · method · L1039-L1041 — async backgroundTool(sessionId: string): Promise<void>
+- backgroundToolResult · method · L1048-L1059 — async backgroundToolResult( sessionId: string, ): Promise<{ moved: boolean; toolCallId?: string; toolName?: string }>
+- ping · method · L1061-L1063 — async ping(): Promise<void>
+- events · method · L1078-L1129 — events(sessionId?: string): AsyncIterableIterator<ApiEvent>
+- onEvent · function · L1083-L1092 — onEvent = (frame: ServerFrame)
+- onClose · function · L1093-L1095 — onClose = ()
+- stop · function · L1097-L1108 — stop = (): Promise<IteratorResult<ApiEvent>>
+- [Symbol.asyncIterator] · method · L1114-L1116 — [Symbol.asyncIterator]()
+- globalEvents · method · L1148-L1347 — globalEvents(options: GlobalEventsOptions = {}): AsyncIterableIterator<ApiEvent>
+- Waiter · type · L1168-L1171 — type Waiter = { resolve: (result: IteratorResult<ApiEvent>) => void; reject: (error: Error) => void; };
+- Child · type · L1172-L1176 — type Child = { client: JcodeClient; stream: AsyncIterableIterator<ApiEvent>; pump?: Promise<void>; };
+- settleWaiter · function · L1188-L1194 — settleWaiter = ()
+- onParentClose · function · L1196-L1198 — onParentClose = (error?: Error)
+- onAbort · function · L1199-L1201 — onAbort = ()
+- finish · function · L1203-L1223 — finish = (error?: Error): Promise<void>
+- enqueue · function · L1225-L1243 — enqueue = (event: ApiEvent)
+- startChild · function · L1245-L1287 — startChild = async (sessionId: string): Promise<void>
+- scan · function · L1289-L1308 — scan = async (): Promise<void>
+- [Symbol.asyncIterator] · method · L1318-L1320 — [Symbol.asyncIterator]()
+- run · method · L1357-L1447 — async run( sessionId: string, content: string, options: RunOptions = {}, ): Promise<TurnResult>
+- messageFor · function · L1370-L1379 — messageFor = (id?: string): AssistantTextMessage
+- finish · function · L1380-L1386 — finish = (): TurnResult
+- runStructured · method · L1457-L1482 — async runStructured<T = unknown>( sessionId: string, content: string, options: RunStructuredOptions<T>, ): Promise<StructuredTurnResult<T>>
+- close · method · L1490-L1496 — close(): Promise<void>
+- TurnResult · interface · L1499-L1512 — interface TurnResult
+- AssistantTextMessage · interface · L1514-L1518 — interface AssistantTextMessage
+- StructuredTurnResult · interface · L1520-L1525 — interface StructuredTurnResult<T> extends TurnResult

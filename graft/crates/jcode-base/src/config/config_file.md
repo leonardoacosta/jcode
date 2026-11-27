@@ -1,0 +1,61 @@
+# crates/jcode-base/src/config/config_file.rs
+
+- TrustedExternalAuthKey · type · L5-L5 — type TrustedExternalAuthKey = (super::composition::SourceFingerprint, Option<String>);
+- TrustedExternalAuthLists · type · L6-L6 — type TrustedExternalAuthLists = std::sync::Arc<(Vec<String>, Vec<String>)>;
+- TRUSTED_EXTERNAL_AUTH_MEMO · constant · L7-L9 — static TRUSTED_EXTERNAL_AUTH_MEMO: std::sync::Mutex<
+- root_leaf_mut · function · L13-L23 — fn root_leaf_mut<'a>(
+- set_root_leaf · function · L26-L32 — fn set_root_leaf(item: &mut toml_edit::Item, mut value: toml_edit::Value) -> bool
+- set_update_channel · function · L36-L40 — pub fn set_update_channel(channel: UpdateChannel) -> anyhow::Result<()>
+- source_paths · function · L45-L47 — pub fn source_paths(root: &std::path::Path) -> Vec<PathBuf>
+- path · function · L50-L52 — pub fn path() -> Option<PathBuf>
+- load · function · L55-L59 — pub fn load() -> Self
+- load_strict · function · L65-L69 — pub fn load_strict() -> anyhow::Result<Self>
+- load_for_update · function · L77-L79 — pub fn load_for_update() -> anyhow::Result<Self>
+- load_from_file · function · L82-L90 — fn load_from_file() -> Option<Self>
+- load_from_file_strict · function · L93-L103 — pub(crate) fn load_from_file_strict() -> anyhow::Result<Option<Self>>
+- typed_from_table · function · L106-L121 — pub(crate) fn typed_from_table(
+- read_composed_table · function · L127-L131 — pub(crate) fn read_composed_table(path: &std::path::Path) -> anyhow::Result<toml::Table>
+- save · function · L140-L142 — pub fn save(&self) -> anyhow::Result<()>
+- invalidate_cache · function · L145-L152 — pub fn invalidate_cache()
+- set_agent_model_default · function · L155-L170 — pub fn set_agent_model_default(target: &str, model: Option<&str>) -> anyhow::Result<()>
+- set_anthropic_cache_ttl_1h · function · L173-L177 — pub fn set_anthropic_cache_ttl_1h(enabled: bool) -> anyhow::Result<()>
+- set_copilot_premium · function · L181-L190 — pub fn set_copilot_premium(mode: Option<&str>) -> anyhow::Result<()>
+- set_default_model · function · L194-L212 — pub fn set_default_model(model: Option<&str>, provider: Option<&str>) -> anyhow::Result<()>
+- set_default_provider · function · L215-L218 — pub fn set_default_provider(provider: Option<&str>) -> anyhow::Result<()>
+- set_default_model_only · function · L221-L224 — pub fn set_default_model_only(model: Option<&str>) -> anyhow::Result<()>
+- set_openai_reasoning_effort · function · L227-L236 — pub fn set_openai_reasoning_effort(value: Option<&str>) -> anyhow::Result<()>
+- set_anthropic_reasoning_effort · function · L239-L248 — pub fn set_anthropic_reasoning_effort(value: Option<&str>) -> anyhow::Result<()>
+- set_openai_transport · function · L251-L260 — pub fn set_openai_transport(value: Option<&str>) -> anyhow::Result<()>
+- set_openai_service_tier · function · L263-L272 — pub fn set_openai_service_tier(value: Option<&str>) -> anyhow::Result<()>
+- set_display_centered · function · L275-L281 — pub fn set_display_centered(centered: bool) -> anyhow::Result<()>
+- set_reasoning_display · function · L284-L293 — pub fn set_reasoning_display(mode: ReasoningDisplayMode) -> anyhow::Result<()>
+- set_compact_notifications · function · L296-L305 — pub fn set_compact_notifications(compact: bool) -> anyhow::Result<()>
+- set_pin_todos · function · L308-L314 — pub fn set_pin_todos(pin: bool) -> anyhow::Result<()>
+- set_show_agentgrep_output · function · L317-L326 — pub fn set_show_agentgrep_output(show: bool) -> anyhow::Result<()>
+- set_latex_rendering · function · L329-L338 — pub fn set_latex_rendering(mode: LatexRenderingMode) -> anyhow::Result<()>
+- set_tool_call_details · function · L341-L350 — pub fn set_tool_call_details(show: bool) -> anyhow::Result<()>
+- set_launch_hotkeys · function · L357-L371 — pub fn set_launch_hotkeys(
+- bake_launch_hotkeys_once · function · L393-L474 — pub fn bake_launch_hotkeys_once() -> bool
+- MIN_SESSIONS_TO_BAKE · constant · L419-L419 — const MIN_SESSIONS_TO_BAKE: usize = 3;
+- GIVE_UP_SESSION_COUNT · constant · L420-L420 — const GIVE_UP_SESSION_COUNT: usize = 50;
+- bake_launch_hotkeys_once · function · L478-L480 — pub fn bake_launch_hotkeys_once() -> bool
+- migrate_legacy_swarm_spawn_mode_once · function · L495-L516 — pub fn migrate_legacy_swarm_spawn_mode_once() -> bool
+- migrate_once · function · L527-L591 — fn migrate_once(
+- migrate_idle_animation_off_once · function · L604-L621 — pub fn migrate_idle_animation_off_once() -> bool
+- normalize_external_auth_source_id · function · L623-L625 — fn normalize_external_auth_source_id(source_id: &str) -> String
+- trusted_external_auth_path_entry · function · L627-L641 — pub(crate) fn trusted_external_auth_path_entry(
+- external_auth_source_allowed · function · L643-L653 — pub fn external_auth_source_allowed(source_id: &str) -> bool
+- external_auth_source_allowed_for_path · function · L655-L664 — pub fn external_auth_source_allowed_for_path(source_id: &str, path: &std::path::Path) -> bool
+- trusted_external_auth_lists · function · L674-L705 — fn trusted_external_auth_lists() -> TrustedExternalAuthLists
+- external_auth_source_allowed_for_path_cached · function · L710-L726 — pub fn external_auth_source_allowed_for_path_cached(
+- allow_external_auth_source · function · L728-L752 — pub fn allow_external_auth_source(source_id: &str) -> anyhow::Result<()>
+- allow_external_auth_source_for_path · function · L754-L776 — pub fn allow_external_auth_source_for_path(
+- revoke_external_auth_source_for_path · function · L778-L796 — pub fn revoke_external_auth_source_for_path(
+- revoke_external_auth_source · function · L800-L818 — pub fn revoke_external_auth_source(source_id: &str) -> anyhow::Result<()>
+- issue_1056_tests · module · L822-L928 — mod issue_1056_tests
+- EnvGuard · struct · L825-L828 — struct EnvGuard
+- set · function · L831-L835 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L839-L845 — fn drop(&mut self)
+- update_channel_save_is_persistent_and_preserves_unrelated_preferences · function · L849-L871 — fn update_channel_save_is_persistent_and_preserves_unrelated_preferences()
+- effort_update_preserves_profile_with_capitalized_bearer_auth · function · L874-L911 — fn effort_update_preserves_profile_with_capitalized_bearer_auth()
+- effort_update_refuses_to_overwrite_malformed_config · function · L914-L927 — fn effort_update_refuses_to_overwrite_malformed_config()

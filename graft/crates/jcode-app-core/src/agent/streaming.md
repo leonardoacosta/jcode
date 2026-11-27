@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/agent/streaming.rs
+
+- stream_keepalive_interval · function · L7-L13 — fn stream_keepalive_interval() -> Duration
+- stream_keepalive_ticker · function · L15-L20 — pub(super) fn stream_keepalive_ticker() -> time::Interval
+- send_stream_keepalive_mpsc · function · L22-L30 — pub(super) fn send_stream_keepalive_mpsc(event_tx: &mpsc::UnboundedSender<ServerEvent>)
+- StreamUsageSink · type · L32-L32 — type StreamUsageSink = fn(&str, &str, &str, Option<&str>, [Option<u64>; 4]);
+- ObservedStreamUsage · struct · L34-L40 — struct ObservedStreamUsage
+- StreamUsageRecorder · struct · L47-L54 — pub(super) struct StreamUsageRecorder<
+- new · function · L57-L64 — pub(super) fn new(session_id: &str) -> Self
+- observe · function · L68-L82 — pub(super) fn observe(&mut self, provider: &str, model: &str, counters: [Option<u64>; 4])
+- resolve_model · function · L86-L91 — pub(super) fn resolve_model(&mut self, model: String)
+- finish · function · L93-L111 — pub(super) fn finish(&mut self)
+- drop · function · L115-L117 — fn drop(&mut self)
+- record_partial_stream_usage · function · L126-L149 — pub(super) fn record_partial_stream_usage(
+- usage_capture_tests · module · L152-L310 — mod usage_capture_tests
+- response_model_metadata_is_late_bound_and_cleared_between_attempts · function · L156-L189 — fn response_model_metadata_is_late_bound_and_cleared_between_attempts()
+- cumulative_snapshots_of_one_response_share_an_event_id_and_retries_get_new_ones · function · L192-L207 — fn cumulative_snapshots_of_one_response_share_an_event_id_and_retries_get_new_ones()
+- metadata_without_usage_does_not_invent_a_report · function · L210-L218 — fn metadata_without_usage_does_not_invent_a_report()
+- cumulative_usage_is_emitted_once_with_observed_fallback_identity · function · L221-L250 — fn cumulative_usage_is_emitted_once_with_observed_fallback_identity()
+- error_exit_preserves_cached_only_usage_without_inventing_unreported_tokens · function · L253-L277 — fn error_exit_preserves_cached_only_usage_without_inventing_unreported_tokens()
+- aborting_a_stream_task_preserves_already_observed_usage · function · L280-L309 — async fn aborting_a_stream_task_preserves_already_observed_usage()

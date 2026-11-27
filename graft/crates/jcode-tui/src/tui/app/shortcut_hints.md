@@ -1,0 +1,36 @@
+# crates/jcode-tui/src/tui/app/shortcut_hints.rs
+
+- LEARNED_FAST_THRESHOLD · constant · L31-L31 — const LEARNED_FAST_THRESHOLD: u32 = 3;
+- MIN_SLOW_BEFORE_HINT · constant · L33-L33 — const MIN_SLOW_BEFORE_HINT: u32 = 2;
+- MAX_HINTS_PER_ACTION · constant · L35-L35 — const MAX_HINTS_PER_ACTION: u32 = 3;
+- HINT_COOLDOWN_SECS · constant · L37-L37 — const HINT_COOLDOWN_SECS: u64 = 6 * 60 * 60;
+- STATE_FILE · constant · L39-L39 — const STATE_FILE: &str = "keybinding_proficiency.json";
+- LearnableAction · enum · L45-L50 — pub(crate) enum LearnableAction
+- ALL · constant · L54-L59 — pub(crate) const ALL: [LearnableAction; 4] = [
+- id · function · L62-L69 — pub(crate) fn id(self) -> &'static str
+- from_id · function · L71-L73 — fn from_id(id: &str) -> Option<LearnableAction>
+- phrase · function · L77-L84 — fn phrase(self) -> &'static str
+- shortcut_label · function · L88-L96 — fn shortcut_label(self) -> Option<String>
+- ActionStat · struct · L101-L114 — struct ActionStat
+- is_learned · function · L117-L119 — fn is_learned(&self) -> bool
+- ProficiencyState · struct · L123-L128 — struct ProficiencyState
+- state_path · function · L130-L134 — fn state_path() -> Option<std::path::PathBuf>
+- load_state · function · L136-L141 — fn load_state() -> ProficiencyState
+- save_state · function · L143-L157 — fn save_state(state: &ProficiencyState)
+- now_unix · function · L159-L164 — fn now_unix() -> u64
+- record_fast · function · L167-L172 — pub(crate) fn record_fast(action: LearnableAction)
+- record_slow · function · L175-L180 — pub(crate) fn record_slow(action: LearnableAction)
+- pick_action_id · function · L189-L204 — fn pick_action_id<'a>(
+- next_learn_hint · function · L210-L253 — fn next_learn_hint() -> Option<String>
+- record_keybinding_fast · function · L257-L262 — pub(crate) fn record_keybinding_fast(&self, action: LearnableAction)
+- record_keybinding_slow · function · L266-L272 — pub(crate) fn record_keybinding_slow(&mut self, action: LearnableAction)
+- maybe_surface_learn_hint · function · L276-L284 — fn maybe_surface_learn_hint(&mut self)
+- tests · module · L288-L370 — mod tests
+- stat · function · L291-L298 — fn stat(fast: u32, slow: u32, hints: u32, last: u64) -> ActionStat
+- picks_highest_slow_tax_unlearned_bound_action · function · L301-L306 — fn picks_highest_slow_tax_unlearned_bound_action()
+- skips_learned_bindings · function · L309-L313 — fn skips_learned_bindings()
+- skips_unbound_actions · function · L316-L320 — fn skips_unbound_actions()
+- requires_minimum_slow_uses · function · L323-L327 — fn requires_minimum_slow_uses()
+- respects_per_action_hint_cap · function · L330-L334 — fn respects_per_action_hint_cap()
+- respects_cooldown · function · L337-L346 — fn respects_cooldown()
+- fast_and_slow_counters_persist_independently · function · L349-L369 — fn fast_and_slow_counters_persist_independently()

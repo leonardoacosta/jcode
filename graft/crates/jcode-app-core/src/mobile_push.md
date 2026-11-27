@@ -1,0 +1,76 @@
+# crates/jcode-app-core/src/mobile_push.rs
+
+- MIN_TURN_DURATION_FOR_PUSH · constant · L17-L17 — pub const MIN_TURN_DURATION_FOR_PUSH: Duration = Duration::from_secs(20);
+- NO_DEVICES_SUPPRESS · constant · L19-L19 — pub const NO_DEVICES_SUPPRESS: Duration = Duration::from_secs(10 * 60);
+- SEND_TIMEOUT · constant · L20-L20 — const SEND_TIMEOUT: Duration = Duration::from_secs(5);
+- ERROR_PUSH_GRACE · constant · L22-L22 — const ERROR_PUSH_GRACE: Duration = Duration::from_secs(10);
+- PENDING_ERRORS · constant · L23-L23 — static PENDING_ERRORS: Mutex<Option<HashMap<String, Arc<AtomicBool>>>> = Mutex::new(None);
+- queue_pending_error · function · L25-L35 — fn queue_pending_error(session_id: &str) -> Arc<AtomicBool>
+- finish_pending_error · function · L37-L47 — fn finish_pending_error(session_id: &str, token: &Arc<AtomicBool>) -> bool
+- cancel_pending_error · function · L49-L55 — fn cancel_pending_error(session_id: &str)
+- PushTiming · struct · L58-L62 — struct PushTiming
+- new · function · L65-L71 — fn new(stage: &'static str) -> Self
+- finish · function · L73-L75 — fn finish(mut self, outcome: &'static str)
+- drop · function · L79-L86 — fn drop(&mut self)
+- BODY_MAX_CHARS · constant · L88-L88 — const BODY_MAX_CHARS: usize = 180;
+- OPT_OUT_ENV · constant · L89-L89 — pub const OPT_OUT_ENV: &str = "JCODE_MOBILE_PUSH";
+- PushKind · enum · L93-L98 — pub enum PushKind
+- PushPayload · struct · L101-L122 — pub struct PushPayload
+- PushLabels · struct · L127-L132 — pub struct PushLabels
+- for_session · function · L137-L161 — pub fn for_session(
+- CLOUD_ORIGIN · constant · L164-L164 — const CLOUD_ORIGIN: &str = "Cloud";
+- LABEL_SEPARATOR · constant · L165-L165 — const LABEL_SEPARATOR: &str = " \u{00B7} ";
+- LABEL_MAX_CHARS · constant · L166-L166 — const LABEL_MAX_CHARS: usize = 24;
+- TITLE_MAX_CHARS · constant · L167-L167 — const TITLE_MAX_CHARS: usize = 120;
+- origin_label · function · L170-L197 — pub(crate) fn origin_label() -> &'static str
+- LABEL · constant · L171-L171 — static LABEL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+- machine_label · function · L201-L236 — fn machine_label(product_name: Option<&str>, host_name: Option<&str>) -> String
+- repo_label · function · L241-L254 — fn repo_label(dir: &std::path::Path) -> Option<String>
+- lookup_session_working_dir · function · L256-L269 — fn lookup_session_working_dir(session_id: &str) -> Option<String>
+- humanize_duration · function · L271-L273 — fn humanize_duration(elapsed: Duration) -> String
+- build_payload · function · L275-L290 — pub fn build_payload(
+- build_payload_with · function · L292-L387 — pub fn build_payload_with(
+- todo_indicator · function · L390-L410 — fn todo_indicator(progress: crate::agents_status::TodoProgress) -> Option<String>
+- JS_SAFE_INT_MASK · constant · L412-L412 — const JS_SAFE_INT_MASK: u64 = (1 << 53) - 1;
+- kind_marker · function · L414-L421 — pub fn kind_marker(kind: PushKind) -> &'static str
+- kind_status · function · L424-L431 — fn kind_status(kind: PushKind) -> &'static str
+- lookup_session_title · function · L433-L441 — fn lookup_session_title(session_id: &str) -> Option<String>
+- mobile_push_summary · module · L444-L444 — mod mobile_push_summary;
+- Suppression · struct · L449-L451 — pub struct Suppression
+- is_suppressed · function · L454-L456 — pub fn is_suppressed(&self, now: Instant) -> bool
+- record_reply · function · L458-L463 — pub fn record_reply(&mut self, devices: Option<u64>, now: Instant)
+- REPEAT_ERROR_QUIET · constant · L467-L467 — const REPEAT_ERROR_QUIET: Duration = Duration::from_secs(10 * 60);
+- RepeatGuard · struct · L472-L474 — pub struct RepeatGuard
+- is_repeat · function · L479-L490 — pub fn is_repeat(&mut self, session_id: &str, body: &str, now: Instant) -> bool
+- clear · function · L493-L495 — pub fn clear(&mut self, session_id: &str)
+- REPEAT_ERRORS · constant · L498-L499 — static REPEAT_ERRORS: std::sync::LazyLock<Mutex<RepeatGuard>> =
+- SUPPRESSION · constant · L501-L501 — static SUPPRESSION: Mutex<Suppression> = Mutex::new(Suppression { until: None });
+- devices_suppressed · function · L504-L509 — pub(crate) fn devices_suppressed() -> bool
+- env_opted_out · function · L511-L516 — fn env_opted_out(value: Option<&str>) -> bool
+- enabled · function · L518-L531 — pub(crate) fn enabled() -> bool
+- credentials · function · L533-L545 — pub(crate) fn credentials() -> Option<(String, String)>
+- MIN_TURN_DURATION_FOR_IOS_SESSION · constant · L548-L548 — pub const MIN_TURN_DURATION_FOR_IOS_SESSION: Duration = Duration::ZERO;
+- IOS_CLIENT_PREFIX · constant · L549-L549 — pub const IOS_CLIENT_PREFIX: &str = "jcode-ios";
+- IOS_SESSIONS · constant · L551-L551 — static IOS_SESSIONS: Mutex<Option<HashSet<String>>> = Mutex::new(None);
+- CANCELLED · constant · L552-L552 — static CANCELLED: Mutex<Option<HashSet<String>>> = Mutex::new(None);
+- set_insert · function · L554-L558 — fn set_insert(set: &Mutex<Option<HashSet<String>>>, id: &str)
+- set_remove · function · L560-L566 — fn set_remove(set: &Mutex<Option<HashSet<String>>>, id: &str) -> bool
+- note_client_attached · function · L569-L573 — pub fn note_client_attached(session_id: &str, client_name: &str)
+- is_ios_session · function · L575-L583 — fn is_ios_session(session_id: &str) -> bool
+- mark_cancelled · function · L586-L589 — pub fn mark_cancelled(session_id: &str)
+- clear_cancelled · function · L591-L594 — pub fn clear_cancelled(session_id: &str)
+- take_cancelled · function · L597-L599 — pub fn take_cancelled(session_id: &str) -> bool
+- threshold_for · function · L601-L607 — fn threshold_for(ios_session: bool) -> Duration
+- should_push_turn_done · function · L610-L612 — pub fn should_push_turn_done(session_id: &str, elapsed: Duration) -> bool
+- notify · function · L615-L623 — pub fn notify(
+- notify_turn · function · L627-L753 — pub fn notify_turn(
+- note_skipped · function · L757-L761 — pub fn note_skipped(kind: PushKind, reason: &str)
+- record · function · L766-L823 — fn record(
+- SendReply · struct · L826-L831 — struct SendReply
+- request_mobile_resume · function · L835-L852 — pub async fn request_mobile_resume(
+- send_mobile_resume · function · L854-L863 — async fn send_mobile_resume(
+- send_mobile_resume_inner · function · L865-L895 — async fn send_mobile_resume_inner(
+- send · function · L897-L906 — async fn send(
+- send_inner · function · L908-L973 — async fn send_inner(
+- http_tests · module · L977-L977 — mod http_tests;
+- tests · module · L981-L981 — mod tests;

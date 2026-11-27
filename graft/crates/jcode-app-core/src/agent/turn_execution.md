@@ -1,0 +1,73 @@
+# crates/jcode-app-core/src/agent/turn_execution.rs
+
+- session_restore · module · L5-L5 — mod session_restore;
+- ensure_session_lease · function · L10-L28 — pub(crate) fn ensure_session_lease(&self) -> Result<()>
+- session_lease_blocked · function · L31-L33 — pub(crate) fn session_lease_blocked(&self) -> bool
+- session_copy_is_stale · function · L36-L41 — pub(crate) fn session_copy_is_stale(&self) -> bool
+- run_once · function · L44-L78 — pub async fn run_once(&mut self, user_message: &str) -> Result<()>
+- run_once_capture · function · L80-L83 — pub async fn run_once_capture(&mut self, user_message: &str) -> Result<String>
+- run_once_capture_with_display_role · function · L85-L117 — pub(crate) async fn run_once_capture_with_display_role(
+- run_once_streaming_mpsc · function · L120-L135 — pub async fn run_once_streaming_mpsc(
+- run_once_streaming_mpsc_with_display_role · function · L137-L155 — pub(crate) async fn run_once_streaming_mpsc_with_display_role(
+- run_reserved_streaming_mpsc · function · L158-L237 — pub(crate) async fn run_reserved_streaming_mpsc(
+- continue_turn_after_failover · function · L243-L262 — pub(crate) async fn continue_turn_after_failover(
+- emit_context_messages_since · function · L267-L310 — fn emit_context_messages_since(
+- append_turn_system_reminder · function · L314-L328 — fn append_turn_system_reminder(&mut self, reminder: &str) -> Result<()>
+- append_user_context_message · function · L331-L337 — pub(crate) fn append_user_context_message(
+- append_user_context_message_with_display_role · function · L339-L382 — pub(crate) fn append_user_context_message_with_display_role(
+- fire_turn_start_hook · function · L390-L405 — fn fire_turn_start_hook(&self, source: &str)
+- stop_hook_continues · function · L415-L469 — pub(super) async fn stop_hook_continues(
+- fire_turn_end_hook · function · L473-L519 — fn fire_turn_end_hook(
+- LAST_TEXT_LIMIT · constant · L495-L495 — const LAST_TEXT_LIMIT: usize = 4000;
+- ERROR_LIMIT · constant · L514-L514 — const ERROR_LIMIT: usize = 1000;
+- unlock_tools · function · L523-L533 — pub fn unlock_tools(&mut self)
+- unlock_tools_if_needed · function · L537-L546 — pub(super) fn unlock_tools_if_needed(&mut self, tool_name: &str)
+- is_canary · function · L548-L550 — pub fn is_canary(&self) -> bool
+- is_debug · function · L552-L554 — pub fn is_debug(&self) -> bool
+- set_canary · function · L556-L565 — pub fn set_canary(&mut self, build_hash: &str)
+- set_system_prompt · function · L569-L572 — pub fn set_system_prompt(&mut self, prompt: &str)
+- set_debug · function · L574-L579 — pub fn set_debug(&mut self, is_debug: bool)
+- set_memory_enabled · function · L582-L587 — pub fn set_memory_enabled(&mut self, enabled: bool)
+- set_inline_output_tap · function · L592-L594 — pub fn set_inline_output_tap(&mut self, enabled: bool)
+- inline_output_tap · function · L599-L601 — pub(crate) fn inline_output_tap(&self) -> bool
+- publish_inline_tail · function · L605-L615 — pub(crate) fn publish_inline_tail(&self)
+- memory_enabled · function · L618-L620 — pub fn memory_enabled(&self) -> bool
+- set_stdin_request_tx · function · L623-L628 — pub fn set_stdin_request_tx(
+- prewarm_provider · function · L633-L644 — pub(crate) async fn prewarm_provider(&self)
+- tool_definitions · function · L646-L749 — pub(super) async fn tool_definitions(&mut self) -> Vec<ToolDefinition>
+- native_deferred_mcp · function · L756-L759 — pub(crate) fn native_deferred_mcp(&self) -> bool
+- native_deferred_tool_definitions · function · L767-L794 — async fn native_deferred_tool_definitions(&mut self) -> Vec<ToolDefinition>
+- build_filtered_tool_definitions · function · L798-L800 — async fn build_filtered_tool_definitions(&self) -> Vec<ToolDefinition>
+- build_filtered_tool_definitions_raw · function · L805-L807 — async fn build_filtered_tool_definitions_raw(&self) -> Vec<ToolDefinition>
+- build_filtered_tool_definitions_with · function · L809-L858 — async fn build_filtered_tool_definitions_with(
+- apply_mcp_tool_exposure · function · L863-L888 — fn apply_mcp_tool_exposure(&self, tools: &mut Vec<ToolDefinition>)
+- apply_selfdev_tool_surface · function · L897-L926 — fn apply_selfdev_tool_surface(
+- announce_late_mcp_tools · function · L936-L1005 — pub(crate) async fn announce_late_mcp_tools(&mut self)
+- announce_late_skills · function · L1013-L1056 — pub(crate) fn announce_late_skills(&mut self)
+- seed_announced_skills_from_transcript · function · L1060-L1082 — fn seed_announced_skills_from_transcript(&mut self)
+- seed_announced_mcp_tools_from_transcript · function · L1088-L1116 — fn seed_announced_mcp_tools_from_transcript(&mut self)
+- registry_has_new_mcp_tools · function · L1121-L1132 — async fn registry_has_new_mcp_tools(&self, locked: &[ToolDefinition]) -> bool
+- invalidate_sdk_tools · function · L1134-L1139 — pub(crate) fn invalidate_sdk_tools(&mut self)
+- set_desktop_response_capability · function · L1141-L1152 — pub(crate) async fn set_desktop_response_capability(&mut self, enabled: bool)
+- tool_names · function · L1154-L1160 — pub async fn tool_names(&self) -> Vec<String>
+- visible_mcp_tool_names · function · L1169-L1205 — pub async fn visible_mcp_tool_names(&self) -> Vec<String>
+- tool_definitions_for_debug · function · L1208-L1213 — pub async fn tool_definitions_for_debug(&self) -> Vec<crate::message::ToolDefinition>
+- execute_tool · function · L1215-L1244 — pub async fn execute_tool(
+- add_manual_tool_use · function · L1246-L1263 — pub fn add_manual_tool_use(
+- add_manual_tool_result · function · L1265-L1275 — pub fn add_manual_tool_result(
+- add_manual_tool_error · function · L1277-L1294 — pub fn add_manual_tool_error(
+- validate_tool_allowed · function · L1296-L1353 — pub(super) fn validate_tool_allowed(&self, name: &str) -> Result<()>
+- get_history · function · L1356-L1371 — pub fn get_history(&self) -> Vec<HistoryMessage>
+- session_for_history · function · L1375-L1377 — pub(crate) fn session_for_history(&self) -> &crate::session::Session
+- get_history_and_rendered_images · function · L1379-L1398 — pub fn get_history_and_rendered_images(
+- get_history_and_rendered_images_with_compacted_history · function · L1400-L1428 — pub fn get_history_and_rendered_images_with_compacted_history(
+- get_tool_call_summaries · function · L1430-L1432 — pub fn get_tool_call_summaries(&self, limit: usize) -> Vec<crate::protocol::ToolCallSummary>
+- repl · function · L1435-L1519 — pub async fn repl(&mut self) -> Result<()>
+- extract_session_memories · function · L1523-L1629 — pub async fn extract_session_memories(&self) -> usize
+- turn_usage · module · L1633-L1633 — mod turn_usage;
+- MAX_ANNOUNCED_MCP_TOOLS · constant · L1636-L1636 — const MAX_ANNOUNCED_MCP_TOOLS: usize = 32;
+- split_mcp_dispatch_name · function · L1640-L1644 — fn split_mcp_dispatch_name(name: &str) -> (&str, &str)
+- LATE_MCP_ANNOUNCEMENT_MARKER · constant · L1648-L1648 — const LATE_MCP_ANNOUNCEMENT_MARKER: &str = "New MCP tools are available.";
+- LATE_SKILL_ANNOUNCEMENT_MARKER · constant · L1652-L1652 — const LATE_SKILL_ANNOUNCEMENT_MARKER: &str = "New skills were installed.";
+- turn_token_usage_tests · module · L1656-L1656 — mod turn_token_usage_tests;
+- turn_execution_tests · module · L1660-L1660 — mod turn_execution_tests;

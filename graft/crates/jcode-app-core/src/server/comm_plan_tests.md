@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/server/comm_plan_tests.rs
+
+- RuntimeEnvGuard · struct · L18-L21 — struct RuntimeEnvGuard
+- new · function · L24-L36 — fn new() -> (Self, tempfile::TempDir)
+- drop · function · L40-L46 — fn drop(&mut self)
+- member · function · L49-L73 — fn member(session_id: &str, swarm_id: &str, role: &str) -> SwarmMember
+- plan_item · function · L75-L86 — fn plan_item(id: &str, blocked_by: &[&str]) -> PlanItem
+- PlanFixture · struct · L90-L107 — struct PlanFixture
+- plan_fixture · function · L109-L148 — fn plan_fixture(swarm_id: &str, coord: &str, worker: &str) -> PlanFixture
+- propose · function · L151-L170 — async fn propose(&self, from: &str, items: Vec<PlanItem>)
+- approve · function · L172-L191 — async fn approve(&self, proposer: &str)
+- plan_item_ids · function · L193-L200 — async fn plan_item_ids(&self) -> Vec<String>
+- drain_events · function · L202-L208 — fn drain_events(&mut self) -> Vec<ServerEvent>
+- error_messages · function · L211-L219 — fn error_messages(events: &[ServerEvent]) -> Vec<String>
+- saw_done · function · L221-L225 — fn saw_done(events: &[ServerEvent]) -> bool
+- plan_cycle_error_names_cyclic_ids_and_accepts_dags · function · L228-L250 — fn plan_cycle_error_names_cyclic_ids_and_accepts_dags()
+- coordinator_direct_update_rejects_cyclic_plan_without_mutating_it · function · L253-L290 — async fn coordinator_direct_update_rejects_cyclic_plan_without_mutating_it()
+- coordinator_direct_update_rejects_self_dependency · function · L293-L309 — async fn coordinator_direct_update_rejects_self_dependency()
+- coordinator_direct_update_accepts_valid_dag · function · L312-L338 — async fn coordinator_direct_update_accepts_valid_dag()
+- worker_proposal_with_internal_cycle_is_rejected_before_storage · function · L341-L366 — async fn worker_proposal_with_internal_cycle_is_rejected_before_storage()
+- approve_plan_rejects_proposal_that_forms_cycle_with_existing_plan · function · L369-L423 — async fn approve_plan_rejects_proposal_that_forms_cycle_with_existing_plan()
+- worker_proposal_is_lost_when_coordinator_cached_channel_is_closed · function · L446-L527 — async fn worker_proposal_is_lost_when_coordinator_cached_channel_is_closed()
+- approve_plan_accepts_valid_dag_proposal · function · L530-L566 — async fn approve_plan_accepts_valid_dag_proposal()
+- direct_update_notification_is_lost_on_stale_cached_event_tx · function · L583-L660 — async fn direct_update_notification_is_lost_on_stale_cached_event_tx()
+- coordinator_plan_update_releases_member_guard_before_queueing_interrupts · function · L663-L685 — async fn coordinator_plan_update_releases_member_guard_before_queueing_interrupts()

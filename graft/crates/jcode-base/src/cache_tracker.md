@@ -1,0 +1,23 @@
+# crates/jcode-base/src/cache_tracker.rs
+
+- MAX_HISTORY · constant · L14-L14 — const MAX_HISTORY: usize = 10;
+- CacheTracker · struct · L18-L29 — pub struct CacheTracker
+- CacheViolation · struct · L33-L44 — pub struct CacheViolation
+- new · function · L47-L49 — pub fn new() -> Self
+- hash_label · function · L51-L53 — fn hash_label(hash: u64) -> String
+- record_request · function · L59-L76 — pub fn record_request(&mut self, messages: &[Message]) -> Option<CacheViolation>
+- record_prefix_hashes · function · L78-L93 — pub fn record_prefix_hashes(&mut self, prefix_hashes: &[u64]) -> Option<CacheViolation>
+- record_prefix_hash_snapshot · function · L95-L186 — pub fn record_prefix_hash_snapshot(
+- turn_count · function · L189-L191 — pub fn turn_count(&self) -> u32
+- previous_message_count · function · L193-L195 — pub fn previous_message_count(&self) -> usize
+- reset · function · L198-L204 — pub fn reset(&mut self)
+- had_violation · function · L207-L209 — pub fn had_violation(&self) -> bool
+- tests · module · L213-L442 — mod tests
+- make_message · function · L217-L228 — fn make_message(role: Role, text: &str) -> Message
+- streaming_hashes_match_materialized_prefix_history · function · L231-L272 — fn streaming_hashes_match_materialized_prefix_history()
+- test_append_only_no_violation · function · L275-L299 — fn test_append_only_no_violation()
+- test_prefix_modification_violation · function · L302-L317 — fn test_prefix_modification_violation()
+- test_message_removal_violation · function · L320-L336 — fn test_message_removal_violation()
+- test_reset · function · L339-L350 — fn test_reset()
+- test_no_false_positive_on_normal_growth · function · L356-L404 — fn test_no_false_positive_on_normal_growth()
+- test_no_false_positive_when_memory_excluded · function · L412-L441 — fn test_no_false_positive_when_memory_excluded()

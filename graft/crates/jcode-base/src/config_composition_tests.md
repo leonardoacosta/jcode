@@ -1,0 +1,65 @@
+# crates/jcode-base/src/config_composition_tests.rs
+
+- Home · struct · L4-L9 — struct Home
+- new · function · L12-L25 — fn new() -> Self
+- write · function · L27-L31 — fn write(&self, rel: &str, text: &str)
+- root · function · L33-L35 — fn root(&self) -> PathBuf
+- load · function · L37-L39 — fn load(&self) -> anyhow::Result<Config>
+- err · function · L41-L43 — fn err(&self) -> String
+- drop · function · L47-L54 — fn drop(&mut self)
+- absent_manifest_keeps_single_file_behavior_and_unknown_keys · function · L58-L68 — fn absent_manifest_keeps_single_file_behavior_and_unknown_keys()
+- explicit_order_root_wins_and_siblings_survive · function · L71-L96 — fn explicit_order_root_wins_and_siblings_survive()
+- composition_is_independent_of_working_directory · function · L99-L113 — fn composition_is_independent_of_working_directory()
+- directory_is_never_scanned · function · L116-L123 — fn directory_is_never_scanned()
+- provider_fragment · function · L125-L127 — fn provider_fragment(models: &str) -> String
+- model_arrays_replace_including_empty_arrays · function · L130-L153 — fn model_arrays_replace_including_empty_arrays()
+- array_of_tables_replace · function · L156-L170 — fn array_of_tables_replace()
+- final_type_validation_runs_after_merge · function · L173-L183 — fn final_type_validation_runs_after_merge()
+- shape_conflicts_name_key_and_both_sources · function · L186-L214 — fn shape_conflicts_name_key_and_both_sources()
+- nested_key_conflicts_name_both_sources · function · L217-L246 — fn nested_key_conflicts_name_both_sources()
+- error_text_redacts_literal_numeric_and_multiline_values · function · L249-L293 — fn error_text_redacts_literal_numeric_and_multiline_values()
+- unknown_keys_in_fragments_are_accepted · function · L296-L303 — fn unknown_keys_in_fragments_are_accepted()
+- missing_and_directory_includes_fail_with_source · function · L306-L322 — fn missing_and_directory_includes_fail_with_source()
+- malformed_fragment_reports_path_and_line_without_excerpt · function · L325-L335 — fn malformed_fragment_reports_path_and_line_without_excerpt()
+- unreadable_fragment_is_an_error · function · L338-L353 — fn unreadable_fragment_is_an_error()
+- nested_self_and_duplicate_includes_are_rejected · function · L356-L382 — fn nested_self_and_duplicate_includes_are_rejected()
+- unsafe_include_syntax_is_rejected · function · L385-L405 — fn unsafe_include_syntax_is_rejected()
+- symlink_escape_rejected_and_contained_symlink_allowed · function · L409-L435 — fn symlink_escape_rejected_and_contained_symlink_allowed()
+- environment_overrides_apply_after_composition · function · L438-L452 — fn environment_overrides_apply_after_composition()
+- source_fingerprint_tracks_membership_content_and_missing_states · function · L455-L480 — fn source_fingerprint_tracks_membership_content_and_missing_states()
+- read · function · L482-L484 — fn read(home: &Home, rel: &str) -> String
+- split_fixture · function · L486-L499 — fn split_fixture(home: &Home)
+- setter_on_fragment_value_writes_only_a_root_override · function · L502-L532 — fn setter_on_fragment_value_writes_only_a_root_override()
+- LEGACY_REALISTIC · constant · L534-L534 — const LEGACY_REALISTIC: &str = "# legacy jcode config\r\nfuture_inline = { knob = 7, name = 'lit' } # unknown inline table\r\ndisplay.pin_todos = true # dotted key keeps this comment\r\ngateway = { port = 7777 }\r\n\r\n[future]\r\nwin_path = 'C:\\Users\\me\\jcode' # literal string\r\nlist = [ 1, 2,\r\n  3 ]\r\n\r\n[keybindings]\r\nscroll_up   =   \"ctrl+y\"   # odd spacing\r\n";
+- realistic_legacy_file_round_trip_changes_only_the_requested_leaf · function · L537-L553 — fn realistic_legacy_file_round_trip_changes_only_the_requested_leaf()
+- legacy_file_without_include_is_untouched_on_non_change_paths · function · L556-L584 — fn legacy_file_without_include_is_untouched_on_non_change_paths()
+- new_root_file_uses_default_permissions_like_the_previous_writer · function · L588-L602 — fn new_root_file_uses_default_permissions_like_the_previous_writer()
+- replacement_temp_file_is_created_0600 · function · L608-L630 — fn replacement_temp_file_is_created_0600()
+- legacy_single_file_save_is_sparse_and_keeps_comments_and_unknown_tables · function · L633-L659 — fn legacy_single_file_save_is_sparse_and_keeps_comments_and_unknown_tables()
+- no_op_save_does_not_write_and_new_file_is_sparse · function · L662-L680 — fn no_op_save_does_not_write_and_new_file_is_sparse()
+- environment_overrides_are_not_persisted_by_setters · function · L683-L696 — fn environment_overrides_are_not_persisted_by_setters()
+- provider_model_array_override_replaces_whole_array_in_root · function · L699-L722 — fn provider_model_array_override_replaces_whole_array_in_root()
+- unrepresentable_removal_of_inherited_value_fails_without_mutation · function · L725-L740 — fn unrepresentable_removal_of_inherited_value_fails_without_mutation()
+- removing_a_root_override_that_masks_nothing_works · function · L743-L749 — fn removing_a_root_override_that_masks_nothing_works()
+- save_refuses_invalid_composition_without_touching_files · function · L752-L764 — fn save_refuses_invalid_composition_without_touching_files()
+- temp_leftovers · function · L766-L772 — fn temp_leftovers(home: &Home) -> usize
+- replacement_keeps_permissions_and_symlink · function · L776-L804 — fn replacement_keeps_permissions_and_symlink()
+- set_fault · function · L808-L810 — fn set_fault(fault: TestFault)
+- concurrent_fragment_edit_before_replace_is_refused · function · L813-L832 — fn concurrent_fragment_edit_before_replace_is_refused()
+- concurrent_root_edit_before_replace_is_refused · function · L835-L846 — fn concurrent_root_edit_before_replace_is_refused()
+- write_and_replace_failures_preserve_original_bytes_and_permissions · function · L850-L866 — fn write_and_replace_failures_preserve_original_bytes_and_permissions()
+- invalid_baseline_blocks_save_and_keeps_bytes · function · L869-L875 — fn invalid_baseline_blocks_save_and_keeps_bytes()
+- legacy_migrations_use_effective_values_and_never_rewrite_fragments · function · L878-L887 — fn legacy_migrations_use_effective_values_and_never_rewrite_fragments()
+- legacy_headed_spawn_mode_still_migrates_to_inline · function · L890-L914 — fn legacy_headed_spawn_mode_still_migrates_to_inline()
+- migrations_tolerate_an_unrelated_composition_failure · function · L917-L948 — fn migrations_tolerate_an_unrelated_composition_failure()
+- global_cache_sees_equal_length_fragment_edit_membership_and_recovery · function · L951-L985 — fn global_cache_sees_equal_length_fragment_edit_membership_and_recovery()
+- trust_revocation_in_a_fragment_is_seen_on_the_next_check · function · L988-L1008 — fn trust_revocation_in_a_fragment_is_seen_on_the_next_check()
+- invalid_composition_denies_trust_hooks_and_task_policy · function · L1011-L1046 — fn invalid_composition_denies_trust_hooks_and_task_policy()
+- policy_report_errors_redact_values_and_name_the_source · function · L1051-L1070 — fn policy_report_errors_redact_values_and_name_the_source()
+- unrelated_config_error_without_include_or_hooks_does_not_deny_tool_dispatch · function · L1074-L1094 — fn unrelated_config_error_without_include_or_hooks_does_not_deny_tool_dispatch()
+- SPLIT_ROOT · constant · L1096-L1096 — const SPLIT_ROOT: &str = "# Nonsecret split-layout fixture (disposable JCODE_HOME).\ninclude = [\"config/ui.toml\", \"config/hooks.toml\"]\n\n[display]\ncentered = false\n";
+- SPLIT_UI · constant · L1097-L1097 — const SPLIT_UI: &str = "[display]\ncentered = true\nshow_thinking = true\n\n[keybindings]\nscroll_up = \"ctrl+y\"\n\n[gateway]\nport = 7777\n";
+- SPLIT_HOOKS · constant · L1098-L1098 — const SPLIT_HOOKS: &str = "[hooks]\npre_tool_timeout_ms = 1234\n";
+- SINGLE · constant · L1099-L1099 — const SINGLE: &str = "[display]\ncentered = false\nshow_thinking = true\n\n[keybindings]\nscroll_up = \"ctrl+y\"\n\n[gateway]\nport = 7777\n\n[hooks]\npre_tool_timeout_ms = 1234\n";
+- split_layout_equals_single_file_and_is_never_discovered_or_rewritten · function · L1103-L1139 — fn split_layout_equals_single_file_and_is_never_discovered_or_rewritten()
+- restart_only_sections_are_labeled_needs_restart · function · L1142-L1146 — fn restart_only_sections_are_labeled_needs_restart()

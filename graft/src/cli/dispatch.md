@@ -1,0 +1,39 @@
+# src/cli/dispatch.rs
+
+- debug_parent · module · L25-L25 — mod debug_parent;
+- run_main · function · L27-L704 — pub(crate) async fn run_main(mut args: Args) -> Result<()>
+- named_profiles · module · L714-L714 — mod named_profiles;
+- auth_doctor_provider_arg · function · L719-L730 — fn auth_doctor_provider_arg<'a>(
+- resolve_resume_arg · function · L732-L772 — fn resolve_resume_arg(args: &mut Args) -> Result<()>
+- ResumeResolutionFailureAction · enum · L778-L783 — enum ResumeResolutionFailureAction
+- resume_resolution_failure_action · function · L785-L797 — fn resume_resolution_failure_action<F, V>(
+- resolve_resume_id · function · L799-L807 — fn resolve_resume_id(resume_id: &str) -> Result<String>
+- subcommand_mapping · module · L809-L809 — mod subcommand_mapping;
+- run_default_command · function · L812-L987 — async fn run_default_command(args: Args) -> Result<()>
+- print_provider_test_coverage_report · function · L989-L998 — fn print_provider_test_coverage_report(report: &str, colorize: bool)
+- server_is_running · function · L1000-L1002 — pub(crate) async fn server_is_running() -> bool
+- wait_for_existing_reload_server · function · L1004-L1030 — async fn wait_for_existing_reload_server(context: &str) -> bool
+- wait_for_resuming_server · function · L1032-L1060 — pub(crate) async fn wait_for_resuming_server(context: &str, timeout: std::time::Duration) -> bool
+- wait_for_reloading_server · function · L1062-L1079 — pub(crate) async fn wait_for_reloading_server() -> bool
+- server_is_running_at · function · L1081-L1087 — async fn server_is_running_at(path: &std::path::Path) -> bool
+- spawn_lock_path · function · L1090-L1092 — fn spawn_lock_path(socket_path: &std::path::Path) -> std::path::PathBuf
+- SpawnLockGuard · struct · L1095-L1098 — struct SpawnLockGuard
+- drop · function · L1102-L1104 — fn drop(&mut self)
+- try_acquire_spawn_lock · function · L1108-L1139 — fn try_acquire_spawn_lock(path: &std::path::Path) -> Result<Option<SpawnLockGuard>>
+- acquire_spawn_lock_or_wait · function · L1142-L1173 — async fn acquire_spawn_lock_or_wait(
+- maybe_prompt_server_bootstrap_login · function · L1175-L1226 — pub(crate) async fn maybe_prompt_server_bootstrap_login(
+- should_detect_cli_bootstrap_credentials · function · L1228-L1233 — fn should_detect_cli_bootstrap_credentials(
+- BootstrapCredentialState · struct · L1235-L1237 — struct BootstrapCredentialState
+- detect_bootstrap_credentials · function · L1239-L1253 — async fn detect_bootstrap_credentials() -> BootstrapCredentialState
+- spawn_server · function · L1255-L1261 — pub(crate) async fn spawn_server(
+- ServerLifetime · enum · L1265-L1274 — pub(crate) enum ServerLifetime
+- spawn_server_with_executable · function · L1276-L1290 — async fn spawn_server_with_executable(
+- spawn_owned_server · function · L1305-L1318 — pub(crate) async fn spawn_owned_server(
+- register_on_demand_server_spawner_for_run · function · L1338-L1356 — fn register_on_demand_server_spawner_for_run(
+- enforce_supervised_shared_server · function · L1368-L1390 — fn enforce_supervised_shared_server() -> Result<()>
+- supervised_gate · function · L1393-L1412 — fn supervised_gate(
+- serve_subcommand_args · function · L1414-L1422 — fn serve_subcommand_args(lifetime: ServerLifetime, owner_pid: u32) -> Vec<String>
+- spawn_server_with_lifetime · function · L1424-L1579 — async fn spawn_server_with_lifetime(
+- keepalive_server_answers_ping · function · L1586-L1593 — async fn keepalive_server_answers_ping() -> bool
+- run_server_keepalive · function · L1595-L1656 — async fn run_server_keepalive(
+- dispatch_tests · module · L1660-L1660 — mod dispatch_tests;

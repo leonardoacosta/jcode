@@ -1,0 +1,26 @@
+# src/cli/cloud_ephemeral.rs
+
+- HOST_PREFIX · constant · L11-L11 — const HOST_PREFIX: &str = "jcode-ephemeral-";
+- Machine · struct · L14-L21 — struct Machine
+- Machines · struct · L24-L26 — struct Machines
+- validate_id · function · L28-L38 — fn validate_id(id: &str) -> Result<()>
+- host_id · function · L40-L43 — pub(super) fn host_id(host: &str) -> Option<&str>
+- machine_host · function · L45-L48 — fn machine_host(id: &str) -> Result<String>
+- machine_path · function · L50-L53 — fn machine_path(id: &str) -> Result<String>
+- machine_dir · function · L55-L58 — fn machine_dir(id: &str) -> Result<PathBuf>
+- ssh_config_path · function · L60-L62 — pub(super) fn ssh_config_path(id: &str) -> Result<PathBuf>
+- ssh_config · function · L64-L90 — fn ssh_config(id: &str, dir: &Path, exe: &Path) -> Result<String>
+- ssh_args · function · L92-L123 — pub(super) fn ssh_args(id: &str) -> Result<Vec<String>>
+- connect · function · L125-L164 — fn connect(id: &str) -> Result<Machine>
+- wait_ready · function · L168-L170 — pub(super) fn wait_ready(id: &str) -> Result<()>
+- print_machine · function · L172-L187 — fn print_machine(machine: &Machine, json: bool) -> Result<()>
+- create_body · function · L189-L217 — fn create_body(
+- remote_command · function · L219-L228 — fn remote_command(command: &[String]) -> Result<String>
+- run_cli · function · L230-L345 — pub(crate) fn run_cli(action: CloudEphemeralCommand) -> Result<()>
+- tests · module · L348-L428 — mod tests
+- ID · constant · L351-L351 — const ID: &str = "cm_0123456789abcdef0123456789abcdef";
+- ephemeral_ids_cannot_target_persistent_host_or_inject_paths · function · L354-L368 — fn ephemeral_ids_cannot_target_persistent_host_or_inject_paths()
+- ephemeral_config_is_isolated_and_never_uses_persistent_proxy · function · L371-L385 — fn ephemeral_config_is_isolated_and_never_uses_persistent_proxy()
+- create_requests_are_bounded_and_idempotent · function · L388-L404 — fn create_requests_are_bounded_and_idempotent()
+- remote_arguments_are_quoted_individually · function · L407-L414 — fn remote_arguments_are_quoted_individually()
+- machine_reply_preserves_connection_and_expiry · function · L417-L427 — fn machine_reply_preserves_connection_and_expiry()

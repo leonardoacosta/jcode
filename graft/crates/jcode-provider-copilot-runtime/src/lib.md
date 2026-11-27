@@ -1,0 +1,46 @@
+# crates/jcode-provider-copilot-runtime/src/lib.rs
+
+- catalog · module · L8-L8 — mod catalog;
+- routing · module · L33-L33 — mod routing;
+- CatalogSource · enum · L37-L41 — enum CatalogSource
+- CopilotApiProvider · struct · L46-L63 — pub struct CopilotApiProvider
+- canonical_diagnostic_parts · function · L67-L83 — fn canonical_diagnostic_parts(
+- canonical_payload · function · L86-L119 — fn canonical_payload(
+- max_token_parameter_for_model · function · L122-L124 — fn max_token_parameter_for_model(model: &str) -> &'static str
+- add_max_token_parameter · function · L126-L128 — fn add_max_token_parameter(body: &mut Value, model: &str, max_tokens: u32)
+- current_reasoning_effort · function · L130-L135 — fn current_reasoning_effort(&self) -> Option<String>
+- efforts_for · function · L137-L143 — fn efforts_for(&self, model: &str) -> Vec<String>
+- effective_reasoning_effort · function · L147-L150 — fn effective_reasoning_effort(&self, model: &str) -> Option<String>
+- add_reasoning_effort_parameter · function · L154-L162 — fn add_reasoning_effort_parameter(&self, body: &mut Value, model: &str, responses: bool)
+- new · function · L164-L188 — pub fn new() -> Result<Self>
+- has_credentials · function · L190-L192 — pub fn has_credentials() -> bool
+- env_premium_mode · function · L194-L200 — fn env_premium_mode() -> u8
+- new_with_token · function · L202-L225 — pub fn new_with_token(github_token: String) -> Self
+- startup_prefetch_grace_ms · function · L227-L232 — fn startup_prefetch_grace_ms() -> u64
+- get_or_create_machine_id · function · L234-L249 — fn get_or_create_machine_id() -> String
+- is_user_initiated_raw · function · L251-L283 — fn is_user_initiated_raw(messages: &[ChatMessage]) -> bool
+- is_user_initiated · function · L285-L301 — fn is_user_initiated(&self, messages: &[ChatMessage]) -> bool
+- set_premium_mode · function · L303-L309 — pub fn set_premium_mode(&self, mode: PremiumMode)
+- get_premium_mode · function · L311-L317 — pub fn get_premium_mode(&self) -> PremiumMode
+- detect_tier_and_set_default · function · L322-L327 — pub async fn detect_tier_and_set_default(&self)
+- refresh_live_catalog · function · L329-L413 — async fn refresh_live_catalog(&self) -> Result<()>
+- mark_init_done · function · L415-L420 — fn mark_init_done(&self)
+- complete_init_without_tier_detection · function · L422-L424 — pub fn complete_init_without_tier_detection(&self)
+- wait_for_init · function · L426-L435 — async fn wait_for_init(&self)
+- get_bearer_token · function · L438-L454 — async fn get_bearer_token(&self) -> Result<String>
+- is_auth_error · function · L457-L459 — fn is_auth_error(status: reqwest::StatusCode) -> bool
+- build_messages · function · L462-L464 — fn build_messages(system: &str, messages: &[ChatMessage]) -> Vec<Value>
+- build_tools · function · L467-L469 — fn build_tools(tools: &[ToolDefinition]) -> Vec<Value>
+- stream_request · function · L472-L703 — async fn stream_request(
+- MAX_RETRIES · constant · L489-L489 — const MAX_RETRIES: u32 = 3;
+- RETRY_BASE_DELAY_MS · constant · L490-L490 — const RETRY_BASE_DELAY_MS: u64 = 1000;
+- process_responses_sse_stream · function · L705-L743 — async fn process_responses_sse_stream(
+- process_sse_stream · function · L745-L934 — async fn process_sse_stream(
+- provider_impl · module · L938-L938 — mod provider_impl;
+- tests · module · L941-L941 — mod tests;
+- canonical_payload_tests · module · L944-L1119 — mod canonical_payload_tests
+- provider · function · L948-L966 — fn provider() -> CopilotApiProvider
+- legacy · function · L969-L1016 — fn legacy(
+- assert_legacy_equivalence · function · L1018-L1108 — fn assert_legacy_equivalence(model: &str, responses: bool)
+- responses_canonical_payload_matches_legacy · function · L1111-L1113 — fn responses_canonical_payload_matches_legacy()
+- chat_canonical_payload_matches_legacy · function · L1116-L1118 — fn chat_canonical_payload_matches_legacy()

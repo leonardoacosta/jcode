@@ -1,0 +1,21 @@
+# crates/jcode-tui-workspace/src/workspace_map_widget.rs
+
+- TILE_WIDTH · constant · L9-L9 — const TILE_WIDTH: u16 = 1;
+- TILE_HEIGHT · constant · L10-L10 — const TILE_HEIGHT: u16 = 1;
+- COL_GAP · constant · L11-L11 — const COL_GAP: u16 = 1;
+- ROW_GAP · constant · L12-L12 — const ROW_GAP: u16 = 1;
+- preferred_size · function · L14-L23 — pub fn preferred_size(rows: &[VisibleWorkspaceRow]) -> (u16, u16)
+- WorkspaceTilePlacement · struct · L26-L33 — pub struct WorkspaceTilePlacement
+- compute_workspace_tile_placements · function · L35-L86 — pub fn compute_workspace_tile_placements(
+- render_workspace_map · function · L88-L93 — pub fn render_workspace_map(buf: &mut Buffer, area: Rect, rows: &[VisibleWorkspaceRow], tick: u64)
+- clear_area · function · L95-L101 — fn clear_area(buf: &mut Buffer, area: Rect)
+- draw_workspace_tile · function · L103-L126 — fn draw_workspace_tile(buf: &mut Buffer, placement: WorkspaceTilePlacement, tick: u64)
+- tile_symbol · function · L128-L139 — fn tile_symbol(state: WorkspaceSessionVisualState, focused: bool, tick: u64) -> &'static str
+- tile_color · function · L141-L199 — fn tile_color(
+- tests · module · L202-L336 — mod tests
+- row · function · L209-L221 — fn row(
+- placements_center_rows_and_preserve_order · function · L224-L240 — fn placements_center_rows_and_preserve_order()
+- render_workspace_map_uses_square_for_focused_tile · function · L243-L260 — fn render_workspace_map_uses_square_for_focused_tile()
+- render_workspace_map_colors_completed_tiles_green · function · L263-L280 — fn render_workspace_map_colors_completed_tiles_green()
+- running_tile_uses_spinner_frames · function · L283-L311 — fn running_tile_uses_spinner_frames()
+- placements_clip_when_area_is_narrower_than_full_row · function · L314-L335 — fn placements_clip_when_area_is_narrower_than_full_row()

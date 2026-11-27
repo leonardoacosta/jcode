@@ -1,0 +1,32 @@
+# crates/jcode-tui/src/tui/info_widget_swarm_gallery.rs
+
+- member_label · function · L19-L24 — fn member_label(member: &SwarmMemberStatus) -> String
+- member_icon · function · L29-L38 — pub(super) fn member_icon(member: &SwarmMemberStatus) -> Option<String>
+- age_marker · function · L43-L50 — fn age_marker(age: u64) -> String
+- member_display_status · function · L53-L59 — pub(super) fn member_display_status(member: &SwarmMemberStatus) -> &str
+- member_wait_note · function · L61-L76 — pub(super) fn member_wait_note(member: &SwarmMemberStatus) -> Option<String>
+- member_body · function · L79-L99 — fn member_body(member: &SwarmMemberStatus) -> Vec<String>
+- members_to_gallery · function · L102-L144 — pub(crate) fn members_to_gallery(members: &[SwarmMemberStatus]) -> Vec<GalleryMember>
+- badged_gallery · function · L147-L159 — fn badged_gallery(members: &[SwarmMemberStatus]) -> Vec<GalleryMember>
+- render_swarm_chat_card_lines · function · L163-L183 — pub(crate) fn render_swarm_chat_card_lines(
+- SwarmTreeRow · struct · L186-L191 — struct SwarmTreeRow<'a>
+- render_swarm_page_lines · function · L196-L305 — pub(crate) fn render_swarm_page_lines(
+- swarm_tree_rows · function · L307-L365 — fn swarm_tree_rows<'a>(
+- append_swarm_tree_rows · function · L367-L402 — fn append_swarm_tree_rows<'a>(
+- render_swarm_tree_row · function · L404-L477 — fn render_swarm_tree_row(
+- clamp_line_to_width · function · L479-L513 — fn clamp_line_to_width(line: &mut Line<'static>, width: usize)
+- render_swarm_gallery_lines · function · L517-L526 — pub(crate) fn render_swarm_gallery_lines(
+- render_swarm_panel_lines · function · L531-L548 — pub(crate) fn render_swarm_panel_lines(
+- members_display_order · function · L557-L562 — pub(crate) fn members_display_order(members: &[SwarmMemberStatus]) -> Vec<String>
+- tests · module · L565-L781 — mod tests
+- clamp_line_to_width_appends_ellipsis_when_dropping · function · L567-L576 — fn clamp_line_to_width_appends_ellipsis_when_dropping()
+- member · function · L581-L603 — fn member(
+- gallery_wait_overrides_stale_output_and_preserves_lifecycle · function · L606-L618 — fn gallery_wait_overrides_stale_output_and_preserves_lifecycle()
+- coordinator_sorts_first · function · L621-L629 — fn coordinator_sorts_first()
+- shortcut_badges_follow_pop_out_order_and_fit_narrow_rows · function · L632-L652 — fn shortcut_badges_follow_pop_out_order_and_fit_narrow_rows()
+- members_display_order_matches_rendered_tile_order · function · L659-L705 — fn members_display_order_matches_rendered_tile_order()
+- renders_header_and_boxes · function · L708-L721 — fn renders_header_and_boxes()
+- empty_members_render_nothing · function · L724-L726 — fn empty_members_render_nothing()
+- output_tail_takes_priority_over_detail · function · L729-L736 — fn output_tail_takes_priority_over_detail()
+- transcript_card_prefers_spawn_label_over_generated_name · function · L739-L750 — fn transcript_card_prefers_spawn_label_over_generated_name()
+- full_page_tree_is_width_bounded_and_cycle_safe · function · L753-L780 — fn full_page_tree_is_width_bounded_and_cycle_safe()

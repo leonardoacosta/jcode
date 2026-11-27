@@ -1,0 +1,33 @@
+# src/cli/startup.rs
+
+- sync_output_style_from_config · function · L14-L16 — fn sync_output_style_from_config()
+- run · function · L18-L177 — pub async fn run() -> Result<()>
+- is_telemetry_subcommand_invocation · function · L179-L224 — fn is_telemetry_subcommand_invocation(
+- register_external_provider_runtimes · function · L230-L312 — pub fn register_external_provider_runtimes()
+- parse_and_prepare_args · function · L314-L356 — fn parse_and_prepare_args(args: Args) -> Result<Args>
+- validate_remote_working_dir · function · L358-L365 — fn validate_remote_working_dir(remote_working_dir: Option<&str>) -> Result<()>
+- remote_working_dir_is_absolute · function · L367-L377 — fn remote_working_dir_is_absolute(path: &str) -> bool
+- spawn_background_update_check · function · L379-L492 — fn spawn_background_update_check(args: &Args)
+- source_update_check_status · function · L494-L510 — fn source_update_check_status(result: anyhow::Result<Option<bool>>) -> crate::bus::UpdateStatus
+- should_spawn_background_update_check · function · L512-L517 — fn should_spawn_background_update_check(args: &Args) -> bool
+- should_spawn_background_update_check_with_config · function · L519-L532 — fn should_spawn_background_update_check_with_config(args: &Args, check_updates: bool) -> bool
+- should_auto_install_update · function · L534-L536 — fn should_auto_install_update(args: &Args) -> bool
+- report_main_error · function · L538-L548 — fn report_main_error(error: &anyhow::Error)
+- tests · module · L551-L829 — mod tests
+- parse_args · function · L556-L558 — fn parse_args(argv: &[&str]) -> Args
+- source_update_check_preserves_git_error · function · L561-L568 — fn source_update_check_preserves_git_error()
+- source_update_check_false_reports_up_to_date · function · L571-L576 — fn source_update_check_false_reports_up_to_date()
+- source_update_check_true_reports_available · function · L579-L587 — fn source_update_check_true_reports_available()
+- source_update_check_real_git_upstream_states · function · L590-L681 — fn source_update_check_real_git_upstream_states()
+- source_update_check_invalid_checkout_reports_error · function · L684-L695 — fn source_update_check_invalid_checkout_reports_error()
+- telemetry_subcommand_skips_startup_telemetry · function · L698-L717 — fn telemetry_subcommand_skips_startup_telemetry()
+- telemetry_prompt_does_not_skip_normal_startup_telemetry · function · L720-L726 — fn telemetry_prompt_does_not_skip_normal_startup_telemetry()
+- parses_mcp_tool_exposure_flags · function · L729-L741 — fn parses_mcp_tool_exposure_flags()
+- auto_install_allowed_without_live_terminal · function · L744-L747 — fn auto_install_allowed_without_live_terminal()
+- auto_install_allowed_with_live_terminal_attached · function · L750-L753 — fn auto_install_allowed_with_live_terminal_attached()
+- auto_install_respects_explicit_disable_even_without_terminal · function · L756-L760 — fn auto_install_respects_explicit_disable_even_without_terminal()
+- remote_working_dir_validation_requires_absolute_path · function · L763-L774 — fn remote_working_dir_validation_requires_absolute_path()
+- update_command_still_skips_background_check_before_auto_install_logic · function · L777-L782 — fn update_command_still_skips_background_check_before_auto_install_logic()
+- config_can_permanently_disable_background_update_checks · function · L785-L793 — fn config_can_permanently_disable_background_update_checks()
+- hidden_spawn_hotkey_argument_is_global_and_preserves_canonical_text · function · L796-L800 — fn hidden_spawn_hotkey_argument_is_global_and_preserves_canonical_text()
+- external_provider_runtimes_register_and_instantiate · function · L802-L828 — fn external_provider_runtimes_register_and_instantiate()

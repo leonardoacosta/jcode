@@ -1,0 +1,75 @@
+# crates/jcode-base/src/compaction_tests.rs
+
+- MockSummaryProvider · struct · L6-L6 — struct MockSummaryProvider;
+- RoleModelProvider · struct · L8-L8 — struct RoleModelProvider(std::sync::Mutex<String>);
+- complete · function · L12-L20 — async fn complete(
+- name · function · L22-L24 — fn name(&self) -> &str
+- model · function · L25-L27 — fn model(&self) -> String
+- set_model · function · L28-L32 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L33-L35 — fn fork(&self) -> Arc<dyn Provider>
+- native_compact · function · L36-L48 — async fn native_compact(
+- complete_simple_with_usage · function · L49-L55 — async fn complete_simple_with_usage(
+- compaction_uses_role_slot_without_changing_main_model · function · L59-L112 — async fn compaction_uses_role_slot_without_changing_main_model()
+- UsageOnlyNativeProvider · struct · L114-L116 — struct UsageOnlyNativeProvider
+- context_window · function · L120-L122 — fn context_window(&self) -> usize
+- complete · function · L124-L132 — async fn complete(
+- name · function · L134-L136 — fn name(&self) -> &str
+- model · function · L138-L144 — fn model(&self) -> String
+- fork · function · L146-L150 — fn fork(&self) -> Arc<dyn Provider>
+- native_compact · function · L152-L167 — async fn native_compact(
+- complete_simple_with_usage · function · L169-L188 — async fn complete_simple_with_usage(
+- usage_only_native_compaction_accounts_attempt_then_falls_back · function · L192-L204 — async fn usage_only_native_compaction_accounts_attempt_then_falls_back()
+- complete · function · L208-L216 — async fn complete(
+- name · function · L218-L220 — fn name(&self) -> &str
+- fork · function · L222-L224 — fn fork(&self) -> Arc<dyn Provider>
+- complete_simple · function · L226-L228 — async fn complete_simple(&self, prompt: &str, _system: &str) -> Result<String>
+- complete_simple_with_usage · function · L230-L239 — async fn complete_simple_with_usage(
+- make_text_message · function · L242-L253 — fn make_text_message(role: Role, text: &str) -> Message
+- test_hard_compact_aborts_inflight_background_compaction · function · L264-L324 — async fn test_hard_compact_aborts_inflight_background_compaction()
+- test_stale_background_result_discarded_when_context_shrinks · function · L331-L377 — async fn test_stale_background_result_discarded_when_context_shrinks()
+- test_guard_at_95_triggers_hard_compact · function · L380-L407 — async fn test_guard_at_95_triggers_hard_compact()
+- test_guard_at_100_percent_drops_messages · function · L410-L443 — async fn test_guard_at_100_percent_drops_messages()
+- test_hard_compact_too_few_messages · function · L448-L462 — fn test_hard_compact_too_few_messages()
+- test_hard_compact_preserves_recent_turns · function · L465-L490 — fn test_hard_compact_preserves_recent_turns()
+- test_safe_cutoff_preserves_tool_pairs · function · L495-L535 — fn test_safe_cutoff_preserves_tool_pairs()
+- test_safe_cutoff_no_tool_pairs · function · L538-L548 — fn test_safe_cutoff_no_tool_pairs()
+- test_safe_cutoff_handles_chained_tool_dependencies_without_rescan · function · L551-L604 — fn test_safe_cutoff_handles_chained_tool_dependencies_without_rescan()
+- test_emergency_truncate_large_tool_results · function · L609-L659 — fn test_emergency_truncate_large_tool_results()
+- test_emergency_truncate_skips_small_results · function · L662-L679 — fn test_emergency_truncate_skips_small_results()
+- test_hard_compact_twice · function · L684-L732 — fn test_hard_compact_twice()
+- test_hard_compact_clamps_pathological_compacted_count · function · L735-L785 — fn test_hard_compact_clamps_pathological_compacted_count()
+- test_hard_compact_reduces_api_payload_and_reports_saved_tokens · function · L788-L830 — fn test_hard_compact_reduces_api_payload_and_reports_saved_tokens()
+- test_invalid_compacted_count_does_not_resurrect_full_transcript_after_new_turn · function · L833-L870 — fn test_invalid_compacted_count_does_not_resurrect_full_transcript_after_new_turn()
+- test_messages_for_api_with_summary_prepended · function · L875-L899 — fn test_messages_for_api_with_summary_prepended()
+- test_persisted_state_round_trip_preserves_compacted_view · function · L902-L935 — fn test_persisted_state_round_trip_preserves_compacted_view()
+- persisted_state_restore_and_exports_share_encrypted_body · function · L938-L982 — fn persisted_state_restore_and_exports_share_encrypted_body()
+- test_persisted_state_matches_is_exact_for_every_field_and_absence · function · L985-L1027 — fn test_persisted_state_matches_is_exact_for_every_field_and_absence()
+- persisted_state_comparison_probe · function · L1031-L1062 — fn persisted_state_comparison_probe()
+- test_context_usage_with_both_estimate_and_observed · function · L1067-L1096 — fn test_context_usage_with_both_estimate_and_observed()
+- test_context_usage_after_compaction_resets_observed · function · L1099-L1128 — fn test_context_usage_after_compaction_resets_observed()
+- test_recover_within_budget_drops_messages_without_truncation · function · L1131-L1160 — fn test_recover_within_budget_drops_messages_without_truncation()
+- test_recover_within_budget_truncates_when_tail_still_too_large · function · L1163-L1206 — fn test_recover_within_budget_truncates_when_tail_still_too_large()
+- test_recover_within_budget_summary_line_variants · function · L1209-L1237 — fn test_recover_within_budget_summary_line_variants()
+- max_context_tokens_caps_budget_from_large_window_models · function · L1240-L1251 — fn max_context_tokens_caps_budget_from_large_window_models()
+- max_context_tokens_zero_means_no_cap · function · L1254-L1257 — fn max_context_tokens_zero_means_no_cap()
+- proactive_floor_accepts_tokens_or_percentage · function · L1260-L1282 — fn proactive_floor_accepts_tokens_or_percentage()
+- max_context_tokens_applies_at_construction_and_reloads_before_requests · function · L1285-L1348 — fn max_context_tokens_applies_at_construction_and_reloads_before_requests()
+- RestoreHome · struct · L1287-L1287 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L1289-L1296 — fn drop(&mut self)
+- native_usage · module · L1351-L1351 — mod native_usage;
+- compaction_summary_rejects_refusals_and_empty_text_issue_2089 · function · L1354-L1369 — fn compaction_summary_rejects_refusals_and_empty_text_issue_2089()
+- RefusingSummaryProvider · struct · L1371-L1371 — struct RefusingSummaryProvider;
+- complete · function · L1375-L1390 — async fn complete(
+- name · function · L1392-L1394 — fn name(&self) -> &str
+- fork · function · L1396-L1398 — fn fork(&self) -> Arc<dyn Provider>
+- refused_compaction_keeps_original_messages_issue_2089 · function · L1402-L1433 — async fn refused_compaction_keeps_original_messages_issue_2089()
+- CouncilBudgetCompactionProvider · struct · L1436-L1439 — struct CouncilBudgetCompactionProvider
+- complete · function · L1443-L1451 — async fn complete(
+- name · function · L1452-L1454 — fn name(&self) -> &str
+- model · function · L1455-L1457 — fn model(&self) -> String
+- set_model · function · L1458-L1460 — fn set_model(&self, _: &str) -> Result<()>
+- fork · function · L1461-L1463 — fn fork(&self) -> Arc<dyn Provider>
+- native_compact · function · L1464-L1478 — async fn native_compact(
+- complete_simple_with_usage · function · L1479-L1492 — async fn complete_simple_with_usage(
+- council_background_compaction_budget_covers_native_text_opaque_and_retries · function · L1496-L1555 — async fn council_background_compaction_budget_covers_native_text_opaque_and_retries()
+- additional_test_new_manager · module · L1557-L1557 — mod additional_test_new_manager;

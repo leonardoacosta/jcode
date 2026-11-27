@@ -1,0 +1,36 @@
+# crates/jcode-app-core/src/server/client_lifecycle.rs
+
+- ChannelSubscriptions · type · L77-L77 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- RELOAD_STARTING_GUARD_MAX_AGE · constant · L78-L78 — const RELOAD_STARTING_GUARD_MAX_AGE: Duration = Duration::from_secs(30);
+- REQUEST_HANDLER_STALL_THRESHOLDS_MS · constant · L79-L79 — const REQUEST_HANDLER_STALL_THRESHOLDS_MS: [u64; 3] = [2_000, 10_000, 60_000];
+- subscribe_context · module · L82-L82 — mod subscribe_context;
+- event_for_transport · function · L85-L99 — fn event_for_transport(
+- ProcessingMessage · struct · L101-L111 — struct ProcessingMessage
+- ProcessingCompletion · type · L114-L120 — type ProcessingCompletion = (
+- ProcessingState · struct · L122-L127 — struct ProcessingState<'a>
+- SwarmStatusRefs · struct · L129-L135 — struct SwarmStatusRefs<'a>
+- request_watchdog · module · L138-L138 — mod request_watchdog;
+- client_event_control · module · L144-L144 — mod client_event_control;
+- handle_client · function · L151-L3437 — pub(super) async fn handle_client(
+- admit_plan_user_turn · function · L3439-L3448 — fn admit_plan_user_turn(session: &str, plan_only: bool, token: Option<&str>) -> Result<()>
+- ModelCatalogRetry · struct · L3453-L3456 — struct ModelCatalogRetry
+- queue · function · L3459-L3461 — fn queue(&mut self)
+- busy · function · L3463-L3467 — fn busy(&mut self)
+- complete · function · L3469-L3471 — fn complete(&mut self)
+- model_catalog_retry_tests · module · L3475-L3569 — mod model_catalog_retry_tests
+- TestProvider · struct · L3478-L3478 — struct TestProvider;
+- complete · function · L3482-L3490 — async fn complete(
+- name · function · L3492-L3494 — fn name(&self) -> &str
+- fork · function · L3496-L3498 — fn fork(&self) -> Arc<dyn Provider>
+- queued_catalog_retry_recovers_after_agent_unlocks · function · L3503-L3542 — async fn queued_catalog_retry_recovers_after_agent_unlocks()
+- RestoreHome · struct · L3507-L3507 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L3509-L3514 — fn drop(&mut self)
+- busy_model_catalog_updates_coalesce_and_retry_until_idle · function · L3545-L3568 — async fn busy_model_catalog_updates_coalesce_and_retry_until_idle()
+- client_processing · module · L3572-L3572 — mod client_processing;
+- process_message_streaming_mpsc · function · L3582-L3599 — pub(super) async fn process_message_streaming_mpsc(
+- process_locked_message_streaming_mpsc · function · L3605-L3624 — pub(super) async fn process_locked_message_streaming_mpsc(
+- process_reserved_message_streaming_mpsc · function · L3627-L3663 — pub(super) async fn process_reserved_message_streaming_mpsc(
+- tests · module · L3667-L3667 — mod tests;
+- connection_metadata · module · L3670-L3670 — mod connection_metadata;
+- metadata_tests · module · L3675-L3675 — mod metadata_tests;
+- target_attach_tests · module · L3679-L3679 — mod target_attach_tests;

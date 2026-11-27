@@ -1,0 +1,104 @@
+# crates/jcode-config-types/src/lib.rs
+
+- display · module · L3-L3 — mod display;
+- update_policy · module · L4-L4 — mod update_policy;
+- menubar · module · L6-L6 — mod menubar;
+- power · module · L7-L7 — mod power;
+- session · module · L8-L8 — mod session;
+- task_policy · module · L10-L10 — mod task_policy;
+- keybindings · module · L17-L17 — pub mod keybindings;
+- serde_lenient · module · L18-L18 — mod serde_lenient;
+- CompactionMode · enum · L28-L36 — pub enum CompactionMode
+- as_str · function · L39-L45 — pub fn as_str(&self) -> &'static str
+- parse · function · L47-L54 — pub fn parse(input: &str) -> Option<Self>
+- SessionPickerResumeAction · enum · L61-L65 — pub enum SessionPickerResumeAction
+- alternate · function · L68-L73 — pub fn alternate(self) -> Self
+- DiffDisplayMode · enum · L79-L98 — pub enum DiffDisplayMode
+- is_inline · function · L101-L103 — pub fn is_inline(&self) -> bool
+- is_full_inline · function · L105-L107 — pub fn is_full_inline(&self) -> bool
+- is_file · function · L109-L111 — pub fn is_file(&self) -> bool
+- has_side_pane · function · L113-L115 — pub fn has_side_pane(&self) -> bool
+- cycle · function · L117-L124 — pub fn cycle(self) -> Self
+- label · function · L126-L133 — pub fn label(&self) -> &'static str
+- diff_display_mode_tests · module · L137-L171 — mod diff_display_mode_tests
+- diff_mode_cycle_keeps_inline_and_file_modes · function · L141-L154 — fn diff_mode_cycle_keeps_inline_and_file_modes()
+- diff_mode_remaining_values_round_trip · function · L157-L170 — fn diff_mode_remaining_values_round_trip()
+- DiagramDisplayMode · enum · L176-L189 — pub enum DiagramDisplayMode
+- DiagramPanePosition · enum · L193-L197 — pub enum DiagramPanePosition
+- MarkdownSpacingMode · enum · L202-L208 — pub enum MarkdownSpacingMode
+- LatexRenderingMode · enum · L213-L221 — pub enum LatexRenderingMode
+- as_str · function · L224-L230 — pub fn as_str(self) -> &'static str
+- parse · function · L232-L239 — pub fn parse(value: &str) -> Option<Self>
+- label · function · L243-L248 — pub fn label(self) -> &'static str
+- ReasoningDisplayMode · enum · L254-L263 — pub enum ReasoningDisplayMode
+- label · function · L266-L272 — pub fn label(self) -> &'static str
+- cycle · function · L274-L280 — pub fn cycle(self) -> Self
+- parse · function · L282-L289 — pub fn parse(value: &str) -> Option<Self>
+- CompactionConfig · struct · L295-L347 — pub struct CompactionConfig
+- default · function · L350-L367 — fn default() -> Self
+- NamedProviderType · enum · L372-L379 — pub enum NamedProviderType
+- NamedProviderAuth · enum · L383-L391 — pub enum NamedProviderAuth
+- NamedProviderModelConfig · struct · L395-L420 — pub struct NamedProviderModelConfig
+- NamedProviderConfig · struct · L424-L472 — pub struct NamedProviderConfig
+- default · function · L475-L497 — fn default() -> Self
+- AuthConfig · struct · L503-L509 — pub struct AuthConfig
+- SwarmConfig · struct · L514-L517 — pub struct SwarmConfig
+- AgentsConfig · struct · L522-L608 — pub struct AgentsConfig
+- default_swarm_stall_after_secs · function · L610-L612 — fn default_swarm_stall_after_secs() -> u64
+- default_swarm_max_concurrent_agents · function · L614-L616 — fn default_swarm_max_concurrent_agents() -> usize
+- default_memory_embedding_backend · function · L618-L620 — fn default_memory_embedding_backend() -> String
+- default_memory_jev_provider · function · L622-L624 — fn default_memory_jev_provider() -> String
+- default_memory_jev_threshold · function · L626-L628 — fn default_memory_jev_threshold() -> f32
+- default_memory_sidecar_enabled · function · L630-L632 — fn default_memory_sidecar_enabled() -> bool
+- default_memory_rerank_cadence · function · L634-L636 — fn default_memory_rerank_cadence() -> usize
+- default_memory_rerank_votes · function · L638-L640 — fn default_memory_rerank_votes() -> usize
+- default_memory_rerank_min_agree · function · L642-L644 — fn default_memory_rerank_min_agree() -> usize
+- AgentRoleModels · struct · L650-L656 — pub struct AgentRoleModels
+- ROLES · constant · L659-L659 — pub const ROLES: [&'static str; 5] = ["research", "edit", "compaction", "websearch", "council"];
+- get · function · L661-L673 — pub fn get(&self, role: &str) -> Option<&str>
+- agents_defaults · module · L677-L677 — mod agents_defaults;
+- SwarmSpawnMode · enum · L681-L693 — pub enum SwarmSpawnMode
+- parse · function · L696-L704 — pub fn parse(value: &str) -> Option<Self>
+- as_str · function · L707-L714 — pub fn as_str(self) -> &'static str
+- TerminalConfig · struct · L724-L761 — pub struct TerminalConfig
+- HookCommands · struct · L776-L776 — pub struct HookCommands(Vec<String>);
+- one · function · L779-L781 — pub fn one(command: impl Into<String>) -> Self
+- many · function · L783-L785 — pub fn many(commands: Vec<String>) -> Self
+- iter · function · L787-L789 — pub fn iter(&self) -> impl Iterator<Item = &str>
+- first · function · L791-L793 — pub fn first(&self) -> Option<&str>
+- serialize · function · L797-L806 — fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- deserialize · function · L810-L825 — fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+- OneOrMany · enum · L816-L819 — enum OneOrMany
+- HookEntry · struct · L834-L849 — pub struct HookEntry
+- default · function · L852-L861 — fn default() -> Self
+- HooksConfig · struct · L866-L926 — pub struct HooksConfig
+- lifecycle_entries · function · L930-L940 — pub fn lifecycle_entries(&self, event: &str) -> &[HookEntry]
+- default · function · L944-L964 — fn default() -> Self
+- AutoReviewConfig · struct · L970-L975 — pub struct AutoReviewConfig
+- SponsorsConfig · struct · L986-L994 — pub struct SponsorsConfig
+- default · function · L997-L1002 — fn default() -> Self
+- AutoJudgeConfig · struct · L1008-L1015 — pub struct AutoJudgeConfig
+- default · function · L1018-L1024 — fn default() -> Self
+- KeybindingsConfig · struct · L1030-L1112 — pub struct KeybindingsConfig
+- default · function · L1115-L1168 — fn default() -> Self
+- NativeScrollbarConfig · struct · L1173-L1178 — pub struct NativeScrollbarConfig
+- default · function · L1180-L1185 — fn default() -> Self
+- default_true · function · L1187-L1189 — fn default_true() -> bool
+- FeatureConfig · struct · L1194-L1231 — pub struct FeatureConfig
+- default · function · L1234-L1249 — fn default() -> Self
+- web_search · module · L1252-L1252 — mod web_search;
+- ProviderConfig · struct · L1257-L1334 — pub struct ProviderConfig
+- default · function · L1337-L1365 — fn default() -> Self
+- AmbientConfig · struct · L1371-L1394 — pub struct AmbientConfig
+- default · function · L1397-L1411 — fn default() -> Self
+- NotificationsConfig · struct · L1421-L1439 — pub struct NotificationsConfig
+- default · function · L1442-L1450 — fn default() -> Self
+- SafetyConfig · struct · L1456-L1517 — pub struct SafetyConfig
+- default · function · L1520-L1553 — fn default() -> Self
+- GatewayConfig · struct · L1559-L1566 — pub struct GatewayConfig
+- default · function · L1569-L1575 — fn default() -> Self
+- LaunchHotkeyEntry · struct · L1589-L1601 — pub struct LaunchHotkeyEntry
+- LaunchHotkeysConfig · struct · L1612-L1622 — pub struct LaunchHotkeysConfig
+- reasoning_display_defaults_tests · module · L1626-L1626 — mod reasoning_display_defaults_tests;
+- exhausted_usage_failover_tests · module · L1629-L1655 — mod exhausted_usage_failover_tests
+- exhaustion_immediate_defaults_on_and_is_independent_of_manual_mode · function · L1633-L1654 — fn exhaustion_immediate_defaults_on_and_is_independent_of_manual_mode()

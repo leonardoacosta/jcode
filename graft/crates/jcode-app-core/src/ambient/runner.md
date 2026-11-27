@@ -1,0 +1,35 @@
+# crates/jcode-app-core/src/ambient/runner.rs
+
+- MAX_IDLE_POLL_SECS · constant · L29-L29 — const MAX_IDLE_POLL_SECS: u64 = 30;
+- stale_reason · function · L33-L53 — fn stale_reason(item: &ScheduledItem) -> Option<String>
+- current_generation_of · function · L56-L62 — fn current_generation_of(session_id: &str) -> Option<u64>
+- ambient_allowed · function · L66-L68 — fn ambient_allowed(status: &AmbientStatus) -> bool
+- AmbientRunnerHandle · struct · L72-L74 — pub struct AmbientRunnerHandle
+- AmbientRunnerInner · struct · L76-L96 — struct AmbientRunnerInner
+- new · function · L99-L114 — pub fn new(safety: Arc<SafetySystem>) -> Self
+- nudge · function · L117-L119 — pub fn nudge(&self)
+- is_running · function · L122-L124 — pub async fn is_running(&self) -> bool
+- state · function · L127-L129 — pub async fn state(&self) -> AmbientState
+- safety · function · L132-L134 — pub fn safety(&self) -> &Arc<SafetySystem>
+- inject_message · function · L141-L169 — pub async fn inject_message(&self, text: &str, source: &str) -> bool
+- trigger · function · L172-L183 — pub async fn trigger(&self)
+- stop · function · L186-L192 — pub async fn stop(&self)
+- start · function · L196-L211 — pub async fn start(&self, provider: Arc<dyn Provider>) -> bool
+- status_json · function · L214-L315 — pub async fn status_json(&self) -> String
+- queue_json · function · L318-L360 — pub async fn queue_json(&self) -> String
+- log_json · function · L363-L398 — pub async fn log_json(&self) -> String
+- wait_for_request_done · function · L400-L413 — async fn wait_for_request_done(
+- notify_live_session · function · L415-L419 — async fn notify_live_session(&self, session_id: &str, message: &str) -> anyhow::Result<()>
+- resume_dead_session_with_reminder · function · L421-L447 — async fn resume_dead_session_with_reminder(
+- spawn_session_for_scheduled_item · function · L449-L530 — async fn spawn_session_for_scheduled_item(
+- deliver_scheduled_direct_item · function · L534-L573 — async fn deliver_scheduled_direct_item(
+- deliver_ready_direct_items · function · L575-L615 — async fn deliver_ready_direct_items(
+- run_loop · function · L618-L903 — pub async fn run_loop(self, provider: Arc<dyn Provider>)
+- set_running_detail · function · L906-L912 — async fn set_running_detail(&self, detail: &str)
+- build_cycle_context · function · L915-L952 — async fn build_cycle_context(
+- run_cycle · function · L955-L975 — async fn run_cycle(&self, provider: &Arc<dyn Provider>) -> anyhow::Result<AmbientCycleResult>
+- run_cycle_with_visible_launcher · function · L977-L1090 — async fn run_cycle_with_visible_launcher<F>(
+- run_cycle_visible · function · L1093-L1174 — async fn run_cycle_visible<F>(
+- VisibleCycleOutcome · enum · L1177-L1180 — enum VisibleCycleOutcome
+- runner_mcp_wake · module · L1185-L1185 — pub(crate) mod runner_mcp_wake;
+- runner_tests · module · L1189-L1189 — mod runner_tests;

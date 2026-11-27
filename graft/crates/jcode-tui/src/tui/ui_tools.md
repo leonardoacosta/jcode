@@ -1,0 +1,47 @@
+# crates/jcode-tui/src/tui/ui_tools.rs
+
+- browser_summary · module · L3-L3 — mod browser_summary;
+- codemode_preview · function · L12-L65 — pub(super) fn codemode_preview(tool: &ToolCall, width: usize) -> Vec<Line<'static>>
+- MAX_ROWS · constant · L22-L22 — const MAX_ROWS: usize = 6;
+- show_tool_call_details · function · L77-L79 — pub(crate) fn show_tool_call_details() -> bool
+- show_tool_call_details · function · L82-L84 — pub(crate) fn show_tool_call_details() -> bool
+- tests_tool_call_details_override · module · L87-L101 — pub(crate) mod tests_tool_call_details_override
+- get · function · L94-L96 — pub(crate) fn get() -> bool
+- set · function · L98-L100 — pub(crate) fn set(value: bool)
+- show_bash_output · function · L104-L106 — pub(crate) fn show_bash_output() -> bool
+- show_bash_output · function · L109-L111 — pub(crate) fn show_bash_output() -> bool
+- tests_show_bash_output_override · module · L114-L128 — pub(crate) mod tests_show_bash_output_override
+- get · function · L121-L123 — pub(crate) fn get() -> bool
+- set · function · L125-L127 — pub(crate) fn set(value: bool)
+- infer_bg_action_from_intent_for_display · function · L130-L153 — fn infer_bg_action_from_intent_for_display(intent: Option<&str>) -> Option<&'static str>
+- infer_selfdev_action_from_display_text · function · L155-L180 — fn infer_selfdev_action_from_display_text(text: Option<&str>) -> Option<&'static str>
+- batch · module · L183-L183 — mod batch;
+- patch_summary · module · L191-L191 — mod patch_summary;
+- parse_agentgrep_smart_subject_relation · function · L197-L232 — fn parse_agentgrep_smart_subject_relation(
+- display_prefix_by_width · function · L234-L249 — fn display_prefix_by_width(s: &str, max_width: usize) -> &str
+- display_suffix_by_width · function · L251-L266 — fn display_suffix_by_width(s: &str, max_width: usize) -> &str
+- truncate_end_display · function · L268-L282 — pub(crate) fn truncate_end_display(s: &str, max_width: usize) -> String
+- truncate_middle_display · function · L284-L302 — fn truncate_middle_display(s: &str, max_width: usize) -> String
+- truncate_swarm_text · function · L304-L310 — fn truncate_swarm_text(value: &str, max_width: usize) -> String
+- summarize_swarm_tool_action · function · L312-L377 — fn summarize_swarm_tool_action(tool: &ToolCall, bounded: &dyn Fn(usize) -> usize) -> String
+- truncate_path_display · function · L379-L434 — pub(super) fn truncate_path_display(path: &str, max_width: usize) -> String
+- browser_target_summary · function · L436-L465 — fn browser_target_summary(
+- truncate_path_with_suffix · function · L467-L481 — fn truncate_path_with_suffix(path: &str, suffix: &str, max_width: usize) -> String
+- is_search_token_char · function · L483-L485 — fn is_search_token_char(ch: char) -> bool
+- best_search_token_range · function · L487-L518 — fn best_search_token_range(s: &str) -> Option<(usize, usize)>
+- truncate_focus_token_display · function · L520-L582 — fn truncate_focus_token_display(s: &str, max_width: usize) -> String
+- truncate_regex_display · function · L584-L586 — fn truncate_regex_display(pattern: &str, max_width: usize) -> String
+- truncate_query_display · function · L588-L590 — fn truncate_query_display(query: &str, max_width: usize) -> String
+- truncate_command_display · function · L592-L621 — fn truncate_command_display(command: &str, max_width: usize) -> String
+- truncate_url_display · function · L623-L641 — fn truncate_url_display(url: &str, max_width: usize) -> String
+- truncate_identifier_display · function · L643-L645 — fn truncate_identifier_display(value: &str, max_width: usize) -> String
+- batch_subcall_index · function · L647-L656 — pub(super) fn batch_subcall_index(id: &str) -> Option<usize>
+- is_memory_store_tool · function · L658-L667 — pub(super) fn is_memory_store_tool(tc: &ToolCall) -> bool
+- is_memory_recall_tool · function · L669-L678 — pub(super) fn is_memory_recall_tool(tc: &ToolCall) -> bool
+- get_tool_summary · function · L681-L683 — pub(crate) fn get_tool_summary(tool: &ToolCall) -> String
+- get_tool_activity_detail · function · L688-L703 — pub(crate) fn get_tool_activity_detail(tool: &ToolCall) -> String
+- get_tool_summary_with_budget · function · L705-L1390 — pub(super) fn get_tool_summary_with_budget(
+- tool_usage_label · function · L1394-L1405 — pub(super) fn tool_usage_label(tokens: &str, seconds: Option<f32>, output: &str) -> String
+- tool_usage_spans · function · L1408-L1438 — pub(super) fn tool_usage_spans(
+- render_batch_subcall_line · function · L1440-L1532 — pub(super) fn render_batch_subcall_line(
+- summarize_batch_running_tools_compact · function · L1534-L1558 — pub(super) fn summarize_batch_running_tools_compact(running: &[ToolCall]) -> Option<String>

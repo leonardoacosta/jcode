@@ -1,0 +1,24 @@
+# crates/jcode-base/src/auth/azure.rs
+
+- ENV_FILE · constant · L7-L7 — pub const ENV_FILE: &str = "azure-openai.env";
+- ENDPOINT_ENV · constant · L8-L8 — pub const ENDPOINT_ENV: &str = "AZURE_OPENAI_ENDPOINT";
+- API_KEY_ENV · constant · L9-L9 — pub const API_KEY_ENV: &str = "AZURE_OPENAI_API_KEY";
+- MODEL_ENV · constant · L10-L10 — pub const MODEL_ENV: &str = "AZURE_OPENAI_MODEL";
+- REASONING_EFFORT_ENV · constant · L11-L11 — pub const REASONING_EFFORT_ENV: &str = "AZURE_OPENAI_REASONING_EFFORT";
+- USE_ENTRA_ENV · constant · L12-L12 — pub const USE_ENTRA_ENV: &str = "AZURE_OPENAI_USE_ENTRA";
+- COGNITIVE_SCOPE · constant · L13-L13 — pub const COGNITIVE_SCOPE: &str = "https://cognitiveservices.azure.com/.default";
+- parse_bool · function · L15-L21 — fn parse_bool(raw: &str) -> Option<bool>
+- normalize_endpoint · function · L23-L30 — pub fn normalize_endpoint(raw: &str) -> Option<String>
+- load_endpoint · function · L32-L35 — pub fn load_endpoint() -> Option<String>
+- load_model · function · L37-L39 — pub fn load_model() -> Option<String>
+- load_reasoning_effort · function · L41-L43 — pub fn load_reasoning_effort() -> Option<String>
+- has_api_key · function · L45-L47 — pub fn has_api_key() -> bool
+- uses_entra_id · function · L49-L53 — pub fn uses_entra_id() -> bool
+- has_configuration · function · L55-L57 — pub fn has_configuration() -> bool
+- method_detail · function · L59-L72 — pub fn method_detail() -> String
+- apply_runtime_env · function · L74-L100 — pub fn apply_runtime_env() -> Result<()>
+- get_bearer_token · function · L102-L104 — pub async fn get_bearer_token() -> Result<String>
+- tests · module · L107-L130 — mod tests
+- normalize_endpoint_appends_openai_v1 · function · L111-L116 — fn normalize_endpoint_appends_openai_v1()
+- normalize_endpoint_preserves_existing_openai_v1 · function · L119-L124 — fn normalize_endpoint_preserves_existing_openai_v1()
+- normalize_endpoint_rejects_insecure_remote_http · function · L127-L129 — fn normalize_endpoint_rejects_insecure_remote_http()

@@ -1,0 +1,46 @@
+# crates/jcode-base/src/runtime_activity.rs
+
+- ScopedState · struct · L14-L22 — struct ScopedState
+- lock_state · function · L26-L38 — fn lock_state(state: &Mutex<ScopedState>) -> MutexGuard<'_, ScopedState>
+- ActivityGate · struct · L41-L45 — pub struct ActivityGate
+- ActivityReservation · struct · L47-L53 — pub struct ActivityReservation
+- scope · function · L58-L65 — pub async fn scope<F: std::future::Future>(self, future: F) -> F::Output
+- drop · function · L69-L104 — fn drop(&mut self)
+- SessionIdleReservation · struct · L107-L113 — pub struct SessionIdleReservation
+- drop · function · L116-L122 — fn drop(&mut self)
+- current_session · function · L128-L135 — fn current_session() -> Option<String>
+- try_enter · function · L139-L141 — pub fn try_enter(&self) -> anyhow::Result<ActivityReservation>
+- try_enter_global · function · L145-L147 — pub fn try_enter_global(&self) -> anyhow::Result<ActivityReservation>
+- try_enter_session · function · L150-L152 — pub fn try_enter_session(&self, session: &str) -> anyhow::Result<ActivityReservation>
+- try_enter_owned · function · L155-L161 — fn try_enter_owned(&self, session: Option<String>) -> anyhow::Result<ActivityReservation>
+- reserve · function · L163-L205 — fn reserve(
+- enter · function · L209-L211 — pub fn enter(&self) -> impl std::future::Future<Output = ActivityReservation> + '_
+- enter_global · function · L214-L216 — pub fn enter_global(&self) -> impl std::future::Future<Output = ActivityReservation> + '_
+- enter_session · function · L219-L224 — pub fn enter_session(
+- enter_owned · function · L226-L247 — async fn enter_owned(
+- try_idle · function · L249-L261 — pub fn try_idle(&self) -> Option<OwnedRwLockWriteGuard<()>>
+- busy_summary · function · L265-L312 — pub fn busy_summary(&self, sessions: &BTreeSet<String>) -> String
+- changed · function · L315-L317 — pub async fn changed(&self)
+- try_idle_sessions · function · L319-L341 — pub fn try_idle_sessions(&self, sessions: &BTreeSet<String>) -> Option<SessionIdleReservation>
+- spawn · function · L344-L350 — pub fn spawn<F>(&self, future: F) -> Option<tokio::task::JoinHandle<F::Output>>
+- spawn_session · function · L353-L363 — pub fn spawn_session<F>(
+- spawn_owned · function · L366-L385 — fn spawn_owned<F>(
+- global · function · L388-L391 — pub fn global() -> &'static ActivityGate
+- GATE · constant · L389-L389 — static GATE: LazyLock<ActivityGate> = LazyLock::new(ActivityGate::default);
+- spawn · function · L396-L402 — pub fn spawn<F>(future: F) -> Option<tokio::task::JoinHandle<F::Output>>
+- spawn_session · function · L405-L411 — pub fn spawn_session<F>(session: &str, future: F) -> Option<tokio::task::JoinHandle<F::Output>>
+- tests · module · L414-L625 — mod tests
+- poison · function · L417-L427 — fn poison(gate: &ActivityGate)
+- assert_disabled · function · L429-L437 — fn assert_disabled(gate: &ActivityGate)
+- poisoned_accounting_disables_admission_and_drop_does_not_panic · function · L440-L448 — fn poisoned_accounting_disables_admission_and_drop_does_not_panic()
+- poisoned_fence_cleanup_releases_waiters_without_admitting_work · function · L451-L467 — async fn poisoned_fence_cleanup_releases_waiters_without_admitting_work()
+- inconsistent_release_counts_fail_closed_instead_of_underflowing · function · L470-L482 — fn inconsistent_release_counts_fail_closed_instead_of_underflowing()
+- overflowing_admission_counts_fail_closed · function · L485-L490 — fn overflowing_admission_counts_fail_closed()
+- accepted_spawn_reserves_before_first_poll_and_rejects_during_upgrade · function · L493-L506 — async fn accepted_spawn_reserves_before_first_poll_and_rejects_during_upgrade()
+- idle_upgrade_excludes_new_work_until_released · function · L509-L521 — async fn idle_upgrade_excludes_new_work_until_released()
+- busy_upgrade_never_waits_or_interrupts_and_nested_work_is_safe · function · L524-L533 — fn busy_upgrade_never_waits_or_interrupts_and_nested_work_is_safe()
+- scoped_waiter_wakes_after_fence_release · function · L536-L552 — async fn scoped_waiter_wakes_after_fence_release()
+- scoped_transfer_excludes_selected_and_unknown_but_not_unrelated_activity · function · L555-L572 — fn scoped_transfer_excludes_selected_and_unknown_but_not_unrelated_activity()
+- empty_owner_remains_globally_blocking · function · L575-L586 — fn empty_owner_remains_globally_blocking()
+- detached_callbacks_inherit_session_and_reserve_before_poll · function · L589-L610 — async fn detached_callbacks_inherit_session_and_reserve_before_poll()
+- busy_summary_names_unscoped_origin_and_clears_it · function · L613-L624 — fn busy_summary_names_unscoped_origin_and_clears_it()

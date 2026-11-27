@@ -1,0 +1,43 @@
+# crates/jcode-tui/src/tui/app/tests/swarm_plan_graph_inline.rs
+
+- swarm_plan_graph_item · function · L12-L23 — fn swarm_plan_graph_item(id: &str, content: &str) -> crate::plan::PlanItem
+- swarm_plan_event · function · L25-L37 — fn swarm_plan_event(
+- plan_graph_titles · function · L39-L50 — fn plan_graph_titles(app: &App) -> Vec<String>
+- rendered_lines_to_text · function · L52-L63 — fn rendered_lines_to_text(lines: &[ratatui::text::Line<'static>]) -> String
+- DiagramModeOverrideGuard · struct · L66-L68 — struct DiagramModeOverrideGuard
+- pinned · function · L71-L77 — fn pinned() -> Self
+- margin · function · L79-L85 — fn margin() -> Self
+- drop · function · L89-L91 — fn drop(&mut self)
+- test_upsert_in_place_plan_bump_accumulates_stale_active_diagrams · function · L110-L235 — fn test_upsert_in_place_plan_bump_accumulates_stale_active_diagrams()
+- test_new_registration_silently_shifts_parked_diagram_selection · function · L242-L306 — fn test_new_registration_silently_shifts_parked_diagram_selection()
+- test_active_diagrams_cap_eviction_swaps_currently_shown_diagram · function · L313-L351 — fn test_active_diagrams_cap_eviction_swaps_currently_shown_diagram()
+- test_offscreen_plan_graph_message_still_registers_active_diagram · function · L361-L412 — fn test_offscreen_plan_graph_message_still_registers_active_diagram()
+- test_session_change_history_leaks_previous_session_active_diagram · function · L424-L506 — fn test_session_change_history_leaks_previous_session_active_diagram()
+- history_event_for_session_with_messages · function · L508-L521 — fn history_event_for_session_with_messages(
+- user_history_message · function · L523-L531 — fn user_history_message(content: &str) -> crate::protocol::HistoryMessage
+- history_event_for_session · function · L533-L575 — fn history_event_for_session(session_id: &str) -> crate::protocol::ServerEvent
+- test_swarm_plan_event_pushes_inline_plan_graph_message · function · L578-L668 — fn test_swarm_plan_event_pushes_inline_plan_graph_message()
+- test_plan_scope_notification_stays_off_the_transcript · function · L671-L719 — fn test_plan_scope_notification_stays_off_the_transcript()
+- test_non_plan_swarm_message_between_plan_versions_moves_plan_graph_to_bottom · function · L722-L774 — fn test_non_plan_swarm_message_between_plan_versions_moves_plan_graph_to_bottom()
+- test_out_of_order_older_swarm_plan_version_is_dropped · function · L777-L821 — fn test_out_of_order_older_swarm_plan_version_is_dropped()
+- test_swarm_plan_pushes_no_plan_graph_message_when_mermaid_disabled · function · L826-L858 — fn test_swarm_plan_pushes_no_plan_graph_message_when_mermaid_disabled()
+- seed_rendered_plan_graph · function · L902-L930 — fn seed_rendered_plan_graph(
+- assert_transcript_clear_leaks_diagram_and_plan_state · function · L936-L978 — fn assert_transcript_clear_leaks_diagram_and_plan_state(
+- assert_full_discard_clears_diagrams_and_plan_state · function · L984-L1007 — fn assert_full_discard_clears_diagrams_and_plan_state(app: &mut App, path: &str)
+- test_local_clear_command_empties_margin_info_widget_diagram_list · function · L1014-L1045 — fn test_local_clear_command_empties_margin_info_widget_diagram_list()
+- test_local_rewind_and_undo_leave_stale_active_diagram_and_swarm_plan_state · function · L1055-L1103 — fn test_local_rewind_and_undo_leave_stale_active_diagram_and_swarm_plan_state()
+- test_recover_session_without_tools_leaves_stale_active_diagram_and_swarm_plan_state · function · L1111-L1133 — fn test_recover_session_without_tools_leaves_stale_active_diagram_and_swarm_plan_state()
+- test_disconnected_ctrl_l_only_adds_spacer_and_touches_nothing · function · L1140-L1173 — fn test_disconnected_ctrl_l_only_adds_spacer_and_touches_nothing()
+- test_info_widget_diagram_list_populated_only_in_margin_mode · function · L1193-L1221 — fn test_info_widget_diagram_list_populated_only_in_margin_mode()
+- test_margin_mode_plan_bump_accumulates_stale_diagram_in_info_widget_list · function · L1230-L1331 — fn test_margin_mode_plan_bump_accumulates_stale_diagram_in_info_widget_list()
+- test_margin_mode_has_no_diagram_selection_and_always_shows_newest · function · L1341-L1408 — fn test_margin_mode_has_no_diagram_selection_and_always_shows_newest()
+- test_margin_mode_session_switch_keeps_orphaned_diagram_in_info_widget · function · L1415-L1447 — fn test_margin_mode_session_switch_keeps_orphaned_diagram_in_info_widget()
+- test_compacted_history_window_drops_plan_graph_but_leaks_diagram_and_plan_state · function · L1482-L1536 — fn test_compacted_history_window_drops_plan_graph_but_leaks_diagram_and_plan_state()
+- test_remote_rewind_history_response_is_not_session_changed_and_leaks_plan_state · function · L1545-L1629 — fn test_remote_rewind_history_response_is_not_session_changed_and_leaks_plan_state()
+- test_local_session_picker_switch_is_never_consumed_and_keeps_plan_graph_state · function · L1640-L1732 — fn test_local_session_picker_switch_is_never_consumed_and_keeps_plan_graph_state()
+- seed_streaming_preview · function · L1751-L1763 — fn seed_streaming_preview(app: &mut App, hash: u64)
+- assert_streaming_preview_cleared · function · L1765-L1772 — fn assert_streaming_preview_cleared(hash: u64, path: &str)
+- test_local_clear_command_clears_streaming_preview_diagram · function · L1777-L1791 — fn test_local_clear_command_clears_streaming_preview_diagram()
+- test_local_rewind_and_undo_clear_streaming_preview_diagram · function · L1796-L1828 — fn test_local_rewind_and_undo_clear_streaming_preview_diagram()
+- test_recover_session_without_tools_clears_streaming_preview_diagram · function · L1834-L1848 — fn test_recover_session_without_tools_clears_streaming_preview_diagram()
+- streaming_commit · module · L1859-L1859 — mod streaming_commit;

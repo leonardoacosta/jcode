@@ -1,0 +1,25 @@
+# crates/jcode-provider-core/src/fingerprint.rs
+
+- ProviderInputSnapshot · struct · L9-L16 — struct ProviderInputSnapshot
+- PROVIDER_INPUT_BASELINES · constant · L18-L19 — static PROVIDER_INPUT_BASELINES: LazyLock<Mutex<HashMap<String, ProviderInputSnapshot>>> =
+- BASELINE_MAX_AGE · constant · L26-L26 — const BASELINE_MAX_AGE: std::time::Duration = std::time::Duration::from_secs(2 * 60 * 60);
+- BASELINE_PRUNE_THRESHOLD · constant · L27-L27 — const BASELINE_PRUNE_THRESHOLD: usize = 64;
+- prune_stale_baselines · function · L29-L34 — fn prune_stale_baselines(baselines: &mut HashMap<String, ProviderInputSnapshot>)
+- stable_hash_str · function · L36-L38 — pub fn stable_hash_str(value: &str) -> u64
+- stable_hash_bytes · function · L40-L42 — fn stable_hash_bytes(value: &[u8]) -> u64
+- hash_prefix · function · L44-L48 — fn hash_prefix(digest: &[u8]) -> u64
+- stable_hash_json · function · L50-L52 — pub fn stable_hash_json<T: Serialize + ?Sized>(value: &T) -> u64
+- stable_json_fingerprint · function · L57-L60 — fn stable_json_fingerprint<T: Serialize + ?Sized>(value: &T) -> (u64, usize)
+- item_fingerprints · function · L65-L92 — fn item_fingerprints(items: &[Value]) -> (Vec<u64>, u64)
+- CanonicalFingerprints · struct · L94-L99 — struct CanonicalFingerprints
+- canonical_fingerprints · function · L107-L185 — fn canonical_fingerprints(
+- prefix_matches · function · L187-L192 — fn prefix_matches(current: &[u64], previous: &[u64]) -> bool
+- common_prefix_len · function · L194-L200 — fn common_prefix_len(current: &[u64], previous: &[u64]) -> usize
+- log_provider_canonical_input · function · L209-L322 — pub fn log_provider_canonical_input(
+- optimization_tests · module · L326-L326 — mod optimization_tests;
+- tests · module · L329-L382 — mod tests
+- stable_hash_preserves_sha256_prefix_and_big_endian_order · function · L334-L338 — fn stable_hash_preserves_sha256_prefix_and_big_endian_order()
+- prefix_matching_allows_append_only_growth · function · L341-L343 — fn prefix_matching_allows_append_only_growth()
+- prefix_matching_detects_changed_prefix · function · L346-L349 — fn prefix_matching_detects_changed_prefix()
+- stale_baselines_are_pruned_once_map_is_large · function · L352-L373 — fn stale_baselines_are_pruned_once_map_is_large()
+- json_hashes_are_content_sensitive · function · L376-L381 — fn json_hashes_are_content_sensitive()

@@ -1,0 +1,38 @@
+# scripts/bench_headless_memory.py
+
+- log · function · L48-L49 — def log(msg: str) -> None
+- debug_cmd · function · L56-L83 — def debug_cmd(sock_path: str, cmd: str, session_id: str | None = None, timeout: float = 600) -> str
+- run_jcode · function · L86-L185 — def run_jcode(sessions: int, turns: int, cwd: str, model: str, memory: bool) -> dict
+- one · function · L148-L152 — def one(sid: str) -> None
+- ClaudeSession · class · L192-L224 — class ClaudeSession
+- __init__ · method · L193-L204 — def __init__(self, claude: str, cwd: str, model: str)
+- turn · method · L206-L224 — def turn(self, prompt: str, timeout: float = 600) -> str | None
+- run_claude · function · L227-L264 — def run_claude(sessions: int, turns: int, cwd: str, model: str) -> dict
+- one · function · L241-L244 — def one(p: ClaudeSession) -> None
+- resolve_bin · function · L276-L280 — def resolve_bin(name: str, override: str | None) -> str
+- provision_openai_homes · function · L283-L323 — def provision_openai_homes(root: Path, account: str | None) -> dict[str, dict[str, str]]
+- write · function · L302-L305 — def write(path: Path, obj: dict) -> None
+- JsonLineProc · class · L326-L362 — class JsonLineProc
+- __init__ · method · L329-L336 — def __init__(self, argv: list[str], cwd: str, env: dict[str, str])
+- send · method · L338-L340 — def send(self, obj: dict) -> None
+- read_until · method · L342-L355 — def read_until(self, done, timeout: float = 600) -> str | None
+- close · method · L357-L362 — def close(self) -> None
+- CodexSession · class · L365-L422 — class CodexSession(JsonLineProc)
+- __init__ · method · L368-L375 — def __init__(self, codex: str, cwd: str, env: dict[str, str], model: str)
+- request · method · L377-L394 — def request(self, method: str, params: dict) -> dict
+- done · function · L383-L389 — def done(ev: dict)
+- turn · method · L396-L422 — def turn(self, prompt: str, timeout: float = 600) -> str | None
+- done · function · L402-L420 — def done(ev: dict)
+- PiSession · class · L425-L453 — class PiSession(JsonLineProc)
+- __init__ · method · L428-L433 — def __init__(self, pi: str, cwd: str, env: dict[str, str], model: str)
+- turn · method · L435-L453 — def turn(self, prompt: str, timeout: float = 600) -> str | None
+- done · function · L438-L451 — def done(ev: dict)
+- run_stdio_tool · function · L456-L490 — def run_stdio_tool(name: str, factory, sessions: int, turns: int) -> dict
+- one · function · L470-L476 — def one(p) -> None
+- run_codex · function · L493-L496 — def run_codex(sessions: int, turns: int, cwd: str, model: str, env: dict[str, str], binary: str) -> dict
+- run_pi · function · L499-L502 — def run_pi(sessions: int, turns: int, cwd: str, model: str, env: dict[str, str], binary: str) -> dict
+- http_json · function · L505-L512 — def http_json(method: str, url: str, body: dict | None = None, timeout: float = 600)
+- run_opencode · function · L515-L583 — def run_opencode(sessions: int, turns: int, cwd: str, model: str, env: dict[str, str], binary: str) -> dict
+- one · function · L549-L560 — def one(sid: str) -> None
+- main · function · L586-L611 — def main() -> int
+- run_all · function · L614-L635 — def run_all(args, results: list, homes: dict[str, dict[str, str]]) -> int

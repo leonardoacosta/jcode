@@ -1,0 +1,55 @@
+# crates/jcode-app-core/src/server/reload_state.rs
+
+- RELOAD_HANDOFF_EVENT_POLL_MS · constant · L7-L7 — const RELOAD_HANDOFF_EVENT_POLL_MS: i32 = 100;
+- reload_marker_path · function · L9-L11 — pub fn reload_marker_path() -> PathBuf
+- write_reload_marker · function · L13-L23 — pub fn write_reload_marker()
+- clear_reload_marker · function · L25-L27 — pub fn clear_reload_marker()
+- ForeignMarkerPolicy · enum · L42-L48 — pub(super) enum ForeignMarkerPolicy
+- preserves · function · L51-L53 — fn preserves(self, state_pid: u32, current_pid: u32) -> bool
+- clear_reload_marker_if_stale_for_pid · function · L56-L66 — pub(super) fn clear_reload_marker_if_stale_for_pid(current_pid: u32, policy: ForeignMarkerPolicy)
+- reload_marker_exists · function · L68-L70 — pub fn reload_marker_exists() -> bool
+- reload_marker_active · function · L72-L78 — pub fn reload_marker_active(max_age: Duration) -> bool
+- recent_reload_state · function · L80-L99 — pub fn recent_reload_state(max_age: Duration) -> Option<ReloadState>
+- write_reload_state · function · L101-L116 — pub fn write_reload_state(
+- publish_reload_socket_ready · function · L118-L165 — pub(super) fn publish_reload_socket_ready(policy: ForeignMarkerPolicy)
+- reload_process_alive · function · L167-L187 — pub fn reload_process_alive(pid: u32) -> bool
+- ReloadWaitStatus · enum · L190-L195 — pub enum ReloadWaitStatus
+- inspect_reload_wait_status · function · L197-L264 — pub async fn inspect_reload_wait_status(
+- await_reload_handoff · function · L266-L300 — pub async fn await_reload_handoff(
+- wait_for_reload_handoff_event · function · L302-L331 — pub async fn wait_for_reload_handoff_event(
+- wait_for_reload_handoff_event_blocking · function · L334-L445 — fn wait_for_reload_handoff_event_blocking(
+- ReloadSignal · struct · L448-L453 — pub struct ReloadSignal
+- ReloadAck · struct · L456-L459 — pub struct ReloadAck
+- ReloadPhase · enum · L463-L467 — pub enum ReloadPhase
+- ReloadState · struct · L470-L478 — pub struct ReloadState
+- path · function · L481-L483 — fn path() -> PathBuf
+- write · function · L485-L491 — pub(crate) fn write(&self)
+- load · function · L493-L499 — pub fn load() -> Option<Self>
+- reload_state_summary · function · L502-L514 — pub fn reload_state_summary(max_age: Duration) -> String
+- ReloadSignalChannel · type · L516-L519 — type ReloadSignalChannel = (
+- ReloadAckChannel · type · L521-L524 — type ReloadAckChannel = (
+- RELOAD_SIGNAL · constant · L528-L528 — static RELOAD_SIGNAL: std::sync::OnceLock<ReloadSignalChannel> = std::sync::OnceLock::new();
+- RELOAD_ACK · constant · L530-L530 — static RELOAD_ACK: std::sync::OnceLock<ReloadAckChannel> = std::sync::OnceLock::new();
+- reload_signal · function · L532-L534 — pub(super) fn reload_signal() -> &'static ReloadSignalChannel
+- subscribe_reload_signal_for_tests · function · L537-L540 — pub(crate) fn subscribe_reload_signal_for_tests()
+- reload_ack · function · L542-L544 — pub(super) fn reload_ack() -> &'static ReloadAckChannel
+- send_reload_signal · function · L547-L569 — pub fn send_reload_signal(
+- acknowledge_reload_signal · function · L571-L581 — pub fn acknowledge_reload_signal(signal: &ReloadSignal)
+- wait_for_reload_ack · function · L583-L632 — pub async fn wait_for_reload_ack(
+- tests · module · L635-L970 — mod tests
+- EnvGuard · struct · L638-L641 — struct EnvGuard
+- set_runtime_dir · function · L644-L649 — fn set_runtime_dir(path: &std::path::Path) -> Self
+- drop · function · L653-L659 — fn drop(&mut self)
+- inspect_reload_wait_status_returns_failed_with_marker_detail · function · L664-L687 — async fn inspect_reload_wait_status_returns_failed_with_marker_detail()
+- inspect_reload_wait_status_returns_ready_for_socket_ready_marker · function · L691-L711 — async fn inspect_reload_wait_status_returns_ready_for_socket_ready_marker()
+- wait_for_reload_ack_returns_matching_ack · function · L714-L730 — async fn wait_for_reload_ack_returns_matching_ack()
+- wait_for_reload_ack_handles_repeated_unique_requests · function · L734-L753 — async fn wait_for_reload_ack_handles_repeated_unique_requests()
+- inspect_reload_wait_status_handles_repeated_ready_markers · function · L757-L775 — async fn inspect_reload_wait_status_handles_repeated_ready_markers()
+- spawn_and_reap_dead_pid · function · L782-L797 — fn spawn_and_reap_dead_pid() -> u32
+- inspect_reload_wait_status_idle_when_last_known_pid_is_dead_without_marker · function · L809-L823 — async fn inspect_reload_wait_status_idle_when_last_known_pid_is_dead_without_marker()
+- clear_reload_marker_if_stale_for_pid_keeps_own_starting_marker · function · L827-L848 — async fn clear_reload_marker_if_stale_for_pid_keeps_own_starting_marker()
+- clear_reload_marker_if_stale_for_pid_clears_foreign_or_completed_markers · function · L852-L890 — async fn clear_reload_marker_if_stale_for_pid_clears_foreign_or_completed_markers()
+- publish_reload_socket_ready_leaves_failed_marker_untouched · function · L894-L913 — async fn publish_reload_socket_ready_leaves_failed_marker_untouched()
+- recent_reload_state_ignores_corrupt_marker · function · L917-L940 — async fn recent_reload_state_ignores_corrupt_marker()
+- reload_marker_active_treats_failed_phase_as_inactive · function · L944-L954 — async fn reload_marker_active_treats_failed_phase_as_inactive()
+- reload_process_alive_handles_zero_and_dead_pids · function · L958-L969 — fn reload_process_alive_handles_zero_and_dead_pids()

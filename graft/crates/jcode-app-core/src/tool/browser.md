@@ -1,0 +1,65 @@
+# crates/jcode-app-core/src/tool/browser.rs
+
+- browser_fast · module · L12-L12 — mod browser_fast;
+- BrowserTool · struct · L14-L14 — pub struct BrowserTool;
+- FIREFOX_PROVIDER · constant · L16-L16 — static FIREFOX_PROVIDER: FirefoxBridgeProvider = FirefoxBridgeProvider;
+- new · function · L19-L21 — pub fn new() -> Self
+- browser_tool_description_text · function · L24-L29 — fn browser_tool_description_text() -> &'static str
+- browser_handoff_disabled · function · L33-L36 — fn browser_handoff_disabled() -> bool
+- BrowserInput · struct · L39-L111 — struct BrowserInput
+- BrowserField · struct · L114-L120 — struct BrowserField
+- ScrollTo · struct · L123-L128 — struct ScrollTo
+- BrowserProvider · interface · L131-L157 — trait BrowserProvider: Send + Sync
+- id · function · L132-L132 — fn id(&self) -> &'static str;
+- supported_browsers · function · L133-L133 — fn supported_browsers(&self) -> &'static [&'static str];
+- status · function · L135-L135 — async fn status(&self, ctx: &ToolContext) -> Result<ToolOutput>;
+- setup · function · L136-L136 — async fn setup(&self) -> Result<ToolOutput>;
+- ensure_ready · function · L137-L137 — async fn ensure_ready(&self) -> Result<Option<String>>;
+- status_for · function · L140-L142 — async fn status_for(&self, _browser: Option<&str>, ctx: &ToolContext) -> Result<ToolOutput>
+- setup_for · function · L144-L146 — async fn setup_for(&self, _browser: Option<&str>) -> Result<ToolOutput>
+- ensure_ready_for · function · L148-L150 — async fn ensure_ready_for(&self, _browser: Option<&str>) -> Result<Option<String>>
+- execute · function · L151-L156 — async fn execute(
+- FirefoxBridgeProvider · struct · L159-L159 — struct FirefoxBridgeProvider;
+- id · function · L163-L165 — fn id(&self) -> &'static str
+- supported_browsers · function · L167-L171 — fn supported_browsers(&self) -> &'static [&'static str]
+- status · function · L173-L175 — async fn status(&self, ctx: &ToolContext) -> Result<ToolOutput>
+- setup · function · L177-L179 — async fn setup(&self) -> Result<ToolOutput>
+- ensure_ready · function · L181-L183 — async fn ensure_ready(&self) -> Result<Option<String>>
+- status_for · function · L185-L193 — async fn status_for(&self, browser: Option<&str>, ctx: &ToolContext) -> Result<ToolOutput>
+- setup_for · function · L195-L203 — async fn setup_for(&self, browser: Option<&str>) -> Result<ToolOutput>
+- ensure_ready_for · function · L205-L208 — async fn ensure_ready_for(&self, browser: Option<&str>) -> Result<Option<String>>
+- execute · function · L210-L224 — async fn execute(
+- name · function · L229-L231 — fn name(&self) -> &str
+- description · function · L233-L235 — fn description(&self) -> &str
+- parameters_schema · function · L237-L347 — fn parameters_schema(&self) -> Value
+- execute · function · L349-L379 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- prepare_handoff_tab · function · L384-L412 — async fn prepare_handoff_tab(
+- bind_created_handoff_tab · function · L414-L426 — fn bind_created_handoff_tab(input: &mut BrowserInput, result: Option<&Value>) -> Result<()>
+- prepend_setup_message · function · L428-L446 — fn prepend_setup_message(mut output: ToolOutput, message: &str) -> ToolOutput
+- attach_browser_metadata · function · L448-L466 — fn attach_browser_metadata(
+- resolve_provider · function · L468-L479 — fn resolve_provider(browser: Option<&str>) -> Result<&'static dyn BrowserProvider>
+- status_metadata · function · L481-L501 — fn status_metadata(
+- answering_browser_name · function · L505-L515 — fn answering_browser_name(
+- firefox_status · function · L517-L590 — async fn firefox_status(
+- firefox_setup · function · L592-L608 — async fn firefox_setup(
+- companion_updates_bridge · function · L610-L614 — async fn companion_updates_bridge() -> bool
+- ensure_firefox_ready · function · L616-L688 — async fn ensure_firefox_ready(
+- ready_in_requested_browser · function · L692-L716 — fn ready_in_requested_browser(
+- execute_firefox_action · function · L718-L750 — async fn execute_firefox_action(
+- recover_slow_navigation · function · L756-L811 — async fn recover_slow_navigation(
+- request · module · L814-L814 — mod request;
+- firefox_run_bridge_command · function · L819-L888 — async fn firefox_run_bridge_command(
+- reset_session_off_worker · function · L890-L901 — async fn reset_session_off_worker(session_id: &str, browser: Option<&str>)
+- agent_window_id · function · L905-L947 — async fn agent_window_id(
+- explain_bridge_error · function · L950-L976 — fn explain_bridge_error(action: &str, details: &str) -> String
+- run_bridge_cli · function · L979-L1027 — async fn run_bridge_cli(
+- screenshot_via_bridge · function · L1029-L1073 — async fn screenshot_via_bridge(
+- temp_screenshot_path · function · L1075-L1081 — fn temp_screenshot_path() -> PathBuf
+- browser_error_diagnostic · function · L1085-L1102 — fn browser_error_diagnostic(error: &anyhow::Error) -> String
+- render_result_json · function · L1104-L1110 — fn render_result_json(result: &Value) -> String
+- render_browser_output · function · L1112-L1128 — fn render_browser_output(action: &str, title: String, result: Value) -> ToolOutput
+- format_content_result · function · L1130-L1147 — fn format_content_result(result: &Value) -> String
+- format_eval_result · function · L1149-L1161 — fn format_eval_result(result: &Value) -> String
+- format_interactables_result · function · L1163-L1200 — fn format_interactables_result(result: &Value) -> String
+- browser_tests · module · L1204-L1204 — mod browser_tests;
+- task_contract_tests · module · L1208-L1208 — mod task_contract_tests;

@@ -1,0 +1,51 @@
+# crates/jcode-tui/src/tui/ui_diagram_pane.rs
+
+- PinnedDiagramProbeRect · struct · L8-L14 — pub struct PinnedDiagramProbeRect
+- PinnedDiagramLiveDebugSnapshot · struct · L17-L34 — pub struct PinnedDiagramLiveDebugSnapshot
+- PinnedDiagramDebugState · struct · L37-L39 — struct PinnedDiagramDebugState
+- PINNED_DIAGRAM_TARGET_UTILIZATION_PERCENT · constant · L41-L41 — const PINNED_DIAGRAM_TARGET_UTILIZATION_PERCENT: f64 = 85.0;
+- PINNED_DIAGRAM_MIN_READABLE_ZOOM_PERCENT · constant · L42-L42 — const PINNED_DIAGRAM_MIN_READABLE_ZOOM_PERCENT: u16 = 70;
+- PINNED_DIAGRAM_MAX_AUTO_FILL_ZOOM_PERCENT · constant · L43-L43 — const PINNED_DIAGRAM_MAX_AUTO_FILL_ZOOM_PERCENT: u16 = 1000;
+- PinnedDiagramFitRenderPlan · enum · L46-L55 — enum PinnedDiagramFitRenderPlan
+- visible_rect · function · L58-L63 — fn visible_rect(self, inner: Rect) -> Rect
+- mode_label · function · L65-L70 — fn mode_label(self) -> String
+- utilization_percent · function · L73-L79 — fn utilization_percent(used: u32, total: u32) -> f64
+- axis_fill_zoom_percent · function · L81-L92 — fn axis_fill_zoom_percent(available_cells: u16, image_px: u32, cell_px: u16) -> u16
+- fit_zoom_percent_for_area · function · L94-L120 — fn fit_zoom_percent_for_area(
+- centered_viewport_scroll_cells · function · L122-L145 — fn centered_viewport_scroll_cells(
+- plan_pinned_diagram_fit_with_font · function · L147-L200 — fn plan_pinned_diagram_fit_with_font(
+- plan_pinned_diagram_fit · function · L202-L209 — fn plan_pinned_diagram_fit(area: Rect, img_w_px: u32, img_h_px: u32) -> PinnedDiagramFitRenderPlan
+- pinned_diagram_content_area_for_title · function · L211-L240 — fn pinned_diagram_content_area_for_title(
+- content_area_preferred_aspect_ratio · function · L242-L254 — pub(crate) fn content_area_preferred_aspect_ratio(area: Rect) -> Option<f32>
+- pinned_diagram_preferred_aspect_ratio · function · L256-L262 — pub(crate) fn pinned_diagram_preferred_aspect_ratio(
+- planned_pinned_diagram_mode_label · function · L264-L278 — fn planned_pinned_diagram_mode_label(
+- probe_rect · function · L280-L299 — fn probe_rect(
+- pinned_diagram_render_mode_label · function · L301-L307 — fn pinned_diagram_render_mode_label(fit_mode: bool, zoom_percent: u8) -> String
+- PinnedDiagramSnapshotLayout · struct · L310-L315 — struct PinnedDiagramSnapshotLayout
+- PinnedDiagramSnapshotView · struct · L318-L323 — struct PinnedDiagramSnapshotView
+- build_pinned_diagram_live_snapshot · function · L325-L336 — fn build_pinned_diagram_live_snapshot(
+- build_pinned_diagram_live_snapshot_with_font · function · L338-L411 — fn build_pinned_diagram_live_snapshot_with_font(
+- debug_probe_pinned_diagram · function · L413-L437 — pub fn debug_probe_pinned_diagram(
+- debug_probe_pinned_diagram_with_font · function · L440-L466 — pub(crate) fn debug_probe_pinned_diagram_with_font(
+- with_pinned_diagram_debug · function · L472-L474 — fn with_pinned_diagram_debug<R>(f: impl FnOnce(&PinnedDiagramDebugState) -> R) -> R
+- with_pinned_diagram_debug_mut · function · L476-L478 — fn with_pinned_diagram_debug_mut<R>(f: impl FnOnce(&mut PinnedDiagramDebugState) -> R) -> R
+- pinned_diagram_debug_json · function · L480-L486 — pub(crate) fn pinned_diagram_debug_json() -> Option<serde_json::Value>
+- clear_pinned_diagram_debug_snapshot · function · L488-L492 — pub(crate) fn clear_pinned_diagram_debug_snapshot()
+- reset_pinned_diagram_debug_snapshot · function · L494-L496 — pub(crate) fn reset_pinned_diagram_debug_snapshot()
+- div_ceil_u32 · function · L498-L503 — pub(crate) fn div_ceil_u32(value: u32, divisor: u32) -> u32
+- tests · module · L506-L630 — mod tests
+- diagram_view_uses_fit_mode_when_unfocused_or_reset · function · L514-L520 — fn diagram_view_uses_fit_mode_when_unfocused_or_reset()
+- vcenter_fitted_image_uses_the_full_inner_area_without_extra_padding · function · L523-L534 — fn vcenter_fitted_image_uses_the_full_inner_area_without_extra_padding()
+- pinned_diagram_fit_plan_fills_pane_when_contain_would_be_tiny · function · L537-L564 — fn pinned_diagram_fit_plan_fills_pane_when_contain_would_be_tiny()
+- pinned_diagram_fit_plan_fills_wide_short_lr_flowchart · function · L567-L592 — fn pinned_diagram_fit_plan_fills_wide_short_lr_flowchart()
+- pinned_diagram_fit_plan_keeps_contain_when_diagram_already_fills_pane · function · L595-L608 — fn pinned_diagram_fit_plan_keeps_contain_when_diagram_already_fills_pane()
+- pinned_diagram_fit_plan_keeps_contain_for_full_height_beetle_repro · function · L611-L629 — fn pinned_diagram_fit_plan_keeps_contain_for_full_height_beetle_repro()
+- estimate_pinned_diagram_pane_width_with_font · function · L632-L655 — pub(crate) fn estimate_pinned_diagram_pane_width_with_font(
+- PANE_BORDER_WIDTH · constant · L638-L638 — const PANE_BORDER_WIDTH: u32 = 2;
+- estimate_pinned_diagram_pane_width · function · L657-L668 — pub(crate) fn estimate_pinned_diagram_pane_width(
+- estimate_pinned_diagram_pane_height · function · L670-L692 — pub(crate) fn estimate_pinned_diagram_pane_height(
+- PANE_BORDER · constant · L675-L675 — const PANE_BORDER: u32 = 2;
+- vcenter_fitted_image_with_font · function · L694-L726 — pub(crate) fn vcenter_fitted_image_with_font(
+- is_diagram_poor_fit · function · L728-L764 — pub(crate) fn is_diagram_poor_fit(
+- diagram_view_uses_fit_mode · function · L766-L773 — pub(crate) fn diagram_view_uses_fit_mode(
+- draw_pinned_diagram · function · L779-L973 — pub(crate) fn draw_pinned_diagram(

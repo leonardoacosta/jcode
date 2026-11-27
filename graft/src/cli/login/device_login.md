@@ -1,0 +1,25 @@
+# src/cli/login/device_login.rs
+
+- login_copilot_flow · function · L12-L19 — pub(super) fn login_copilot_flow(no_browser: bool) -> Result<LoginFlowOutcome>
+- login_copilot_device_flow · function · L21-L61 — async fn login_copilot_device_flow(no_browser: bool) -> Result<()>
+- login_muse_subscription_flow · function · L63-L92 — pub(super) async fn login_muse_subscription_flow(no_browser: bool) -> Result<LoginFlowOutcome>
+- poll_muse_subscription_until_decided · function · L98-L134 — pub(super) async fn poll_muse_subscription_until_decided(
+- poll_muse_subscription_until_decided_by_code · function · L137-L167 — pub(super) async fn poll_muse_subscription_until_decided_by_code(
+- TestPollFn · type · L170-L170 — type TestPollFn = Box<dyn Fn(&str, u64) -> Result<auth::muse::PollOutcome> + Send + Sync>;
+- TEST_POLL_OVERRIDE · constant · L173-L173 — static TEST_POLL_OVERRIDE: std::sync::Mutex<Option<TestPollFn>> = std::sync::Mutex::new(None);
+- TestSleepFn · type · L176-L176 — type TestSleepFn = Box<dyn Fn(std::time::Duration) + Send + Sync>;
+- TEST_SLEEP_OVERRIDE · constant · L179-L179 — static TEST_SLEEP_OVERRIDE: std::sync::Mutex<Option<TestSleepFn>> = std::sync::Mutex::new(None);
+- TestPollGuard · struct · L182-L182 — pub(super) struct TestPollGuard;
+- drop · function · L186-L188 — fn drop(&mut self)
+- set_test_poll_override · function · L192-L198 — pub(super) fn set_test_poll_override<F>(f: F) -> TestPollGuard
+- TestSleepGuard · struct · L201-L201 — pub(super) struct TestSleepGuard;
+- drop · function · L205-L207 — fn drop(&mut self)
+- set_test_sleep_override · function · L211-L217 — pub(super) fn set_test_sleep_override<F>(f: F) -> TestSleepGuard
+- TestPollChallengeFn · type · L220-L221 — type TestPollChallengeFn =
+- TEST_POLL_CHALLENGE_OVERRIDE · constant · L224-L225 — static TEST_POLL_CHALLENGE_OVERRIDE: std::sync::Mutex<Option<TestPollChallengeFn>> =
+- TestPollChallengeGuard · struct · L228-L228 — pub(super) struct TestPollChallengeGuard;
+- drop · function · L232-L234 — fn drop(&mut self)
+- set_test_poll_challenge_override · function · L238-L244 — pub(super) fn set_test_poll_challenge_override<F>(f: F) -> TestPollChallengeGuard
+- poll_challenge · function · L246-L255 — async fn poll_challenge(
+- poll_by_code · function · L257-L267 — async fn poll_by_code(
+- sleep_step · function · L269-L276 — async fn sleep_step(wait: std::time::Duration)

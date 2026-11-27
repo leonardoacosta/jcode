@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/session_picker/latency.rs
+
+- LIMIT · constant · L4-L4 — const LIMIT: usize = 256;
+- Samples · struct · L6-L6 — struct Samples(VecDeque<f64>);
+- push · function · L8-L13 — fn push(&mut self, value: f64)
+- json · function · L14-L23 — fn json(&self) -> Value
+- Selection · struct · L25-L32 — struct Selection
+- Latency · struct · L33-L46 — pub(super) struct Latency
+- default · function · L48-L63 — fn default() -> Self
+- begin · function · L66-L84 — pub(super) fn begin(&mut self, id: String, at: Instant)
+- abandon · function · L85-L94 — pub(super) fn abandon(&mut self)
+- initial_selection · function · L95-L101 — pub(super) fn initial_selection(&mut self, id: Option<String>)
+- frame · function · L102-L126 — pub(super) fn frame(
+- workspace · function · L127-L137 — pub(super) fn workspace(&mut self, id: &str)
+- fail · function · L138-L143 — pub(super) fn fail(&mut self, id: &str)
+- cache_lookup · function · L144-L150 — pub(super) fn cache_lookup(&mut self, hit: bool)
+- json · function · L151-L171 — fn json(&self) -> Value
+- debug_resume_latency · function · L174-L176 — pub fn debug_resume_latency(&self) -> Value
+- latency_selection_id · function · L177-L179 — pub(super) fn latency_selection_id(&self) -> Option<String>
+- latency_input_complete · function · L180-L189 — pub(super) fn latency_input_complete(&mut self, before: Option<String>, at: Instant)
+- tests · module · L192-L332 — mod tests
+- bounded_navigation_and_stale_completions · function · L195-L217 — fn bounded_navigation_and_stale_completions()
+- picker_inputs_not_refresh_or_resize_start_measurements · function · L219-L273 — fn picker_inputs_not_refresh_or_resize_start_measurements()
+- stage_samples_are_once_only_and_percentiles_are_nearest_rank · function · L275-L297 — fn stage_samples_are_once_only_and_percentiles_are_nearest_rank()
+- pending_and_failed_preview_never_become_fast_successes · function · L299-L326 — fn pending_and_failed_preview_never_become_fast_successes()
+- empty_distributions_have_null_percentiles · function · L328-L331 — fn empty_distributions_have_null_percentiles()

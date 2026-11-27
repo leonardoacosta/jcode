@@ -1,0 +1,37 @@
+# crates/jcode-applet-types/src/view.rs
+
+- View · type · L12-L12 — pub type View = Node;
+- Node · struct · L18-L22 — pub struct Node
+- new · function · L25-L31 — pub fn new(kind: NodeKind) -> Self
+- keyed · function · L33-L36 — pub fn keyed(mut self, key: impl Into<String>) -> Self
+- children · function · L39-L51 — pub fn children(&self) -> Vec<&Node>
+- actions · function · L54-L68 — pub fn actions(&self) -> Vec<&Action>
+- NodeKind · enum · L75-L275 — pub enum NodeKind
+- KNOWN_TYPES · constant · L278-L304 — pub const KNOWN_TYPES: &[&str] = &[
+- default_true · function · L306-L308 — fn default_true() -> bool
+- no_space · function · L309-L311 — fn no_space() -> Space
+- default_grid_column · function · L312-L314 — fn default_grid_column() -> u32
+- Tab · struct · L317-L322 — pub struct Tab
+- KeyValueRow · struct · L325-L328 — pub struct KeyValueRow
+- SelectOption · struct · L331-L334 — pub struct SelectOption
+- Axis · enum · L338-L342 — pub enum Axis
+- Align · enum · L346-L354 — pub enum Align
+- Space · enum · L359-L367 — pub enum Space
+- TextStyle · enum · L371-L378 — pub enum TextStyle
+- Tone · enum · L382-L390 — pub enum Tone
+- ButtonVariant · enum · L394-L403 — pub enum ButtonVariant
+- ImageShape · enum · L407-L414 — pub enum ImageShape
+- Action · struct · L420-L424 — pub struct Action
+- new · function · L427-L432 — pub fn new(action: impl Into<String>) -> Self
+- is_host · function · L434-L436 — pub fn is_host(&self) -> bool
+- host_action · module · L440-L450 — pub mod host_action
+- OPEN_URL · constant · L441-L441 — pub const OPEN_URL: &str = "host.open_url";
+- COPY · constant · L442-L442 — pub const COPY: &str = "host.copy";
+- START_CHAT · constant · L443-L443 — pub const START_CHAT: &str = "host.start_chat";
+- SEND_PROMPT · constant · L444-L444 — pub const SEND_PROMPT: &str = "host.send_prompt";
+- OPEN_FILE · constant · L445-L445 — pub const OPEN_FILE: &str = "host.open_file";
+- CLOSE · constant · L447-L447 — pub const CLOSE: &str = "host.close";
+- SET_STATE · constant · L449-L449 — pub const SET_STATE: &str = "host.set_state";
+- serialize · function · L453-L471 — fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- deserialize · function · L475-L503 — fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error>
+- take_string · function · L506-L512 — fn take_string(map: &mut Map<String, Value>, field: &str) -> Result<Option<String>, String>

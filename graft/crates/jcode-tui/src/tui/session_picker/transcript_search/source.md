@@ -1,0 +1,80 @@
+# crates/jcode-tui/src/tui/session_picker/transcript_search/source.rs
+
+- Source · enum · L11-L26 — pub(crate) enum Source
+- weight · function · L30-L39 — pub(crate) fn weight(self) -> u32
+- is_low · function · L41-L46 — fn is_low(self) -> bool
+- source_weight · function · L51-L53 — pub(crate) fn source_weight(best: &[Option<Source>]) -> u32
+- weighted_source_weight · function · L57-L64 — pub(crate) fn weighted_source_weight(best: &[Option<Source>], idf: &[u32]) -> u32
+- UNIFORM_IDF · constant · L67-L67 — pub(crate) const UNIFORM_IDF: u32 = 100;
+- idf_weights · function · L72-L92 — pub(crate) fn idf_weights<'a>(
+- stronger · function · L95-L100 — pub(crate) fn stronger(a: Option<Source>, b: Option<Source>) -> Option<Source>
+- MARK · constant · L105-L105 — const MARK: char = '\u{1f}';
+- user_mentions · function · L110-L123 — pub(crate) fn user_mentions(index: &str, tokens: &[String]) -> usize
+- ALL · constant · L127-L136 — const ALL: [Source; 8] = [
+- tag · function · L138-L149 — fn tag(self) -> char
+- from_tag · function · L151-L153 — fn from_tag(tag: char) -> Option<Self>
+- slot · function · L156-L158 — fn slot(self) -> usize
+- push_mark · function · L162-L167 — pub(crate) fn push_mark(index: &mut String, source: Source)
+- source_at · function · L171-L177 — fn source_at(index: &str, pos: usize) -> Source
+- MAX_CLASSIFIED_MATCHES · constant · L180-L180 — const MAX_CLASSIFIED_MATCHES: usize = 64;
+- best_index_source · function · L183-L192 — fn best_index_source(index: &str, token: &str) -> Option<Source>
+- metadata_sources · function · L198-L216 — pub(crate) fn metadata_sources(
+- SourceBuckets · struct · L221-L223 — pub(crate) struct SourceBuckets
+- budget · function · L228-L234 — fn budget(source: Source, total: usize) -> usize
+- push · function · L236-L242 — pub(crate) fn push(&mut self, source: Source, text: &str, total: usize)
+- merge · function · L244-L248 — pub(crate) fn merge(&mut self, other: &Self, total: usize)
+- is_empty · function · L250-L252 — pub(crate) fn is_empty(&self) -> bool
+- render · function · L255-L263 — pub(crate) fn render(&self, index: &mut String)
+- BucketSink · struct · L267-L270 — pub(crate) struct BucketSink<'a>
+- text · function · L273-L279 — fn text(&mut self, text: &str, source: Source) -> Result<(), &'static str>
+- message_role_source · function · L283-L285 — pub(crate) fn message_role_source(role: &str) -> Source
+- Sink · interface · L287-L290 — pub(crate) trait Sink
+- text · function · L289-L289 — fn text(&mut self, text: &str, source: Source) -> Result<(), &'static str>;
+- Walk · struct · L292-L295 — pub(crate) struct Walk<'a, S>
+- new · function · L298-L303 — pub(crate) fn new(sink: &'a mut S) -> Self
+- child · function · L305-L310 — fn child(&mut self, source: Source) -> Walk<'_, S>
+- Value · type · L314-L314 — type Value = ();
+- deserialize · function · L315-L317 — fn deserialize<D: serde::Deserializer<'de>>(self, de: D) -> Result<(), D::Error>
+- Value · type · L321-L321 — type Value = ();
+- expecting · function · L322-L324 — fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
+- visit_str · function · L325-L332 — fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<(), E>
+- visit_bool · function · L333-L335 — fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<(), E>
+- visit_i64 · function · L336-L338 — fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<(), E>
+- visit_u64 · function · L339-L341 — fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<(), E>
+- visit_f64 · function · L342-L344 — fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<(), E>
+- visit_unit · function · L345-L347 — fn visit_unit<E: serde::de::Error>(self) -> Result<(), E>
+- visit_seq · function · L348-L352 — fn visit_seq<A: SeqAccess<'de>>(mut self, mut seq: A) -> Result<(), A::Error>
+- visit_map · function · L353-L389 — fn visit_map<A: MapAccess<'de>>(mut self, mut map: A) -> Result<(), A::Error>
+- role_source · function · L392-L400 — fn role_source(role: &str) -> Option<Source>
+- type_source · function · L402-L418 — fn type_source(kind: &str) -> Option<Source>
+- Key · enum · L420-L426 — enum Key
+- KeySeed · struct · L428-L428 — struct KeySeed;
+- Value · type · L430-L430 — type Value = Key;
+- deserialize · function · L431-L433 — fn deserialize<D: serde::Deserializer<'de>>(self, de: D) -> Result<Key, D::Error>
+- Value · type · L436-L436 — type Value = Key;
+- expecting · function · L437-L439 — fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
+- visit_str · function · L440-L461 — fn visit_str<E: serde::de::Error>(self, key: &str) -> Result<Key, E>
+- TagSeed · struct · L465-L465 — struct TagSeed(fn(&str) -> Option<Source>);
+- Value · type · L467-L467 — type Value = Option<Source>;
+- deserialize · function · L468-L470 — fn deserialize<D: serde::Deserializer<'de>>(self, de: D) -> Result<Self::Value, D::Error>
+- Value · type · L473-L473 — type Value = Option<Source>;
+- expecting · function · L474-L476 — fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
+- visit_str · function · L477-L479 — fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E>
+- visit_bool · function · L480-L482 — fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Self::Value, E>
+- visit_i64 · function · L483-L485 — fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<Self::Value, E>
+- visit_u64 · function · L486-L488 — fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Self::Value, E>
+- visit_f64 · function · L489-L491 — fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<Self::Value, E>
+- visit_unit · function · L492-L494 — fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E>
+- visit_seq · function · L495-L498 — fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error>
+- visit_map · function · L499-L502 — fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error>
+- tests · module · L506-L680 — mod tests
+- Collect · struct · L510-L510 — struct Collect(Vec<(String, Source)>);
+- text · function · L512-L515 — fn text(&mut self, text: &str, source: Source) -> Result<(), &'static str>
+- classify · function · L518-L524 — fn classify(json: &str) -> Vec<(String, Source)>
+- source_of · function · L526-L532 — fn source_of(json: &str, needle: &str) -> Source
+- jcode_messages_classify_prompts_replies_tools_and_reasoning · function · L535-L557 — fn jcode_messages_classify_prompts_replies_tools_and_reasoning()
+- claude_code_and_codex_records_classify · function · L560-L582 — fn claude_code_and_codex_records_classify()
+- weights_prefer_user_then_assistant_then_tools_and_thinking · function · L585-L606 — fn weights_prefer_user_then_assistant_then_tools_and_thinking()
+- index_header_ranks_project_above_ids_and_below_replies · function · L609-L629 — fn index_header_ranks_project_above_ids_and_below_replies()
+- sectioned_index_reports_strongest_section_per_token · function · L632-L650 — fn sectioned_index_reports_strongest_section_per_token()
+- buckets_keep_user_prompts_when_tool_output_floods_the_budget · function · L653-L679 — fn buckets_keep_user_prompts_when_tool_output_floods_the_budget()

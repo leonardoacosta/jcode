@@ -1,0 +1,147 @@
+# crates/jcode-tui/src/tui/ui_tests/mod.rs
+
+- cloud_directories · module · L3-L3 — mod cloud_directories;
+- codemode_preview · module · L4-L4 — mod codemode_preview;
+- compact_agent_dms · module · L5-L5 — mod compact_agent_dms;
+- preview_redraw_schedule · module · L6-L6 — mod preview_redraw_schedule;
+- queued_reminders · module · L7-L7 — mod queued_reminders;
+- resume_parity · module · L8-L8 — mod resume_parity;
+- picker_chrome_parity · module · L13-L13 — mod picker_chrome_parity;
+- viewport_snapshot_test_lock · function · L17-L19 — fn viewport_snapshot_test_lock() -> crate::tui::ui::RenderStateTestGuard
+- parse_changelog_from_supports_timestamped_entries · function · L22-L35 — fn parse_changelog_from_supports_timestamped_entries()
+- group_changelog_entries_includes_release_times · function · L38-L79 — fn group_changelog_entries_includes_release_times()
+- parse_changelog_from_supports_legacy_entries_without_timestamps · function · L82-L89 — fn parse_changelog_from_supports_legacy_entries_without_timestamps()
+- split_native_scrollbar_area_reserves_one_column_when_enabled · function · L92-L96 — fn split_native_scrollbar_area_reserves_one_column_when_enabled()
+- split_native_scrollbar_area_skips_tiny_regions · function · L99-L103 — fn split_native_scrollbar_area_skips_tiny_regions()
+- left_aligned_content_inset_only_applies_when_not_centered · function · L106-L110 — fn left_aligned_content_inset_only_applies_when_not_centered()
+- native_scrollbar_visibility_requires_overflow · function · L113-L119 — fn native_scrollbar_visibility_requires_overflow()
+- TestState · struct · L122-L175 — pub(super) struct TestState
+- client_focused · function · L178-L180 — fn client_focused(&self) -> bool
+- justrust_status · function · L181-L183 — fn justrust_status(&self) -> Option<&crate::tui::justrust_status::StatusRow>
+- hibernation_frame · function · L184-L186 — fn hibernation_frame(&self) -> Option<&ratatui::buffer::Buffer>
+- hibernation_notice · function · L187-L189 — fn hibernation_notice(&self) -> Option<&str>
+- pinned_todos_payload · function · L190-L192 — fn pinned_todos_payload(&self) -> Option<&str>
+- display_messages · function · L193-L195 — fn display_messages(&self) -> &[DisplayMessage]
+- display_user_message_count · function · L196-L201 — fn display_user_message_count(&self) -> usize
+- compacted_hidden_user_prompts · function · L202-L204 — fn compacted_hidden_user_prompts(&self) -> usize
+- has_display_edit_tool_messages · function · L205-L213 — fn has_display_edit_tool_messages(&self) -> bool
+- side_pane_images · function · L214-L216 — fn side_pane_images(&self) -> Vec<crate::session::RenderedImage>
+- image_expand_level · function · L217-L219 — fn image_expand_level(&self, _id: u64) -> crate::tui::ImageExpandLevel
+- display_messages_version · function · L220-L222 — fn display_messages_version(&self) -> u64
+- streaming_text · function · L223-L225 — fn streaming_text(&self) -> &str
+- input · function · L226-L228 — fn input(&self) -> &str
+- cursor_pos · function · L229-L231 — fn cursor_pos(&self) -> usize
+- is_processing · function · L232-L234 — fn is_processing(&self) -> bool
+- queued_messages · function · L235-L237 — fn queued_messages(&self) -> &[String]
+- interleave_message · function · L238-L240 — fn interleave_message(&self) -> Option<&str>
+- pending_soft_interrupts · function · L241-L243 — fn pending_soft_interrupts(&self) -> &[String]
+- scroll_offset · function · L244-L246 — fn scroll_offset(&self) -> usize
+- auto_scroll_paused · function · L247-L249 — fn auto_scroll_paused(&self) -> bool
+- provider_name · function · L250-L254 — fn provider_name(&self) -> String
+- provider_model · function · L255-L259 — fn provider_model(&self) -> String
+- upstream_provider · function · L260-L262 — fn upstream_provider(&self) -> Option<String>
+- connection_type · function · L263-L265 — fn connection_type(&self) -> Option<String>
+- status_detail · function · L266-L268 — fn status_detail(&self) -> Option<String>
+- mcp_servers · function · L269-L271 — fn mcp_servers(&self) -> Vec<(String, usize)>
+- available_skills · function · L272-L274 — fn available_skills(&self) -> Vec<String>
+- streaming_tokens · function · L275-L277 — fn streaming_tokens(&self) -> (u64, u64)
+- streaming_cache_tokens · function · L278-L280 — fn streaming_cache_tokens(&self) -> (Option<u64>, Option<u64>)
+- output_tps · function · L281-L283 — fn output_tps(&self) -> Option<f32>
+- streaming_tool_calls · function · L284-L286 — fn streaming_tool_calls(&self) -> Vec<ToolCall>
+- elapsed · function · L287-L289 — fn elapsed(&self) -> Option<Duration>
+- status · function · L290-L292 — fn status(&self) -> ProcessingStatus
+- command_suggestions · function · L293-L295 — fn command_suggestions(&self) -> Vec<crate::tui::CommandCandidate>
+- active_skill · function · L296-L298 — fn active_skill(&self) -> Option<String>
+- subagent_status · function · L299-L301 — fn subagent_status(&self) -> Option<String>
+- batch_progress · function · L302-L304 — fn batch_progress(&self) -> Option<crate::bus::BatchProgress>
+- time_since_activity · function · L305-L307 — fn time_since_activity(&self) -> Option<Duration>
+- stream_reveal_pending · function · L308-L310 — fn stream_reveal_pending(&self) -> bool
+- total_session_tokens · function · L311-L313 — fn total_session_tokens(&self) -> Option<(u64, u64)>
+- is_remote_mode · function · L314-L316 — fn is_remote_mode(&self) -> bool
+- is_canary · function · L317-L319 — fn is_canary(&self) -> bool
+- is_replay · function · L320-L322 — fn is_replay(&self) -> bool
+- diff_mode · function · L323-L326 — fn diff_mode(&self) -> crate::config::DiffDisplayMode
+- current_session_id · function · L327-L329 — fn current_session_id(&self) -> Option<String>
+- session_display_name · function · L330-L332 — fn session_display_name(&self) -> Option<String>
+- server_display_name · function · L333-L335 — fn server_display_name(&self) -> Option<String>
+- server_display_icon · function · L336-L338 — fn server_display_icon(&self) -> Option<String>
+- server_sessions · function · L339-L341 — fn server_sessions(&self) -> Vec<String>
+- connected_clients · function · L342-L344 — fn connected_clients(&self) -> Option<usize>
+- status_notice · function · L345-L347 — fn status_notice(&self) -> Option<String>
+- time_since_user_interaction · function · L348-L350 — fn time_since_user_interaction(&self) -> Option<Duration>
+- inline_swarm_gallery_active · function · L351-L353 — fn inline_swarm_gallery_active(&self) -> bool
+- inline_swarm_members · function · L354-L356 — fn inline_swarm_members(&self) -> Vec<crate::protocol::SwarmMemberStatus>
+- swarm_members_for_transcript · function · L357-L361 — fn swarm_members_for_transcript(&self) -> Vec<crate::protocol::SwarmMemberStatus>
+- swarm_panel_selected · function · L362-L364 — fn swarm_panel_selected(&self) -> usize
+- swarm_panel_focused · function · L365-L367 — fn swarm_panel_focused(&self) -> bool
+- swarm_panel_full_page · function · L368-L370 — fn swarm_panel_full_page(&self) -> bool
+- remote_startup_phase_active · function · L371-L373 — fn remote_startup_phase_active(&self) -> bool
+- dictation_key_label · function · L374-L376 — fn dictation_key_label(&self) -> Option<String>
+- animation_elapsed · function · L377-L379 — fn animation_elapsed(&self) -> f32
+- rate_limit_remaining · function · L380-L382 — fn rate_limit_remaining(&self) -> Option<Duration>
+- queue_mode · function · L383-L385 — fn queue_mode(&self) -> bool
+- next_prompt_new_session_armed · function · L386-L388 — fn next_prompt_new_session_armed(&self) -> bool
+- has_stashed_input · function · L389-L391 — fn has_stashed_input(&self) -> bool
+- context_info · function · L392-L394 — fn context_info(&self) -> crate::prompt::ContextInfo
+- context_limit · function · L395-L397 — fn context_limit(&self) -> Option<usize>
+- info_widget_overlays_enabled · function · L398-L400 — fn info_widget_overlays_enabled(&self) -> bool
+- client_update_available · function · L401-L403 — fn client_update_available(&self) -> bool
+- server_update_available · function · L404-L406 — fn server_update_available(&self) -> Option<bool>
+- info_widget_data · function · L407-L409 — fn info_widget_data(&self) -> info_widget::InfoWidgetData
+- render_streaming_markdown · function · L410-L412 — fn render_streaming_markdown(&self, _width: usize) -> Vec<Line<'static>>
+- centered_mode · function · L413-L415 — fn centered_mode(&self) -> bool
+- auth_status · function · L416-L418 — fn auth_status(&self) -> crate::auth::AuthStatus
+- update_cost · function · L419-L419 — fn update_cost(&mut self) {}
+- diagram_mode · function · L420-L422 — fn diagram_mode(&self) -> crate::config::DiagramDisplayMode
+- diagram_focus · function · L423-L425 — fn diagram_focus(&self) -> bool
+- diagram_index · function · L426-L428 — fn diagram_index(&self) -> usize
+- diagram_scroll · function · L429-L431 — fn diagram_scroll(&self) -> (i32, i32)
+- diagram_pane_ratio · function · L432-L434 — fn diagram_pane_ratio(&self) -> u8
+- diagram_pane_ratio_user_adjusted · function · L435-L437 — fn diagram_pane_ratio_user_adjusted(&self) -> bool
+- diagram_pane_animating · function · L438-L440 — fn diagram_pane_animating(&self) -> bool
+- diagram_pane_enabled · function · L441-L443 — fn diagram_pane_enabled(&self) -> bool
+- diagram_pane_position · function · L444-L446 — fn diagram_pane_position(&self) -> crate::config::DiagramPanePosition
+- diagram_zoom · function · L447-L449 — fn diagram_zoom(&self) -> u8
+- diff_pane_scroll · function · L450-L452 — fn diff_pane_scroll(&self) -> usize
+- diff_pane_scroll_x · function · L453-L455 — fn diff_pane_scroll_x(&self) -> i32
+- side_panel_image_zoom_percent · function · L456-L458 — fn side_panel_image_zoom_percent(&self) -> u8
+- diff_pane_focus · function · L459-L461 — fn diff_pane_focus(&self) -> bool
+- side_panel · function · L462-L466 — fn side_panel(&self) -> &crate::side_panel::SidePanelSnapshot
+- EMPTY · constant · L463-L464 — static EMPTY: std::sync::LazyLock<crate::side_panel::SidePanelSnapshot> =
+- pin_images · function · L467-L469 — fn pin_images(&self) -> bool
+- inline_images_visible · function · L470-L472 — fn inline_images_visible(&self) -> bool
+- inline_interactive_state · function · L473-L475 — fn inline_interactive_state(&self) -> Option<&crate::tui::InlineInteractiveState>
+- inline_view_state · function · L476-L478 — fn inline_view_state(&self) -> Option<&crate::tui::InlineViewState>
+- changelog_scroll · function · L479-L481 — fn changelog_scroll(&self) -> Option<usize>
+- help_scroll · function · L482-L484 — fn help_scroll(&self) -> Option<usize>
+- model_status_overlay · function · L485-L487 — fn model_status_overlay(&self) -> Option<(usize, &str)>
+- session_picker_overlay · function · L488-L490 — fn session_picker_overlay(&self) -> Option<&std::cell::RefCell<session_picker::SessionPicker>>
+- login_picker_overlay · function · L491-L495 — fn login_picker_overlay(
+- account_picker_overlay · function · L496-L500 — fn account_picker_overlay(
+- usage_overlay · function · L501-L505 — fn usage_overlay(
+- working_dir · function · L506-L508 — fn working_dir(&self) -> Option<String>
+- now_millis · function · L509-L511 — fn now_millis(&self) -> u64
+- copy_badge_ui · function · L512-L514 — fn copy_badge_ui(&self) -> crate::tui::CopyBadgeUiState
+- copy_selection_mode · function · L515-L517 — fn copy_selection_mode(&self) -> bool
+- copy_selection_range · function · L518-L520 — fn copy_selection_range(&self) -> Option<crate::tui::CopySelectionRange>
+- copy_selection_status · function · L521-L523 — fn copy_selection_status(&self) -> Option<crate::tui::CopySelectionStatus>
+- suggestion_prompts · function · L524-L526 — fn suggestion_prompts(&self) -> Vec<(String, String)>
+- onboarding_preview_mode · function · L527-L529 — fn onboarding_preview_mode(&self) -> bool
+- cache_ttl_status · function · L530-L532 — fn cache_ttl_status(&self) -> Option<crate::tui::CacheTtlInfo>
+- openai_reset_hint · function · L534-L536 — fn openai_reset_hint(&self) -> Option<String>
+- chat_native_scrollbar · function · L537-L539 — fn chat_native_scrollbar(&self) -> bool
+- side_panel_native_scrollbar · function · L540-L542 — fn side_panel_native_scrollbar(&self) -> bool
+- reset_prompt_viewport_state_for_test · function · L545-L549 — fn reset_prompt_viewport_state_for_test()
+- pinned_todo_regressions · module · L552-L552 — mod pinned_todo_regressions;
+- todo_blocker_notes · module · L553-L553 — mod todo_blocker_notes;
+- basic · module · L556-L556 — mod basic;
+- diagrams · module · L558-L558 — mod diagrams;
+- expanded_diff · module · L560-L560 — mod expanded_diff;
+- inline_picker · module · L562-L562 — mod inline_picker;
+- onboarding · module · L564-L564 — mod onboarding;
+- palette_topology · module · L566-L566 — mod palette_topology;
+- prepared_messages_tests · module · L568-L568 — mod prepared_messages_tests;
+- rendering · module · L570-L570 — mod rendering;
+- scrollbar_overlay · module · L572-L572 — mod scrollbar_overlay;
+- swarm_buffer · module · L574-L574 — mod swarm_buffer;
+- tools · module · L576-L576 — mod tools;

@@ -1,0 +1,59 @@
+# crates/jcode-app-core/src/server/swarm/claims.rs
+
+- FileClaimMode · enum · L8-L12 — pub(in crate::server) enum FileClaimMode
+- parse · function · L15-L21 — pub(in crate::server) fn parse(raw: &str) -> Self
+- ClaimOutcome · enum · L25-L29 — pub(in crate::server) enum ClaimOutcome
+- FileClaim · enum · L33-L40 — enum FileClaim
+- holder · function · L43-L47 — fn holder(&self) -> &str
+- FileClaimStore · struct · L51-L54 — pub(in crate::server) struct FileClaimStore
+- canonical_key · function · L56-L95 — fn canonical_key(path: &Path) -> anyhow::Result<String>
+- resolve · function · L57-L93 — fn resolve(path: &Path, depth: usize) -> anyhow::Result<PathBuf>
+- FileClaims · struct · L100-L107 — pub(crate) struct FileClaims
+- mutate · function · L110-L142 — async fn mutate(
+- write · function · L144-L148 — pub(crate) async fn write(&mut self, path: &Path, contents: &[u8]) -> std::io::Result<()>
+- remove_file · function · L150-L152 — pub(crate) async fn remove_file(&mut self, path: &Path) -> std::io::Result<()>
+- commit · function · L154-L168 — pub(crate) fn commit(&mut self, path: &Path) -> anyhow::Result<()>
+- warnings · function · L170-L172 — pub(crate) fn warnings(&self) -> &[String]
+- drop · function · L176-L186 — fn drop(&mut self)
+- load · function · L190-L197 — pub(in crate::server) fn load(persist_path: Option<PathBuf>) -> Self
+- lock_and_reload · function · L199-L219 — fn lock_and_reload(&mut self) -> anyhow::Result<Option<std::fs::File>>
+- persist · function · L221-L228 — fn persist(&self) -> anyhow::Result<()>
+- outcome · function · L230-L255 — fn outcome(
+- reserve · function · L257-L308 — fn reserve(
+- finish · function · L310-L340 — fn finish(
+- release · function · L342-L363 — fn release(
+- release_session · function · L365-L370 — pub(in crate::server) fn release_session(
+- active · function · L372-L379 — pub(in crate::server) fn active(&mut self) -> anyhow::Result<Vec<(String, String)>>
+- claim · function · L382-L405 — fn claim(
+- file_claims · function · L408-L417 — pub(in crate::server) fn file_claims() -> &'static StdMutex<FileClaimStore>
+- STORE · constant · L409-L409 — static STORE: OnceLock<StdMutex<FileClaimStore>> = OnceLock::new();
+- release_file_claims_of · function · L419-L425 — pub(in crate::server) fn release_file_claims_of(session_id: &str)
+- unregister_claim_worker · function · L427-L432 — pub(in crate::server) fn unregister_claim_worker(session_id: &str)
+- claim_workers · function · L434-L437 — fn claim_workers() -> &'static StdMutex<HashSet<String>>
+- WORKERS · constant · L435-L435 — static WORKERS: OnceLock<StdMutex<HashSet<String>>> = OnceLock::new();
+- register_claim_worker · function · L439-L443 — pub(in crate::server) fn register_claim_worker(session_id: &str)
+- configured_claim_mode · function · L445-L452 — fn configured_claim_mode() -> FileClaimMode
+- claim_files · function · L454-L473 — pub(crate) fn claim_files(
+- check_file_claim · function · L476-L480 — fn check_file_claim(session_id: &str, path: &Path) -> anyhow::Result<Option<String>>
+- file_claims_held_by · function · L482-L492 — pub(in crate::server) fn file_claims_held_by(session_id: &str) -> Vec<String>
+- claim_tests · module · L495-L1427 — mod claim_tests
+- new_nested_path_keeps_its_claim_after_creation · function · L499-L511 — fn new_nested_path_keeps_its_claim_after_creation()
+- UnusedProvider · struct · L513-L513 — struct UnusedProvider;
+- cancelled_caller_keeps_claim_with_inflight_mutation · function · L516-L590 — async fn cancelled_caller_keeps_claim_with_inflight_mutation()
+- revoked_generation_cannot_mutate_in_any_claim_mode · function · L593-L628 — async fn revoked_generation_cannot_mutate_in_any_claim_mode()
+- new_owner_may_claim_only_after_predecessor_settles · function · L631-L663 — async fn new_owner_may_claim_only_after_predecessor_settles()
+- member_removal_releases_runnable_worker_but_keeps_unsettled_stop · function · L670-L718 — async fn member_removal_releases_runnable_worker_but_keeps_unsettled_stop()
+- Restore · struct · L673-L673 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L675-L680 — fn drop(&mut self)
+- dangling_relative_chains_resolve_and_cycles_fail · function · L722-L740 — fn dangling_relative_chains_resolve_and_cycles_fail()
+- overlapping_reservations_preserve_success_and_inflight_owners · function · L743-L827 — async fn overlapping_reservations_preserve_success_and_inflight_owners()
+- stale_stores_and_rollback_preserve_committed_owners · function · L830-L856 — fn stale_stores_and_rollback_preserve_committed_owners()
+- corrupt_store_refuses_acquisition · function · L859-L875 — fn corrupt_store_refuses_acquisition()
+- file_claim_processes_share_one_owner · function · L878-L982 — async fn file_claim_processes_share_one_owner()
+- complete · function · L986-L994 — async fn complete(
+- name · function · L996-L998 — fn name(&self) -> &str
+- fork · function · L999-L1001 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- file_claim_tools_enforce_modes · function · L1005-L1358 — async fn file_claim_tools_enforce_modes()
+- non_worker_sessions_are_never_claimed · function · L1361-L1369 — fn non_worker_sessions_are_never_claimed()
+- claim_warn_block_release_and_reload · function · L1372-L1419 — fn claim_warn_block_release_and_reload()
+- mode_parse_defaults_to_warn · function · L1422-L1426 — fn mode_parse_defaults_to_warn()

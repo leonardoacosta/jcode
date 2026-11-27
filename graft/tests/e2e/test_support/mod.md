@@ -1,0 +1,67 @@
+# tests/e2e/test_support/mod.rs
+
+- JCODE_HOME_LOCK · constant · L35-L35 — static JCODE_HOME_LOCK: std::sync::OnceLock<Mutex<()>> = std::sync::OnceLock::new();
+- short_runtime_dir · function · L37-L46 — pub(crate) fn short_runtime_dir(name: String) -> std::path::PathBuf
+- lock_jcode_home · function · L48-L55 — fn lock_jcode_home() -> std::sync::MutexGuard<'static, ()>
+- TestEnvGuard · struct · L57-L67 — pub(crate) struct TestEnvGuard
+- new · function · L70-L113 — pub(crate) fn new() -> Result<Self>
+- drop · function · L117-L162 — fn drop(&mut self)
+- setup_test_env · function · L165-L167 — pub(crate) fn setup_test_env() -> Result<TestEnvGuard>
+- EnvVarGuard · struct · L169-L172 — pub(crate) struct EnvVarGuard
+- set · function · L175-L179 — pub(crate) fn set(name: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L183-L189 — fn drop(&mut self)
+- reserve_tcp_port · function · L192-L197 — pub(crate) fn reserve_tcp_port() -> Result<u16>
+- wait_for_socket · function · L199-L208 — pub(crate) async fn wait_for_socket(path: &std::path::Path) -> Result<()>
+- wait_for_debug_socket_ready · function · L210-L235 — pub(crate) async fn wait_for_debug_socket_ready(path: &std::path::Path) -> Result<()>
+- wait_for_server_ready · function · L237-L243 — pub(crate) async fn wait_for_server_ready(
+- wait_for_tcp_port · function · L245-L254 — pub(crate) async fn wait_for_tcp_port(port: u16) -> Result<()>
+- pair_test_device · function · L256-L273 — fn pair_test_device(token: &str) -> Result<()>
+- WsTestClient · struct · L275-L278 — struct WsTestClient
+- CapturingCompactionProvider · struct · L281-L283 — pub(crate) struct CapturingCompactionProvider
+- new · function · L286-L288 — pub(crate) fn new() -> Self
+- captured_messages · function · L290-L292 — pub(crate) fn captured_messages(&self) -> Arc<Mutex<Vec<Vec<Message>>>>
+- complete · function · L297-L315 — async fn complete(
+- name · function · L317-L319 — fn name(&self) -> &str
+- supports_compaction · function · L321-L323 — fn supports_compaction(&self) -> bool
+- context_window · function · L325-L327 — fn context_window(&self) -> usize
+- fork · function · L329-L331 — fn fork(&self) -> Arc<dyn Provider>
+- flatten_text_blocks · function · L334-L344 — pub(crate) fn flatten_text_blocks(message: &Message) -> String
+- connect · function · L347-L354 — async fn connect(port: u16, token: &str) -> Result<Self>
+- send_request · function · L356-L361 — async fn send_request(&mut self, request: Request) -> Result<u64>
+- subscribe · function · L363-L387 — async fn subscribe(&mut self) -> Result<u64>
+- get_history · function · L389-L393 — async fn get_history(&mut self) -> Result<u64>
+- send_message · function · L395-L409 — async fn send_message(&mut self, content: &str) -> Result<u64>
+- resume_session · function · L411-L423 — async fn resume_session(&mut self, session_id: &str) -> Result<u64>
+- read_event · function · L425-L440 — async fn read_event(&mut self) -> Result<ServerEvent>
+- collect_until_done_unix · function · L443-L465 — pub(crate) async fn collect_until_done_unix(
+- collect_until_history_unix · function · L467-L482 — pub(crate) async fn collect_until_history_unix(
+- collect_until_done_ws · function · L484-L499 — async fn collect_until_done_ws(
+- collect_until_history_ws · function · L501-L516 — async fn collect_until_history_ws(
+- summarize_history_invariant · function · L518-L550 — pub(crate) fn summarize_history_invariant(event: &ServerEvent) -> Option<String>
+- TransportScenarioResult · struct · L552-L556 — pub(crate) struct TransportScenarioResult
+- run_unix_transport_scenario · function · L558-L673 — pub(crate) async fn run_unix_transport_scenario() -> Result<TransportScenarioResult>
+- run_websocket_transport_scenario · function · L675-L771 — pub(crate) async fn run_websocket_transport_scenario() -> Result<TransportScenarioResult>
+- wait_for_default_connected_client_session · function · L773-L777 — pub(crate) async fn wait_for_default_connected_client_session(
+- debug_create_headless_session_with_command · function · L779-L808 — pub(crate) async fn debug_create_headless_session_with_command(
+- debug_create_headless_session · function · L810-L814 — pub(crate) async fn debug_create_headless_session(
+- debug_run_command · function · L816-L858 — pub(crate) async fn debug_run_command(
+- debug_run_command_json · function · L860-L867 — pub(crate) async fn debug_run_command_json(
+- client_id_map · function · L869-L889 — pub(crate) fn client_id_map(
+- percentile_ms · function · L891-L897 — pub(crate) fn percentile_ms(sorted: &[u128], percentile: usize) -> u128
+- wait_for_server_client · function · L899-L937 — pub(crate) async fn wait_for_server_client(
+- subscribe_client · function · L939-L943 — pub(crate) async fn subscribe_client(client: &mut server::Client) -> Result<()>
+- wait_for_subscribed_server_client · function · L945-L951 — pub(crate) async fn wait_for_subscribed_server_client(
+- kill_child · function · L953-L956 — pub(crate) fn kill_child(child: &mut Child)
+- PtyChild · struct · L959-L963 — pub(crate) struct PtyChild
+- send_input · function · L967-L973 — pub(crate) fn send_input(&mut self, input: &str) -> Result<()>
+- send_command · function · L975-L978 — pub(crate) fn send_command(&mut self, command: &str) -> Result<()>
+- output_text · function · L980-L982 — pub(crate) fn output_text(&self) -> String
+- spawn_pty_child · function · L990-L1043 — pub(crate) fn spawn_pty_child(mut cmd: Command) -> Result<PtyChild>
+- set_file_mtime · function · L1046-L1066 — pub(crate) fn set_file_mtime(path: &std::path::Path, when: std::time::SystemTime) -> Result<()>
+- current_process_cpu_time · function · L1069-L1080 — pub(crate) fn current_process_cpu_time() -> Result<Duration>
+- current_process_cpu_time · function · L1083-L1085 — pub(crate) fn current_process_cpu_time() -> Result<Duration>
+- abort_server_and_cleanup · function · L1087-L1095 — pub(crate) fn abort_server_and_cleanup<T>(
+- wait_for_connected_client_session · function · L1097-L1139 — pub(crate) async fn wait_for_connected_client_session(
+- wait_for_debug_client_count · function · L1141-L1168 — pub(crate) async fn wait_for_debug_client_count(
+- selfdev_reload · module · L1172-L1172 — mod selfdev_reload;
+- logs · module · L1177-L1177 — mod logs;

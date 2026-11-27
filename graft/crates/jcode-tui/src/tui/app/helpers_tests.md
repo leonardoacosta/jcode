@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/app/helpers_tests.rs
+
+- EnvVarGuard · struct · L12-L15 — struct EnvVarGuard
+- set_value · function · L18-L22 — fn set_value(key: &'static str, value: &str) -> Self
+- set_path · function · L24-L28 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- drop · function · L32-L38 — fn drop(&mut self)
+- extract_bracketed_system_message_strips_wrapper · function · L42-L50 — fn extract_bracketed_system_message_strips_wrapper()
+- partition_queued_messages_moves_system_messages_into_reminders · function · L53-L71 — fn partition_queued_messages_moves_system_messages_into_reminders()
+- inferred_reasoning_efforts_use_provider_specific_order_and_max_semantics · function · L74-L110 — fn inferred_reasoning_efforts_use_provider_specific_order_and_max_semantics()
+- swarm_effort_display_labels_use_configured_root_and_preserve_modes · function · L113-L129 — fn swarm_effort_display_labels_use_configured_root_and_preserve_modes()
+- swarm_effort_display_labels_default_to_low · function · L132-L140 — fn swarm_effort_display_labels_default_to_low()
+- detected_resume_terminal_recognizes_handterm_term_program · function · L144-L148 — fn detected_resume_terminal_recognizes_handterm_term_program()
+- shell_command_quotes_single_quotes_for_handterm_exec · function · L152-L162 — fn shell_command_quotes_single_quotes_for_handterm_exec()
+- resume_spawn_is_compiled_on_every_platform_with_platform_neutral_args · function · L174-L195 — fn resume_spawn_is_compiled_on_every_platform_with_platform_neutral_args()
+- resume_invocation_reaches_the_launcher_and_reports_success · function · L208-L238 — fn resume_invocation_reaches_the_launcher_and_reports_success()
+- resume_invocation_args_includes_socket_when_present · function · L241-L253 — fn resume_invocation_args_includes_socket_when_present()
+- resume_invocation_args_omits_blank_socket · function · L256-L266 — fn resume_invocation_args_omits_blank_socket()
+- pinned_resume_test_home · function · L273-L285 — fn pinned_resume_test_home() -> (
+- build_resume_command_uses_imported_jcode_session_for_claude_code · function · L288-L312 — fn build_resume_command_uses_imported_jcode_session_for_claude_code()
+- build_resume_command_uses_imported_jcode_session_for_codex · function · L315-L338 — fn build_resume_command_uses_imported_jcode_session_for_codex()
+- format_countdown_until_handles_subminute_and_minutes · function · L341-L351 — fn format_countdown_until_handles_subminute_and_minutes()
+- gather_ambient_info_filters_to_session_reminders_when_ambient_disabled · function · L354-L430 — fn gather_ambient_info_filters_to_session_reminders_when_ambient_disabled()
+- invalidate_todos_cache_backdates_entry_so_next_gather_refetches · function · L433-L481 — fn invalidate_todos_cache_backdates_entry_so_next_gather_refetches()
+- fresh_session_command_includes_fresh_spawn_and_socket · function · L484-L497 — fn fresh_session_command_includes_fresh_spawn_and_socket()
+- fresh_session_command_omits_blank_socket · function · L500-L505 — fn fresh_session_command_omits_blank_socket()
+- backdated_now_never_panics_and_prefers_past_instants · function · L513-L533 — fn backdated_now_never_panics_and_prefers_past_instants()

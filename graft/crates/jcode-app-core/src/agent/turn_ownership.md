@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/agent/turn_ownership.rs
+
+- TurnState · struct · L7-L10 — struct TurnState
+- TurnObserver · struct · L14-L17 — pub(crate) struct TurnObserver
+- runtime_generation · function · L20-L22 — pub(crate) fn runtime_generation(&self) -> &str
+- snapshot · function · L24-L30 — pub(crate) fn snapshot(&self) -> (u64, Option<TurnIdentity>)
+- active · function · L33-L39 — pub(crate) fn active(&self) -> Option<TurnIdentity>
+- latest_turn_id · function · L42-L47 — pub(crate) fn latest_turn_id(&self) -> u64
+- TurnOwnership · struct · L50-L53 — pub(super) struct TurnOwnership
+- default · function · L56-L64 — fn default() -> Self
+- Reservation · struct · L67-L71 — struct Reservation
+- drop · function · L74-L83 — fn drop(&mut self)
+- RuntimeMutationLease · struct · L87-L89 — pub(crate) struct RuntimeMutationLease
+- TurnLease · struct · L92-L94 — pub(crate) struct TurnLease
+- TurnPublicationPin · struct · L97-L99 — pub(crate) struct TurnPublicationPin
+- fmt · function · L102-L106 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- identity · function · L110-L112 — pub(crate) fn identity(&self) -> &TurnIdentity
+- publication_pin · function · L114-L118 — pub(crate) fn publication_pin(&self) -> TurnPublicationPin
+- observer · function · L122-L124 — pub(super) fn observer(&self) -> TurnObserver
+- claim_mutation · function · L126-L132 — pub(super) fn claim_mutation(&self) -> anyhow::Result<RuntimeMutationLease>
+- claim · function · L134-L159 — pub(super) fn claim(&self) -> anyhow::Result<TurnLease>
+- validate · function · L161-L170 — pub(super) fn validate(&self, lease: &TurnLease) -> anyhow::Result<()>
+- tests · module · L174-L237 — mod tests
+- ownership_is_exclusive_runtime_local_and_released_on_drop · function · L178-L200 — fn ownership_is_exclusive_runtime_local_and_released_on_drop()
+- mutation_excludes_execution_without_publishing_phantom_turn · function · L203-L219 — fn mutation_excludes_execution_without_publishing_phantom_turn()
+- task_abort_releases_reservation · function · L222-L236 — async fn task_abort_releases_reservation()

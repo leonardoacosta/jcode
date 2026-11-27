@@ -1,0 +1,24 @@
+# crates/jcode-tui/src/tui/app/spinner_ticker.rs
+
+- PARK_AFTER_MISSED · constant · L41-L41 — const PARK_AFTER_MISSED: u8 = 2;
+- Shared · struct · L43-L55 — struct Shared
+- State · struct · L57-L61 — struct State
+- SpinnerTicker · struct · L63-L72 — pub(crate) struct SpinnerTicker
+- new · function · L75-L105 — pub(crate) fn new(period: Duration, first_delay: Duration) -> Self
+- tick · function · L109-L127 — pub(crate) async fn tick(&mut self)
+- reset_after · function · L131-L152 — pub(crate) fn reset_after(&mut self, delay: Duration)
+- schedule · function · L154-L160 — fn schedule(&self, next: Instant)
+- drop · function · L164-L167 — fn drop(&mut self)
+- lock · function · L170-L174 — fn lock(state: &Mutex<State>) -> std::sync::MutexGuard<'_, State>
+- same_phase · function · L179-L183 — fn same_phase(a: Instant, b: Instant, period: Duration) -> bool
+- next_on_grid · function · L187-L195 — fn next_on_grid(previous: Instant, period: Duration, now: Instant) -> Instant
+- run · function · L197-L236 — fn run(shared: &Shared, sender: &tokio::sync::mpsc::Sender<()>, period: Duration)
+- tests · module · L239-L403 — mod tests
+- ticks_keep_the_requested_cadence · function · L243-L255 — async fn ticks_keep_the_requested_cadence()
+- uncollected_ticks_park_the_thread · function · L258-L284 — async fn uncollected_ticks_park_the_thread()
+- full_frames_that_empty_the_channel_do_not_keep_the_thread_awake · function · L287-L308 — async fn full_frames_that_empty_the_channel_do_not_keep_the_thread_awake()
+- cancelled_wait_keeps_the_cadence · function · L311-L324 — async fn cancelled_wait_keeps_the_cadence()
+- reset_moves_the_next_tick · function · L327-L351 — async fn reset_moves_the_next_tick()
+- reset_to_the_same_phase_leaves_the_thread_asleep · function · L354-L371 — async fn reset_to_the_same_phase_leaves_the_thread_asleep()
+- same_phase_tolerates_jitter_and_whole_frames · function · L374-L385 — fn same_phase_tolerates_jitter_and_whole_frames()
+- late_grid_points_are_skipped_not_replayed · function · L388-L402 — fn late_grid_points_are_skipped_not_replayed()

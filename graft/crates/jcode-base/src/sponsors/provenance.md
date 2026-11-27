@@ -1,0 +1,34 @@
+# crates/jcode-base/src/sponsors/provenance.rs
+
+- DiscoveredSetup · struct · L27-L31 — pub struct DiscoveredSetup
+- ProvenanceState · struct · L34-L42 — struct ProvenanceState
+- UsageCounts · struct · L45-L49 — struct UsageCounts
+- STATE · constant · L51-L51 — static STATE: Mutex<Option<ProvenanceState>> = Mutex::new(None);
+- FLUSH_INTERVAL · constant · L53-L53 — const FLUSH_INTERVAL: Duration = Duration::from_secs(60 * 60);
+- FLUSH_TIMEOUT · constant · L54-L54 — const FLUSH_TIMEOUT: Duration = Duration::from_secs(5);
+- with_state · function · L56-L59 — fn with_state<R>(f: impl FnOnce(&mut ProvenanceState) -> R) -> R
+- today · function · L61-L63 — fn today() -> String
+- record_discovered_setups · function · L67-L80 — pub fn record_discovered_setups(setups: Vec<DiscoveredSetup>)
+- on_server_connected · function · L85-L106 — pub fn on_server_connected(server_name: &str, command: &str, args: &[String]) -> Option<String>
+- on_tool_call · function · L110-L139 — pub fn on_tool_call(server_name: &str, is_error: bool)
+- is_tagged · function · L142-L144 — pub fn is_tagged(server_name: &str) -> bool
+- UsageReport · struct · L147-L153 — pub struct UsageReport
+- drain_reports · function · L155-L167 — fn drain_reports(state: &mut ProvenanceState) -> Vec<UsageReport>
+- UsageRequest · struct · L170-L174 — struct UsageRequest
+- serialize_reports · function · L176-L204 — fn serialize_reports<S: serde::Serializer>(
+- WireReport · struct · L185-L191 — struct WireReport<'a>
+- build_flush_request · function · L206-L216 — fn build_flush_request(
+- spawn_flush · function · L218-L245 — fn spawn_flush(reports: Vec<UsageReport>)
+- flush_now · function · L249-L258 — pub fn flush_now()
+- reset_for_tests · function · L261-L264 — pub(crate) fn reset_for_tests()
+- drain_pending_for_tests · function · L267-L269 — pub(crate) fn drain_pending_for_tests() -> Vec<UsageReport>
+- tests · module · L272-L453 — mod tests
+- sample_request · function · L275-L295 — fn sample_request() -> UsageRequest
+- usage_request_preserves_exact_legacy_bytes · function · L298-L319 — fn usage_request_preserves_exact_legacy_bytes()
+- flush_builder_releases_source_before_network_future · function · L322-L359 — fn flush_builder_releases_source_before_network_future()
+- Tracked · struct · L327-L331 — struct Tracked<'a>
+- drop · function · L333-L335 — fn drop(&mut self)
+- enable_sponsors · function · L361-L372 — fn enable_sponsors() -> (std::sync::MutexGuard<'static, ()>, tempfile::TempDir)
+- connect_matching_discovered_setup_tags_and_counts · function · L375-L401 — fn connect_matching_discovered_setup_tags_and_counts()
+- non_discovered_servers_are_never_tagged_or_metered · function · L404-L422 — fn non_discovered_servers_are_never_tagged_or_metered()
+- disabled_sponsors_config_disables_everything · function · L425-L452 — fn disabled_sponsors_config_disables_everything()

@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/app/remote/swarm_status_core.rs
+
+- MAX_NAMES_PER_CATEGORY · constant · L14-L14 — const MAX_NAMES_PER_CATEGORY: usize = 3;
+- Transition · enum · L18-L23 — enum Transition
+- verb · function · L26-L33 — fn verb(self) -> &'static str
+- member_label · function · L36-L41 — fn member_label(member: &SwarmMemberStatus) -> String
+- classify · function · L48-L65 — fn classify(prev_status: &str, next_status: &str) -> Option<Transition>
+- format_names · function · L67-L76 — fn format_names(mut names: Vec<String>) -> String
+- swarm_status_transition_notice · function · L82-L127 — pub(in crate::tui::app) fn swarm_status_transition_notice(
+- tests · module · L130-L257 — mod tests
+- member · function · L134-L151 — fn member(id: &str, status: &str) -> SwarmMemberStatus
+- agent_completing_is_announced_with_active_tally · function · L154-L161 — fn agent_completing_is_announced_with_active_tally()
+- ready_after_working_counts_as_done · function · L164-L171 — fn ready_after_working_counts_as_done()
+- ready_on_startup_is_silent · function · L174-L178 — fn ready_on_startup_is_silent()
+- failure_and_block_are_announced_together · function · L181-L196 — fn failure_and_block_are_announced_together()
+- last_agent_finishing_reports_all_finished · function · L199-L206 — fn last_agent_finishing_reports_all_finished()
+- unchanged_snapshot_is_silent · function · L209-L212 — fn unchanged_snapshot_is_silent()
+- active_churn_and_new_members_are_silent · function · L215-L222 — fn active_churn_and_new_members_are_silent()
+- first_snapshot_is_silent · function · L225-L228 — fn first_snapshot_is_silent()
+- many_names_collapse_into_more_count · function · L231-L244 — fn many_names_collapse_into_more_count()
+- unnamed_member_falls_back_to_session_id_prefix · function · L247-L256 — fn unnamed_member_falls_back_to_session_id_prefix()

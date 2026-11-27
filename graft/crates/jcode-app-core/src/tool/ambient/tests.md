@@ -1,0 +1,34 @@
+# crates/jcode-app-core/src/tool/ambient/tests.rs
+
+- schedule_description_stays_one_short_sentence · function · L4-L19 — fn schedule_description_stays_one_short_sentence()
+- test_parse_priority · function · L22-L28 — fn test_parse_priority()
+- test_cycle_result_store_and_take · function · L31-L51 — fn test_cycle_result_store_and_take()
+- test_end_cycle_input_deserialization · function · L54-L79 — fn test_end_cycle_input_deserialization()
+- test_end_cycle_input_minimal · function · L82-L93 — fn test_end_cycle_input_minimal()
+- test_end_cycle_input_accepts_string_numbers · function · L99-L116 — fn test_end_cycle_input_accepts_string_numbers()
+- test_ambient_inputs_accept_string_numbers_and_bools · function · L121-L144 — fn test_ambient_inputs_accept_string_numbers_and_bools()
+- test_schedule_input_deserialization · function · L147-L159 — fn test_schedule_input_deserialization()
+- test_permission_input_deserialization · function · L162-L177 — fn test_permission_input_deserialization()
+- test_permission_input_defaults · function · L180-L190 — fn test_permission_input_defaults()
+- test_build_permission_review_context_defaults · function · L193-L218 — fn test_build_permission_review_context_defaults()
+- test_build_permission_review_context_uses_structured_fields · function · L221-L264 — fn test_build_permission_review_context_uses_structured_fields()
+- test_register_unregister_ambient_session · function · L267-L277 — fn test_register_unregister_ambient_session()
+- test_request_permission_rejects_non_ambient_session · function · L280-L305 — async fn test_request_permission_rejects_non_ambient_session()
+- test_schedule_tool_input_deserialization · function · L308-L337 — fn test_schedule_tool_input_deserialization()
+- test_schedule_tool_input_resume_target · function · L340-L349 — fn test_schedule_tool_input_resume_target()
+- test_schedule_tool_input_spawn_target · function · L352-L361 — fn test_schedule_tool_input_spawn_target()
+- test_schedule_tool_input_minimal · function · L364-L376 — fn test_schedule_tool_input_minimal()
+- test_schedule_tool_input_cancel_action · function · L379-L389 — fn test_schedule_tool_input_cancel_action()
+- test_parse_schedule_target_defaults_to_resume_originating_session · function · L392-L405 — fn test_parse_schedule_target_defaults_to_resume_originating_session()
+- test_parse_schedule_target_supports_spawn_and_ambient · function · L408-L419 — fn test_parse_schedule_target_supports_spawn_and_ambient()
+- test_parse_schedule_target_rejects_removed_session_alias · function · L422-L426 — fn test_parse_schedule_target_rejects_removed_session_alias()
+- test_schedule_tool_defaults_to_resuming_originating_session · function · L433-L482 — async fn test_schedule_tool_defaults_to_resuming_originating_session()
+- test_schedule_tool_schema_avoids_top_level_combinators · function · L485-L493 — fn test_schedule_tool_schema_avoids_top_level_combinators()
+- test_schedule_tool_requires_time · function · L496-L516 — async fn test_schedule_tool_requires_time()
+- schedule_ctx · function · L518-L528 — fn schedule_ctx() -> ToolContext
+- HomeGuard · struct · L530-L530 — struct HomeGuard(Option<std::ffi::OsString>);
+- set · function · L533-L537 — fn set(path: &std::path::Path) -> Self
+- drop · function · L541-L546 — fn drop(&mut self)
+- overdue_request · function · L549-L565 — fn overdue_request(hours: i64) -> ScheduleRequest
+- schedule_list_shows_missed_history_and_retry_warns · function · L572-L620 — async fn schedule_list_shows_missed_history_and_retry_warns()
+- schedule_list_shows_delivered_and_uncertain_and_retry_warns_of_prior_effects · function · L627-L710 — async fn schedule_list_shows_delivered_and_uncertain_and_retry_warns_of_prior_effects()

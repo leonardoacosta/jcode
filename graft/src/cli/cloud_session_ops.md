@@ -1,0 +1,29 @@
+# src/cli/cloud_session_ops.rs
+
+- WaitTimeout · struct · L14-L14 — pub(super) struct WaitTimeout;
+- fmt · function · L16-L18 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- Report · struct · L23-L34 — struct Report
+- fork · function · L36-L88 — pub(super) fn fork(
+- target · function · L90-L102 — fn target() -> super::Target
+- send · function · L104-L121 — pub(super) fn send(reference: &str, message: &str, json: bool) -> Result<()>
+- validate_started_receipt · function · L123-L133 — fn validate_started_receipt(bytes: &[u8], id: &str) -> Result<()>
+- remote_report · function · L135-L158 — fn remote_report(id: &str, host: &str, messages: usize, lines: usize) -> Result<Report>
+- print_report · function · L160-L176 — fn print_report(report: &Report, json: bool) -> Result<()>
+- status · function · L178-L181 — pub(super) fn status(reference: &str, messages: usize, json: bool) -> Result<()>
+- wait · function · L183-L205 — pub(super) fn wait(reference: &str, timeout: u64, messages: usize, json: bool) -> Result<()>
+- logs · function · L207-L212 — pub(super) fn logs(reference: &str, lines: usize) -> Result<()>
+- checked_id · function · L214-L224 — fn checked_id(id: &str) -> Result<()>
+- run_directory · function · L226-L229 — fn run_directory(id: &str) -> Result<PathBuf>
+- lock_file · function · L231-L240 — fn lock_file(path: &Path) -> Result<File>
+- tail · function · L243-L269 — fn tail(path: &Path, lines: usize) -> Result<String>
+- read_report · function · L271-L315 — fn read_report(id: &str, directory: &Path, messages: usize, log_lines: usize) -> Result<Report>
+- inspect · function · L317-L323 — pub(super) fn inspect(reference: &str, messages: usize, log_lines: usize) -> Result<()>
+- SUPERVISOR · constant · L328-L336 — const SUPERVISOR: &str = r#"
+- run_detached · function · L338-L436 — pub(super) fn run_detached(reference: &str, message: &str) -> Result<()>
+- tests · module · L439-L534 — mod tests
+- validates_detached_start_receipt · function · L443-L457 — fn validates_detached_start_receipt()
+- rejects_path_and_shell_ids · function · L460-L475 — fn rejects_path_and_shell_ids()
+- log_tail_fixtures · function · L478-L487 — fn log_tail_fixtures()
+- owner_lock_excludes_second_descriptor_and_releases · function · L490-L502 — fn owner_lock_excludes_second_descriptor_and_releases()
+- supervisor_preserves_literal_prompt_and_failed_exit · function · L506-L527 — fn supervisor_preserves_literal_prompt_and_failed_exit()
+- timeout_is_downcastable · function · L530-L533 — fn timeout_is_downcastable()

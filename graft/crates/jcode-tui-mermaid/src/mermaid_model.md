@@ -1,0 +1,24 @@
+# crates/jcode-tui-mermaid/src/mermaid_model.rs
+
+- DiagramId · struct · L10-L14 — pub struct DiagramId
+- DiagramOrigin · enum · L17-L22 — pub enum DiagramOrigin
+- DiagramBlock · struct · L25-L28 — pub struct DiagramBlock
+- DiagramRenderProfile · struct · L36-L40 — pub struct DiagramRenderProfile
+- new · function · L43-L49 — pub fn new(width_cells: Option<u16>, preferred_aspect_ratio: Option<f32>) -> Self
+- cache_key · function · L51-L58 — pub fn cache_key(self, source_hash: u64) -> DiagramCacheKey
+- MermaidTheme · enum · L62-L65 — pub enum MermaidTheme
+- DiagramCacheKey · struct · L68-L73 — pub struct DiagramCacheKey
+- fmt · function · L76-L85 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- RenderTarget · enum · L89-L94 — pub enum RenderTarget
+- RenderPriority · enum · L97-L101 — pub enum RenderPriority
+- RenderMode · enum · L104-L108 — pub enum RenderMode
+- DiagramRenderRequest · struct · L111-L118 — pub struct DiagramRenderRequest
+- cache_key · function · L121-L123 — pub fn cache_key(&self) -> DiagramCacheKey
+- RenderArtifact · struct · L127-L132 — pub struct RenderArtifact
+- RenderStatus · enum · L135-L140 — pub enum RenderStatus
+- RenderError · struct · L143-L146 — pub struct RenderError
+- normalize_aspect_ratio · function · L148-L152 — pub fn normalize_aspect_ratio(ratio: Option<f32>) -> Option<u16>
+- tests · module · L155-L201 — mod tests
+- aspect_ratio_normalization_matches_legacy_bucket_policy · function · L159-L167 — fn aspect_ratio_normalization_matches_legacy_bucket_policy()
+- cache_key_is_explicit_and_stable · function · L170-L177 — fn cache_key_is_explicit_and_stable()
+- render_request_derives_cache_key_from_source_hash_and_profile_only · function · L180-L200 — fn render_request_derives_cache_key_from_source_hash_and_profile_only()

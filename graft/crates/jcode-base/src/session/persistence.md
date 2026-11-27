@@ -1,0 +1,38 @@
+# crates/jcode-base/src/session/persistence.rs
+
+- JournalReplayStats · struct · L14-L18 — struct JournalReplayStats
+- is_corrupt · function · L21-L23 — fn is_corrupt(&self) -> bool
+- SAVES_IN_FLIGHT · constant · L29-L29 — static SAVES_IN_FLIGHT: std::sync::RwLock<()> = std::sync::RwLock::new(());
+- drain_saves_for_shutdown · function · L34-L55 — pub fn drain_saves_for_shutdown(timeout: std::time::Duration) -> bool
+- JournalReplayDedupe · struct · L67-L75 — struct JournalReplayDedupe
+- new · function · L78-L86 — fn new(session: &Session) -> Self
+- filter · function · L90-L115 — fn filter(&mut self, mut entry: SessionJournalEntry) -> Option<SessionJournalEntry>
+- found_duplicates · function · L117-L119 — fn found_duplicates(&self) -> bool
+- dedupe_messages_by_id · function · L125-L130 — fn dedupe_messages_by_id(messages: &mut Vec<super::StoredMessage>) -> usize
+- salvage_glued_journal_entries · function · L141-L169 — fn salvage_glued_journal_entries(line: &str, mut apply: impl FnMut(SessionJournalEntry)) -> usize
+- ENTRY_START · constant · L142-L142 — const ENTRY_START: &str = "{\"meta\":";
+- METADATA_SNAPSHOT_MAX_BYTES · constant · L184-L184 — const METADATA_SNAPSHOT_MAX_BYTES: u64 = 1024 * 1024;
+- apply_latest_journal_meta · function · L188-L208 — fn apply_latest_journal_meta(session: &mut Session, journal_path: &Path)
+- MetaOnly · struct · L190-L192 — struct MetaOnly
+- replay_journal_lines · function · L210-L263 — fn replay_journal_lines(
+- strip_all_images · function · L268-L276 — pub fn strip_all_images(&mut self) -> usize
+- pre_wipe_backup_path · function · L278-L284 — fn pre_wipe_backup_path(path: &Path, timestamp: i64) -> PathBuf
+- guard_snapshot_shrink · function · L290-L322 — fn guard_snapshot_shrink(&self, snapshot_path: &Path, journal_path: &Path)
+- MIN_TRANSCRIPT_SNAPSHOT_BYTES · constant · L291-L291 — const MIN_TRANSCRIPT_SNAPSHOT_BYTES: u64 = 4 * 1024;
+- apply_journal_entry · function · L324-L332 — fn apply_journal_entry(&mut self, entry: SessionJournalEntry)
+- checkpoint_snapshot · function · L334-L361 — fn checkpoint_snapshot(&mut self, snapshot_path: &Path, journal_path: &Path) -> Result<()>
+- schedule_checkpoint_after_corrupt_journal · function · L368-L385 — fn schedule_checkpoint_after_corrupt_journal(&mut self, journal_path: &Path)
+- load_from_path · function · L387-L488 — pub fn load_from_path(path: &Path) -> Result<Self>
+- load · function · L490-L495 — pub fn load(session_id: &str) -> Result<Self>
+- load_for_resume · function · L500-L510 — pub fn load_for_resume(session_id: &str) -> Result<Self>
+- load_startup_stub · function · L517-L531 — pub fn load_startup_stub(session_id: &str) -> Result<Self>
+- load_for_remote_startup · function · L533-L597 — pub fn load_for_remote_startup(session_id: &str) -> Result<Self>
+- save · function · L599-L601 — pub fn save(&mut self) -> Result<()>
+- save_prepared · function · L607-L609 — pub fn save_prepared(&mut self) -> Result<()>
+- save_inner · function · L611-L887 — fn save_inner(&mut self, force: bool) -> Result<()>
+- tests · module · L891-L1008 — mod tests
+- pre_wipe_backups · function · L895-L901 — fn pre_wipe_backups(dir: &Path) -> Vec<PathBuf>
+- empty_checkpoint_preserves_and_refuses_to_wipe_large_transcript · function · L904-L934 — fn empty_checkpoint_preserves_and_refuses_to_wipe_large_transcript()
+- stripped_remote_stub_cannot_checkpoint_over_transcript · function · L937-L958 — fn stripped_remote_stub_cannot_checkpoint_over_transcript()
+- non_empty_shrink_checkpoint_remains_allowed_without_pre_wipe_backup · function · L961-L986 — fn non_empty_shrink_checkpoint_remains_allowed_without_pre_wipe_backup()
+- small_empty_snapshot_is_rejected_without_creating_noise_backup · function · L989-L1007 — fn small_empty_snapshot_is_rejected_without_creating_noise_backup()

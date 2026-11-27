@@ -1,0 +1,21 @@
+# crates/jcode-provider-anthropic/src/native_display_probe.rs
+
+- CountingAllocator · struct · L11-L11 — struct CountingAllocator;
+- ALLOCATOR · constant · L13-L13 — static ALLOCATOR: CountingAllocator = CountingAllocator;
+- record · function · L14-L20 — fn record(bytes: usize)
+- alloc · function · L22-L25 — unsafe fn alloc(&self, layout: Layout) -> *mut u8
+- alloc_zeroed · function · L26-L29 — unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8
+- dealloc · function · L30-L32 — unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout)
+- realloc · function · L33-L36 — unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, size: usize) -> *mut u8
+- measure_allocations · function · L39-L55 — pub(super) fn measure_allocations<T>(f: impl FnOnce() -> T) -> (T, (u64, u64))
+- Reset · struct · L40-L40 — struct Reset;
+- drop · function · L42-L44 — fn drop(&mut self)
+- thread_cpu_ns · function · L57-L65 — pub(super) fn thread_cpu_ns() -> u64
+- Timespec · struct · L59-L62 — struct Timespec
+- clock_gettime · function · L63-L64 — unsafe extern "C"
+- native · function · L74-L79 — fn native(provider: &str, item: Value) -> ContentBlock
+- cases · function · L80-L129 — fn cases() -> Vec<(&'static str, Vec<ContentBlock>)>
+- assert_same · function · L130-L165 — fn assert_same(blocks: &[ContentBlock])
+- native_display_frozen_legacy_exact_outputs · function · L167-L249 — fn native_display_frozen_legacy_exact_outputs()
+- native_display_actual_cpu_allocation_probe · function · L253-L308 — fn native_display_actual_cpu_allocation_probe()
+- borrowed_replay_actual_cpu_allocation_probe · function · L313-L379 — fn borrowed_replay_actual_cpu_allocation_probe()

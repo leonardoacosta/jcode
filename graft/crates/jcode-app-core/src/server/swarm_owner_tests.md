@@ -1,0 +1,27 @@
+# crates/jcode-app-core/src/server/swarm_owner_tests.rs
+
+- worker_report_publishes_one_owner_wake_without_explicit_await · function · L4-L61 — async fn worker_report_publishes_one_owner_wake_without_explicit_await()
+- owner_is_notified_once_of_idle_headless_workers_stopped_by_restart · function · L64-L158 — async fn owner_is_notified_once_of_idle_headless_workers_stopped_by_restart()
+- unrestored_notice_retries_model_delivery_despite_available_ui · function · L161-L189 — async fn unrestored_notice_retries_model_delivery_despite_available_ui()
+- unrestored_notice_state · function · L191-L223 — fn unrestored_notice_state(
+- unrestored_notice_concurrent_reconnects_queue_once_without_ui · function · L226-L245 — async fn unrestored_notice_concurrent_reconnects_queue_once_without_ui()
+- unrestored_notice_ignores_worker_with_pending_recovery_intent · function · L249-L300 — async fn unrestored_notice_ignores_worker_with_pending_recovery_intent()
+- unrestored_notice_persists_for_owner_without_live_agent · function · L304-L367 — async fn unrestored_notice_persists_for_owner_without_live_agent()
+- update_member_status_notifies_coordinator_when_headless_worker_returns_ready · function · L370-L411 — async fn update_member_status_notifies_coordinator_when_headless_worker_returns_ready()
+- member_elapsed_time_runs_only_while_active_and_freezes_afterward · function · L414-L480 — async fn member_elapsed_time_runs_only_while_active_and_freezes_afterward()
+- wait_monitor_publishes_entry_age_and_cleanup_without_tool_events · function · L483-L539 — async fn wait_monitor_publishes_entry_age_and_cleanup_without_tool_events()
+- wait_metadata_snapshots_are_live_and_clear_after_completion · function · L542-L565 — async fn wait_metadata_snapshots_are_live_and_clear_after_completion()
+- update_member_status_prefers_explicit_report_back_owner_over_coordinator · function · L568-L626 — async fn update_member_status_prefers_explicit_report_back_owner_over_coordinator()
+- update_member_status_includes_completion_report_in_owner_notification · function · L630-L701 — async fn update_member_status_includes_completion_report_in_owner_notification()
+- forced_stop_does_not_promote_gallery_activity_to_final_response · function · L705-L748 — async fn forced_stop_does_not_promote_gallery_activity_to_final_response()
+- update_member_status_skips_noop_broadcasts · function · L751-L797 — async fn update_member_status_skips_noop_broadcasts()
+- refresh_swarm_task_staleness_marks_running_tasks_stale_and_heartbeat_revives · function · L800-L884 — async fn refresh_swarm_task_staleness_marks_running_tasks_stale_and_heartbeat_revives()
+- member_status_is_dead_matches_terminal_non_success_states · function · L887-L894 — fn member_status_is_dead_matches_terminal_non_success_states()
+- running_plan_assigned_to · function · L896-L925 — fn running_plan_assigned_to(
+- salvage_requeues_dead_members_tasks_and_notifies_coordinator · function · L928-L978 — async fn salvage_requeues_dead_members_tasks_and_notifies_coordinator()
+- salvage_fails_task_once_reclaim_cap_is_reached · function · L981-L1012 — async fn salvage_fails_task_once_reclaim_cap_is_reached()
+- remove_session_from_swarm_salvages_running_assignments · function · L1015-L1048 — async fn remove_session_from_swarm_salvages_running_assignments()
+- staleness_sweep_salvages_tasks_of_vanished_assignee · function · L1051-L1091 — async fn staleness_sweep_salvages_tasks_of_vanished_assignee()
+- staleness_sweep_grants_grace_to_recently_crashed_member · function · L1094-L1130 — async fn staleness_sweep_grants_grace_to_recently_crashed_member()
+- update_member_status_notifies_owner_when_worker_crashes_mid_task · function · L1133-L1170 — async fn update_member_status_notifies_owner_when_worker_crashes_mid_task()
+- subagent_stop_hook_receives_the_worker_report_once · function · L1175-L1263 — async fn subagent_stop_hook_receives_the_worker_report_once()

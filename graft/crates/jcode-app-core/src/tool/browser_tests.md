@@ -1,0 +1,42 @@
+# crates/jcode-app-core/src/tool/browser_tests.rs
+
+- open_defaults_to_new_tab_unless_targeted_or_explicitly_reused · function · L5-L22 — fn open_defaults_to_new_tab_unless_targeted_or_explicitly_reused()
+- fresh_handoff_replaces_stale_tab_window_and_frame · function · L25-L40 — fn fresh_handoff_replaces_stale_tab_window_and_frame()
+- fresh_handoff_never_falls_back_to_old_tab_on_invalid_response · function · L43-L51 — fn fresh_handoff_never_falls_back_to_old_tab_on_invalid_response()
+- FreshTabProvider · struct · L53-L53 — struct FreshTabProvider;
+- id · function · L57-L59 — fn id(&self) -> &'static str
+- supported_browsers · function · L60-L62 — fn supported_browsers(&self) -> &'static [&'static str]
+- status · function · L63-L65 — async fn status(&self, _: &ToolContext) -> Result<ToolOutput>
+- setup · function · L66-L68 — async fn setup(&self) -> Result<ToolOutput>
+- ensure_ready · function · L69-L71 — async fn ensure_ready(&self) -> Result<Option<String>>
+- execute · function · L72-L83 — async fn execute(
+- handoff_creates_and_binds_fresh_tab_in_one_call · function · L87-L134 — async fn handoff_creates_and_binds_fresh_tab_in_one_call()
+- best_effort_bridge_diagnostics_never_persist_page_payloads · function · L137-L154 — fn best_effort_bridge_diagnostics_never_persist_page_payloads()
+- browser_session_tests · module · L158-L158 — mod browser_session_tests;
+- browser_user_browser_tests · module · L162-L162 — mod browser_user_browser_tests;
+- press_script_uses_selector_when_present · function · L165-L169 — fn press_script_uses_selector_when_present()
+- content_formatter_prefers_content_text · function · L172-L175 — fn content_formatter_prefers_content_text()
+- snapshot_maps_to_annotated_get_content · function · L178-L218 — fn snapshot_maps_to_annotated_get_content()
+- eval_maps_script_and_page_world · function · L221-L259 — fn eval_maps_script_and_page_world()
+- interactables_maps_to_bridge_action · function · L262-L300 — fn interactables_maps_to_bridge_action()
+- model_definition_size_budget · function · L303-L319 — fn model_definition_size_budget()
+- schema_exposes_advanced_browser_fields · function · L322-L385 — fn schema_exposes_advanced_browser_fields()
+- resolve_provider_accepts_every_supported_browser · function · L388-L394 — fn resolve_provider_accepts_every_supported_browser()
+- resolve_provider_rejects_unknown_browser · function · L397-L402 — fn resolve_provider_rejects_unknown_browser()
+- explicit_browser_request_refuses_a_different_connected_browser · function · L405-L432 — fn explicit_browser_request_refuses_a_different_connected_browser()
+- prepend_setup_message_preserves_images_and_metadata · function · L435-L450 — fn prepend_setup_message_preserves_images_and_metadata()
+- description_tells_models_to_check_status_before_setup · function · L453-L458 — fn description_tells_models_to_check_status_before_setup()
+- public_browser_status_without_bridge_is_explicit_and_bounded · function · L461-L506 — async fn public_browser_status_without_bridge_is_explicit_and_bounded()
+- hidden_dom_helpers_remain_compatible_with_existing_callers · function · L509-L537 — fn hidden_dom_helpers_remain_compatible_with_existing_callers()
+- readiness_does_not_trust_a_stale_setup_marker · function · L541-L593 — async fn readiness_does_not_trust_a_stale_setup_marker()
+- ordinary_click_preserves_existing_bridge_dispatch · function · L596-L604 — fn ordinary_click_preserves_existing_bridge_dispatch()
+- HandoffEnvGuard · struct · L606-L606 — pub(super) struct HandoffEnvGuard(&'static str, Option<std::ffi::OsString>);
+- set · function · L609-L613 — pub(super) fn set(key: &'static str, value: &str) -> Self
+- drop · function · L617-L622 — fn drop(&mut self)
+- handoff_schema_keeps_eval_primary_and_bounds_inputs · function · L626-L643 — fn handoff_schema_keeps_eval_primary_and_bounds_inputs()
+- handoff_disabled_switch_removes_schema_and_rejects_execution_before_provider_setup · function · L646-L727 — async fn handoff_disabled_switch_removes_schema_and_rejects_execution_before_provider_setup()
+- KEY · constant · L647-L647 — const KEY: &str = "JCODE_BROWSER_HANDOFF_DISABLED";
+- RestoreEnv · struct · L648-L648 — struct RestoreEnv(Option<std::ffi::OsString>);
+- drop · function · L650-L655 — fn drop(&mut self)
+- nested_scroll_uses_container_delta_without_escaping_scope · function · L730-L744 — fn nested_scroll_uses_container_delta_without_escaping_scope()
+- browser_live_1743_tests · module · L749-L749 — mod browser_live_1743_tests;

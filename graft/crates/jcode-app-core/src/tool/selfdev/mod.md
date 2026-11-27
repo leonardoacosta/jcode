@@ -1,0 +1,64 @@
+# crates/jcode-app-core/src/tool/selfdev/mod.rs
+
+- build_queue · module · L23-L23 — mod build_queue;
+- launch · module · L24-L24 — mod launch;
+- reload · module · L25-L25 — mod reload;
+- setup · module · L26-L26 — mod setup;
+- status · module · L27-L27 — mod status;
+- tests · module · L29-L29 — mod tests;
+- JCODE_REPO_URL · constant · L36-L36 — pub const JCODE_REPO_URL: &str = "https://github.com/1jehuang/jcode.git";
+- SelfDevInput · struct · L39-L68 — struct SelfDevInput
+- ReloadContext · struct · L72-L83 — pub struct ReloadContext
+- SelfDevLaunchResult · struct · L86-L93 — pub struct SelfDevLaunchResult
+- command_preview · function · L96-L100 — pub fn command_preview(&self) -> Option<String>
+- BuildRequestState · enum · L105-L113 — enum BuildRequestState
+- BuildRequest · struct · L116-L150 — struct BuildRequest
+- DEFAULT_TERMINAL_HISTORY_LIMIT · constant · L153-L153 — const DEFAULT_TERMINAL_HISTORY_LIMIT: usize = 256;
+- requests_dir · function · L155-L159 — fn requests_dir() -> Result<PathBuf>
+- path_for_request · function · L161-L163 — fn path_for_request(request_id: &str) -> Result<PathBuf>
+- save · function · L165-L176 — fn save(&self) -> Result<()>
+- is_terminal · function · L178-L186 — fn is_terminal(&self) -> bool
+- terminal_history_limit · function · L188-L194 — fn terminal_history_limit() -> usize
+- archive_old_terminal_requests · function · L196-L199 — fn archive_old_terminal_requests() -> Result<usize>
+- archive_terminal_requests · function · L201-L236 — fn archive_terminal_requests(requests: &[Self]) -> Result<usize>
+- load · function · L238-L245 — fn load(request_id: &str) -> Result<Option<Self>>
+- load_all · function · L247-L266 — fn load_all() -> Result<Vec<Self>>
+- pending_requests · function · L268-L290 — fn pending_requests() -> Result<Vec<Self>>
+- pending_requests_for_scope · function · L292-L297 — fn pending_requests_for_scope(worktree_scope: &str) -> Result<Vec<Self>>
+- attached_watchers · function · L299-L307 — fn attached_watchers(parent_request_id: &str) -> Result<Vec<Self>>
+- find_duplicate_pending · function · L309-L313 — fn find_duplicate_pending(worktree_scope: &str, dedupe_key: &str) -> Result<Option<Self>>
+- find_by_request_or_task · function · L315-L328 — fn find_by_request_or_task(
+- display_owner · function · L330-L338 — fn display_owner(&self) -> String
+- status_path · function · L340-L348 — fn status_path(&self) -> Option<PathBuf>
+- mark_stale · function · L350-L355 — fn mark_stale(&mut self, detail: impl Into<String>) -> Result<()>
+- within_bootstrap_grace · function · L363-L371 — fn within_bootstrap_grace(&self) -> bool
+- BOOTSTRAP_GRACE_SECS · constant · L364-L364 — const BOOTSTRAP_GRACE_SECS: i64 = 30;
+- reconcile_pending_state · function · L373-L458 — fn reconcile_pending_state(&mut self) -> Result<bool>
+- BuildLockGuard · struct · L461-L464 — struct BuildLockGuard
+- SelfDevBuildCommand · type · L466-L466 — type SelfDevBuildCommand = build::SelfDevBuildCommand;
+- drop · function · L469-L474 — fn drop(&mut self)
+- SelfDevTool · struct · L478-L478 — pub struct SelfDevTool;
+- new · function · L481-L483 — pub fn new() -> Self
+- description_for · function · L488-L494 — pub fn description_for(is_selfdev: bool) -> &'static str
+- schema_for · function · L501-L566 — pub fn schema_for(is_selfdev: bool) -> Value
+- name · function · L571-L573 — fn name(&self) -> &str
+- description · function · L575-L580 — fn description(&self) -> &str
+- parameters_schema · function · L582-L587 — fn parameters_schema(&self) -> Value
+- execute · function · L589-L705 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- is_test_session · function · L709-L716 — fn is_test_session() -> bool
+- reload_timeout_secs · function · L718-L724 — fn reload_timeout_secs() -> u64
+- build_reload_wait_secs · function · L729-L735 — fn build_reload_wait_secs() -> u64
+- session_is_selfdev · function · L737-L741 — fn session_is_selfdev(session_id: &str) -> bool
+- selfdev_only_action_message · function · L745-L752 — fn selfdev_only_action_message(action: &str) -> String
+- resolve_repo_dir · function · L754-L764 — fn resolve_repo_dir(working_dir: Option<&std::path::Path>) -> Option<std::path::PathBuf>
+- launch_binary · function · L766-L771 — fn launch_binary() -> Result<std::path::PathBuf>
+- build_command · function · L773-L775 — fn build_command(repo_dir: &Path, target: build::SelfDevBuildTarget) -> SelfDevBuildCommand
+- build_lock_path · function · L777-L781 — fn build_lock_path(worktree_scope: &str) -> Result<PathBuf>
+- try_acquire_build_lock · function · L784-L803 — fn try_acquire_build_lock(worktree_scope: &str) -> Result<Option<BuildLockGuard>>
+- try_acquire_build_lock · function · L806-L818 — fn try_acquire_build_lock(worktree_scope: &str) -> Result<Option<BuildLockGuard>>
+- load_session_labels · function · L820-L827 — fn load_session_labels(session_id: &str) -> (Option<String>, Option<String>)
+- requested_source_state · function · L829-L843 — fn requested_source_state(repo_dir: &Path) -> Result<build::SourceState>
+- newest_active_request · function · L845-L849 — fn newest_active_request(worktree_scope: &str) -> Result<Option<BuildRequest>>
+- build_dedupe_key · function · L851-L856 — fn build_dedupe_key(source: &build::SourceState, command: &SelfDevBuildCommand) -> String
+- next_request_id · function · L858-L860 — fn next_request_id() -> String
+- current_queue_position · function · L862-L867 — fn current_queue_position(request_id: &str, worktree_scope: &str) -> Result<Option<usize>>

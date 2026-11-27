@@ -1,0 +1,38 @@
+# crates/jcode-provider-antigravity-runtime/src/lib.rs
+
+- DEFAULT_MODEL · constant · L33-L33 — const DEFAULT_MODEL: &str = "default";
+- AntigravityProvider · struct · L35-L42 — pub struct AntigravityProvider
+- clone · function · L45-L52 — fn clone(&self) -> Self
+- load_persisted_catalog · function · L56-L58 — fn load_persisted_catalog() -> Option<PersistedCatalog>
+- persist_catalog · function · L60-L62 — fn persist_catalog(snapshot: &CatalogSnapshot)
+- seed_cached_catalog · function · L64-L81 — fn seed_cached_catalog(&self)
+- new · function · L83-L95 — pub fn new() -> Self
+- fetched_catalog · function · L97-L102 — fn fetched_catalog(&self) -> Vec<CatalogModel>
+- backend_default_model · function · L104-L109 — fn backend_default_model(&self) -> Option<String>
+- resolve_account_for_doctor · function · L120-L129 — pub async fn resolve_account_for_doctor(&self) -> Result<String>
+- fetch_live_model_ids_for_doctor · function · L138-L164 — pub async fn fetch_live_model_ids_for_doctor(&self) -> Result<Vec<String>>
+- fetch_catalog_snapshot_for_usage · function · L169-L176 — pub async fn fetch_catalog_snapshot_for_usage(&self) -> Result<CatalogSnapshot>
+- resolve_model_for_request · function · L188-L228 — fn resolve_model_for_request(&self, model: &str) -> String
+- fetch_available_models · function · L230-L232 — async fn fetch_available_models(&self) -> Result<CatalogSnapshot>
+- retry_after_schema_rejection · function · L252-L286 — async fn retry_after_schema_rejection(
+- generate_content · function · L292-L405 — async fn generate_content(
+- canonical_payload · function · L408-L439 — fn canonical_payload(request: &CodeAssistGenerateRequest) -> Value
+- log_canonical_input · function · L442-L467 — fn log_canonical_input(model: &str, request: &CodeAssistGenerateRequest)
+- canonical_input_tests · module · L470-L560 — mod canonical_input_tests
+- canonical_payload_preserves_exact_schema_hashes_nulls_and_counts · function · L475-L559 — fn canonical_payload_preserves_exact_schema_hashes_nulls_and_counts()
+- default · function · L563-L565 — fn default() -> Self
+- complete · function · L570-L894 — async fn complete(
+- MAX_MALFORMED_RETRIES · constant · L695-L695 — const MAX_MALFORMED_RETRIES: u8 = 2;
+- name · function · L896-L898 — fn name(&self) -> &'static str
+- model · function · L900-L905 — fn model(&self) -> String
+- set_model · function · L907-L921 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L923-L925 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L927-L935 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L937-L939 — fn available_models_for_switching(&self) -> Vec<String>
+- model_routes · function · L941-L970 — fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute>
+- on_auth_changed · function · L972-L981 — fn on_auth_changed(&self)
+- prefetch_models · function · L983-L1025 — async fn prefetch_models(&self) -> Result<()>
+- context_window · function · L1027-L1049 — fn context_window(&self) -> usize
+- supports_compaction · function · L1051-L1059 — fn supports_compaction(&self) -> bool
+- fork · function · L1061-L1068 — fn fork(&self) -> Arc<dyn Provider>
+- antigravity_tests · module · L1073-L1073 — mod antigravity_tests;

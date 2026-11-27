@@ -1,0 +1,65 @@
+# crates/jcode-tui/src/tui/app/model_context.rs
+
+- model_commands · module · L2-L2 — mod model_commands;
+- fallback_recovery · module · L5-L5 — mod fallback_recovery;
+- GUARDRAIL_REROUTE_MODEL · constant · L12-L12 — const GUARDRAIL_REROUTE_MODEL: &str = "claude-opus-4-8";
+- compact_provider_failure · function · L17-L36 — pub(super) fn compact_provider_failure(reason: &str) -> String
+- finalize_model_switch · function · L49-L86 — pub(super) fn finalize_model_switch(&mut self, model_request: &str) -> String
+- apply_provider_switch_for_failover · function · L88-L167 — fn apply_provider_switch_for_failover(
+- recovery_log_fields · function · L171-L262 — pub(super) fn recovery_log_fields(&self, reason: &str) -> Vec<(&'static str, String)>
+- log_recovery_event · function · L264-L271 — pub(super) fn log_recovery_event(
+- restore_failover_payload · function · L273-L340 — pub(super) fn restore_failover_payload(&mut self, payload: super::FallbackResendPayload)
+- IMAGE_MARKER · constant · L302-L303 — static IMAGE_MARKER: std::sync::LazyLock<Result<regex::Regex, regex::Error>> =
+- cancel_pending_provider_failover · function · L342-L369 — pub(super) fn cancel_pending_provider_failover(&mut self, notice: impl Into<String>)
+- handle_key_during_provider_failover · function · L378-L416 — pub(super) fn handle_key_during_provider_failover(
+- failover_countdown_message · function · L418-L420 — fn failover_countdown_message(to_label: &str) -> String
+- failover_switching_message · function · L422-L424 — fn failover_switching_message(to_label: &str) -> String
+- remove_failover_switching_message · function · L428-L436 — fn remove_failover_switching_message(&mut self)
+- confirmed_failover_message · function · L441-L454 — pub(super) fn confirmed_failover_message(&mut self, model: &str, suffix: &str) -> String
+- remove_failover_countdown_message · function · L459-L468 — fn remove_failover_countdown_message(&mut self, to_label: &str)
+- maybe_progress_provider_failover_countdown · function · L470-L555 — pub(super) fn maybe_progress_provider_failover_countdown(&mut self) -> bool
+- handle_provider_failover_prompt · function · L557-L581 — fn handle_provider_failover_prompt(&mut self, prompt: crate::provider::ProviderFailoverPrompt)
+- fallback_candidate_routes · function · L586-L596 — fn fallback_candidate_routes(&self) -> Vec<crate::provider::ModelRoute>
+- current_route_api_method · function · L600-L653 — pub(super) fn current_route_api_method(&self) -> Option<String>
+- current_provider_label_for_fallback · function · L655-L663 — fn current_provider_label_for_fallback(&self) -> String
+- current_model_for_fallback · function · L665-L673 — fn current_model_for_fallback(&self) -> String
+- describe_route · function · L676-L679 — fn describe_route(route: &crate::provider::ModelRoute) -> String
+- offer_fallback_after_error · function · L694-L715 — pub(super) fn offer_fallback_after_error(&mut self, error: &str) -> bool
+- fallback_pool_identity · function · L719-L739 — fn fallback_pool_identity(api_method: &str) -> Option<(String, bool)>
+- clear_pending_fallback_offer · function · L741-L744 — pub(super) fn clear_pending_fallback_offer(&mut self)
+- is_guardrail_reroute_model · function · L748-L751 — fn is_guardrail_reroute_model(model: &str) -> bool
+- pick_guardrail_reroute_route · function · L756-L774 — fn pick_guardrail_reroute_route(
+- offer_guardrail_reroute · function · L782-L847 — pub(super) fn offer_guardrail_reroute(&mut self) -> bool
+- apply_pending_fallback_offer · function · L856-L921 — pub(super) fn apply_pending_fallback_offer(&mut self) -> bool
+- cycle_model · function · L923-L965 — pub(super) fn cycle_model(&mut self, direction: i8)
+- cycle_effort · function · L967-L1027 — pub(super) fn cycle_effort(&mut self, direction: i8)
+- cycle_speed_tier · function · L1030-L1071 — pub(super) fn cycle_speed_tier(&mut self, direction: i8)
+- update_context_limit_for_model · function · L1073-L1114 — pub(super) fn update_context_limit_for_model(
+- set_context_limit_and_sync_budget · function · L1123-L1130 — pub(super) fn set_context_limit_and_sync_budget(&mut self, limit: usize)
+- effective_context_tokens_from_usage · function · L1132-L1152 — pub(super) fn effective_context_tokens_from_usage(
+- current_stream_context_tokens · function · L1154-L1169 — pub(super) fn current_stream_context_tokens(&self) -> Option<u64>
+- apply_stream_usage_input_report · function · L1182-L1216 — pub(super) fn apply_stream_usage_input_report(
+- mark_stream_usage_call_boundary · function · L1221-L1223 — pub(super) fn mark_stream_usage_call_boundary(&mut self)
+- update_compaction_usage_from_stream · function · L1225-L1236 — pub(super) fn update_compaction_usage_from_stream(&mut self)
+- restore_terminal_remote_retry_input · function · L1240-L1267 — pub(super) fn restore_terminal_remote_retry_input(&mut self)
+- restore_failed_input_to_box · function · L1273-L1278 — pub(super) fn restore_failed_input_to_box(&mut self)
+- restore_failed_prompt · function · L1280-L1305 — pub(super) fn restore_failed_prompt(&mut self, prompt: String)
+- handle_turn_error · function · L1307-L1382 — pub(super) fn handle_turn_error(&mut self, error: impl Into<String>)
+- auto_recover_context_limit · function · L1384-L1443 — pub(super) fn auto_recover_context_limit(&mut self) -> Option<String>
+- try_recover_payload_too_large_and_retry · function · L1453-L1482 — pub(super) async fn try_recover_payload_too_large_and_retry(
+- reset_state_for_compaction_retry · function · L1491-L1507 — fn reset_state_for_compaction_retry(&mut self)
+- run_compaction_retry_turn · function · L1512-L1531 — async fn run_compaction_retry_turn(
+- handle_usage_report · function · L1533-L1544 — pub(super) fn handle_usage_report(&mut self, results: Vec<crate::usage::ProviderUsage>)
+- handle_usage_report_progress · function · L1546-L1579 — pub(super) fn handle_usage_report_progress(
+- push_usage_loading_card · function · L1581-L1588 — pub(super) fn push_usage_loading_card(&mut self)
+- clear_usage_transient_ui · function · L1590-L1601 — fn clear_usage_transient_ui(&mut self)
+- replace_usage_cards · function · L1605-L1644 — fn replace_usage_cards(&mut self, cards: Vec<(String, String)>)
+- usage_status_title · function · L1646-L1651 — fn usage_status_title(&self) -> String
+- filter_usage_reports · function · L1653-L1666 — fn filter_usage_reports(
+- usage_cards · function · L1670-L1708 — fn usage_cards(
+- format_usage_provider_card · function · L1715-L1785 — fn format_usage_provider_card(provider: &crate::usage::ProviderUsage) -> String
+- format_usage_provider_summary · function · L1787-L1809 — fn format_usage_provider_summary(provider: &crate::usage::ProviderUsage) -> String
+- run_fix_command · function · L1811-L1923 — pub(super) fn run_fix_command(&mut self)
+- handle_model_refresh_completed · function · L1927-L1966 — pub(super) fn handle_model_refresh_completed(
+- messages · module · L1970-L1970 — mod messages;
+- usage_provider_matches · function · L1975-L1995 — pub(super) fn usage_provider_matches(provider_name: &str, query: &str) -> bool

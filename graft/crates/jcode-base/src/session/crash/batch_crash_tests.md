@@ -1,0 +1,24 @@
+# crates/jcode-base/src/session/crash/batch_crash_tests.rs
+
+- HomeGuard · struct · L3-L3 — struct HomeGuard(Option<std::ffi::OsString>);
+- set · function · L6-L10 — fn set(path: &std::path::Path) -> Self
+- drop · function · L14-L20 — fn drop(&mut self)
+- test_crashed_sessions_info_struct · function · L24-L34 — fn test_crashed_sessions_info_struct()
+- idle_dead_pid_without_streaming_marker_is_not_a_crash · function · L37-L53 — fn idle_dead_pid_without_streaming_marker_is_not_a_crash()
+- leftover_streaming_marker_means_interrupted · function · L56-L76 — fn leftover_streaming_marker_means_interrupted()
+- exact_resume_resolution_defers_corruption_to_authoritative_load · function · L79-L95 — fn exact_resume_resolution_defers_corruption_to_authoritative_load() -> anyhow::Result<()>
+- exact_resume_resolution_rejects_paths_and_directories · function · L98-L121 — fn exact_resume_resolution_rejects_paths_and_directories() -> anyhow::Result<()>
+- exact_resume_resolution_preserves_journal_freshness · function · L124-L151 — fn exact_resume_resolution_preserves_journal_freshness() -> anyhow::Result<()>
+- benchmark_exact_resume_resolution_real_corpus · function · L155-L190 — fn benchmark_exact_resume_resolution_real_corpus() -> anyhow::Result<()>
+- short_resume_selects_latest_update_not_latest_filename · function · L193-L219 — fn short_resume_selects_latest_update_not_latest_filename() -> anyhow::Result<()>
+- short_resume_ignores_unrelated_snapshot_contents · function · L222-L242 — fn short_resume_ignores_unrelated_snapshot_contents() -> anyhow::Result<()>
+- benchmark_short_resume_resolution_real_corpus · function · L246-L261 — fn benchmark_short_resume_resolution_real_corpus() -> anyhow::Result<()>
+- title_resume_cache_tracks_changes_and_recovers_from_corruption · function · L264-L289 — fn title_resume_cache_tracks_changes_and_recovers_from_corruption() -> anyhow::Result<()>
+- title_resume_works_when_sqlite_is_unavailable · function · L292-L304 — fn title_resume_works_when_sqlite_is_unavailable() -> anyhow::Result<()>
+- title_resume_backfills_old_files_and_checks_partial_indexes · function · L307-L336 — fn title_resume_backfills_old_files_and_checks_partial_indexes() -> anyhow::Result<()>
+- title_resume_cache_invalidates_journal_only_updates · function · L339-L362 — fn title_resume_cache_invalidates_journal_only_updates() -> anyhow::Result<()>
+- title_resume_cache_preserves_newest_and_legacy_name_priority · function · L365-L387 — fn title_resume_cache_preserves_newest_and_legacy_name_priority() -> anyhow::Result<()>
+- find_session_by_name_or_id_matches_custom_title · function · L390-L415 — fn find_session_by_name_or_id_matches_custom_title()
+- find_session_by_name_or_id_accepts_imported_session_ids · function · L418-L434 — fn find_session_by_name_or_id_accepts_imported_session_ids() -> anyhow::Result<()>
+- find_session_by_name_or_id_resolves_bare_opencode_id_to_imported_snapshot · function · L441-L466 — fn find_session_by_name_or_id_resolves_bare_opencode_id_to_imported_snapshot() -> anyhow::Result<()>
+- find_session_by_name_or_id_bare_id_without_snapshot_still_errors · function · L471-L482 — fn find_session_by_name_or_id_bare_id_without_snapshot_still_errors() -> anyhow::Result<()>

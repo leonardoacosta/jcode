@@ -1,0 +1,25 @@
+# crates/jcode-tui/src/tui/app/auth_account_picker.rs
+
+- account_center · module · L2-L2 — mod account_center;
+- add_replace · module · L4-L4 — mod add_replace;
+- cycle_account · function · L13-L94 — pub(crate) fn cycle_account(&mut self, forward: bool)
+- remote_account_management_notice · function · L96-L100 — pub(crate) fn remote_account_management_notice(&mut self)
+- open_remote_account_picker · function · L104-L176 — pub(crate) fn open_remote_account_picker(&mut self, provider_filter: Option<&str>)
+- edit_selected_account_priority · function · L178-L213 — pub(crate) fn edit_selected_account_priority(&mut self, code: KeyCode) -> Result<()>
+- open_account_picker · function · L215-L345 — pub(crate) fn open_account_picker(&mut self, provider_filter: Option<&str>)
+- should_open_inline_account_picker · function · L347-L352 — pub(crate) fn should_open_inline_account_picker(&self, provider_filter: Option<&str>) -> bool
+- account_credential_entry · function · L354-L382 — fn account_credential_entry(
+- append_configured_account_credentials · function · L384-L435 — fn append_configured_account_credentials(
+- inline_account_picker_scope_key · function · L437-L450 — pub(crate) fn inline_account_picker_scope_key(
+- inline_account_picker_provider_id · function · L452-L464 — pub(crate) fn inline_account_picker_provider_id(
+- build_all_inline_account_picker · function · L466-L746 — fn build_all_inline_account_picker(&self) -> (Vec<crate::tui::PickerEntry>, usize)
+- build_claude_inline_account_picker · function · L748-L881 — fn build_claude_inline_account_picker(&self) -> (Vec<crate::tui::PickerEntry>, usize)
+- build_openai_inline_account_picker · function · L883-L1029 — fn build_openai_inline_account_picker(&self) -> (Vec<crate::tui::PickerEntry>, usize)
+- handle_account_picker_command · function · L1031-L1073 — pub(crate) fn handle_account_picker_command(
+- prompt_new_account_label · function · L1075-L1094 — pub(crate) fn prompt_new_account_label(
+- prompt_account_value · function · L1096-L1114 — pub(crate) fn prompt_account_value(
+- handle_pending_account_input · function · L1116-L1178 — pub(crate) fn handle_pending_account_input(
+- next_account_picker_action · function · L1180-L1206 — pub(crate) fn next_account_picker_action(
+- account_cycle_index · function · L1209-L1219 — fn account_cycle_index(len: usize, current: Option<usize>, forward: bool) -> Option<usize>
+- account_cycle_tests · module · L1222-L1236 — mod account_cycle_tests
+- cycles_in_both_directions_and_wraps · function · L1226-L1235 — fn cycles_in_both_directions_and_wraps()

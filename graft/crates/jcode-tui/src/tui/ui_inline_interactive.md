@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/tui/ui_inline_interactive.rs
+
+- display_width · function · L5-L7 — fn display_width(text: &str) -> usize
+- truncate_display · function · L9-L32 — fn truncate_display(text: &str, max_width: usize) -> String
+- pad_left_display · function · L34-L38 — fn pad_left_display(text: &str, width: usize) -> String
+- api_method_display · function · L40-L46 — fn api_method_display(raw: &str) -> String
+- route_method_display · function · L48-L66 — fn route_method_display(route: &crate::tui::PickerOption) -> String
+- route_provider_display · function · L68-L77 — fn route_provider_display(provider: &str, api_method: &str) -> String
+- picker_entry_display_name · function · L79-L109 — fn picker_entry_display_name(entry: &crate::tui::PickerEntry) -> String
+- picker_entry_pretty_name · function · L119-L137 — fn picker_entry_pretty_name(entry: &crate::tui::PickerEntry) -> String
+- picker_row_marker · function · L139-L149 — fn picker_row_marker(is_row_selected: bool, unavailable: bool, limited: bool) -> &'static str
+- route_detail_display_text · function · L151-L164 — fn route_detail_display_text(detail: &str, unavailable: bool) -> Option<String>
+- route_detail_is_limited · function · L166-L174 — fn route_detail_is_limited(detail: &str) -> bool
+- selected_route_notice_text · function · L176-L200 — fn selected_route_notice_text(
+- model_picker_top_hint · function · L202-L248 — fn model_picker_top_hint(picker: &crate::tui::InlineInteractiveState) -> Option<&'static str>
+- agent_models_scope · function · L254-L275 — fn agent_models_scope(picker: &crate::tui::InlineInteractiveState) -> Option<bool>
+- account_picker_shows_provider_badge · function · L277-L296 — fn account_picker_shows_provider_badge(picker: &crate::tui::InlineInteractiveState) -> bool
+- account_picker_entry_title · function · L298-L314 — fn account_picker_entry_title(
+- account_priority_color · function · L318-L342 — fn account_priority_color(
+- account_inline_interactive_state_label · function · L344-L346 — fn account_inline_interactive_state_label(entry: &crate::tui::PickerEntry) -> &'static str
+- picker_render_width · function · L348-L435 — fn picker_render_width(picker: &crate::tui::InlineInteractiveState, max_width: usize) -> usize
+- WIDTH_SCAN_LIMIT · constant · L351-L351 — const WIDTH_SCAN_LIMIT: usize = 200;
+- format_elapsed · function · L437-L449 — pub(super) fn format_elapsed(secs: f32) -> String
+- fuzzy_match_positions · function · L451-L453 — fn fuzzy_match_positions(pattern: &str, text: &str) -> Vec<usize>
+- model_suggestion_lines · function · L457-L598 — pub(super) fn model_suggestion_lines(
+- draw_inline_interactive · function · L600-L1121 — pub(super) fn draw_inline_interactive(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- WIDTH_SCAN_LIMIT · constant · L623-L623 — const WIDTH_SCAN_LIMIT: usize = 200;
+- tests · module · L1125-L1125 — mod tests;

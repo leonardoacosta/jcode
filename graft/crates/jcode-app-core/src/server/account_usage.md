@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/server/account_usage.rs
+
+- REFRESH · constant · L11-L11 — const REFRESH: Duration = Duration::from_secs(30);
+- WORKER_BACKOFF · constant · L12-L12 — const WORKER_BACKOFF: Duration = Duration::from_secs(300);
+- Snapshot · struct · L15-L18 — struct Snapshot
+- State · struct · L21-L24 — struct State
+- due · function · L27-L29 — fn due(&self, now: Instant) -> bool
+- STATE · constant · L32-L32 — static STATE: OnceLock<Mutex<State>> = OnceLock::new();
+- STARTUP_PUBLISHER · constant · L33-L33 — static STARTUP_PUBLISHER: OnceLock<crate::usage::AccountUsageStartupPublisher> = OnceLock::new();
+- initialize_startup_snapshot · function · L37-L41 — pub(super) fn initialize_startup_snapshot(socket: &std::path::Path, instance_id: &str)
+- publish_startup_snapshot · function · L43-L54 — async fn publish_startup_snapshot(snapshot: &Snapshot)
+- request · function · L58-L60 — pub(super) fn request(id: u64, tx: mpsc::UnboundedSender<ServerEvent>)
+- request_after_auth_change · function · L65-L67 — pub(super) fn request_after_auth_change(id: u64, tx: mpsc::UnboundedSender<ServerEvent>)
+- request_with_refresh · function · L69-L78 — fn request_with_refresh(id: u64, tx: mpsc::UnboundedSender<ServerEvent>, force: bool)
+- snapshot_with · function · L80-L102 — async fn snapshot_with<F, Fut>(state: &Mutex<State>, fetch: F, force: bool) -> Snapshot
+- fetch · function · L104-L130 — async fn fetch() -> Snapshot
+- with_banked · function · L132-L142 — fn with_banked(
+- wire_snapshot · function · L144-L191 — fn wire_snapshot(
+- tests · module · L194-L343 — mod tests
+- account · function · L198-L211 — fn account(error: Option<&str>) -> crate::usage::AccountUsageSnapshot
+- refresh_deadline_and_safe_error_statuses · function · L214-L245 — fn refresh_deadline_and_safe_error_statuses()
+- stale_wire_values_remain_display_only_and_unknown_stays_unknown · function · L248-L279 — fn stale_wire_values_remain_display_only_and_unknown_stays_unknown()
+- auth_change_replaces_fresh_login_error_without_waiting_for_poll_deadline · function · L282-L317 — async fn auth_change_replaces_fresh_login_error_without_waiting_for_poll_deadline()
+- simultaneous_clients_coalesce_and_receive_same_snapshot · function · L320-L342 — async fn simultaneous_clients_coalesce_and_receive_same_snapshot()

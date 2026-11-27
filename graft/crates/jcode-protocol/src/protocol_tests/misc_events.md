@@ -1,0 +1,28 @@
+# crates/jcode-protocol/src/protocol_tests/misc_events.rs
+
+- test_transcript_request_roundtrip · function · L2-L26 — fn test_transcript_request_roundtrip() -> Result<()>
+- test_transcript_event_roundtrip · function · L29-L43 — fn test_transcript_event_roundtrip() -> Result<()>
+- test_memory_activity_event_roundtrip · function · L46-L86 — fn test_memory_activity_event_roundtrip() -> Result<()>
+- test_input_shell_request_roundtrip · function · L89-L104 — fn test_input_shell_request_roundtrip() -> Result<()>
+- test_input_shell_result_event_roundtrip · function · L107-L129 — fn test_input_shell_result_event_roundtrip() -> Result<()>
+- test_protocol_enum_roundtrips_cover_wire_names · function · L132-L172 — fn test_protocol_enum_roundtrips_cover_wire_names() -> Result<()>
+- test_set_feature_roundtrip · function · L175-L196 — fn test_set_feature_roundtrip() -> Result<()>
+- test_set_route_deserializes_as_set_model_compat_alias · function · L199-L211 — fn test_set_route_deserializes_as_set_model_compat_alias() -> Result<()>
+- test_structured_set_route_decodes_as_set_route_not_set_model · function · L214-L248 — fn test_structured_set_route_decodes_as_set_route_not_set_model() -> Result<()>
+- test_jcode_subscription_set_route_is_wire_safe · function · L251-L286 — fn test_jcode_subscription_set_route_is_wire_safe() -> Result<()>
+- test_automatic_failover_set_route_marker_and_legacy_default · function · L289-L323 — fn test_automatic_failover_set_route_marker_and_legacy_default() -> Result<()>
+- test_grok_build_set_route_is_wire_safe · function · L326-L361 — fn test_grok_build_set_route_is_wire_safe() -> Result<()>
+- test_unknown_runtime_key_other_set_route_is_wire_safe · function · L364-L396 — fn test_unknown_runtime_key_other_set_route_is_wire_safe() -> Result<()>
+- test_subscribe_request_roundtrip_preserves_session_takeover_flags · function · L399-L460 — fn test_subscribe_request_roundtrip_preserves_session_takeover_flags() -> Result<()>
+- test_subscribe_request_defaults_optional_flags · function · L463-L501 — fn test_subscribe_request_defaults_optional_flags() -> Result<()>
+- test_resume_session_defaults_sync_flags · function · L504-L524 — fn test_resume_session_defaults_sync_flags() -> Result<()>
+- test_resume_all_sessions_request_roundtrip · function · L527-L537 — fn test_resume_all_sessions_request_roundtrip() -> Result<()>
+- test_resume_all_result_event_roundtrip · function · L540-L567 — fn test_resume_all_result_event_roundtrip() -> Result<()>
+- test_message_request_roundtrip_preserves_images_and_system_reminder · function · L570-L607 — fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Result<()>
+- test_provider_guardrail_event_roundtrip · function · L610-L635 — fn test_provider_guardrail_event_roundtrip() -> Result<()>
+- test_message_end_carries_provider_stop_reason · function · L638-L666 — fn test_message_end_carries_provider_stop_reason() -> Result<()>
+- test_native_ssh_pong_capability_is_backward_compatible · function · L669-L702 — fn test_native_ssh_pong_capability_is_backward_compatible() -> Result<()>
+- tool_input_optional_id_preserves_legacy_wire_format · function · L705-L721 — fn tool_input_optional_id_preserves_legacy_wire_format() -> Result<()>
+- runtime_identity_handshake_preserves_hash_dirty_and_resolved_path · function · L724-L741 — fn runtime_identity_handshake_preserves_hash_dirty_and_resolved_path()
+- context_cap_wire_roundtrip · function · L744-L784 — fn context_cap_wire_roundtrip() -> Result<()>
+- subscribe_and_resume_client_name_is_optional_and_compatible · function · L787-L803 — fn subscribe_and_resume_client_name_is_optional_and_compatible()

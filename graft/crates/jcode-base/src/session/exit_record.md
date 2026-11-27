@@ -1,0 +1,23 @@
+# crates/jcode-base/src/session/exit_record.rs
+
+- STALE_SECS · constant · L12-L12 — const STALE_SECS: i64 = 30 * 24 * 3600;
+- ExitCause · enum · L16-L25 — pub enum ExitCause
+- ExitRecord · struct · L28-L33 — pub struct ExitRecord
+- dir · function · L35-L37 — fn dir() -> Option<PathBuf>
+- write_in · function · L39-L43 — fn write_in(dir: &Path, record: &ExitRecord) -> std::io::Result<()>
+- read_in · function · L45-L50 — fn read_in(dir: &Path, pid: u32) -> Option<ExitRecord>
+- cleanup_in · function · L52-L66 — fn cleanup_in(dir: &Path, now: DateTime<Utc>)
+- write_exit_record · function · L69-L79 — pub fn write_exit_record(cause: ExitCause)
+- read_exit_record · function · L81-L83 — pub fn read_exit_record(pid: u32) -> Option<ExitRecord>
+- install_panic_exit_record_hook · function · L87-L102 — pub fn install_panic_exit_record_hook()
+- describe_record · function · L104-L117 — fn describe_record(record: &ExitRecord) -> String
+- describe_systemd · function · L121-L131 — fn describe_systemd(pid: u32, unit: &str, result: &str, status: &str) -> Option<String>
+- query_systemd · function · L133-L161 — fn query_systemd(pid: u32) -> Option<String>
+- classify_exit · function · L165-L178 — pub fn classify_exit(pid: u32) -> String
+- CACHE · constant · L168-L168 — static CACHE: OnceLock<Mutex<HashMap<u32, String>>> = OnceLock::new();
+- classify_with · function · L180-L189 — fn classify_with(
+- tests · module · L192-L266 — mod tests
+- rec · function · L195-L201 — fn rec(pid: u32, cause: ExitCause) -> ExitRecord
+- write_read_roundtrip_and_stale_cleanup · function · L204-L222 — fn write_read_roundtrip_and_stale_cleanup()
+- classifies_signal_panic_oom_and_missing · function · L225-L258 — fn classifies_signal_panic_oom_and_missing()
+- corrupt_record_reads_as_missing · function · L261-L265 — fn corrupt_record_reads_as_missing()

@@ -1,0 +1,33 @@
+# crates/jcode-app-core/src/server/lifecycle.rs
+
+- TEMP_SERVER_ENV · constant · L7-L7 — const TEMP_SERVER_ENV: &str = "JCODE_TEMP_SERVER";
+- SERVER_SCOPE_ENV · constant · L8-L8 — const SERVER_SCOPE_ENV: &str = "JCODE_SERVER_SCOPE";
+- OWNER_PID_ENV · constant · L9-L9 — const OWNER_PID_ENV: &str = "JCODE_SERVER_OWNER_PID";
+- TEMP_IDLE_SECS_ENV · constant · L10-L10 — const TEMP_IDLE_SECS_ENV: &str = "JCODE_TEMP_SERVER_IDLE_SECS";
+- DEFAULT_TEMP_IDLE_SECS · constant · L11-L11 — const DEFAULT_TEMP_IDLE_SECS: u64 = 30 * 60;
+- TEMP_SERVER_EXIT_CODE · constant · L12-L12 — const TEMP_SERVER_EXIT_CODE: i32 = super::EXIT_IDLE_TIMEOUT;
+- drain_session_saves_before_exit · function · L17-L27 — pub(crate) async fn drain_session_saves_before_exit()
+- TemporaryServerPolicy · struct · L30-L33 — pub(crate) struct TemporaryServerPolicy
+- TemporaryServerMetadata · struct · L36-L47 — struct TemporaryServerMetadata
+- configure_temporary_server · function · L49-L58 — pub fn configure_temporary_server(owner_pid: Option<u32>, idle_timeout_secs: Option<u64>)
+- temporary_server_policy_from_env · function · L60-L78 — pub(crate) fn temporary_server_policy_from_env() -> Option<TemporaryServerPolicy>
+- temporary_server_enabled · function · L80-L86 — pub(crate) fn temporary_server_enabled() -> bool
+- env_truthy · function · L88-L93 — fn env_truthy(name: &str) -> bool
+- metadata_path · function · L95-L101 — pub(crate) fn metadata_path(socket_path: &Path) -> PathBuf
+- write_temporary_metadata · function · L103-L146 — pub(crate) fn write_temporary_metadata(
+- cleanup_temporary_metadata · function · L148-L150 — pub(crate) fn cleanup_temporary_metadata(socket_path: &Path)
+- spawn_temporary_lifecycle_monitor · function · L152-L210 — pub(crate) fn spawn_temporary_lifecycle_monitor(
+- shutdown_temporary_server · function · L212-L230 — async fn shutdown_temporary_server(
+- parent_pid · function · L233-L236 — fn parent_pid() -> Option<u32>
+- parent_pid · function · L239-L241 — fn parent_pid() -> Option<u32>
+- process_alive · function · L244-L258 — pub(crate) fn process_alive(pid: u32) -> bool
+- process_alive · function · L276-L282 — pub(crate) fn process_alive(pid: u32) -> bool
+- tests · module · L285-L376 — mod tests
+- EnvGuard · struct · L288-L291 — struct EnvGuard
+- capture · function · L294-L303 — fn capture(names: &[&'static str]) -> Self
+- drop · function · L307-L315 — fn drop(&mut self)
+- temporary_policy_requires_explicit_marker · function · L319-L326 — fn temporary_policy_requires_explicit_marker()
+- temporary_policy_reads_owner_and_timeout · function · L329-L347 — fn temporary_policy_reads_owner_and_timeout()
+- temporary_metadata_path_is_socket_scoped · function · L350-L355 — fn temporary_metadata_path_is_socket_scoped()
+- current_process_is_alive · function · L359-L362 — fn current_process_is_alive()
+- platform_process_running_detects_this_process · function · L373-L375 — fn platform_process_running_detects_this_process()

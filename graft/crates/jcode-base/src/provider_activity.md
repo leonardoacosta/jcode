@@ -1,0 +1,36 @@
+# crates/jcode-base/src/provider_activity.rs
+
+- oauth_usage · module · L27-L27 — mod oauth_usage;
+- QUERY_RELOAD_TTL · constant · L41-L41 — const QUERY_RELOAD_TTL: Duration = Duration::from_secs(2);
+- LAST_USED_WRITE_THROTTLE_SECS · constant · L45-L45 — const LAST_USED_WRITE_THROTTLE_SECS: u64 = 30;
+- ProviderSpend · struct · L48-L61 — pub struct ProviderSpend
+- ProviderActivityEntry · struct · L64-L69 — pub struct ProviderActivityEntry
+- ProviderActivityStore · struct · L72-L75 — pub struct ProviderActivityStore
+- CachedStore · struct · L77-L80 — struct CachedStore
+- LEDGER · constant · L82-L82 — static LEDGER: Mutex<Option<CachedStore>> = Mutex::new(None);
+- ledger_path · function · L84-L88 — fn ledger_path() -> PathBuf
+- load_store · function · L90-L92 — fn load_store() -> ProviderActivityStore
+- save_store · function · L94-L96 — fn save_store(store: &ProviderActivityStore)
+- now_unix_secs · function · L98-L100 — fn now_unix_secs() -> u64
+- roll_spend · function · L102-L114 — fn roll_spend(spend: &mut ProviderSpend)
+- with_fresh_store · function · L118-L133 — fn with_fresh_store(mutate: impl FnOnce(&mut ProviderActivityStore) -> bool)
+- snapshot_entry · function · L135-L153 — fn snapshot_entry(source_key: &str) -> Option<ProviderActivityEntry>
+- record_use · function · L156-L175 — pub fn record_use(source_key: &str)
+- record_spend · function · L178-L196 — pub fn record_spend(source_key: &str, usd: f64)
+- last_used_unix_secs · function · L198-L200 — pub fn last_used_unix_secs(source_key: &str) -> Option<u64>
+- spend_snapshot · function · L203-L207 — pub fn spend_snapshot(source_key: &str) -> Option<ProviderSpend>
+- all_entries · function · L212-L244 — pub fn all_entries() -> Vec<(String, ProviderActivityEntry)>
+- display_name_for_source_key · function · L249-L289 — pub fn display_name_for_source_key(source_key: &str) -> String
+- format_relative_age · function · L292-L309 — pub fn format_relative_age(unix_secs: u64) -> String
+- source_key_for_provider_label · function · L314-L392 — pub fn source_key_for_provider_label(label: &str, runtime_provider: Option<&str>) -> String
+- tests · module · L395-L533 — mod tests
+- lock_env · function · L399-L401 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- EnvVarGuard · struct · L403-L406 — struct EnvVarGuard
+- set · function · L409-L413 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- drop · function · L417-L423 — fn drop(&mut self)
+- clear_ledger_cache · function · L426-L430 — fn clear_ledger_cache()
+- record_use_and_spend_roundtrip_under_jcode_home · function · L433-L456 — fn record_use_and_spend_roundtrip_under_jcode_home()
+- record_spend_ignores_invalid_amounts · function · L459-L469 — fn record_spend_ignores_invalid_amounts()
+- source_key_mapping_covers_known_providers · function · L472-L501 — fn source_key_mapping_covers_known_providers()
+- source_key_mapping_keeps_an_already_prefixed_profile_key · function · L509-L523 — fn source_key_mapping_keeps_an_already_prefixed_profile_key()
+- relative_age_formatting · function · L526-L532 — fn relative_age_formatting()

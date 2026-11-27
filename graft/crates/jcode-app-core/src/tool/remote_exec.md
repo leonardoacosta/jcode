@@ -1,0 +1,32 @@
+# crates/jcode-app-core/src/tool/remote_exec.rs
+
+- WORKER_ENV · constant · L31-L31 — pub const WORKER_ENV: &str = "JCODE_EXEC_WORKER";
+- WORKDIR_ENV · constant · L34-L34 — pub const WORKDIR_ENV: &str = "JCODE_EXEC_WORKDIR";
+- ROUTED · constant · L41-L41 — const ROUTED: &[&str] = &["bash", "read", "write", "edit", "apply_patch", "agentgrep"];
+- BACKGROUND_COMMAND_TIMEOUT_MS · constant · L45-L45 — const BACKGROUND_COMMAND_TIMEOUT_MS: u64 = 600_000;
+- WORKER_MODE · constant · L48-L48 — static WORKER_MODE: AtomicBool = AtomicBool::new(false);
+- Frame · enum · L52-L78 — enum Frame
+- WireImage · struct · L81-L86 — struct WireImage
+- worker_command · function · L89-L101 — fn worker_command() -> Option<String>
+- routes · function · L104-L106 — pub(crate) fn routes(tool: &str) -> bool
+- Pending · type · L108-L108 — type Pending = Arc<StdMutex<HashMap<u64, oneshot::Sender<Result<ToolOutput>>>>>;
+- Client · struct · L110-L113 — struct Client
+- CLIENT · constant · L115-L115 — static CLIENT: tokio::sync::Mutex<Option<Arc<Client>>> = tokio::sync::Mutex::const_new(None);
+- NEXT_ID · constant · L116-L116 — static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+- fail_all · function · L118-L125 — fn fail_all(pending: &Pending, reason: &str)
+- client · function · L127-L215 — async fn client() -> Result<Arc<Client>>
+- CancelOnDrop · struct · L219-L223 — struct CancelOnDrop
+- drop · function · L225-L244 — fn drop(&mut self)
+- execute · function · L248-L253 — pub(crate) async fn execute(name: &str, input: Value, ctx: &ToolContext) -> Result<ToolOutput>
+- execute_background · function · L258-L303 — async fn execute_background(mut input: Value, ctx: &ToolContext) -> Result<ToolOutput>
+- call · function · L305-L339 — async fn call(name: &str, input: Value, ctx: &ToolContext) -> Result<ToolOutput>
+- NoModel · struct · L341-L341 — struct NoModel;
+- complete · function · L344-L352 — async fn complete(
+- name · function · L353-L355 — fn name(&self) -> &str
+- fork · function · L356-L358 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- run_worker · function · L366-L469 — pub async fn run_worker<R, W>(reader: R, mut writer: W) -> Result<()>
+- run_worker_stdio · function · L472-L474 — pub async fn run_worker_stdio() -> Result<()>
+- execute_local · function · L479-L493 — async fn execute_local(
+- tests · module · L497-L590 — mod tests
+- call · function · L500-L521 — async fn call(
+- worker_runs_workspace_tools_and_refuses_runtime_tools · function · L526-L589 — async fn worker_runs_workspace_tools_and_refuses_runtime_tools()

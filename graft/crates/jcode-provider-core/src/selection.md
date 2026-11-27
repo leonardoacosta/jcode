@@ -1,0 +1,34 @@
+# crates/jcode-provider-core/src/selection.rs
+
+- ActiveProvider · enum · L5-L14 — pub enum ActiveProvider
+- ProviderAvailability · struct · L17-L27 — pub struct ProviderAvailability
+- is_configured · function · L30-L41 — pub fn is_configured(self, provider: ActiveProvider) -> bool
+- auto_default_provider · function · L44-L66 — pub fn auto_default_provider(availability: ProviderAvailability) -> ActiveProvider
+- parse_provider_hint · function · L68-L80 — pub fn parse_provider_hint(value: &str) -> Option<ActiveProvider>
+- provider_label · function · L82-L93 — pub fn provider_label(provider: ActiveProvider) -> &'static str
+- provider_key · function · L95-L106 — pub fn provider_key(provider: ActiveProvider) -> &'static str
+- provider_from_model_key · function · L108-L120 — pub fn provider_from_model_key(key: &str) -> Option<ActiveProvider>
+- cli_provider_arg_for_session_key · function · L138-L163 — pub fn cli_provider_arg_for_session_key(key: &str) -> Option<&'static str>
+- explicit_model_provider_prefix · function · L165-L200 — pub fn explicit_model_provider_prefix(model: &str) -> Option<(ActiveProvider, &'static str, &str)>
+- model_name_for_provider · function · L202-L209 — pub fn model_name_for_provider(provider: ActiveProvider, model: &str) -> Cow<'_, str>
+- strip_own_model_prefix · function · L226-L232 — pub fn strip_own_model_prefix<'a>(model: &'a str, own_prefix: &str) -> &'a str
+- dedupe_model_routes · function · L234-L265 — pub fn dedupe_model_routes(routes: Vec<ModelRoute>) -> Vec<ModelRoute>
+- duplicate_model_route · function · L268-L272 — fn duplicate_model_route(existing: &ModelRoute, candidate: &ModelRoute) -> bool
+- dedupe_model_routes_reference · function · L277-L292 — fn dedupe_model_routes_reference(routes: Vec<ModelRoute>) -> Vec<ModelRoute>
+- duplicate_route_api_method · function · L294-L300 — fn duplicate_route_api_method(existing: &str, candidate: &str) -> bool
+- is_generic_openai_compatible_route · function · L302-L304 — fn is_generic_openai_compatible_route(api_method: &str) -> bool
+- is_profile_openai_compatible_route · function · L306-L308 — fn is_profile_openai_compatible_route(api_method: &str) -> bool
+- should_replace_duplicate_route · function · L310-L318 — fn should_replace_duplicate_route(existing: &ModelRoute, candidate: &ModelRoute) -> bool
+- fallback_sequence · function · L320-L399 — pub fn fallback_sequence(active: ActiveProvider) -> Vec<ActiveProvider>
+- tests · module · L402-L812 — mod tests
+- parses_provider_hints · function · L406-L413 — fn parses_provider_hints()
+- cli_provider_arg_translates_runtime_keys · function · L416-L473 — fn cli_provider_arg_translates_runtime_keys()
+- parses_model_provider_prefixes · function · L476-L565 — fn parses_model_provider_prefixes()
+- dedupes_model_routes_by_route_identity · function · L568-L602 — fn dedupes_model_routes_by_route_identity()
+- dedupes_openai_compatible_generic_and_profile_aliases · function · L605-L656 — fn dedupes_openai_compatible_generic_and_profile_aliases()
+- bucketed_dedupe_matches_reference · function · L663-L700 — fn bucketed_dedupe_matches_reference()
+- auto_default_prefers_copilot_zero_mode · function · L703-L711 — fn auto_default_prefers_copilot_zero_mode()
+- auto_default_prefers_claude_when_both_frontier_providers_are_available · function · L714-L721 — fn auto_default_prefers_claude_when_both_frontier_providers_are_available()
+- fallback_sequence_keeps_active_first · function · L724-L729 — fn fallback_sequence_keeps_active_first()
+- strip_own_model_prefix_covers_the_routing_spec_state_space · function · L738-L799 — fn strip_own_model_prefix_covers_the_routing_spec_state_space()
+- strip_own_model_prefix_leaves_prefix_only_input_empty · function · L804-L811 — fn strip_own_model_prefix_leaves_prefix_only_input_empty()

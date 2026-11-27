@@ -1,0 +1,117 @@
+# crates/jcode-provider-openai-runtime/src/lib.rs
+
+- OPENAI_API_BASE · constant · L27-L27 — const OPENAI_API_BASE: &str = "https://api.openai.com/v1";
+- model_selection · module · L42-L42 — mod model_selection;
+- openai_ws_connect · module · L43-L43 — mod openai_ws_connect;
+- native_compaction · module · L45-L45 — mod native_compaction;
+- openai_retry_diagnostics · module · L46-L46 — mod openai_retry_diagnostics;
+- openai_stream_cancellation · module · L47-L47 — mod openai_stream_cancellation;
+- openai_stream_diagnostics · module · L48-L48 — mod openai_stream_diagnostics;
+- CHATGPT_API_BASE · constant · L50-L50 — const CHATGPT_API_BASE: &str = "https://chatgpt.com/backend-api/codex";
+- RESPONSES_PATH · constant · L51-L51 — const RESPONSES_PATH: &str = "responses";
+- DEFAULT_MODEL · constant · L52-L52 — const DEFAULT_MODEL: &str = jcode_provider_core::DEFAULT_OPENAI_MODEL;
+- ORIGINATOR · constant · L62-L62 — const ORIGINATOR: &str = "jcode";
+- CHATGPT_WEB_MODEL · constant · L64-L64 — pub(crate) const CHATGPT_WEB_MODEL: &str = jcode_provider_core::CHATGPT_WEB_MODEL;
+- model_capabilities · module · L69-L69 — mod model_capabilities;
+- MAX_RETRIES · constant · L72-L72 — const MAX_RETRIES: u32 = 3;
+- RETRY_BASE_DELAY_MS · constant · L75-L75 — const RETRY_BASE_DELAY_MS: u64 = 1000;
+- WEBSOCKET_UPGRADE_REQUIRED_ERROR · constant · L76-L76 — const WEBSOCKET_UPGRADE_REQUIRED_ERROR: StatusCode = StatusCode::UPGRADE_REQUIRED;
+- WEBSOCKET_CONNECT_TIMEOUT_SECS · constant · L77-L77 — const WEBSOCKET_CONNECT_TIMEOUT_SECS: u64 = 8;
+- WEBSOCKET_PERSISTENT_MAX_AGE_SECS · constant · L79-L79 — const WEBSOCKET_PERSISTENT_MAX_AGE_SECS: u64 = 3000; // 50 min (server limit is 60 min)
+- WEBSOCKET_PERSISTENT_IDLE_RECONNECT_SECS_DEFAULT · constant · L93-L93 — const WEBSOCKET_PERSISTENT_IDLE_RECONNECT_SECS_DEFAULT: u64 = 600; // 10 min
+- WEBSOCKET_PERSISTENT_HEALTHCHECK_IDLE_SECS · constant · L96-L96 — const WEBSOCKET_PERSISTENT_HEALTHCHECK_IDLE_SECS: u64 = 15;
+- WEBSOCKET_PERSISTENT_KEEPALIVE_INTERVAL_SECS · constant · L101-L101 — const WEBSOCKET_PERSISTENT_KEEPALIVE_INTERVAL_SECS: u64 = 30;
+- WEBSOCKET_PERSISTENT_IDLE_RECONNECT_SECS · constant · L106-L132 — static WEBSOCKET_PERSISTENT_IDLE_RECONNECT_SECS: LazyLock<Option<u64>> = LazyLock::new(||
+- WEBSOCKET_PERSISTENT_HEALTHCHECK_TIMEOUT_MS · constant · L133-L133 — const WEBSOCKET_PERSISTENT_HEALTHCHECK_TIMEOUT_MS: u64 = 1500;
+- DEFAULT_MAX_OUTPUT_TOKENS · constant · L134-L134 — const DEFAULT_MAX_OUTPUT_TOKENS: u32 = 32_768;
+- WEBSOCKET_COOLDOWNS · constant · L135-L136 — static WEBSOCKET_COOLDOWNS: LazyLock<Arc<RwLock<HashMap<String, Instant>>>> =
+- WEBSOCKET_FAILURE_STREAKS · constant · L137-L138 — static WEBSOCKET_FAILURE_STREAKS: LazyLock<Arc<RwLock<HashMap<String, u32>>>> =
+- WEBSOCKET_PING_ID · constant · L139-L139 — static WEBSOCKET_PING_ID: AtomicU64 = AtomicU64::new(1);
+- OpenAITransportMode · enum · L146-L150 — enum OpenAITransportMode
+- from_config · function · L153-L169 — fn from_config(raw: Option<&str>) -> Self
+- as_str · function · L171-L177 — fn as_str(&self) -> &'static str
+- OpenAIStreamFailure · enum · L181-L185 — enum OpenAIStreamFailure
+- from · function · L188-L190 — fn from(err: anyhow::Error) -> Self
+- OpenAITransport · enum · L198-L201 — enum OpenAITransport
+- OpenAINativeCompactionMode · enum · L204-L208 — enum OpenAINativeCompactionMode
+- load_credentials_for_mode · function · L215-L221 — pub(crate) fn load_credentials_for_mode(mode: OpenAICredentialMode) -> Result<CodexCredentials>
+- from_config · function · L224-L237 — fn from_config(raw: &str) -> Self
+- as_str · function · L239-L245 — fn as_str(self) -> &'static str
+- as_str · function · L249-L254 — fn as_str(self) -> &'static str
+- log_openai_stream_lifecycle · function · L257-L272 — fn log_openai_stream_lifecycle(
+- openai_request_model · function · L274-L280 — fn openai_request_model(request: &Value) -> String
+- PersistentWsState · struct · L285-L309 — struct PersistentWsState
+- PersistentWsHealth · enum · L312-L318 — enum PersistentWsHealth
+- next_persistent_ws_ping_payload · function · L320-L325 — fn next_persistent_ws_ping_payload() -> Vec<u8>
+- PersistentWsDiagSnapshot · struct · L328-L335 — struct PersistentWsDiagSnapshot
+- absent · function · L338-L347 — fn absent() -> Self
+- log_fields · function · L349-L372 — fn log_fields(&self) -> String
+- diag_snapshot · function · L376-L385 — fn diag_snapshot(&self) -> PersistentWsDiagSnapshot
+- ws_input · module · L388-L388 — mod ws_input;
+- persistent_ws_idle_needs_healthcheck · function · L391-L393 — fn persistent_ws_idle_needs_healthcheck(idle_for: Duration) -> bool
+- idle_requires_reconnect_with · function · L395-L400 — fn idle_requires_reconnect_with(threshold_secs: Option<u64>, idle_for: Duration) -> bool
+- persistent_ws_idle_requires_reconnect · function · L402-L404 — fn persistent_ws_idle_requires_reconnect(idle_for: Duration) -> bool
+- emit_connection_phase · function · L406-L411 — async fn emit_connection_phase(
+- emit_status_detail · function · L413-L419 — async fn emit_status_detail(tx: &mpsc::Sender<Result<StreamEvent>>, detail: impl Into<String>)
+- format_status_duration · function · L421-L434 — fn format_status_duration(duration: Duration) -> String
+- ensure_persistent_ws_is_healthy · function · L436-L453 — async fn ensure_persistent_ws_is_healthy(
+- persistent_ws_healthcheck · function · L455-L563 — async fn persistent_ws_healthcheck(
+- spawn_persistent_ws_keepalive · function · L565-L576 — fn spawn_persistent_ws_keepalive(
+- spawn_persistent_ws_keepalive_with_interval · function · L578-L686 — fn spawn_persistent_ws_keepalive_with_interval(
+- OpenAIProvider · struct · L688-L715 — pub struct OpenAIProvider
+- new_cache_session_id · function · L718-L726 — fn new_cache_session_id() -> String
+- NEXT_ID · constant · L719-L719 — static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+- cache_routing_key · function · L728-L735 — fn cache_routing_key(&self) -> String
+- effective_prompt_cache_retention · function · L737-L742 — fn effective_prompt_cache_retention<'a>(
+- new · function · L744-L746 — pub fn new(credentials: CodexCredentials) -> Self
+- new_browser_only · function · L751-L762 — pub fn new_browser_only() -> Self
+- new_inner · function · L764-L879 — fn new_inner(credentials: CodexCredentials, browser_only: bool) -> Self
+- is_browser_only · function · L881-L883 — fn is_browser_only(&self) -> bool
+- load_selected_credentials · function · L885-L892 — fn load_selected_credentials(&self, mode: OpenAICredentialMode) -> Result<CodexCredentials>
+- refresh_account_label · function · L894-L897 — fn refresh_account_label(&self) -> Option<String>
+- reload_credentials_now · function · L899-L922 — pub(crate) fn reload_credentials_now(&self)
+- set_credential_mode · function · L924-L962 — pub(crate) fn set_credential_mode(&self, mode: OpenAICredentialMode) -> Result<()>
+- reload_cached_reasoning_efforts · function · L964-L981 — fn reload_cached_reasoning_efforts(&self)
+- supports_service_tier · function · L983-L1000 — fn supports_service_tier(&self, model: &str, tier: &str) -> bool
+- effective_service_tier · function · L1002-L1008 — fn effective_service_tier(&self, model: &str) -> Option<String>
+- warn_unsupported_service_tier · function · L1010-L1022 — fn warn_unsupported_service_tier(&self)
+- credential_mode_snapshot · function · L1024-L1029 — pub(crate) fn credential_mode_snapshot(&self) -> OpenAICredentialMode
+- clear_persistent_ws_try · function · L1031-L1042 — fn clear_persistent_ws_try(&self, reason: &str)
+- clear_persistent_ws · function · L1044-L1051 — async fn clear_persistent_ws(&self, reason: &str)
+- is_chatgpt_mode · function · L1053-L1055 — fn is_chatgpt_mode(credentials: &CodexCredentials) -> bool
+- catalog_scope_for · function · L1061-L1074 — pub(crate) fn catalog_scope_for(credentials: &CodexCredentials) -> String
+- selected_catalog_scope_for · function · L1076-L1084 — fn selected_catalog_scope_for(&self, credentials: &CodexCredentials) -> String
+- catalog_scope · function · L1086-L1095 — pub(crate) fn catalog_scope(&self) -> String
+- catalog_scope_async · function · L1097-L1099 — async fn catalog_scope_async(&self) -> String
+- catalog_credential_identity · function · L1101-L1111 — fn catalog_credential_identity(credentials: &CodexCredentials) -> String
+- should_prefer_websocket · function · L1113-L1115 — fn should_prefer_websocket(model: &str) -> bool
+- normalize_reasoning_effort · function · L1117-L1138 — fn normalize_reasoning_effort(raw: &str) -> Option<String>
+- default_reasoning_effort_for_model · function · L1145-L1152 — fn default_reasoning_effort_for_model(model: &str) -> Option<String>
+- revalidate_reasoning_effort · function · L1154-L1177 — fn revalidate_reasoning_effort(&self)
+- api_reasoning_effort · function · L1180-L1185 — fn api_reasoning_effort(&self, effort: Option<&str>) -> Option<String>
+- api_reasoning_effort_with_swarm_root · function · L1187-L1213 — fn api_reasoning_effort_with_swarm_root(
+- native_compaction_threshold_for_context_window · function · L1215-L1227 — fn native_compaction_threshold_for_context_window(
+- parse_max_output_tokens · function · L1229-L1248 — fn parse_max_output_tokens(raw: Option<&str>) -> Option<u32>
+- normalize_service_tier · function · L1250-L1266 — fn normalize_service_tier(raw: &str) -> Result<Option<String>>
+- load_service_tier · function · L1268-L1280 — fn load_service_tier(raw: Option<&str>) -> Option<String>
+- load_max_output_tokens · function · L1282-L1297 — fn load_max_output_tokens() -> Option<u32>
+- responses_url · function · L1299-L1308 — fn responses_url(credentials: &CodexCredentials) -> String
+- resolve_api_base · function · L1321-L1323 — pub(crate) fn resolve_api_base() -> String
+- responses_ws_url · function · L1325-L1329 — fn responses_ws_url(credentials: &CodexCredentials) -> String
+- responses_compact_url · function · L1331-L1333 — fn responses_compact_url(credentials: &CodexCredentials) -> String
+- response_request · function · L1337-L1346 — async fn response_request(
+- response_request_for_model · function · L1348-L1388 — fn response_request_for_model(
+- build_response_request · function · L1394-L1465 — fn build_response_request(
+- model_id · function · L1467-L1532 — async fn model_id(&self) -> String
+- diagnostic_persistent_ws_summary · function · L1534-L1542 — fn diagnostic_persistent_ws_summary(&self) -> String
+- diagnostic_state_summary · function · L1544-L1555 — pub fn diagnostic_state_summary(&self) -> String
+- stream · module · L1559-L1559 — mod stream;
+- chatgpt_web · module · L1569-L1569 — mod chatgpt_web;
+- native_web_search · module · L1570-L1570 — mod native_web_search;
+- openai_prewarm_request · module · L1571-L1571 — mod openai_prewarm_request;
+- openai_provider_impl · module · L1573-L1573 — mod openai_provider_impl;
+- openai_stream_runtime · module · L1575-L1575 — mod openai_stream_runtime;
+- openai_websocket_prewarm · module · L1576-L1576 — mod openai_websocket_prewarm;
+- websocket_health · module · L1579-L1579 — mod websocket_health;
+- tests · module · L1597-L1597 — mod tests;
+- account_binding_tests · module · L1600-L1600 — mod account_binding_tests;

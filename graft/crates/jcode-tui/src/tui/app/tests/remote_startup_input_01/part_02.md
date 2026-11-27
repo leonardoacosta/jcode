@@ -1,0 +1,15 @@
+# crates/jcode-tui/src/tui/app/tests/remote_startup_input_01/part_02.rs
+
+- test_handle_server_event_available_models_updated_replaces_remote_model_catalog · function · L2-L49 — fn test_handle_server_event_available_models_updated_replaces_remote_model_catalog()
+- test_refresh_model_list_command_shows_summary_and_status_notice · function · L52-L117 — fn test_refresh_model_list_command_shows_summary_and_status_notice()
+- test_remote_available_models_updated_after_refresh_shows_summary_and_updates_catalog · function · L120-L190 — fn test_remote_available_models_updated_after_refresh_shows_summary_and_updates_catalog()
+- test_remote_runtime_activity_notification_renders_as_system_message · function · L193-L221 — fn test_remote_runtime_activity_notification_renders_as_system_message()
+- test_remote_auth_activity_notification_is_status_only_during_onboarding · function · L224-L256 — fn test_remote_auth_activity_notification_is_status_only_during_onboarding()
+- test_remote_final_catalog_activity_is_two_lines_and_completes_model_setup · function · L259-L289 — fn test_remote_final_catalog_activity_is_two_lines_and_completes_model_setup()
+- test_remote_auth_model_change_does_not_add_a_third_visible_line · function · L292-L316 — fn test_remote_auth_model_change_does_not_add_a_third_visible_line()
+- test_remote_onboarding_catalog_activity_completes_model_setup_without_chat_noise · function · L319-L345 — fn test_remote_onboarding_catalog_activity_completes_model_setup_without_chat_noise()
+- test_remote_catalog_activity_notification_upserts_compact_row · function · L348-L398 — fn test_remote_catalog_activity_notification_upserts_compact_row()
+- test_model_picker_copilot_models_have_copilot_route · function · L401-L425 — fn test_model_picker_copilot_models_have_copilot_route()
+- test_model_picker_remote_comtegra_model_uses_comtegra_route_not_copilot · function · L428-L469 — fn test_model_picker_remote_comtegra_model_uses_comtegra_route_not_copilot()
+- test_model_picker_remote_bedrock_model_has_bedrock_route_when_configured · function · L472-L521 — fn test_model_picker_remote_bedrock_model_has_bedrock_route_when_configured()
+- test_model_picker_preserves_recommendation_priority_order · function · L524-L600 — fn test_model_picker_preserves_recommendation_priority_order()

@@ -1,0 +1,33 @@
+# crates/jcode-base/src/provider/external.rs
+
+- GEMINI_RUNTIME · constant · L22-L22 — pub const GEMINI_RUNTIME: &str = "gemini";
+- CURSOR_RUNTIME · constant · L25-L25 — pub const CURSOR_RUNTIME: &str = "cursor";
+- ANTIGRAVITY_RUNTIME · constant · L28-L28 — pub const ANTIGRAVITY_RUNTIME: &str = "antigravity";
+- COPILOT_RUNTIME · constant · L31-L31 — pub const COPILOT_RUNTIME: &str = "copilot";
+- ANTHROPIC_RUNTIME · constant · L34-L34 — pub const ANTHROPIC_RUNTIME: &str = "anthropic";
+- OPENAI_RUNTIME · constant · L37-L37 — pub const OPENAI_RUNTIME: &str = "openai";
+- GROK_BUILD_RUNTIME · constant · L40-L40 — pub const GROK_BUILD_RUNTIME: &str = "grok-build";
+- OpenRouterRuntimeSpec · enum · L49-L62 — pub enum OpenRouterRuntimeSpec
+- Factory · type · L67-L67 — type Factory = Arc<dyn Fn() -> Option<Arc<dyn Provider>> + Send + Sync>;
+- OpenRouterFactory · type · L68-L69 — type OpenRouterFactory =
+- openrouter_factory_slot · function · L71-L74 — fn openrouter_factory_slot() -> &'static RwLock<Option<OpenRouterFactory>>
+- SLOT · constant · L72-L72 — static SLOT: OnceLock<RwLock<Option<OpenRouterFactory>>> = OnceLock::new();
+- register_openrouter_factory · function · L77-L84 — pub fn register_openrouter_factory<F>(factory: F)
+- ProfileCatalogRefresh · type · L90-L92 — type ProfileCatalogRefresh = Arc<
+- profile_catalog_refresh_slot · function · L94-L97 — fn profile_catalog_refresh_slot() -> &'static RwLock<Option<ProfileCatalogRefresh>>
+- SLOT · constant · L95-L95 — static SLOT: OnceLock<RwLock<Option<ProfileCatalogRefresh>>> = OnceLock::new();
+- register_profile_catalog_refresh · function · L100-L110 — pub fn register_profile_catalog_refresh<F>(refresh: F)
+- StandardCatalogRefresh · type · L115-L115 — type StandardCatalogRefresh = Arc<dyn Fn(&'static str) -> bool + Send + Sync>;
+- standard_catalog_refresh_slot · function · L117-L120 — fn standard_catalog_refresh_slot() -> &'static RwLock<Option<StandardCatalogRefresh>>
+- SLOT · constant · L118-L118 — static SLOT: OnceLock<RwLock<Option<StandardCatalogRefresh>>> = OnceLock::new();
+- register_standard_openrouter_catalog_refresh · function · L123-L130 — pub fn register_standard_openrouter_catalog_refresh<F>(refresh: F)
+- maybe_schedule_standard_openrouter_catalog_refresh · function · L133-L142 — pub(crate) fn maybe_schedule_standard_openrouter_catalog_refresh(context: &'static str) -> bool
+- maybe_schedule_profile_catalog_refresh · function · L147-L159 — pub(crate) fn maybe_schedule_profile_catalog_refresh(
+- instantiate_openrouter_runtime · function · L165-L179 — pub fn instantiate_openrouter_runtime(
+- registry · function · L181-L184 — fn registry() -> &'static RwLock<HashMap<&'static str, Factory>>
+- REGISTRY · constant · L182-L182 — static REGISTRY: OnceLock<RwLock<HashMap<&'static str, Factory>>> = OnceLock::new();
+- register_external_provider · function · L191-L196 — pub fn register_external_provider<F>(key: &'static str, factory: F)
+- register_external_provider_fallible · function · L203-L211 — pub fn register_external_provider_fallible<F>(key: &'static str, factory: F)
+- external_provider_registered · function · L214-L219 — pub fn external_provider_registered(key: &str) -> bool
+- instantiate_external_provider · function · L226-L233 — pub fn instantiate_external_provider(key: &str) -> Option<Arc<dyn Provider>>
+- instantiate_expected_external_provider · function · L237-L246 — pub(crate) fn instantiate_expected_external_provider(key: &str) -> Option<Arc<dyn Provider>>

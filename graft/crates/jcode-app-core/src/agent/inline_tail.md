@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/agent/inline_tail.rs
+
+- MAX_LINES · constant · L21-L21 — const MAX_LINES: usize = 14;
+- MAX_CHARS · constant · L23-L23 — const MAX_CHARS: usize = 1400;
+- MAX_SUMMARY_CHARS · constant · L25-L25 — const MAX_SUMMARY_CHARS: usize = 60;
+- InlineTailBuffer · struct · L30-L39 — pub(crate) struct InlineTailBuffer
+- set_live · function · L43-L46 — pub(crate) fn set_live(&mut self, text: &str)
+- commit_live · function · L50-L55 — pub(crate) fn commit_live(&mut self)
+- clear_live · function · L58-L60 — pub(crate) fn clear_live(&mut self)
+- start_tool · function · L64-L74 — pub(crate) fn start_tool(&mut self, name: &str, input: &serde_json::Value)
+- finish_tool · function · L79-L88 — pub(crate) fn finish_tool(&mut self, elapsed_secs: f64, is_error: bool)
+- render · function · L92-L113 — pub(crate) fn render(&self) -> String
+- push_committed · function · L115-L123 — fn push_committed(&mut self, line: String)
+- tool_marker_summary · function · L128-L155 — fn tool_marker_summary(name: &str, input: &serde_json::Value) -> String
+- humanize_secs · function · L158-L167 — fn humanize_secs(secs: f64) -> String
+- floor_char_boundary · function · L170-L179 — fn floor_char_boundary(text: &str, index: usize) -> usize
+- tests · module · L182-L286 — mod tests
+- live_text_renders_and_survives_commit · function · L186-L194 — fn live_text_renders_and_survives_commit()
+- tool_markers_interleave_and_complete_in_place · function · L197-L221 — fn tool_markers_interleave_and_complete_in_place()
+- marker_prefers_intent_over_raw_input · function · L224-L231 — fn marker_prefers_intent_over_raw_input()
+- rollback_discards_live_but_keeps_committed · function · L234-L243 — fn rollback_discards_live_but_keeps_committed()
+- caps_lines_and_chars_and_summary_length · function · L246-L267 — fn caps_lines_and_chars_and_summary_length()
+- finish_without_pending_marker_is_noop · function · L270-L285 — fn finish_without_pending_marker_is_noop()

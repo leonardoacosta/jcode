@@ -1,0 +1,29 @@
+# crates/jcode-tui/src/tui/app/cloud_environment.rs
+
+- CloudEnvironment · struct · L16-L21 — pub(super) struct CloudEnvironment
+- Grant · struct · L22-L30 — struct Grant
+- allows · function · L32-L37 — fn allows(&self, expected: Option<&str>, callback: &str) -> bool
+- drop · function · L40-L45 — fn drop(&mut self)
+- lease_remaining · function · L48-L79 — fn lease_remaining(
+- environment_marker · function · L80-L91 — fn environment_marker(name: &str) -> Option<String>
+- remaining · function · L93-L101 — fn remaining(session: &str) -> Option<Duration>
+- installation_ready · function · L102-L104 — fn installation_ready(is_processing: bool, history_loaded: bool) -> bool
+- configuration · function · L105-L121 — fn configuration() -> SessionToolConfig
+- valid_request · function · L122-L130 — fn valid_request(input: &Value) -> bool
+- safe_status · function · L131-L155 — fn safe_status(raw: &[u8]) -> Option<String>
+- fulfill · function · L156-L216 — async fn fulfill(session: &str, input: &Value) -> anyhow::Result<String>
+- FulfillProcessGroup · struct · L219-L219 — struct FulfillProcessGroup(u32);
+- drop · function · L222-L228 — fn drop(&mut self)
+- cloud_environment_idle_clear_due · function · L232-L239 — pub(super) fn cloud_environment_idle_clear_due(&self) -> bool
+- revoke_cloud_environment · function · L240-L242 — pub(super) fn revoke_cloud_environment(&mut self)
+- cloud_environment_session_changed · function · L243-L252 — pub(super) fn cloud_environment_session_changed(&mut self, next: &str)
+- prepare_cloud_environment · function · L253-L312 — pub(super) async fn prepare_cloud_environment(
+- cloud_environment_call · function · L313-L379 — pub(super) fn cloud_environment_call(
+- tests · module · L383-L546 — mod tests
+- installation_waits_for_idle_loaded_history · function · L386-L391 — fn installation_waits_for_idle_loaded_history()
+- revoked_expiry_retries_clear_once_when_idle · function · L394-L455 — fn revoked_expiry_retries_clear_once_when_idle()
+- callback_grant_is_bound_to_active_session_and_expiry · function · L457-L475 — fn callback_grant_is_bound_to_active_session_and_expiry()
+- dropping_grant_revokes_shared_authority · function · L477-L487 — fn dropping_grant_revokes_shared_authority()
+- callback_request_is_closed_and_path_scoped · function · L489-L505 — fn callback_request_is_closed_and_path_scoped()
+- outputs_never_forward_secret_fields · function · L507-L522 — fn outputs_never_forward_secret_fields()
+- grant_requires_exact_session_host_root_and_fresh_time · function · L524-L545 — fn grant_requires_exact_session_host_root_and_fresh_time()

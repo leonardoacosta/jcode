@@ -1,0 +1,64 @@
+# crates/jcode-usage-types/src/lib.rs
+
+- OpenAiResetCredits · struct · L4-L10 — pub struct OpenAiResetCredits
+- AnthropicLimitResetOffer · struct · L16-L23 — pub struct AnthropicLimitResetOffer
+- ProviderUsage · struct · L26-L37 — pub struct ProviderUsage
+- UsageLimit · struct · L40-L44 — pub struct UsageLimit
+- ProviderUsageProgress · struct · L47-L53 — pub struct ProviderUsageProgress
+- CopilotUsageTracker · struct · L59-L63 — pub struct CopilotUsageTracker
+- DayUsage · struct · L66-L72 — pub struct DayUsage
+- MonthUsage · struct · L75-L81 — pub struct MonthUsage
+- AllTimeUsage · struct · L84-L89 — pub struct AllTimeUsage
+- TelemetryToolCategory · enum · L92-L106 — pub enum TelemetryToolCategory
+- classify_telemetry_tool_category · function · L108-L135 — pub fn classify_telemetry_tool_category(name: &str) -> TelemetryToolCategory
+- TelemetryWorkflowCounts · struct · L138-L151 — pub struct TelemetryWorkflowCounts
+- TelemetryWorkflowFlags · struct · L154-L162 — pub struct TelemetryWorkflowFlags
+- telemetry_workflow_flags_from_counts · function · L164-L189 — pub fn telemetry_workflow_flags_from_counts(
+- SessionEndReason · enum · L192-L201 — pub enum SessionEndReason
+- as_str · function · L204-L214 — pub fn as_str(self) -> &'static str
+- ErrorCategory · enum · L218-L224 — pub enum ErrorCategory
+- TelemetryProjectProfile · struct · L227-L234 — pub struct TelemetryProjectProfile
+- mixed · function · L237-L249 — pub fn mixed(&self) -> bool
+- note_extension · function · L251-L260 — pub fn note_extension(&mut self, extension: &str)
+- sanitize_feedback_text · function · L263-L272 — pub fn sanitize_feedback_text(value: &str) -> String
+- InstallEvent · struct · L275-L289 — pub struct InstallEvent
+- UpgradeEvent · struct · L292-L305 — pub struct UpgradeEvent
+- AuthEvent · struct · L308-L322 — pub struct AuthEvent
+- SessionStartEvent · struct · L325-L348 — pub struct SessionStartEvent
+- OnboardingStepEvent · struct · L351-L374 — pub struct OnboardingStepEvent
+- OnboardingTraceStep · struct · L384-L396 — pub struct OnboardingTraceStep
+- OnboardingTraceEvent · struct · L404-L427 — pub struct OnboardingTraceEvent
+- FeedbackEvent · struct · L430-L449 — pub struct FeedbackEvent
+- DiscoveryEvent · struct · L455-L490 — pub struct DiscoveryEvent
+- TodoSessionEvent · struct · L500-L542 — pub struct TodoSessionEvent
+- SessionLifecycleEvent · struct · L545-L696 — pub struct SessionLifecycleEvent
+- ErrorCounts · struct · L699-L705 — pub struct ErrorCounts
+- UsageReportEvent · struct · L708-L748 — pub struct UsageReportEvent
+- TurnEndEvent · struct · L751-L839 — pub struct TurnEndEvent
+- sanitize_telemetry_label · function · L841-L863 — pub fn sanitize_telemetry_label(value: &str) -> String
+- looks_like_telemetry_test_run · function · L865-L891 — pub fn looks_like_telemetry_test_run(name: &str, input: &serde_json::Value) -> bool
+- mcp_telemetry_server_name · function · L893-L905 — pub fn mcp_telemetry_server_name(name: &str, input: &serde_json::Value) -> Option<String>
+- telemetry_helper_tests · module · L908-L1020 — mod telemetry_helper_tests
+- classifies_known_tool_categories · function · L912-L933 — fn classifies_known_tool_categories()
+- derives_workflow_flags_from_counts · function · L936-L952 — fn derives_workflow_flags_from_counts()
+- session_end_reason_labels_are_stable · function · L955-L958 — fn session_end_reason_labels_are_stable()
+- sanitizes_ansi_and_control_characters · function · L961-L966 — fn sanitizes_ansi_and_control_characters()
+- project_profile_tracks_languages_and_mixed_state · function · L969-L978 — fn project_profile_tracks_languages_and_mixed_state()
+- sanitizes_feedback_text · function · L981-L987 — fn sanitizes_feedback_text()
+- detects_test_runs_from_tool_input · function · L990-L1003 — fn detects_test_runs_from_tool_input()
+- extracts_mcp_server_names · function · L1006-L1019 — fn extracts_mcp_server_names()
+- ModelUsage · struct · L1029-L1035 — pub struct ModelUsage
+- merge_observation · function · L1040-L1053 — pub fn merge_observation(&mut self, observed: &Self)
+- compare_model_usage · function · L1059-L1071 — pub fn compare_model_usage(a: Option<&ModelUsage>, b: Option<&ModelUsage>) -> std::cmp::Ordering
+- model_usage_tests · module · L1074-L1160 — mod model_usage_tests
+- observations_are_monotonic_until_a_new_tracking_epoch · function · L1077-L1108 — fn observations_are_monotonic_until_a_new_tracking_epoch()
+- usage_order_prefers_turns_then_recency_then_historical_selections · function · L1111-L1152 — fn usage_order_prefers_turns_then_recency_then_historical_selections()
+- usage_dto_defaults_missing_metadata_without_inventing_history · function · L1155-L1159 — fn usage_dto_defaults_missing_metadata_without_inventing_history()
+- limit_bar · module · L1164-L1186 — pub mod limit_bar
+- FILLED · constant · L1165-L1165 — pub const FILLED: char = '▰';
+- EMPTY · constant · L1166-L1166 — pub const EMPTY: char = '▱';
+- MAX_CELLS · constant · L1168-L1168 — pub const MAX_CELLS: usize = 12;
+- color_rgb · function · L1171-L1179 — pub fn color_rgb(left_pct: u8) -> (u8, u8, u8)
+- cells · function · L1182-L1185 — pub fn cells(used_pct: u8, cells: usize) -> (usize, usize)
+- limit_bar_tests · module · L1189-L1201 — mod limit_bar_tests
+- cells_and_colors_follow_the_widget_convention · function · L1193-L1200 — fn cells_and_colors_follow_the_widget_convention()

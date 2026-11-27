@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/ambient/scheduled_recovery_tests.rs
+
+- item · function · L7-L23 — fn item(name: &str, minutes_from_now: i64) -> ScheduledItem
+- orphan_claims · function · L26-L37 — fn orphan_claims(queue: &mut ScheduledQueue)
+- state_of · function · L39-L49 — fn state_of(queue: &ScheduledQueue, id: &str) -> ItemState
+- GRACE · constant · L51-L51 — const GRACE: chrono::Duration = chrono::Duration::minutes(5);
+- claim_keeps_item_persisted_as_dispatched · function · L54-L67 — fn claim_keeps_item_persisted_as_dispatched()
+- crash_before_ack_becomes_uncertain_and_is_never_redelivered · function · L70-L92 — fn crash_before_ack_becomes_uncertain_and_is_never_redelivered()
+- live_claim_by_this_process_is_left_to_its_owner · function · L95-L105 — fn live_claim_by_this_process_is_left_to_its_owner()
+- overdue_items_are_missed_with_delay_and_not_delivered · function · L108-L132 — fn overdue_items_are_missed_with_delay_and_not_delivered()
+- ambient_target_items_are_not_marked_missed · function · L135-L146 — fn ambient_target_items_are_not_marked_missed()
+- ack_moves_item_to_delivered_history_once · function · L149-L169 — fn ack_moves_item_to_delivered_history_once()
+- manual_retry_adds_attempt_and_preserves_history · function · L172-L218 — fn manual_retry_adds_attempt_and_preserves_history()
+- cancel_pending_goes_to_history_and_dispatched_cannot_be_cancelled · function · L221-L233 — fn cancel_pending_goes_to_history_and_dispatched_cannot_be_cancelled()
+- history_is_bounded_but_uncertain_is_kept · function · L236-L266 — fn history_is_bounded_but_uncertain_is_kept()
+- pending_items_serialize_without_delivery_noise · function · L269-L274 — fn pending_items_serialize_without_delivery_noise()
+- set_claim · function · L276-L288 — fn set_claim(queue: &mut ScheduledQueue, owner: &str, age: chrono::Duration)
+- claimed_queue · function · L290-L298 — fn claimed_queue() -> (tempfile::TempDir, ScheduledQueue, String)
+- other_live_pid · function · L301-L303 — fn other_live_pid() -> u32
+- pid_reuse_cannot_keep_a_claim_alive_forever · function · L306-L339 — fn pid_reuse_cannot_keep_a_claim_alive_forever()
+- a_claim_older_than_the_bound_is_abandoned_even_with_a_matching_owner · function · L342-L358 — fn a_claim_older_than_the_bound_is_abandoned_even_with_a_matching_owner()
+- stuck_dispatched_claim_can_be_retried_or_cancelled_by_the_user · function · L361-L385 — fn stuck_dispatched_claim_can_be_retried_or_cancelled_by_the_user()
+- uncertain_and_missed_items_can_be_dismissed_keeping_attempts · function · L388-L403 — fn uncertain_and_missed_items_can_be_dismissed_keeping_attempts()
+- legacy_queue_file_without_delivery_fields_loads_pending_and_claims · function · L406-L425 — fn legacy_queue_file_without_delivery_fields_loads_pending_and_claims()

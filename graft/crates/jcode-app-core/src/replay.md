@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/replay.rs
+
+- TimelineEvent · struct · L14-L20 — pub struct TimelineEvent
+- TimelineEventKind · enum · L24-L109 — pub enum TimelineEventKind
+- default_thinking_duration · function · L111-L113 — fn default_thinking_duration() -> u64
+- default_stream_speed · function · L114-L116 — fn default_stream_speed() -> u64
+- MAX_INITIAL_REPLAY_IDLE_MS · constant · L118-L118 — const MAX_INITIAL_REPLAY_IDLE_MS: u64 = 0;
+- cap_initial_replay_idle · function · L120-L131 — fn cap_initial_replay_idle(events: &mut [TimelineEvent])
+- export_timeline · function · L138-L360 — pub fn export_timeline(session: &Session) -> Vec<TimelineEvent>
+- ReplayEvent · enum · L369-L398 — pub enum ReplayEvent
+- timeline_to_replay_events · function · L401-L580 — pub fn timeline_to_replay_events(timeline: &[TimelineEvent]) -> Vec<(u64, ReplayEvent)>
+- load_session · function · L583-L613 — pub fn load_session(id_or_path: &str) -> Result<Session>
+- SwarmReplaySession · struct · L616-L619 — pub struct SwarmReplaySession
+- load_swarm_sessions · function · L621-L697 — pub fn load_swarm_sessions(
+- maybe_auto_edit · function · L699-L706 — fn maybe_auto_edit(session: &Session, auto_edit: bool) -> Vec<TimelineEvent>
+- PaneReplayInput · struct · L709-L712 — pub struct PaneReplayInput
+- extract_text · function · L714-L725 — fn extract_text(blocks: &[ContentBlock]) -> String
+- auto_edit_timeline · function · L734-L841 — pub fn auto_edit_timeline(timeline: &[TimelineEvent], opts: &AutoEditOpts) -> Vec<TimelineEvent>
+- AutoEditOpts · struct · L844-L853 — pub struct AutoEditOpts
+- default · function · L856-L863 — fn default() -> Self
+- truncate_for_timeline · function · L866-L876 — fn truncate_for_timeline(s: &str) -> String
+- tests · module · L879-L879 — mod tests;

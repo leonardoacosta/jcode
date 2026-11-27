@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/server/turn_failover.rs
+
+- MAX_SERVER_FAILOVERS · constant · L21-L21 — const MAX_SERVER_FAILOVERS: usize = 3;
+- error_wants_failover · function · L24-L32 — fn error_wants_failover(error: &str) -> bool
+- FailoverTarget · struct · L35-L39 — pub(super) struct FailoverTarget
+- describe_route · function · L41-L44 — fn describe_route(route: &crate::provider::ModelRoute) -> String
+- pick_failover_target · function · L48-L115 — pub(super) fn pick_failover_target(agent: &Agent, error: &str) -> Option<FailoverTarget>
+- apply_failover_target · function · L118-L152 — pub(super) fn apply_failover_target(
+- process_message_with_server_failover · function · L157-L176 — pub(super) async fn process_message_with_server_failover(
+- process_reserved_message_with_server_failover · function · L179-L205 — pub(super) async fn process_reserved_message_with_server_failover(
+- process_locked_message_with_server_failover · function · L211-L228 — pub(super) async fn process_locked_message_with_server_failover(
+- process_reserved_locked_message_with_server_failover · function · L230-L252 — pub(super) async fn process_reserved_locked_message_with_server_failover(
+- process_reserved_locked_context_with_server_failover · function · L258-L294 — pub(super) async fn process_reserved_locked_context_with_server_failover(
+- process_server_initiated_message · function · L299-L315 — pub(super) async fn process_server_initiated_message(
+- retry_turn_with_server_failover · function · L320-L356 — pub(super) async fn retry_turn_with_server_failover(
+- tests · module · L359-L660 — mod tests
+- usage_limits_and_router_prompts_want_failover · function · L363-L379 — fn usage_limits_and_router_prompts_want_failover()
+- TwoAccountProvider · struct · L389-L392 — struct TwoAccountProvider
+- complete · function · L396-L413 — async fn complete(
+- name · function · L414-L420 — fn name(&self) -> &str
+- model · function · L421-L427 — fn model(&self) -> String
+- active_resolved_credential · function · L428-L430 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- set_model · function · L431-L434 — fn set_model(&self, model: &str) -> anyhow::Result<()>
+- model_routes · function · L435-L445 — fn model_routes(&self) -> Vec<ModelRoute>
+- fork · function · L446-L448 — fn fork(&self) -> Arc<dyn Provider>
+- usage_limit_switches_pool_account_and_retries_same_turn · function · L452-L543 — fn usage_limit_switches_pool_account_and_retries_same_turn()
+- server_initiated_turns_always_use_account_router · function · L546-L621 — fn server_initiated_turns_always_use_account_router()
+- disabled_clients_keep_the_original_error · function · L624-L652 — fn disabled_clients_keep_the_original_error()
+- context_and_generic_errors_do_not_switch_accounts · function · L655-L659 — fn context_and_generic_errors_do_not_switch_accounts()

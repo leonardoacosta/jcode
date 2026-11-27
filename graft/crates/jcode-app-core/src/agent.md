@@ -1,0 +1,88 @@
+# crates/jcode-app-core/src/agent.rs
+
+- cache_monitor_tests · module · L4-L4 — mod cache_monitor_tests;
+- compaction · module · L5-L5 — mod compaction;
+- conversation_reset · module · L6-L6 — mod conversation_reset;
+- environment · module · L7-L7 — mod environment;
+- idle_hibernation · module · L8-L8 — mod idle_hibernation;
+- inline_tail · module · L9-L9 — mod inline_tail;
+- interrupts · module · L10-L10 — mod interrupts;
+- messages · module · L11-L11 — mod messages;
+- model_usage_tests · module · L13-L13 — mod model_usage_tests;
+- prompting · module · L14-L14 — mod prompting;
+- provider · module · L15-L15 — mod provider;
+- response_recovery · module · L16-L16 — mod response_recovery;
+- runtime_recovery · module · L17-L17 — mod runtime_recovery;
+- status · module · L18-L18 — mod status;
+- streaming · module · L19-L19 — mod streaming;
+- swarm_reminder_tests · module · L21-L21 — mod swarm_reminder_tests;
+- tools · module · L22-L22 — mod tools;
+- turn_execution · module · L23-L23 — mod turn_execution;
+- turn_loops · module · L24-L24 — mod turn_loops;
+- turn_ownership · module · L25-L25 — mod turn_ownership;
+- turn_streaming_mpsc · module · L29-L29 — mod turn_streaming_mpsc;
+- utils · module · L30-L30 — mod utils;
+- JCODE_NATIVE_TOOLS · constant · L67-L67 — const JCODE_NATIVE_TOOLS: &[&str] = &["selfdev", "desktop_selfdev", "communicate"];
+- JCODE_REPO_SOURCE_STATE · constant · L68-L77 — static JCODE_REPO_SOURCE_STATE: LazyLock<(Option<String>, Option<bool>)> = LazyLock::new(||
+- WORKING_GIT_STATE_CACHE · constant · L78-L79 — static WORKING_GIT_STATE_CACHE: LazyLock<StdMutex<HashMap<PathBuf, Option<GitState>>>> =
+- STREAM_KEEPALIVE_PONG_ID · constant · L80-L80 — const STREAM_KEEPALIVE_PONG_ID: u64 = 0;
+- cache_request · module · L83-L83 — mod cache_request;
+- kv_cache_provider_identity · function · L89-L99 — fn kv_cache_provider_identity(&self) -> String
+- kv_cache_account_identity · function · L104-L122 — fn kv_cache_account_identity(&self) -> Option<String>
+- begin_kv_cache_monitor_request · function · L124-L155 — fn begin_kv_cache_monitor_request(&mut self, event: &ServerEvent, model: &str)
+- finish_kv_cache_monitor_request · function · L159-L207 — fn finish_kv_cache_monitor_request(
+- log_agent_provider_stream_lifecycle · function · L210-L247 — fn log_agent_provider_stream_lifecycle(
+- TokenUsage · struct · L251-L256 — pub struct TokenUsage
+- RewindUndoSnapshot · struct · L259-L264 — struct RewindUndoSnapshot
+- Agent · struct · L266-L377 — pub struct Agent
+- server_turn_observer · function · L380-L382 — pub(crate) fn server_turn_observer(&self) -> TurnObserver
+- claim_runtime_mutation · function · L384-L386 — pub(crate) fn claim_runtime_mutation(&self) -> Result<RuntimeMutationLease>
+- claim_server_turn · function · L388-L390 — pub(crate) fn claim_server_turn(&self) -> Result<TurnLease>
+- validate_server_turn · function · L392-L394 — pub(crate) fn validate_server_turn(&self, lease: &TurnLease) -> Result<()>
+- refresh_agents_md_snapshot · function · L396-L404 — fn refresh_agents_md_snapshot(&mut self)
+- refresh_prompt_skills_snapshot · function · L408-L416 — fn refresh_prompt_skills_snapshot(&mut self)
+- current_prompt_skill_infos · function · L418-L427 — fn current_prompt_skill_infos(&self) -> Vec<crate::prompt::SkillInfo>
+- should_track_client_cache · function · L429-L437 — fn should_track_client_cache(&self) -> bool
+- restrict_read_only_tools · function · L439-L446 — fn restrict_read_only_tools(session: &Session, allowed_tools: &mut Option<HashSet<String>>)
+- build_base · function · L448-L525 — fn build_base(
+- current_skills_snapshot · function · L527-L547 — pub(crate) fn current_skills_snapshot(&self) -> Arc<SkillRegistry>
+- available_skill_names · function · L549-L555 — pub fn available_skill_names(&self) -> Vec<String>
+- new · function · L557-L559 — pub fn new(provider: Arc<dyn Provider>, registry: Registry) -> Self
+- new_with_initial_working_dir · function · L561-L567 — pub(crate) fn new_with_initial_working_dir(
+- new_provisional_with_initial_working_dir · function · L571-L577 — pub(crate) fn new_provisional_with_initial_working_dir(
+- new_with_parent_and_initial_working_dir · function · L579-L596 — pub(crate) fn new_with_parent_and_initial_working_dir(
+- new_with_initial_ownership · function · L598-L675 — fn new_with_initial_ownership(
+- new_with_session · function · L677-L718 — pub fn new_with_session(
+- seed_compaction_from_session · function · L720-L758 — fn seed_compaction_from_session(&mut self)
+- sync_memory_dedup_state_from_session · function · L760-L765 — fn sync_memory_dedup_state_from_session(&self)
+- record_memory_injection_in_session · function · L767-L796 — fn record_memory_injection_in_session(&mut self, memory: &crate::memory::PendingMemory)
+- memory_injection_message · function · L798-L803 — fn memory_injection_message(memory: &crate::memory::PendingMemory) -> Message
+- prepare_memory_injection_message · function · L805-L820 — pub(super) fn prepare_memory_injection_message(
+- persist_session_best_effort · function · L822-L829 — fn persist_session_best_effort(&mut self, context: &str)
+- reset_runtime_state_for_session_change · function · L831-L849 — fn reset_runtime_state_for_session_change(&mut self)
+- set_remote_active_skill · function · L853-L864 — pub(super) fn set_remote_active_skill(&mut self, active_skill: Option<String>) -> bool
+- announce_active_skill · function · L868-L889 — pub(crate) fn announce_active_skill(&mut self)
+- sync_session_compaction_state_from_manager · function · L891-L904 — fn sync_session_compaction_state_from_manager(
+- apply_openai_native_compaction · function · L906-L970 — fn apply_openai_native_compaction(
+- messages_for_provider · function · L972-L1062 — fn messages_for_provider(&mut self) -> (Vec<Message>, Option<CompactionEvent>)
+- record_client_cache_request · function · L1064-L1109 — fn record_client_cache_request(&mut self, messages: &[Message])
+- repair_missing_tool_outputs · function · L1111-L1211 — fn repair_missing_tool_outputs(&mut self) -> usize
+- reset_tool_output_tracking · function · L1213-L1217 — fn reset_tool_output_tracking(&mut self)
+- session_id · function · L1219-L1221 — pub fn session_id(&self) -> &str
+- is_desktop_selfdev · function · L1225-L1232 — pub fn is_desktop_selfdev(&self) -> bool
+- set_working_dir_for_pending_context · function · L1234-L1250 — pub(crate) fn set_working_dir_for_pending_context(&mut self, working_dir: Option<String>)
+- mark_closed · function · L1253-L1255 — pub fn mark_closed(&mut self)
+- mark_closed_for_replacement · function · L1262-L1270 — pub(crate) fn mark_closed_for_replacement(&mut self)
+- begin_telemetry_session · function · L1272-L1279 — fn begin_telemetry_session(&self)
+- mark_closed_with_reason · function · L1281-L1299 — fn mark_closed_with_reason(&mut self, end_reason: crate::telemetry::SessionEndReason)
+- fire_session_lifecycle_hook · function · L1303-L1324 — pub(crate) fn fire_session_lifecycle_hook(&self, event_name: &'static str, source: &str)
+- mark_crashed · function · L1326-L1339 — pub fn mark_crashed(&mut self, message: Option<String>)
+- begin_concurrency_tracking · function · L1341-L1346 — fn begin_concurrency_tracking(&mut self)
+- activate_concurrency_tracking · function · L1349-L1369 — pub(crate) fn activate_concurrency_tracking(&mut self)
+- finish_concurrency_tracking · function · L1371-L1375 — pub(crate) fn finish_concurrency_tracking(&mut self)
+- take_concurrency_session · function · L1380-L1384 — pub(crate) fn take_concurrency_session(
+- has_concurrency_tracking · function · L1387-L1389 — pub(crate) fn has_concurrency_tracking(&self) -> bool
+- upload_transcript_telemetry · function · L1391-L1412 — fn upload_transcript_telemetry(&mut self, end_reason: crate::telemetry::SessionEndReason)
+- last_usage · function · L1415-L1417 — pub fn last_usage(&self) -> &TokenUsage
+- token_usage_totals · function · L1419-L1421 — pub fn token_usage_totals(&self) -> crate::protocol::TokenUsageTotals
+- tests · module · L1426-L1426 — mod tests;

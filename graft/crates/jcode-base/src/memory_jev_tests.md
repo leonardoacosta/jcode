@@ -1,0 +1,21 @@
+# crates/jcode-base/src/memory_jev_tests.rs
+
+- entry · function · L6-L10 — fn entry(id: &str, content: &str) -> MemoryEntry
+- Mock · struct · L13-L17 — struct Mock
+- evaluate · function · L21-L46 — async fn evaluate(&self, state: Value, questions: Map<String, Value>) -> Result<Value>
+- payload_keeps_untrusted_data_out_of_instructions_and_identifies_each_candidate · function · L50-L101 — fn payload_keeps_untrusted_data_out_of_instructions_and_identifies_each_candidate()
+- strict_answer_mapping_and_numeric_validation · function · L104-L148 — fn strict_answer_mapping_and_numeric_validation()
+- empty_and_zero_limit_never_call_transport · function · L151-L178 — async fn empty_and_zero_limit_never_call_transport()
+- scans_every_active_entry_without_embeddings_or_recency_top_k · function · L181-L208 — async fn scans_every_active_entry_without_embeddings_or_recency_top_k()
+- errors_in_later_batches_discard_earlier_successes · function · L211-L232 — async fn errors_in_later_batches_discard_earlier_successes()
+- deterministic_order_limit_and_duplicate_memory_ids · function · L235-L245 — async fn deterministic_order_limit_and_duplicate_memory_ids()
+- query_and_serialized_request_budgets_are_byte_based_and_utf8_safe · function · L248-L257 — fn query_and_serialized_request_budgets_are_byte_based_and_utf8_safe()
+- dynamic_batches_preserve_full_unicode_contents_and_skip_oversize_whole · function · L260-L280 — async fn dynamic_batches_preserve_full_unicode_contents_and_skip_oversize_whole()
+- invalid_threshold_or_large_query_is_fail_closed · function · L283-L304 — async fn invalid_threshold_or_large_query_is_fail_closed()
+- manager_scope_active_filter_and_storage_failures · function · L307-L352 — fn manager_scope_active_filter_and_storage_failures()
+- NumericScores · struct · L354-L354 — struct NumericScores;
+- evaluate · function · L358-L371 — async fn evaluate(&self, state: Value, questions: Map<String, Value>) -> Result<Value>
+- threshold_is_applied_before_rounding_and_results_sort_by_score · function · L375-L397 — async fn threshold_is_applied_before_rounding_and_results_sort_by_score()
+- only_oversize_or_inactive_entries_do_not_send_requests · function · L400-L415 — async fn only_oversize_or_inactive_entries_do_not_send_requests()
+- live_synthetic_relevance_acceptance · function · L421-L497 — async fn live_synthetic_relevance_acceptance() -> Result<()>
+- private_metadata_stays_local_but_full_original_is_returned · function · L500-L521 — async fn private_metadata_stays_local_but_full_original_is_returned()

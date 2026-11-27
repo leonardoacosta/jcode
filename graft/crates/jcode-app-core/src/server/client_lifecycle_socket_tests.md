@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/server/client_lifecycle_socket_tests.rs
+
+- SdkCallbackProvider · struct · L4-L6 — struct SdkCallbackProvider
+- complete · function · L9-L40 — async fn complete(
+- name · function · L41-L43 — fn name(&self) -> &str
+- fork · function · L44-L46 — fn fork(&self) -> Arc<dyn Provider>
+- TerminalSocketProvider · struct · L50-L57 — struct TerminalSocketProvider
+- complete · function · L61-L78 — async fn complete(
+- name · function · L80-L82 — fn name(&self) -> &str
+- fork · function · L84-L86 — fn fork(&self) -> Arc<dyn Provider>
+- available_models_display · function · L88-L94 — fn available_models_display(&self) -> Vec<String>
+- catalog_sharing_identity · function · L96-L105 — fn catalog_sharing_identity(&self) -> Option<String>
+- terminal_done_then_immediate_message_socket_dispatches_next_turn · function · L109-L111 — async fn terminal_done_then_immediate_message_socket_dispatches_next_turn()
+- sdk_socket_configure_list_callback_and_busy_rejection · function · L114-L116 — async fn sdk_socket_configure_list_callback_and_busy_rejection()
+- user_response_socket_registration_follows_explicit_capability · function · L119-L121 — async fn user_response_socket_registration_follows_explicit_capability()
+- scoped_and_legacy_socket_subscribers_receive_compatible_turn_streams · function · L124-L126 — async fn scoped_and_legacy_socket_subscribers_receive_compatible_turn_streams()
+- scoped_cancel_socket_immediately_dispatches_next_prompt · function · L129-L131 — async fn scoped_cancel_socket_immediately_dispatches_next_prompt()
+- idle_soft_interrupt_without_client_id_is_picked_up_before_cancel · function · L134-L136 — async fn idle_soft_interrupt_without_client_id_is_picked_up_before_cancel()
+- catalog_failure_preserves_remote_socket_owner_and_next_turn · function · L139-L141 — async fn catalog_failure_preserves_remote_socket_owner_and_next_turn()
+- sdk_socket_workflow · function · L143-L153 — async fn sdk_socket_workflow(response_only: bool, terminal_race: bool, identity_capability: bool)
+- sdk_socket_cancel_workflow · function · L155-L961 — async fn sdk_socket_cancel_workflow(
+- send · function · L235-L240 — async fn send(writer: &mut crate::transport::WriteHalf, value: serde_json::Value)
+- until · function · L241-L257 — async fn until(

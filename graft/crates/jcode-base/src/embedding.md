@@ -1,0 +1,31 @@
+# crates/jcode-base/src/embedding.rs
+
+- EMBEDDING_CACHE_CAPACITY · constant · L18-L18 — const EMBEDDING_CACHE_CAPACITY: usize = 128;
+- EMBEDDER_CACHE · constant · L23-L23 — static EMBEDDER_CACHE: OnceLock<Mutex<EmbedderCache>> = OnceLock::new();
+- EmbeddingVec · type · L26-L26 — pub type EmbeddingVec = backend::EmbeddingVec;
+- Embedder · struct · L33-L35 — pub struct Embedder
+- EmbedderCache · struct · L38-L52 — struct EmbedderCache
+- EmbedderStats · struct · L55-L72 — pub struct EmbedderStats
+- embedder_cache · function · L74-L76 — fn embedder_cache() -> &'static Mutex<EmbedderCache>
+- saturating_u64_from_u128 · function · L78-L84 — fn saturating_u64_from_u128(value: u128) -> u64
+- load · function · L88-L95 — pub fn load() -> Result<Self>
+- load_from_dir · function · L100-L103 — pub fn load_from_dir(model_dir: &std::path::Path) -> Result<Self>
+- embed · function · L106-L108 — pub fn embed(&self, text: &str) -> Result<EmbeddingVec>
+- embed_batch · function · L111-L113 — pub fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbeddingVec>>
+- get_embedder · function · L120-L160 — pub fn get_embedder() -> Result<Arc<Embedder>>
+- hash_text · function · L163-L168 — fn hash_text(text: &str) -> u64
+- embed · function · L174-L223 — pub fn embed(text: &str) -> Result<EmbeddingVec>
+- maybe_unload_if_idle · function · L228-L270 — pub fn maybe_unload_if_idle(idle_for: Duration) -> bool
+- unload_now · function · L273-L299 — pub fn unload_now() -> bool
+- stats · function · L302-L364 — pub fn stats() -> EmbedderStats
+- artifact_sizes · function · L366-L379 — fn artifact_sizes() -> (u64, u64)
+- cosine_similarity · function · L382-L384 — pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32
+- batch_cosine_similarity · function · L387-L389 — pub fn batch_cosine_similarity(query: &[f32], candidates: &[&[f32]]) -> Vec<f32>
+- find_similar · function · L392-L399 — pub fn find_similar(
+- models_dir · function · L402-L406 — pub fn models_dir() -> Result<PathBuf>
+- is_model_available · function · L409-L415 — pub fn is_model_available() -> bool
+- embedding_dim · function · L418-L420 — pub const fn embedding_dim() -> usize
+- tests · module · L423-L469 — mod tests
+- test_cosine_similarity · function · L427-L437 — fn test_cosine_similarity()
+- test_find_similar · function · L440-L460 — fn test_find_similar()
+- test_idle_unload_noop_when_not_loaded · function · L463-L468 — fn test_idle_unload_noop_when_not_loaded()

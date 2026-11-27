@@ -1,0 +1,68 @@
+# crates/jcode-sdk/src/cloud.rs
+
+- timing · module · L26-L26 — mod timing;
+- timing_tests · module · L28-L28 — mod timing_tests;
+- transport_tests · module · L30-L30 — mod transport_tests;
+- DEFAULT_API_BASE · constant · L33-L33 — pub const DEFAULT_API_BASE: &str = "https://api.jcode.sh/v1";
+- PROVISION_DEADLINE · constant · L35-L35 — pub const PROVISION_DEADLINE: Duration = Duration::from_secs(8 * 60);
+- POLL_INTERVAL · constant · L36-L36 — const POLL_INTERVAL: Duration = Duration::from_secs(4);
+- Account · struct · L40-L50 — pub struct Account
+- default_base · function · L52-L54 — fn default_base() -> String
+- PushEnvironment · enum · L60-L63 — pub enum PushEnvironment
+- PushDevice · struct · L67-L74 — pub struct PushDevice
+- PushKind · enum · L79-L84 — pub enum PushKind
+- PushNotification · struct · L88-L96 — pub struct PushNotification
+- PushReceipt · struct · L100-L105 — pub struct PushReceipt
+- push_token_hex · function · L108-L110 — pub fn push_token_hex(raw: &[u8]) -> String
+- DeviceLogin · struct · L114-L121 — pub struct DeviceLogin
+- default_interval · function · L123-L125 — fn default_interval() -> u64
+- ConnectReply · struct · L129-L144 — pub struct ConnectReply
+- CloudTarget · struct · L150-L156 — pub struct CloudTarget
+- from_reply · function · L160-L203 — pub fn from_reply(reply: &ConnectReply) -> Result<Self>
+- known_hosts · function · L207-L217 — pub fn known_hosts(&self) -> String
+- CloudClient · struct · L222-L230 — pub struct CloudClient
+- new · function · L233-L240 — pub fn new(client_name: impl Into<String>) -> Self
+- with_api_base · function · L242-L245 — pub fn with_api_base(mut self, base: impl Into<String>) -> Self
+- url · function · L247-L249 — fn url(&self, path: &str) -> String
+- account · function · L251-L259 — fn account(&self, reply: LoginReply) -> Account
+- refresh_account_profile · function · L263-L300 — pub fn refresh_account_profile(&self, account: &Account) -> Result<Account>
+- Profile · struct · L265-L270 — struct Profile
+- start_email_login · function · L303-L314 — pub fn start_email_login(&self, email: &str) -> Result<String>
+- Start · struct · L305-L307 — struct Start
+- verify_email_login · function · L316-L323 — pub fn verify_email_login(&self, login_token: &str, code: &str) -> Result<Account>
+- start_device_login · function · L326-L332 — pub fn start_device_login(&self) -> Result<DeviceLogin>
+- poll_device_login · function · L336-L369 — pub fn poll_device_login(&self, login: &mut DeviceLogin) -> Result<Option<Account>>
+- wait_for_device_login · function · L372-L396 — pub fn wait_for_device_login(
+- request_host_connect · function · L400-L414 — pub fn request_host_connect(
+- wait_for_host · function · L418-L432 — pub fn wait_for_host(
+- wait_for_host_until · function · L434-L470 — fn wait_for_host_until(
+- register_push_device · function · L474-L478 — pub fn register_push_device(&self, account: &Account, device: &PushDevice) -> Result<()>
+- unregister_push_device · function · L481-L488 — pub fn unregister_push_device(&self, account: &Account, token_hex: &str) -> Result<()>
+- reset_push_badge · function · L491-L498 — pub fn reset_push_badge(&self, account: &Account) -> Result<()>
+- send_push · function · L502-L514 — pub fn send_push(
+- account_call · function · L516-L537 — fn account_call(
+- agent · function · L539-L574 — fn agent(&self) -> ureq::Agent
+- Agents · type · L544-L544 — type Agents = std::collections::VecDeque<(String, Duration, ureq::Agent)>;
+- AGENTS · constant · L545-L546 — static AGENTS: std::sync::Mutex<Agents> =
+- post_raw · function · L576-L583 — fn post_raw(
+- send_raw · function · L585-L638 — fn send_raw(
+- post · function · L640-L663 — fn post<T: for<'de> Deserialize<'de>>(
+- LoginReply · struct · L667-L675 — struct LoginReply
+- sleep_unless · function · L677-L686 — fn sleep_unless(total: Duration, cancelled: &dyn Fn() -> bool) -> Result<()>
+- describe · function · L689-L707 — pub fn describe(status: u16, code: &str, message: &str) -> Error
+- connect · function · L712-L724 — pub fn connect(
+- tests · module · L727-L1093 — mod tests
+- reply · function · L730-L732 — fn reply(v: serde_json::Value) -> ConnectReply
+- target_validation_rejects_injection · function · L735-L755 — fn target_validation_rejects_injection()
+- known_hosts_brackets_non_default_ports · function · L758-L761 — fn known_hosts_brackets_non_default_ports()
+- errors_explain_sign_in_and_subscription · function · L764-L771 — fn errors_explain_sign_in_and_subscription()
+- serve · function · L774-L815 — pub(super) fn serve(
+- email_login_sends_client_name_and_returns_account · function · L818-L844 — fn email_login_sends_client_name_and_returns_account()
+- device_poll_handles_pending_slow_down_and_success · function · L847-L871 — fn device_poll_handles_pending_slow_down_and_success()
+- account_legacy_persistence_and_profile_roundtrip · function · L874-L889 — fn account_legacy_persistence_and_profile_roundtrip()
+- device_login_propagates_profile_names · function · L892-L910 — fn device_login_propagates_profile_names()
+- refresh_profile_uses_account_endpoint_and_preserves_legacy_names · function · L913-L954 — fn refresh_profile_uses_account_endpoint_and_preserves_legacy_names()
+- refresh_profile_rejects_auth_errors_and_malformed_profiles · function · L957-L978 — fn refresh_profile_rejects_auth_errors_and_malformed_profiles()
+- host_connect_polls_until_ready_with_bearer_auth · function · L981-L1014 — fn host_connect_polls_until_ready_with_bearer_auth()
+- push_device_lifecycle_and_send · function · L1017-L1072 — fn push_device_lifecycle_and_send()
+- unauthorized_host_connect_is_cloud_auth · function · L1076-L1092 — fn unauthorized_host_connect_is_cloud_auth()

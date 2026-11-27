@@ -1,0 +1,37 @@
+# src/cli/commands/provider_setup.rs
+
+- ProviderAddOptions · struct · L16-L33 — pub(crate) struct ProviderAddOptions
+- ProviderSetupReport · struct · L36-L50 — pub(crate) struct ProviderSetupReport
+- run_provider_add_command · function · L52-L90 — pub(crate) fn run_provider_add_command(options: ProviderAddOptions) -> Result<()>
+- configure_provider_profile · function · L92-L258 — pub(crate) fn configure_provider_profile(
+- parse_config_or_default · function · L260-L266 — fn parse_config_or_default(content: &str) -> Result<Config>
+- validate_profile_name · function · L268-L290 — fn validate_profile_name(raw: &str) -> Result<String>
+- ensure_profile_name_not_reserved · function · L292-L313 — fn ensure_profile_name_not_reserved(name: &str) -> Result<()>
+- RESERVED_PROVIDER_NAMES · constant · L293-L300 — const RESERVED_PROVIDER_NAMES: &[&str] = &[
+- read_api_key · function · L315-L332 — fn read_api_key(options: &ProviderAddOptions) -> Result<Option<String>>
+- resolve_auth_mode · function · L334-L362 — fn resolve_auth_mode(
+- resolve_api_key_env · function · L364-L377 — fn resolve_api_key_env(name: &str, configured: Option<&str>) -> Result<String>
+- resolve_env_file · function · L379-L392 — fn resolve_env_file(name: &str, configured: Option<&str>) -> Result<String>
+- derived_api_key_env · function · L394-L406 — fn derived_api_key_env(name: &str) -> String
+- append_profile_section · function · L408-L458 — fn append_profile_section(
+- upsert_provider_defaults · function · L460-L505 — fn upsert_provider_defaults(content: String, profile: &str, model: &str) -> String
+- upsert_key_in_range · function · L507-L515 — fn upsert_key_in_range(lines: &mut Vec<String>, start: usize, end: usize, key: &str, value: &str)
+- remove_named_provider_sections · function · L517-L532 — fn remove_named_provider_sections(content: &str, name: &str) -> String
+- is_named_provider_header · function · L534-L553 — fn is_named_provider_header(line: &str, name: &str) -> bool
+- is_toml_header · function · L555-L558 — fn is_toml_header(line: &str) -> bool
+- line_has_toml_key · function · L560-L566 — fn line_has_toml_key(line: &str, key: &str) -> bool
+- split_lines_lossy · function · L568-L570 — fn split_lines_lossy(content: &str) -> Vec<String>
+- join_lines · function · L572-L578 — fn join_lines(lines: Vec<String>) -> String
+- auth_label · function · L580-L586 — fn auth_label(auth: &NamedProviderAuth) -> &'static str
+- toml_quote · function · L588-L595 — fn toml_quote(value: &str) -> String
+- shell_quote · function · L597-L606 — fn shell_quote(value: &str) -> String
+- path_to_string · function · L608-L610 — fn path_to_string(path: PathBuf) -> String
+- tests · module · L613-L740 — mod tests
+- EnvVarGuard · struct · L617-L620 — struct EnvVarGuard
+- set · function · L623-L627 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- remove · function · L629-L633 — fn remove(key: &'static str) -> Self
+- drop · function · L637-L643 — fn drop(&mut self)
+- base_options · function · L646-L665 — fn base_options() -> ProviderAddOptions
+- provider_add_writes_named_profile_env_file_and_default · function · L668-L710 — fn provider_add_writes_named_profile_env_file_and_default()
+- provider_add_rejects_remote_without_api_key_source · function · L713-L723 — fn provider_add_rejects_remote_without_api_key_source()
+- provider_add_allows_localhost_without_api_key · function · L726-L739 — fn provider_add_allows_localhost_without_api_key()

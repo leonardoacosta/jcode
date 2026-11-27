@@ -1,0 +1,53 @@
+# crates/jcode-tui/src/tui/app/remote_tests.rs
+
+- tool_discovery_legacy_notice_and_session_bound_response · function · L16-L98 — fn tool_discovery_legacy_notice_and_session_bound_response()
+- plan_ack_requires_matching_server_enforcement · function · L101-L138 — fn plan_ack_requires_matching_server_enforcement()
+- plan_queue_and_reload_keep_typed_restriction · function · L141-L165 — fn plan_queue_and_reload_keep_typed_restriction()
+- plan_remote_wire_preserves_guard_and_system_origin · function · L168-L199 — fn plan_remote_wire_preserves_guard_and_system_origin()
+- plan_explicit_user_resets_budget_but_synthetic_turn_does_not · function · L202-L266 — fn plan_explicit_user_resets_budget_but_synthetic_turn_does_not()
+- plan_failed_queued_send_retains_policy_and_token · function · L269-L305 — fn plan_failed_queued_send_retains_policy_and_token()
+- plan_reset_discards_pending_tokens · function · L308-L317 — fn plan_reset_discards_pending_tokens()
+- plan_queue_human_literal_poke_stays_human_but_synthetic_does_not · function · L320-L350 — fn plan_queue_human_literal_poke_stays_human_but_synthetic_does_not()
+- plan_human_queue_reload_preserves_origin_and_clear_drops_tokens · function · L353-L378 — fn plan_human_queue_reload_preserves_origin_and_clear_drops_tokens()
+- plan_recovered_human_inputs_keep_origin · function · L381-L424 — fn plan_recovered_human_inputs_keep_origin()
+- korean_input · module · L427-L427 — mod korean_input;
+- MockProvider · struct · L429-L429 — struct MockProvider;
+- complete · function · L433-L443 — async fn complete(
+- name · function · L445-L447 — fn name(&self) -> &str
+- fork · function · L449-L451 — fn fork(&self) -> Arc<dyn Provider>
+- create_test_app · function · L454-L465 — fn create_test_app() -> crate::tui::app::App
+- ensure_test_jcode_home_if_unset · function · L472-L487 — fn ensure_test_jcode_home_if_unset()
+- TEST_HOME · constant · L475-L475 — static TEST_HOME: OnceLock<std::path::PathBuf> = OnceLock::new();
+- idle_donut_pauses_while_unfocused · function · L490-L518 — fn idle_donut_pauses_while_unfocused()
+- unfocused_redraw_warranted_tracks_live_activity · function · L521-L541 — fn unfocused_redraw_warranted_tracks_live_activity()
+- client_interaction_restores_focus_so_scroll_redraws_at_full_rate · function · L544-L567 — fn client_interaction_restores_focus_so_scroll_redraws_at_full_rate()
+- dead_server_respawn_waits_for_repeated_failures_and_throttles · function · L572-L610 — fn dead_server_respawn_waits_for_repeated_failures_and_throttles()
+- long_disconnect_redraws_slowly · function · L613-L619 — fn long_disconnect_redraws_slowly()
+- reload_handoff_inactive_without_flag_or_marker · function · L622-L641 — fn reload_handoff_inactive_without_flag_or_marker()
+- reload_wait_status_message_uses_waiting_language · function · L644-L653 — fn reload_wait_status_message_uses_waiting_language()
+- submit_prepared_remote_input_defers_until_history_loads · function · L656-L718 — fn submit_prepared_remote_input_defers_until_history_loads()
+- remote_skill_invocation_with_prompt_sends_remote_turn · function · L721-L759 — fn remote_skill_invocation_with_prompt_sends_remote_turn()
+- process_remote_followups_auto_submits_staged_startup_prompt · function · L762-L808 — fn process_remote_followups_auto_submits_staged_startup_prompt()
+- process_remote_followups_waits_for_history_before_sending_startup_image · function · L811-L877 — fn process_remote_followups_waits_for_history_before_sending_startup_image()
+- hidden_reload_continuation_stays_busy_after_initial_history · function · L880-L940 — fn hidden_reload_continuation_stays_busy_after_initial_history()
+- startup_history · function · L942-L987 — fn startup_history(session_id: &str) -> ServerEvent
+- history_speed_capabilities_are_authoritative_and_identity_scoped · function · L990-L1075 — fn history_speed_capabilities_are_authoritative_and_identity_scoped()
+- startup_send_state_is_not_preserved_for_real_session_switch · function · L1078-L1099 — fn startup_send_state_is_not_preserved_for_real_session_switch()
+- has_pending_startup_submission_requires_input_and_flag · function · L1102-L1127 — fn has_pending_startup_submission_requires_input_and_flag()
+- process_remote_followups_auto_reloads_server_by_default · function · L1130-L1149 — fn process_remote_followups_auto_reloads_server_by_default()
+- process_remote_followups_reloads_server_even_before_history_loads · function · L1152-L1180 — fn process_remote_followups_reloads_server_even_before_history_loads()
+- process_remote_followups_respects_disabled_auto_server_reload · function · L1183-L1199 — fn process_remote_followups_respects_disabled_auto_server_reload()
+- process_remote_followups_pauses_auto_reload_after_repeated_attempts · function · L1202-L1231 — fn process_remote_followups_pauses_auto_reload_after_repeated_attempts()
+- handle_post_connect_dispatches_reload_followup_even_if_history_snapshot_looks_busy · function · L1234-L1306 — fn handle_post_connect_dispatches_reload_followup_even_if_history_snapshot_looks_busy()
+- handle_server_event_applies_remote_memory_activity_snapshot · function · L1309-L1349 — fn handle_server_event_applies_remote_memory_activity_snapshot()
+- remote_history_watchdog_rerequests_history_when_stuck · function · L1356-L1403 — fn remote_history_watchdog_rerequests_history_when_stuck()
+- remote_history_watchdog_does_not_rerequest_while_frame_is_arriving · function · L1408-L1452 — fn remote_history_watchdog_does_not_rerequest_while_frame_is_arriving()
+- remote_history_watchdog_clears_budget_once_history_loads · function · L1456-L1475 — fn remote_history_watchdog_clears_budget_once_history_loads()
+- remote_history_watchdog_advises_restart_after_giving_up · function · L1480-L1515 — fn remote_history_watchdog_advises_restart_after_giving_up()
+- forward_pending_reasoning_effort_sends_effort_request_to_server · function · L1523-L1567 — fn forward_pending_reasoning_effort_sends_effort_request_to_server()
+- forward_pending_reasoning_effort_is_noop_without_staged_effort · function · L1572-L1585 — fn forward_pending_reasoning_effort_is_noop_without_staged_effort()
+- remote_dropped_file_path_is_sent_as_a_prompt_not_a_slash_command · function · L1588-L1629 — fn remote_dropped_file_path_is_sent_as_a_prompt_not_a_slash_command()
+- remote_embedded_known_slash_commands_are_sent_as_prompt_text · function · L1632-L1667 — fn remote_embedded_known_slash_commands_are_sent_as_prompt_text()
+- remote_multiple_known_slash_commands_use_the_local_command_boundary · function · L1670-L1696 — fn remote_multiple_known_slash_commands_use_the_local_command_boundary()
+- remote_submit_input_never_strands_a_local_pending_turn · function · L1699-L1720 — fn remote_submit_input_never_strands_a_local_pending_turn()
+- additional_reload_handoff_active_when_server_flag_is_set · module · L1727-L1727 — mod additional_reload_handoff_active_when_server_flag_is_set;

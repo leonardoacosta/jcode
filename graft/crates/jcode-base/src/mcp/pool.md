@@ -1,0 +1,67 @@
+# crates/jcode-base/src/mcp/pool.rs
+
+- SUPPRESSED_MARKER · constant · L22-L22 — pub const SUPPRESSED_MARKER: &str = "mcp reconnect suppressed";
+- BACKOFF_BASE · constant · L24-L24 — const BACKOFF_BASE: Duration = Duration::from_secs(30);
+- BACKOFF_CAP · constant · L25-L25 — const BACKOFF_CAP: Duration = Duration::from_secs(30 * 60);
+- DEGRADED_THRESHOLD · constant · L27-L27 — pub const DEGRADED_THRESHOLD: u32 = 5;
+- backoff_for · function · L30-L33 — fn backoff_for(failures: u32) -> Duration
+- FailureClass · enum · L37-L44 — pub enum FailureClass
+- as_str · function · L47-L56 — pub fn as_str(self) -> &'static str
+- classify · function · L58-L77 — pub(crate) fn classify(error: &anyhow::Error) -> Self
+- redacted_stderr · function · L80-L96 — pub(crate) fn redacted_stderr(lines: &[String], config: &McpServerConfig) -> Vec<String>
+- FailedConnectRecord · struct · L99-L107 — struct FailedConnectRecord
+- degraded · function · L110-L112 — fn degraded(&self) -> bool
+- retry_after · function · L114-L116 — fn retry_after(&self) -> Duration
+- config_fingerprint · function · L119-L121 — fn config_fingerprint(config: &McpServerConfig) -> String
+- failed_connect_cooldown · function · L123-L125 — fn failed_connect_cooldown(failures: u32) -> Duration
+- ConnectAttempt · enum · L127-L131 — enum ConnectAttempt
+- SharedMcpPool · struct · L137-L147 — pub struct SharedMcpPool
+- new · function · L151-L153 — pub fn new(config: McpConfig) -> Self
+- new_for_dir · function · L155-L165 — fn new_for_dir(config: McpConfig, config_dir: Option<std::path::PathBuf>) -> Self
+- from_default_config · function · L168-L172 — pub fn from_default_config() -> Self
+- connect_all · function · L176-L231 — pub async fn connect_all(&self) -> (usize, Vec<(String, String)>)
+- connect_server · function · L234-L240 — pub async fn connect_server(&self, name: &str, config: &McpServerConfig) -> Result<()>
+- reset_failures · function · L245-L247 — pub async fn reset_failures(&self, name: &str)
+- disconnect_server · function · L250-L269 — pub async fn disconnect_server(&self, name: &str)
+- disconnect_all · function · L272-L291 — pub async fn disconnect_all(&self)
+- acquire_handles · function · L295-L317 — pub async fn acquire_handles(&self, session_id: &str) -> HashMap<String, McpHandle>
+- release_handles · function · L321-L336 — pub async fn release_handles(&self, session_id: &str, server_names: &[String])
+- get_handle · function · L339-L345 — pub async fn get_handle(&self, name: &str) -> Option<McpHandle>
+- all_tools · function · L348-L360 — pub async fn all_tools(&self) -> Vec<(String, McpToolDef)>
+- connected_servers · function · L363-L370 — pub async fn connected_servers(&self) -> Vec<String>
+- call_tool · function · L373-L385 — pub async fn call_tool(
+- reload · function · L388-L392 — pub async fn reload(&self) -> (usize, Vec<(String, String)>)
+- config · function · L395-L397 — pub async fn config(&self) -> McpConfig
+- has_connections · function · L400-L403 — pub async fn has_connections(&self) -> bool
+- ref_counts · function · L406-L408 — pub async fn ref_counts(&self) -> HashMap<String, usize>
+- begin_connect · function · L410-L437 — async fn begin_connect(&self, name: &str) -> ConnectAttempt
+- finish_connect · function · L439-L517 — async fn finish_connect(
+- ensure_connected · function · L519-L585 — async fn ensure_connected(
+- wait_for_connect · function · L587-L602 — async fn wait_for_connect(&self, name: &str, notify: &Arc<Notify>)
+- health_snapshot · function · L604-L658 — pub async fn health_snapshot(
+- recent_failure · function · L660-L684 — async fn recent_failure(
+- SHARED_POOL · constant · L688-L688 — static SHARED_POOL: tokio::sync::OnceCell<Arc<SharedMcpPool>> = tokio::sync::OnceCell::const_new();
+- init_shared_pool · function · L691-L699 — pub async fn init_shared_pool() -> Arc<SharedMcpPool>
+- get_shared_pool · function · L702-L704 — pub fn get_shared_pool() -> Option<Arc<SharedMcpPool>>
+- tests · module · L707-L1116 — mod tests
+- health_snapshot_reports_degraded_failure_without_config_secrets · function · L712-L740 — async fn health_snapshot_reports_degraded_failure_without_config_secrets()
+- issue_790_reload_reuses_default_config_directory · function · L743-L787 — async fn issue_790_reload_reuses_default_config_directory()
+- test_config · function · L789-L791 — fn test_config(command: &str) -> McpServerConfig
+- fail · function · L793-L799 — async fn fail(pool: &SharedMcpPool, name: &str, config: &McpServerConfig)
+- backoff_grows_and_caps · function · L802-L808 — fn backoff_grows_and_caps()
+- three_failures_suppress_for_at_least_120s · function · L811-L822 — async fn three_failures_suppress_for_at_least_120s()
+- config_change_resets_backoff · function · L825-L835 — async fn config_change_resets_backoff()
+- degraded_after_threshold_and_reset_clears · function · L838-L861 — async fn degraded_after_threshold_and_reset_clears()
+- successful_connect_resets_failures · function · L864-L873 — async fn successful_connect_resets_failures()
+- many_sessions_share_one_attempt_while_backed_off · function · L876-L893 — async fn many_sessions_share_one_attempt_while_backed_off()
+- begin_connect_map_waits_release_coordination_and_cancel_cleanly · function · L896-L927 — async fn begin_connect_map_waits_release_coordination_and_cancel_cleanly()
+- begin_connect_cancellation_waiting_for_coordination_leaves_no_reservation · function · L930-L946 — async fn begin_connect_cancellation_waiting_for_coordination_leaves_no_reservation()
+- begin_connect_cancellation_at_leadership_recheck_releases_maps · function · L949-L966 — async fn begin_connect_cancellation_at_leadership_recheck_releases_maps()
+- health_snapshot_releases_handles_before_waiting_for_errors · function · L969-L984 — async fn health_snapshot_releases_handles_before_waiting_for_errors()
+- concurrent_connected_attempts_do_not_reserve_or_replace_transport · function · L987-L1000 — async fn concurrent_connected_attempts_do_not_reserve_or_replace_transport()
+- reconnect_waiter_observes_published_failure_after_registration · function · L1003-L1030 — async fn reconnect_waiter_observes_published_failure_after_registration()
+- begin_connect_deduplicates_concurrent_attempts · function · L1033-L1055 — async fn begin_connect_deduplicates_concurrent_attempts()
+- reconnect_waiter_observes_leader_completion_before_registration · function · L1058-L1079 — async fn reconnect_waiter_observes_leader_completion_before_registration()
+- connect_all_skips_non_shared_servers · function · L1082-L1115 — async fn connect_all_skips_non_shared_servers()
+- backoff_tests · module · L1119-L1129 — mod backoff_tests
+- failed_connect_cooldown_grows_and_caps · function · L1123-L1128 — fn failed_connect_cooldown_grows_and_caps()

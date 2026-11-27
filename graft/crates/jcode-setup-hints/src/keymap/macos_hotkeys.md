@@ -1,0 +1,21 @@
+# crates/jcode-setup-hints/src/keymap/macos_hotkeys.rs
+
+- NS_SHIFT · constant · L20-L20 — const NS_SHIFT: u64 = 0x0002_0000;
+- NS_CONTROL · constant · L21-L21 — const NS_CONTROL: u64 = 0x0004_0000;
+- NS_OPTION · constant · L22-L22 — const NS_OPTION: u64 = 0x0008_0000;
+- NS_COMMAND · constant · L23-L23 — const NS_COMMAND: u64 = 0x0010_0000;
+- action_name · function · L27-L55 — fn action_name(id: i64) -> String
+- keycode_to_token · function · L60-L134 — fn keycode_to_token(keycode: i64) -> Option<&'static str>
+- decode_parameters · function · L141-L163 — pub fn decode_parameters(ascii: i64, keycode: i64, modmask: i64) -> Option<KeyChord>
+- RawHotkey · struct · L167-L171 — pub struct RawHotkey
+- parse_symbolic_hotkeys_json · function · L176-L216 — pub fn parse_symbolic_hotkeys_json(json: &str) -> Vec<RawHotkey>
+- json_as_i64 · function · L218-L224 — fn json_as_i64(v: &serde_json::Value) -> Option<i64>
+- hotkeys_to_bindings · function · L228-L249 — pub fn hotkeys_to_bindings(raw: &[RawHotkey]) -> Vec<DiscoveredBinding>
+- read_symbolic_hotkeys · function · L254-L294 — pub fn read_symbolic_hotkeys() -> Vec<DiscoveredBinding>
+- read_symbolic_hotkeys · function · L297-L299 — pub fn read_symbolic_hotkeys() -> Vec<DiscoveredBinding>
+- tests · module · L302-L349 — mod tests
+- decodes_spotlight_cmd_space · function · L306-L310 — fn decodes_spotlight_cmd_space()
+- decodes_input_source_ctrl_space · function · L313-L317 — fn decodes_input_source_ctrl_space()
+- unassigned_returns_none · function · L320-L322 — fn unassigned_returns_none()
+- combined_modifiers_decode · function · L325-L330 — fn combined_modifiers_decode()
+- parses_json_with_string_and_numeric_params · function · L333-L348 — fn parses_json_with_string_and_numeric_params()

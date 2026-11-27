@@ -1,0 +1,115 @@
+# crates/jcode-base/src/session.rs
+
+- streaming · module · L10-L10 — mod streaming;
+- window_closures · module · L11-L11 — mod window_closures;
+- agent_models · module · L19-L19 — mod agent_models;
+- crash · module · L20-L20 — mod crash;
+- exit_record · module · L22-L22 — pub mod exit_record;
+- journal · module · L23-L23 — mod journal;
+- judge_feedback · module · L24-L24 — pub mod judge_feedback;
+- load_telemetry · module · L25-L25 — mod load_telemetry;
+- maintenance · module · L26-L26 — mod maintenance;
+- memory_profile · module · L27-L27 — mod memory_profile;
+- model · module · L28-L28 — mod model;
+- parallel_messages · module · L29-L29 — mod parallel_messages;
+- persistence · module · L30-L30 — mod persistence;
+- prewarm · module · L31-L31 — pub mod prewarm;
+- render · module · L32-L32 — mod render;
+- retention · module · L33-L33 — pub mod retention;
+- storage_paths · module · L34-L34 — mod storage_paths;
+- resume_cache · module · L59-L59 — pub(crate) mod resume_cache;
+- message_helpers · module · L67-L67 — mod message_helpers;
+- Session · struct · L73-L195 — pub struct Session
+- SessionStartupStub · struct · L198-L262 — struct SessionStartupStub
+- MAX_SESSION_JOURNAL_BYTES · constant · L264-L264 — const MAX_SESSION_JOURNAL_BYTES: u64 = 512 * 1024;
+- MAX_ENV_SNAPSHOTS · constant · L267-L267 — const MAX_ENV_SNAPSHOTS: usize = 8;
+- current_working_dir_string · function · L269-L273 — fn current_working_dir_string() -> Option<String>
+- env_flag_enabled · function · L275-L282 — fn env_flag_enabled(name: &str) -> bool
+- default_is_test_session · function · L284-L286 — fn default_is_test_session() -> bool
+- is_zero_u64 · function · L288-L290 — fn is_zero_u64(value: &u64) -> bool
+- input_compression_profile · function · L293-L302 — pub fn input_compression_profile(&self) -> jcode_provider_core::InputCompressionProfile
+- is_read_only_worker · function · L304-L310 — pub fn is_read_only_worker(&self) -> bool
+- session_from_startup_stub · function · L312-L352 — fn session_from_startup_stub(stub: SessionStartupStub) -> Self
+- session_from_remote_startup_snapshot · function · L354-L393 — fn session_from_remote_startup_snapshot(snapshot: RemoteStartupSessionSnapshot) -> Self
+- debug_memory_profile · function · L395-L558 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- journal_meta · function · L560-L596 — fn journal_meta(&self) -> SessionJournalMeta
+- reset_persist_state · function · L598-L612 — fn reset_persist_state(&mut self, snapshot_exists: bool)
+- reset_provider_messages_cache · function · L614-L622 — fn reset_provider_messages_cache(&mut self)
+- release_provider_messages_cache · function · L631-L639 — pub fn release_provider_messages_cache(&mut self)
+- push_provider_message_cache_entry · function · L641-L656 — fn push_provider_message_cache_entry(&mut self, message: Message)
+- mark_memory_profile_dirty · function · L658-L660 — fn mark_memory_profile_dirty(&mut self)
+- rebuild_memory_profile_cache · function · L662-L695 — fn rebuild_memory_profile_cache(&mut self)
+- ensure_memory_profile_cache · function · L697-L701 — fn ensure_memory_profile_cache(&mut self)
+- memory_profile_snapshot · function · L703-L735 — pub fn memory_profile_snapshot(&mut self) -> SessionMemoryProfileSnapshot
+- mark_messages_append_dirty · function · L737-L744 — fn mark_messages_append_dirty(&mut self)
+- mark_messages_full_dirty · function · L746-L749 — fn mark_messages_full_dirty(&mut self)
+- mark_env_snapshots_append_dirty · function · L751-L755 — fn mark_env_snapshots_append_dirty(&mut self)
+- mark_memory_injections_append_dirty · function · L757-L761 — fn mark_memory_injections_append_dirty(&mut self)
+- mark_replay_events_append_dirty · function · L763-L767 — fn mark_replay_events_append_dirty(&mut self)
+- apply_journal_meta · function · L769-L806 — fn apply_journal_meta(&mut self, meta: SessionJournalMeta)
+- create_with_id · function · L808-L866 — pub fn create_with_id(
+- create · function · L868-L928 — pub fn create(parent_id: Option<String>, title: Option<String>) -> Self
+- set_debug · function · L931-L938 — pub fn set_debug(&mut self, is_debug: bool)
+- mark_saved · function · L944-L955 — pub fn mark_saved(&mut self, label: Option<String>)
+- unmark_saved · function · L958-L961 — pub fn unmark_saved(&mut self)
+- rename_title · function · L967-L973 — pub fn rename_title(&mut self, title: Option<String>)
+- display_title · function · L977-L990 — pub fn display_title(&self) -> Option<&str>
+- non_empty_trimmed · function · L978-L980 — fn non_empty_trimmed(title: Option<&str>) -> Option<&str>
+- display_title_or_name · function · L994-L996 — pub fn display_title_or_name(&self) -> &str
+- record_env_snapshot · function · L999-L1007 — pub fn record_env_snapshot(&mut self, snapshot: EnvSnapshot)
+- trim_env_snapshots · function · L1011-L1017 — pub(crate) fn trim_env_snapshots(&mut self)
+- has_session_context_message · function · L1019-L1026 — pub fn has_session_context_message(&self) -> bool
+- ensure_initial_session_context_message · function · L1031-L1055 — pub fn ensure_initial_session_context_message(&mut self) -> bool
+- refresh_initial_session_context_message · function · L1061-L1093 — pub fn refresh_initial_session_context_message(&mut self) -> bool
+- display_name · function · L1096-L1101 — pub fn display_name(&self) -> &str
+- append_fork_notice · function · L1112-L1130 — pub fn append_fork_notice(&mut self, parent_session_id: &str, parent_display_name: &str)
+- set_canary · function · L1133-L1136 — pub fn set_canary(&mut self, build_hash: &str)
+- clear_canary · function · L1139-L1142 — pub fn clear_canary(&mut self)
+- set_status · function · L1145-L1147 — pub fn set_status(&mut self, status: SessionStatus)
+- mark_closed · function · L1150-L1153 — pub fn mark_closed(&mut self)
+- mark_crashed · function · L1156-L1159 — pub fn mark_crashed(&mut self, message: Option<String>)
+- mark_error · function · L1162-L1164 — pub fn mark_error(&mut self, message: String)
+- migration_lease_block · function · L1168-L1170 — pub fn migration_lease_block(&self) -> Option<crate::storage::SessionLeaseBlock>
+- mark_active · function · L1173-L1176 — pub fn mark_active(&mut self)
+- mark_active_unregistered · function · L1185-L1189 — pub fn mark_active_unregistered(&mut self)
+- register_presence_markers · function · L1192-L1196 — pub fn register_presence_markers(&self)
+- mark_active_with_pid · function · L1199-L1205 — pub fn mark_active_with_pid(&mut self, pid: u32)
+- sync_internal_presence_flag · function · L1212-L1215 — fn sync_internal_presence_flag(&self)
+- detect_crash · function · L1219-L1241 — pub fn detect_crash(&mut self) -> bool
+- is_self_dev · function · L1244-L1256 — pub fn is_self_dev(&self) -> bool
+- redacted_for_export · function · L1258-L1299 — pub fn redacted_for_export(&self) -> Self
+- token_usage_totals · function · L1301-L1332 — pub fn token_usage_totals(&self) -> crate::protocol::TokenUsageTotals
+- add_message · function · L1334-L1340 — pub fn add_message(
+- add_message_with_duration · function · L1342-L1349 — pub fn add_message_with_duration(
+- add_message_with_display_role · function · L1351-L1358 — pub fn add_message_with_display_role(
+- add_message_ext · function · L1360-L1368 — pub fn add_message_ext(
+- add_message_ext_with_display_role · function · L1370-L1389 — pub fn add_message_ext_with_display_role(
+- append_stored_message · function · L1391-L1404 — pub fn append_stored_message(&mut self, message: StoredMessage)
+- decay_old_tool_images · function · L1411-L1419 — pub fn decay_old_tool_images(&mut self) -> usize
+- adopt_prompt_title · function · L1424-L1435 — fn adopt_prompt_title(&mut self, message: &StoredMessage)
+- backfill_prompt_title · function · L1438-L1450 — pub(crate) fn backfill_prompt_title(&mut self)
+- insert_message · function · L1452-L1456 — pub fn insert_message(&mut self, index: usize, message: StoredMessage)
+- replace_messages · function · L1458-L1462 — pub fn replace_messages(&mut self, messages: Vec<StoredMessage>)
+- truncate_messages · function · L1464-L1470 — pub fn truncate_messages(&mut self, len: usize)
+- strip_oversized_images · function · L1482-L1493 — pub fn strip_oversized_images(&mut self, target_total_chars: usize) -> usize
+- visible_conversation_message_count · function · L1495-L1500 — pub fn visible_conversation_message_count(&self) -> usize
+- visible_conversation_messages · function · L1502-L1507 — pub fn visible_conversation_messages(&self) -> Vec<&StoredMessage>
+- stored_len_for_visible_conversation_message · function · L1509-L1527 — pub fn stored_len_for_visible_conversation_message(
+- rewind_target_stored_indices · function · L1543-L1549 — pub fn rewind_target_stored_indices(&self) -> Vec<usize>
+- rewind_target_count · function · L1552-L1554 — pub fn rewind_target_count(&self) -> usize
+- record_memory_injection · function · L1557-L1578 — pub fn record_memory_injection(
+- injected_memory_ids · function · L1580-L1586 — pub fn injected_memory_ids(&self) -> Vec<String>
+- record_replay_display_message · function · L1588-L1606 — pub fn record_replay_display_message(
+- record_swarm_status_event · function · L1608-L1625 — pub fn record_swarm_status_event(&mut self, members: Vec<crate::protocol::SwarmMemberStatus>)
+- record_swarm_plan_event · function · L1627-L1657 — pub fn record_swarm_plan_event(
+- provider_messages · function · L1659-L1694 — pub fn provider_messages(&mut self) -> &[Message]
+- provider_message_prefix_hashes · function · L1696-L1699 — pub fn provider_message_prefix_hashes(&mut self) -> &[u64]
+- messages_for_provider_uncached · function · L1701-L1703 — pub fn messages_for_provider_uncached(&self) -> Vec<Message>
+- messages_for_provider · function · L1705-L1707 — pub fn messages_for_provider(&mut self) -> Vec<Message>
+- strip_transcript_for_remote_client · function · L1713-L1723 — pub fn strip_transcript_for_remote_client(&mut self)
+- remove_tool_use_blocks · function · L1727-L1737 — pub fn remove_tool_use_blocks(&mut self, message_id: &str)
+- redaction · module · L1741-L1741 — mod redaction;
+- RemoteStartupSessionSnapshot · struct · L1746-L1810 — struct RemoteStartupSessionSnapshot
+- tests · module · L1814-L1814 — mod tests;
+- shared_compaction_tests · module · L1818-L1818 — mod shared_compaction_tests;
+- shared_payload_tests · module · L1822-L1822 — mod shared_payload_tests;

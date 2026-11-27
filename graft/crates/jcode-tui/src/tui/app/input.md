@@ -1,0 +1,185 @@
+# crates/jcode-tui/src/tui/app/input.rs
+
+- semantic_shadow · module · L4-L4 — mod semantic_shadow;
+- terminal_reports · module · L5-L5 — mod terminal_reports;
+- word_boundaries · module · L6-L6 — mod word_boundaries;
+- shell_commands · module · L9-L9 — mod shell_commands;
+- key_dispatch · module · L12-L12 — mod key_dispatch;
+- drop_tests · module · L34-L34 — mod drop_tests;
+- reasoning_region · module · L37-L37 — mod reasoning_region;
+- INPUT_SHELL_MAX_OUTPUT_LEN · constant · L39-L39 — const INPUT_SHELL_MAX_OUTPUT_LEN: usize = 30_000;
+- floor_char_boundary · function · L44-L50 — pub(super) fn floor_char_boundary(text: &str, index: usize) -> usize
+- strip_reasoning_lines · function · L56-L81 — pub(super) fn strip_reasoning_lines(content: &str) -> String
+- mission_turn_reminder · function · L83-L88 — fn mission_turn_reminder(session_id: &str) -> Option<String>
+- merge_turn_reminders · function · L90-L97 — fn merge_turn_reminders(a: Option<String>, b: Option<String>) -> Option<String>
+- extract_input_shell_command · function · L99-L101 — pub(super) fn extract_input_shell_command(input: &str) -> Option<&str>
+- PreparedInput · struct · L103-L107 — pub(super) struct PreparedInput
+- MAX_SUBMITTED_TEXT_BYTES · constant · L111-L111 — pub(super) const MAX_SUBMITTED_TEXT_BYTES: usize = 3 * 1024 * 1024;
+- oversized_message_notice · function · L113-L118 — fn oversized_message_notice(size: usize) -> String
+- input_exceeds_submit_limit · function · L120-L123 — fn input_exceeds_submit_limit(input: &str) -> Option<String>
+- paste_from_clipboard · function · L125-L128 — pub(super) fn paste_from_clipboard(app: &mut App)
+- is_clipboard_paste_shortcut · function · L130-L135 — fn is_clipboard_paste_shortcut(code: KeyCode, modifiers: KeyModifiers) -> bool
+- active_clipboard_session_id · function · L137-L141 — fn active_clipboard_session_id(app: &App) -> String
+- publish_clipboard_result · function · L143-L153 — fn publish_clipboard_result(
+- spawn_clipboard_paste · function · L155-L162 — fn spawn_clipboard_paste(app: &App, kind: ClipboardPasteKind)
+- spawn_blocking_or_thread · function · L164-L173 — fn spawn_blocking_or_thread<F>(task: F)
+- read_clipboard_text · function · L175-L186 — fn read_clipboard_text() -> Option<String>
+- read_wayland_clipboard_text · function · L188-L208 — fn read_wayland_clipboard_text() -> Option<String>
+- preferred_wayland_text_type · function · L210-L225 — fn preferred_wayland_text_type(types: &str) -> Option<&'static str>
+- image_content · function · L227-L232 — fn image_content(media_type: String, base64_data: String) -> ClipboardPasteContent
+- download_image_url_content · function · L234-L240 — fn download_image_url_content(url: &str) -> Option<ClipboardPasteContent>
+- read_clipboard_for_paste · function · L242-L249 — fn read_clipboard_for_paste(kind: &ClipboardPasteKind) -> ClipboardPasteContent
+- read_clipboard_for_paste_with · function · L251-L304 — fn read_clipboard_for_paste_with<ReadText, ReadImage, DownloadImageUrl>(
+- inline_tests · module · L307-L307 — mod inline_tests;
+- cut_input_line_to_clipboard · function · L309-L311 — pub(super) fn cut_input_line_to_clipboard(app: &mut App) -> bool
+- cut_input_line_to_clipboard_with · function · L313-L333 — pub(super) fn cut_input_line_to_clipboard_with<F>(app: &mut App, mut copy_text: F) -> bool
+- newline · module · L335-L335 — pub(in crate::tui::app) mod newline;
+- paste_guard · module · L336-L336 — mod paste_guard;
+- handle_paste · function · L343-L415 — pub(super) fn handle_paste(app: &mut App, text: String)
+- format_dropped_path · function · L417-L428 — fn format_dropped_path(path: &std::path::Path, quote_for_batch: bool) -> String
+- dropped_image_files · function · L430-L436 — fn dropped_image_files(text: &str) -> Option<Vec<(String, Vec<u8>)>>
+- promote_dropped_images · function · L441-L461 — pub(super) fn promote_dropped_images(app: &mut App) -> bool
+- attach_dropped_images · function · L463-L482 — fn attach_dropped_images(app: &mut App) -> bool
+- parse_dropped_paths · function · L484-L541 — pub(super) fn parse_dropped_paths(text: &str) -> Option<Vec<PathBuf>>
+- handle_text_paste · function · L543-L562 — pub(super) fn handle_text_paste(app: &mut App, text: String)
+- expand_matching_paste · function · L564-L601 — fn expand_matching_paste(app: &mut App, text: &str) -> bool
+- handle_clipboard_paste_completed · function · L604-L655 — pub(in crate::tui::app) fn handle_clipboard_paste_completed(
+- scrub_osc_color_replies · function · L669-L678 — fn scrub_osc_color_replies(app: &mut App)
+- strip_osc_color_replies · function · L688-L765 — pub(super) fn strip_osc_color_replies(input: &str, cursor: usize) -> Option<(String, usize)>
+- insert_input_text · function · L767-L769 — pub(super) fn insert_input_text(app: &mut App, text: &str)
+- insert_input_text_with_undo · function · L771-L840 — fn insert_input_text_with_undo(app: &mut App, text: &str, typed: bool)
+- handle_text_input · function · L842-L884 — pub(super) fn handle_text_input(app: &mut App, text: &str) -> bool
+- visible_prompt_history · function · L886-L888 — fn visible_prompt_history(app: &mut App) -> Vec<String>
+- byte_offset_for_line_column · function · L890-L904 — fn byte_offset_for_line_column(
+- handle_multiline_input_navigation · function · L906-L964 — pub(super) fn handle_multiline_input_navigation(
+- visual_line_move_in_composer · function · L969-L982 — fn visual_line_move_in_composer(app: &App, code: KeyCode) -> Option<usize>
+- composer_area_width · function · L984-L994 — fn composer_area_width() -> Option<u16>
+- is_prompt_recall_modifier · function · L1000-L1005 — pub(super) fn is_prompt_recall_modifier(modifiers: KeyModifiers) -> bool
+- is_alternate_enter · function · L1007-L1010 — pub(super) fn is_alternate_enter(code: KeyCode, modifiers: KeyModifiers) -> bool
+- handle_prompt_history_navigation · function · L1012-L1081 — pub(super) fn handle_prompt_history_navigation(
+- associated_text_for_key_event · function · L1083-L1088 — fn associated_text_for_key_event(_event: &KeyEvent) -> Option<String>
+- text_input_for_key_event · function · L1090-L1094 — pub(super) fn text_input_for_key_event(event: &KeyEvent) -> Option<String>
+- text_input_for_key · function · L1096-L1106 — pub(super) fn text_input_for_key(code: KeyCode, modifiers: KeyModifiers) -> Option<String>
+- modifiers_allow_printable_text · function · L1108-L1124 — fn modifiers_allow_printable_text(c: char, modifiers: KeyModifiers) -> bool
+- is_layout_modified_text_char · function · L1126-L1128 — fn is_layout_modified_text_char(c: char) -> bool
+- shifted_printable_fallback · function · L1130-L1136 — fn shifted_printable_fallback(c: char, modifiers: KeyModifiers) -> char
+- clear_input_for_escape · function · L1138-L1150 — pub(super) fn clear_input_for_escape(app: &mut App)
+- expand_paste_placeholders · function · L1152-L1154 — pub(super) fn expand_paste_placeholders(app: &App, input: &str) -> String
+- queue_message · function · L1156-L1160 — pub(super) fn queue_message(app: &mut App)
+- is_queueable_command_input · function · L1164-L1167 — pub(super) fn is_queueable_command_input(input: &str) -> bool
+- try_queue_command · function · L1172-L1188 — pub(super) fn try_queue_command(app: &mut App) -> bool
+- ComposerDraft · struct · L1191-L1196 — pub(super) struct ComposerDraft
+- swap_in_queued_command · function · L1200-L1210 — pub(super) fn swap_in_queued_command(app: &mut App, command: String) -> ComposerDraft
+- restore_composer_draft · function · L1215-L1230 — pub(super) fn restore_composer_draft(app: &mut App, draft: ComposerDraft)
+- expand_paste_placeholders_with · function · L1232-L1241 — fn expand_paste_placeholders_with(pasted_contents: &[String], input: &str) -> String
+- run_queued_commands_local · function · L1245-L1257 — pub(super) fn run_queued_commands_local(app: &mut App)
+- retrieve_pending_message_for_edit · function · L1259-L1307 — pub(super) fn retrieve_pending_message_for_edit(app: &mut App) -> bool
+- send_action · function · L1309-L1335 — pub(super) fn send_action(app: &App, alternate_shortcut: bool) -> SendAction
+- has_queued_followups · function · L1338-L1343 — pub(super) fn has_queued_followups(&self) -> bool
+- has_pending_user_followup · function · L1349-L1360 — pub(super) fn has_pending_user_followup(&self) -> bool
+- awaiting_remote_interrupt_ack · function · L1365-L1380 — pub(super) fn awaiting_remote_interrupt_ack(&mut self) -> bool
+- has_pending_startup_submission · function · L1389-L1392 — pub(super) fn has_pending_startup_submission(&self) -> bool
+- guardrail_stops_exhausted_at_turn_end · function · L1400-L1408 — pub(super) fn guardrail_stops_exhausted_at_turn_end(&mut self) -> bool
+- stop_auto_continuation_after_guardrail · function · L1413-L1429 — pub(super) fn stop_auto_continuation_after_guardrail(&mut self)
+- schedule_turn_end_followups · function · L1434-L1436 — pub(super) fn schedule_turn_end_followups(&mut self) -> bool
+- schedule_turn_end_followups_after_response · function · L1438-L1481 — pub(super) fn schedule_turn_end_followups_after_response(
+- schedule_auto_poke_followup_if_needed · function · L1484-L1486 — pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool
+- clear_required_checks_for_turn · function · L1488-L1490 — pub(super) fn clear_required_checks_for_turn(&mut self)
+- note_required_check_result · function · L1492-L1505 — pub(super) fn note_required_check_result(
+- schedule_auto_poke_followup_after_response · function · L1507-L1544 — fn schedule_auto_poke_followup_after_response(
+- schedule_auto_poke_followup_with_evidence · function · L1547-L1552 — fn schedule_auto_poke_followup_with_evidence(
+- schedule_auto_poke_followup_with_response · function · L1554-L1565 — fn schedule_auto_poke_followup_with_response(
+- decide_auto_poke_followup · function · L1568-L1573 — fn decide_auto_poke_followup(
+- decide_auto_poke_followup_after_response · function · L1575-L1915 — fn decide_auto_poke_followup_after_response(
+- current_incomplete_poke_fingerprint · function · L1919-L1929 — fn current_incomplete_poke_fingerprint(&self) -> Option<String>
+- handle_peer_user_message · function · L1934-L1978 — pub(super) fn handle_peer_user_message(&mut self, content: &str)
+- schedule_queued_dispatch_after_interrupt · function · L1980-L1985 — pub(super) fn schedule_queued_dispatch_after_interrupt(&mut self)
+- toggle_next_prompt_new_session_routing · function · L1989-L1996 — pub(crate) fn toggle_next_prompt_new_session_routing(&mut self)
+- new_terminal_key_matches · function · L1999-L2005 — pub(crate) fn new_terminal_key_matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- open_resume_key_matches · function · L2008-L2014 — pub(crate) fn open_resume_key_matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- fallback_switch_key_matches · function · L2017-L2027 — pub(crate) fn fallback_switch_key_matches(
+- handle_new_terminal_hotkey · function · L2030-L2045 — pub(crate) fn handle_new_terminal_hotkey(&mut self)
+- is_next_prompt_new_session_hotkey · function · L2048-L2059 — pub(super) fn is_next_prompt_new_session_hotkey(code: KeyCode, modifiers: KeyModifiers) -> bool
+- input_routes_to_new_session · function · L2061-L2070 — fn input_routes_to_new_session(app: &App) -> bool
+- route_prompt_to_new_session_local · function · L2072-L2098 — pub(super) fn route_prompt_to_new_session_local(app: &mut App) -> bool
+- handle_alternate_enter · function · L2100-L2129 — pub(super) fn handle_alternate_enter(app: &mut App)
+- handle_control_key · function · L2131-L2209 — pub(super) fn handle_control_key(app: &mut App, code: KeyCode) -> bool
+- delete_input_to_start · function · L2211-L2218 — pub(super) fn delete_input_to_start(app: &mut App)
+- delete_input_to_end · function · L2220-L2226 — pub(super) fn delete_input_to_end(app: &mut App)
+- handle_super_key · function · L2228-L2272 — pub(super) fn handle_super_key(app: &mut App, code: KeyCode) -> bool
+- try_ctrl_d_forward_delete · function · L2280-L2295 — pub(super) fn try_ctrl_d_forward_delete(app: &mut App) -> bool
+- delete_input_word_back · function · L2297-L2305 — pub(super) fn delete_input_word_back(app: &mut App)
+- handle_alt_key · function · L2307-L2354 — pub(super) fn handle_alt_key(app: &mut App, code: KeyCode) -> bool
+- handle_account_shortcut · function · L2356-L2368 — pub(super) fn handle_account_shortcut(
+- handle_navigation_shortcuts · function · L2370-L2427 — pub(super) fn handle_navigation_shortcuts(
+- is_scroll_only_key · function · L2429-L2512 — pub(super) fn is_scroll_only_key(app: &App, code: KeyCode, modifiers: KeyModifiers) -> bool
+- handle_pre_control_shortcuts · function · L2514-L2680 — pub(super) fn handle_pre_control_shortcuts(
+- handle_visible_copy_shortcut · function · L2682-L2736 — pub(super) fn handle_visible_copy_shortcut(
+- visible_copy_shortcut_key · function · L2738-L2750 — fn visible_copy_shortcut_key(code: KeyCode, modifiers: KeyModifiers) -> Option<char>
+- handle_inline_image_toggle_shortcut · function · L2755-L2766 — fn handle_inline_image_toggle_shortcut(app: &mut App, key: char) -> bool
+- handle_expand_edit_badge_shortcut · function · L2768-L2805 — pub(super) fn handle_expand_edit_badge_shortcut(app: &mut App, key: char) -> bool
+- handle_modal_key · function · L2807-L2879 — pub(super) fn handle_modal_key(
+- handle_scroll_overlay_key · function · L2881-L2900 — pub(super) fn handle_scroll_overlay_key(app: &mut App, code: KeyCode) -> Result<bool>
+- handle_global_control_shortcuts · function · L2902-L2969 — pub(super) fn handle_global_control_shortcuts(
+- handle_enter · function · L2971-L2994 — pub(super) fn handle_enter(app: &mut App) -> bool
+- handle_basic_key · function · L2996-L3125 — pub(super) fn handle_basic_key(app: &mut App, code: KeyCode) -> bool
+- take_prepared_input · function · L3127-L3141 — pub(super) fn take_prepared_input(app: &mut App) -> PreparedInput
+- stage_local_interleave · function · L3143-L3151 — pub(super) fn stage_local_interleave(
+- attach_image · function · L3153-L3162 — fn attach_image(app: &mut App, media_type: String, base64_data: String)
+- sync_input_image_attachments · function · L3168-L3198 — pub(super) fn sync_input_image_attachments(&mut self)
+- take_pending_image_payloads · function · L3200-L3206 — pub(super) fn take_pending_image_payloads(&mut self) -> Vec<(String, String)>
+- paste_placeholder · function · L3209-L3216 — fn paste_placeholder(content: &str) -> String
+- handle_key_event · function · L3219-L3263 — pub(super) fn handle_key_event(&mut self, event: crossterm::event::KeyEvent)
+- handle_key_press_event · function · L3265-L3277 — pub(super) fn handle_key_press_event(&mut self, event: KeyEvent) -> Result<()>
+- handle_key · function · L3280-L3282 — pub(super) fn handle_key(&mut self, code: KeyCode, modifiers: KeyModifiers) -> Result<()>
+- request_full_redraw · function · L3284-L3286 — pub(super) fn request_full_redraw(&mut self)
+- request_full_repaint · function · L3292-L3294 — pub(super) fn request_full_repaint(&mut self)
+- RESIZE_REDRAW_MIN_INTERVAL · constant · L3296-L3296 — const RESIZE_REDRAW_MIN_INTERVAL: std::time::Duration = std::time::Duration::from_millis(33);
+- commit_resize_redraw · function · L3298-L3313 — fn commit_resize_redraw(&mut self, now: std::time::Instant) -> bool
+- should_redraw_after_resize · function · L3315-L3325 — pub(super) fn should_redraw_after_resize(&mut self) -> bool
+- flush_pending_resize_redraw · function · L3331-L3340 — pub(super) fn flush_pending_resize_redraw(&mut self) -> bool
+- update_copy_badge_key_event · function · L3342-L3398 — pub(super) fn update_copy_badge_key_event(&mut self, event: crossterm::event::KeyEvent)
+- record_copy_badge_key_press · function · L3400-L3403 — pub(super) fn record_copy_badge_key_press(&mut self, key: char)
+- key_release_visible_state · function · L3410-L3432 — pub(super) fn key_release_visible_state(
+- record_copy_badge_feedback · function · L3434-L3440 — pub(super) fn record_copy_badge_feedback(&mut self, key: char, success: bool)
+- prune_copy_badge_ui · function · L3442-L3487 — pub(super) fn prune_copy_badge_ui(&mut self)
+- paste_from_clipboard · function · L3492-L3494 — pub(super) fn paste_from_clipboard(&mut self)
+- handle_paste · function · L3498-L3501 — pub(super) fn handle_paste(&mut self, text: String)
+- expand_paste_placeholders · function · L3504-L3506 — pub(super) fn expand_paste_placeholders(&mut self, input: &str) -> String
+- queue_message · function · L3508-L3510 — pub(super) fn queue_message(&mut self)
+- send_interleave_now · function · L3514-L3521 — pub(super) async fn send_interleave_now(
+- retrieve_pending_message_for_edit · function · L3526-L3528 — pub(super) fn retrieve_pending_message_for_edit(&mut self) -> bool
+- send_action · function · L3530-L3532 — pub(super) fn send_action(&self, shift: bool) -> SendAction
+- insert_thought_line · function · L3534-L3549 — pub(super) fn insert_thought_line(&mut self, line: String)
+- gc_offscreen_reasoning_traces · function · L3558-L3604 — pub(super) fn gc_offscreen_reasoning_traces(&mut self) -> bool
+- remove_reasoning_trace_messages · function · L3608-L3623 — pub(super) fn remove_reasoning_trace_messages(
+- append_streaming_text · function · L3625-L3653 — pub(super) fn append_streaming_text(&mut self, text: &str)
+- apply_stream_ops · function · L3660-L3694 — pub(super) fn apply_stream_ops(
+- collapse_reasoning_for_commit · function · L3700-L3708 — pub(super) fn collapse_reasoning_for_commit(&self, content: String) -> String
+- replace_streaming_text · function · L3710-L3721 — pub(super) fn replace_streaming_text(&mut self, text: String)
+- clear_streaming_render_state · function · L3723-L3735 — pub(super) fn clear_streaming_render_state(&mut self)
+- clear_live_usage_state · function · L3740-L3748 — pub(super) fn clear_live_usage_state(&mut self)
+- rollback_streaming_attempt · function · L3759-L3787 — pub(super) fn rollback_streaming_attempt(&mut self)
+- take_streaming_text · function · L3789-L3801 — pub(super) fn take_streaming_text(&mut self) -> String
+- commit_pending_streaming_assistant_message · function · L3803-L3841 — pub(super) fn commit_pending_streaming_assistant_message(&mut self) -> bool
+- accumulate_streaming_output_tokens · function · L3843-L3862 — pub(super) fn accumulate_streaming_output_tokens(
+- submit_input · function · L3865-L4175 — pub(super) fn submit_input(&mut self)
+- process_queued_messages · function · L4179-L4328 — pub(super) async fn process_queued_messages(
+- flush_pending_session_save · function · L4330-L4346 — pub(super) fn flush_pending_session_save(&mut self)
+- terminal_control_sequence_tests · module · L4350-L4350 — mod terminal_control_sequence_tests;
+- ssh_loop_followup_tests · module · L4353-L4353 — mod ssh_loop_followup_tests;
+- key_dispatch_tests · module · L4356-L4356 — mod key_dispatch_tests;
+- continuation_evidence_tests · module · L4359-L4821 — mod continuation_evidence_tests
+- semantic_shadow_production_caller_preserves_deterministic_queue_and_caps · function · L4364-L4425 — fn semantic_shadow_production_caller_preserves_deterministic_queue_and_caps()
+- with_evidence_test_home · function · L4427-L4442 — fn with_evidence_test_home(run: impl FnOnce())
+- RestoreHome · struct · L4429-L4429 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L4431-L4436 — fn drop(&mut self)
+- continuation_evidence_local_remote_failed_required_command_and_turn_reset · function · L4445-L4495 — fn continuation_evidence_local_remote_failed_required_command_and_turn_reset()
+- continuation_evidence_batch_real_failure_local_and_wire_remote · function · L4498-L4544 — fn continuation_evidence_batch_real_failure_local_and_wire_remote()
+- continuation_evidence_remote_batch_rebounds_untrusted_oversized_outcomes · function · L4547-L4568 — fn continuation_evidence_remote_batch_rebounds_untrusted_oversized_outcomes()
+- continuation_evidence_remote_failure_survives_siblings_and_success_claims · function · L4571-L4609 — fn continuation_evidence_remote_failure_survives_siblings_and_success_claims()
+- continuation_evidence_remote_external_turn_clears_prior_checks · function · L4612-L4641 — fn continuation_evidence_remote_external_turn_clears_prior_checks()
+- continuation_evidence_one_record_per_idle_and_queued_decision · function · L4644-L4692 — fn continuation_evidence_one_record_per_idle_and_queued_decision()
+- continuation_evidence_wait_is_one_record_without_claiming_checks_ran · function · L4695-L4711 — fn continuation_evidence_wait_is_one_record_without_claiming_checks_ran()
+- continuation_evidence_recording_preserves_queue_caps_and_fingerprints · function · L4714-L4781 — fn continuation_evidence_recording_preserves_queue_caps_and_fingerprints()
+- continuation_evidence_observes_failed_scheduler_check_not_claimed_success · function · L4784-L4820 — fn continuation_evidence_observes_failed_scheduler_check_not_claimed_success()

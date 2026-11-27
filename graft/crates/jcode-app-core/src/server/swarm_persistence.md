@@ -1,0 +1,51 @@
+# crates/jcode-app-core/src/server/swarm_persistence.rs
+
+- SWARM_STATE_DIR · constant · L12-L12 — const SWARM_STATE_DIR: &str = "swarm";
+- LEGACY_SWARM_STATE_DIR · constant · L14-L14 — const LEGACY_SWARM_STATE_DIR: &str = "jcode-swarm-state";
+- DEFAULT_DORMANT_PLAN_RETENTION_SECS · constant · L18-L18 — const DEFAULT_DORMANT_PLAN_RETENTION_SECS: u64 = 7 * 24 * 60 * 60;
+- SWARM_OPERATION_LOCKS · constant · L23-L24 — static SWARM_OPERATION_LOCKS: LazyLock<StdMutex<HashMap<String, Weak<tokio::sync::Mutex<()>>>>> =
+- SWARM_FILE_LOCKS · constant · L28-L29 — static SWARM_FILE_LOCKS: LazyLock<StdMutex<HashMap<String, Weak<StdMutex<()>>>>> =
+- SwarmStateFileVersion · struct · L32-L32 — pub(super) struct SwarmStateFileVersion(Option<Vec<u8>>);
+- registry_lock · function · L34-L48 — fn registry_lock<T: Default>(
+- swarm_operation_lock · function · L50-L52 — pub(super) fn swarm_operation_lock(swarm_id: &str) -> Arc<tokio::sync::Mutex<()>>
+- swarm_file_lock · function · L54-L56 — fn swarm_file_lock(swarm_id: &str) -> Arc<StdMutex<()>>
+- dormant_plan_retention · function · L58-L66 — fn dormant_plan_retention() -> Duration
+- persisted_plan_is_dormant · function · L68-L74 — fn persisted_plan_is_dormant(plan: &PersistedVersionedPlan) -> bool
+- persisted_plan_is_expired · function · L76-L88 — fn persisted_plan_is_expired(
+- LoadedSwarmRuntimeState · struct · L90-L95 — pub(super) struct LoadedSwarmRuntimeState
+- IDLE_WORKER_NOT_RESTORED_NOTE · constant · L99-L100 — pub(super) const IDLE_WORKER_NOT_RESTORED_NOTE: &str =
+- OWNER_NOTIFIED_NOTE · constant · L104-L104 — pub(super) const OWNER_NOTIFIED_NOTE: &str = "owner notified";
+- PersistedSwarmState · struct · L107-L116 — pub struct PersistedSwarmState
+- PersistedVersionedPlan · struct · L119-L125 — pub struct PersistedVersionedPlan
+- PersistedSwarmMember · struct · L128-L138 — pub struct PersistedSwarmMember
+- now_unix_ms · function · L140-L145 — fn now_unix_ms() -> u64
+- state_dir · function · L148-L150 — fn state_dir() -> PathBuf
+- state_dir · function · L159-L167 — fn state_dir() -> PathBuf
+- legacy_state_dir · function · L169-L171 — fn legacy_state_dir() -> PathBuf
+- migrate_legacy_state · function · L176-L217 — fn migrate_legacy_state()
+- state_path · function · L219-L231 — pub(super) fn state_path(swarm_id: &str) -> PathBuf
+- read_primary_version · function · L233-L235 — fn read_primary_version(swarm_id: &str) -> SwarmStateFileVersion
+- capture_swarm_state_version · function · L237-L243 — pub(super) fn capture_swarm_state_version(swarm_id: &str) -> SwarmStateFileVersion
+- remove_snapshot_files · function · L245-L282 — fn remove_snapshot_files(swarm_id: &str) -> bool
+- from_persisted_plan · function · L284-L306 — pub(super) fn from_persisted_plan(
+- to_persisted_plan · function · L308-L317 — fn to_persisted_plan(plan: &VersionedPlan) -> PersistedVersionedPlan
+- to_persisted_member · function · L319-L331 — fn to_persisted_member(member: &SwarmMember, snapshot_unix_ms: u64) -> PersistedSwarmMember
+- ORPHANED_STATUS · constant · L335-L335 — pub(crate) const ORPHANED_STATUS: &str = "orphaned";
+- STOP_UNRESOLVED_STATUS · constant · L337-L337 — pub(crate) const STOP_UNRESOLVED_STATUS: &str = "stop_unresolved";
+- WorkerSpawnSpec · struct · L343-L355 — pub(crate) struct WorkerSpawnSpec
+- worker_spec_path · function · L357-L371 — fn worker_spec_path(session_id: &str) -> PathBuf
+- record_worker_spawn_spec · function · L373-L377 — pub(crate) fn record_worker_spawn_spec(session_id: &str, spec: &WorkerSpawnSpec)
+- load_worker_spawn_spec · function · L379-L384 — pub(crate) fn load_worker_spawn_spec(session_id: &str) -> Option<WorkerSpawnSpec>
+- transfer_snapshot · function · L386-L399 — pub(super) fn transfer_snapshot(runtime: &super::state::SwarmRuntime) -> PersistedSwarmState
+- write_transfer_snapshot · function · L401-L411 — pub(super) fn write_transfer_snapshot(snapshot: &PersistedSwarmState) -> anyhow::Result<()>
+- read_transfer_snapshot · function · L413-L426 — pub(super) fn read_transfer_snapshot(
+- append_recovery_detail · function · L428-L433 — fn append_recovery_detail(detail: Option<String>, note: &str) -> Option<String>
+- recover_member_status · function · L435-L484 — fn recover_member_status(
+- recovered_member_event_tx · function · L486-L490 — fn recovered_member_event_tx() -> mpsc::UnboundedSender<ServerEvent>
+- from_persisted_member · function · L492-L602 — pub(super) fn from_persisted_member(
+- hydrate_member_todos · function · L607-L620 — fn hydrate_member_todos(member: &mut SwarmMember)
+- load_runtime_state · function · L622-L808 — pub(super) fn load_runtime_state() -> LoadedSwarmRuntimeState
+- persist_swarm_state · function · L810-L861 — pub(super) fn persist_swarm_state(
+- remove_swarm_state · function · L864-L870 — pub(super) fn remove_swarm_state(swarm_id: &str)
+- remove_swarm_state_if_version · function · L872-L884 — pub(super) fn remove_swarm_state_if_version(
+- swarm_persistence_tests · module · L888-L888 — mod swarm_persistence_tests;

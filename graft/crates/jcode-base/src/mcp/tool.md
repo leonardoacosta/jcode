@@ -1,0 +1,25 @@
+# crates/jcode-base/src/mcp/tool.rs
+
+- McpTool · struct · L14-L18 — pub struct McpTool
+- new · function · L21-L31 — pub fn new(
+- name · function · L36-L39 — fn name(&self) -> &str
+- mcp_identity · function · L41-L43 — fn mcp_identity(&self) -> Option<(&str, &str)>
+- description · function · L45-L47 — fn description(&self) -> &str
+- parameters_schema · function · L49-L51 — fn parameters_schema(&self) -> Value
+- execute · function · L53-L125 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- take_accept_large_output · function · L130-L139 — pub fn take_accept_large_output(input: &mut Value) -> bool
+- MAX_DISPATCH_NAME_LEN · constant · L143-L143 — const MAX_DISPATCH_NAME_LEN: usize = 64;
+- dispatch_name · function · L153-L171 — pub fn dispatch_name(server_name: &str, tool_name: &str) -> String
+- dispatch_names · function · L180-L223 — pub fn dispatch_names(tools: &[(String, McpToolDef)]) -> Vec<String>
+- stable_dispatch_hash · function · L225-L237 — fn stable_dispatch_hash(server_name: &str, tool_name: &str) -> u32
+- create_mcp_tools · function · L240-L252 — pub async fn create_mcp_tools(manager: Arc<RwLock<McpManager>>) -> Vec<(String, Arc<dyn Tool>)>
+- create_mcp_tools_from_cached · function · L258-L269 — pub fn create_mcp_tools_from_cached(
+- create_mcp_tools_from_cached_many · function · L273-L290 — pub fn create_mcp_tools_from_cached_many(
+- tests · module · L293-L417 — mod tests
+- hyphenated_mcp_names_are_safe_for_the_standard_dispatcher · function · L299-L308 — fn hyphenated_mcp_names_are_safe_for_the_standard_dispatcher()
+- is_provider_safe · function · L312-L318 — fn is_provider_safe(name: &str) -> bool
+- def · function · L320-L326 — fn def(name: &str) -> McpToolDef
+- edge_case_mcp_names_are_provider_safe · function · L329-L355 — fn edge_case_mcp_names_are_provider_safe()
+- truncated_names_stay_distinct · function · L358-L368 — fn truncated_names_stay_distinct()
+- sanitization_collisions_get_unique_safe_aliases · function · L371-L387 — fn sanitization_collisions_get_unique_safe_aliases()
+- colliding_dispatch_names_are_unique_and_stable · function · L390-L416 — fn colliding_dispatch_names_are_unique_and_stable()

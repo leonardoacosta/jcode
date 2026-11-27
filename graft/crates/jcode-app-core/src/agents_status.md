@@ -1,0 +1,67 @@
+# crates/jcode-app-core/src/agents_status.rs
+
+- DEBOUNCE · constant · L15-L15 — pub const DEBOUNCE: Duration = Duration::from_secs(2);
+- HEARTBEAT · constant · L16-L16 — pub const HEARTBEAT: Duration = Duration::from_secs(5 * 60);
+- MAX_SESSIONS · constant · L17-L17 — const MAX_SESSIONS: usize = 200;
+- TITLE_MAX · constant · L18-L18 — const TITLE_MAX: usize = 80;
+- DETAIL_MAX · constant · L19-L19 — const DETAIL_MAX: usize = 60;
+- ERROR_BACKOFF_MIN · constant · L20-L20 — const ERROR_BACKOFF_MIN: Duration = Duration::from_secs(30);
+- ERROR_BACKOFF_MAX · constant · L21-L21 — const ERROR_BACKOFF_MAX: Duration = Duration::from_secs(15 * 60);
+- SEND_TIMEOUT · constant · L22-L22 — const SEND_TIMEOUT: Duration = Duration::from_secs(5);
+- ERROR_TTL · constant · L24-L24 — pub const ERROR_TTL: Duration = Duration::from_secs(30 * 60);
+- AgentState · enum · L28-L32 — pub enum AgentState
+- Entry · struct · L35-L42 — struct Entry
+- SessionStatus · struct · L45-L56 — pub struct SessionStatus
+- TodoProgress · struct · L61-L65 — pub struct TodoProgress
+- from_items · function · L68-L80 — pub fn from_items(items: &[jcode_task_types::TodoItem]) -> Option<Self>
+- Snapshot · struct · L84-L89 — pub struct Snapshot
+- Tracker · struct · L93-L107 — pub struct Tracker
+- now_unix · function · L109-L114 — fn now_unix() -> u64
+- clip · function · L116-L124 — fn clip(text: &str, max: usize) -> String
+- mark · function · L127-L129 — fn mark(&mut self, now: Instant)
+- set · function · L131-L172 — fn set(
+- mark_worker · function · L175-L179 — pub fn mark_worker(&mut self, id: &str, now: Instant)
+- plan_updated · function · L181-L195 — pub fn plan_updated(
+- turn_started · function · L197-L200 — pub fn turn_started(&mut self, id: &str, title: &str, now: Instant)
+- tool_started · function · L202-L210 — pub fn tool_started(&mut self, id: &str, tool: &str, now: Instant)
+- tool_done · function · L212-L216 — pub fn tool_done(&mut self, id: &str, now: Instant)
+- waiting · function · L218-L220 — pub fn waiting(&mut self, id: &str, detail: &str, now: Instant)
+- turn_finished · function · L222-L231 — pub fn turn_finished(&mut self, id: &str, error: Option<&str>, now: Instant)
+- session_closed · function · L233-L239 — pub fn session_closed(&mut self, id: &str, now: Instant)
+- expire · function · L242-L250 — pub fn expire(&mut self, now: Instant)
+- next_expiry · function · L252-L258 — fn next_expiry(&self) -> Option<Instant>
+- snapshot · function · L260-L299 — pub fn snapshot(&self, host: &str) -> Snapshot
+- next_due · function · L302-L319 — pub fn next_due(&self) -> Option<Instant>
+- take_due · function · L322-L328 — pub fn take_due(&mut self, host: &str, now: Instant) -> Option<Snapshot>
+- record_result · function · L330-L345 — pub fn record_result(&mut self, snapshot: &Snapshot, ok: bool, now: Instant)
+- suppress_until · function · L348-L350 — pub fn suppress_until(&mut self, until: Instant)
+- TRACKER · constant · L353-L353 — static TRACKER: Mutex<Option<Tracker>> = Mutex::new(None);
+- WAKE · constant · L354-L354 — static WAKE: OnceLock<tokio::sync::Notify> = OnceLock::new();
+- WORKER_STARTED · constant · L355-L355 — static WORKER_STARTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+- with_tracker · function · L357-L366 — fn with_tracker(f: impl FnOnce(&mut Tracker, Instant))
+- turn_started · function · L368-L370 — pub fn turn_started(session_id: &str, title: &str)
+- mark_worker · function · L371-L373 — pub fn mark_worker(session_id: &str)
+- todos_updated · function · L375-L391 — pub fn todos_updated(session_id: &str, todos: &[jcode_task_types::TodoItem])
+- load_plan_from_disk · function · L393-L397 — pub fn load_plan_from_disk(session_id: &str)
+- tool_started · function · L398-L400 — pub fn tool_started(session_id: &str, tool: &str)
+- tool_done · function · L401-L403 — pub fn tool_done(session_id: &str)
+- waiting · function · L404-L406 — pub fn waiting(session_id: &str, detail: &str)
+- turn_finished · function · L407-L409 — pub fn turn_finished(session_id: &str, error: Option<&str>)
+- session_closed · function · L410-L412 — pub fn session_closed(session_id: &str)
+- host_id · function · L415-L429 — pub fn host_id() -> &'static str
+- HOST · constant · L416-L416 — static HOST: OnceLock<String> = OnceLock::new();
+- host_source · function · L433-L443 — fn host_source(result: Result<String, impl std::fmt::Display>, source: &str) -> Option<String>
+- sanitize_host · function · L445-L459 — pub fn sanitize_host(raw: &str) -> String
+- ensure_worker · function · L461-L469 — fn ensure_worker()
+- worker · function · L471-L509 — async fn worker()
+- PostOutcome · enum · L511-L515 — enum PostOutcome
+- Reply · struct · L518-L521 — struct Reply
+- post · function · L523-L555 — async fn post(snapshot: &Snapshot) -> PostOutcome
+- tests · module · L558-L690 — mod tests
+- snapshot_orders_and_truncates · function · L562-L586 — fn snapshot_orders_and_truncates()
+- plan_progress_and_worker_exclusion · function · L589-L609 — fn plan_progress_and_worker_exclusion()
+- debounce_heartbeat_and_final_empty · function · L612-L630 — fn debounce_heartbeat_and_final_empty()
+- errors_back_off · function · L633-L642 — fn errors_back_off()
+- error_state_expires_after_ttl · function · L645-L670 — fn error_state_expires_after_ttl()
+- unavailable_host_source_allows_fallback · function · L673-L682 — fn unavailable_host_source_allows_fallback()
+- host_is_sanitized · function · L685-L689 — fn host_is_sanitized()

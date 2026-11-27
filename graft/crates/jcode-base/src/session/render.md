@@ -1,0 +1,25 @@
+# crates/jcode-base/src/session/render.rs
+
+- response_stats · module · L1-L1 — mod response_stats;
+- prompt_count_tests · module · L4-L4 — mod prompt_count_tests;
+- DEFAULT_VISIBLE_COMPACTED_HISTORY_MESSAGES · constant · L20-L20 — pub const DEFAULT_VISIBLE_COMPACTED_HISTORY_MESSAGES: usize = 64;
+- format_reasoning_markup · function · L34-L53 — fn format_reasoning_markup(text: &str) -> String
+- is_internal_system_reminder · function · L55-L63 — fn is_internal_system_reminder(msg: &super::StoredMessage) -> bool
+- is_auto_poke_user_message · function · L72-L83 — fn is_auto_poke_user_message(msg: &super::StoredMessage) -> bool
+- auto_poke_user_message_display_summary · function · L87-L98 — fn auto_poke_user_message_display_summary(msg: &super::StoredMessage) -> Option<&'static str>
+- stored_message_renders_visible_message · function · L100-L110 — fn stored_message_renders_visible_message(msg: &super::StoredMessage) -> bool
+- COMPACTED_HISTORY_MIN_RENDERABLE_TO_TRUNCATE · constant · L115-L115 — const COMPACTED_HISTORY_MIN_RENDERABLE_TO_TRUNCATE: usize = 80;
+- COMPACTED_HISTORY_MIN_TURNS_TO_TRUNCATE · constant · L120-L120 — const COMPACTED_HISTORY_MIN_TURNS_TO_TRUNCATE: usize = 5;
+- stored_message_is_user_turn · function · L122-L145 — fn stored_message_is_user_turn(msg: &super::StoredMessage) -> bool
+- compacted_history_render_window · function · L147-L229 — fn compacted_history_render_window(
+- image_source_for_message · function · L231-L244 — fn image_source_for_message(role: Role, tool: Option<&ToolCall>) -> RenderedImageSource
+- image_anchor_for_message · function · L246-L262 — fn image_anchor_for_message(
+- fallback_image_label_for_tool · function · L264-L271 — fn fallback_image_label_for_tool(tool: &ToolCall) -> Option<String>
+- parse_attached_image_label · function · L273-L282 — fn parse_attached_image_label(text: &str) -> Option<String>
+- is_attached_image_label_text · function · L289-L291 — pub fn is_attached_image_label_text(text: &str) -> bool
+- render_images · function · L293-L295 — pub fn render_images(session: &Session) -> Vec<RenderedImage>
+- has_rendered_images · function · L297-L303 — pub fn has_rendered_images(session: &Session) -> bool
+- summarize_tool_calls · function · L305-L350 — pub fn summarize_tool_calls(
+- render_messages · function · L353-L355 — pub fn render_messages(session: &Session) -> Vec<RenderedMessage>
+- render_messages_and_images · function · L357-L363 — pub fn render_messages_and_images(session: &Session) -> (Vec<RenderedMessage>, Vec<RenderedImage>)
+- render_messages_and_images_with_compacted_history · function · L365-L724 — pub fn render_messages_and_images_with_compacted_history(

@@ -1,0 +1,37 @@
+# crates/jcode-provider-core/src/auth_mode.rs
+
+- DualAuthProvider · enum · L37-L42 — pub enum DualAuthProvider
+- from_active_provider · function · L47-L53 — pub const fn from_active_provider(provider: ActiveProvider) -> Option<Self>
+- active_provider · function · L56-L61 — pub const fn active_provider(self) -> ActiveProvider
+- bare_model_prefix · function · L70-L75 — pub const fn bare_model_prefix(self) -> &'static str
+- AuthMode · enum · L80-L85 — pub enum AuthMode
+- is_subscription · function · L89-L91 — pub const fn is_subscription(self) -> bool
+- resolved_credential · function · L94-L99 — pub const fn resolved_credential(self) -> ResolvedCredential
+- from · function · L103-L105 — fn from(mode: AuthMode) -> Self
+- AuthRoute · struct · L112-L115 — pub struct AuthRoute
+- new · function · L118-L120 — pub const fn new(provider: DualAuthProvider, mode: AuthMode) -> Self
+- anthropic · function · L122-L124 — pub const fn anthropic(mode: AuthMode) -> Self
+- openai · function · L126-L128 — pub const fn openai(mode: AuthMode) -> Self
+- parse · function · L142-L162 — pub fn parse(token: &str) -> Option<Self>
+- active_provider · function · L165-L167 — pub const fn active_provider(self) -> ActiveProvider
+- resolved_credential · function · L170-L172 — pub const fn resolved_credential(self) -> ResolvedCredential
+- parse_explicit_credential_prefix · function · L184-L191 — pub fn parse_explicit_credential_prefix(prefix: &str) -> Option<Self>
+- runtime_provider_key · function · L194-L201 — pub const fn runtime_provider_key(self) -> &'static str
+- route_api_method · function · L204-L211 — pub const fn route_api_method(self) -> &'static str
+- model_prefix · function · L214-L221 — pub const fn model_prefix(self) -> &'static str
+- session_provider_key · function · L233-L240 — pub const fn session_provider_key(self) -> &'static str
+- cli_provider_arg · function · L243-L250 — pub const fn cli_provider_arg(self) -> &'static str
+- pinned_mode_for · function · L258-L264 — pub fn pinned_mode_for(
+- runtime_env_auth_route · function · L267-L270 — pub fn runtime_env_auth_route() -> Option<AuthRoute>
+- runtime_env_pinned_mode · function · L274-L279 — pub fn runtime_env_pinned_mode(provider: DualAuthProvider) -> Option<AuthMode>
+- tests · module · L282-L465 — mod tests
+- ALL_ROUTES · constant · L285-L290 — const ALL_ROUTES: [AuthRoute; 4] = [
+- every_vocabulary_string_round_trips_back_to_the_same_route · function · L293-L315 — fn every_vocabulary_string_round_trips_back_to_the_same_route()
+- parse_is_case_and_whitespace_insensitive · function · L318-L327 — fn parse_is_case_and_whitespace_insensitive()
+- bare_provider_aliases_pin_oauth · function · L330-L343 — fn bare_provider_aliases_pin_oauth()
+- cross_vocabulary_aliases_resolve_consistently · function · L346-L361 — fn cross_vocabulary_aliases_resolve_consistently()
+- non_dual_and_unknown_tokens_are_none · function · L364-L376 — fn non_dual_and_unknown_tokens_are_none()
+- explicit_credential_prefix_ignores_bare_provider_aliases · function · L379-L405 — fn explicit_credential_prefix_ignores_bare_provider_aliases()
+- pinned_mode_only_matches_its_own_provider · function · L408-L423 — fn pinned_mode_only_matches_its_own_provider()
+- resolved_credential_mapping · function · L426-L435 — fn resolved_credential_mapping()
+- route_api_method_round_trips_through_model_route_api_method · function · L438-L464 — fn route_api_method_round_trips_through_model_route_api_method()

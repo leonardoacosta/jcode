@@ -1,0 +1,54 @@
+# crates/jcode-swarm-core/src/lib.rs
+
+- control · module · L1-L1 — pub mod control;
+- MAX_SWARM_COMPLETION_REPORT_CHARS · constant · L8-L8 — pub const MAX_SWARM_COMPLETION_REPORT_CHARS: usize = 4000;
+- SWARM_OUTPUT_TAIL_TOKENS · constant · L10-L10 — pub const SWARM_OUTPUT_TAIL_TOKENS: usize = 1000;
+- SWARM_TLDR_REQUIRED_OVER_CHARS · constant · L14-L14 — pub const SWARM_TLDR_REQUIRED_OVER_CHARS: usize = 240;
+- MAX_SWARM_TLDR_CHARS · constant · L18-L18 — pub const MAX_SWARM_TLDR_CHARS: usize = 200;
+- validate_swarm_tldr · function · L26-L46 — pub fn validate_swarm_tldr(
+- MAX_SWARM_MEMBERS · constant · L50-L50 — pub const MAX_SWARM_MEMBERS: usize = 1000;
+- MAX_SWARM_TASK_LABEL_CHARS · constant · L53-L53 — pub const MAX_SWARM_TASK_LABEL_CHARS: usize = 48;
+- derive_swarm_task_label · function · L60-L78 — pub fn derive_swarm_task_label(text: &str) -> Option<String>
+- SwarmRole · enum · L81-L85 — pub enum SwarmRole
+- as_str · function · L88-L94 — pub fn as_str(&self) -> Cow<'_, str>
+- from · function · L98-L104 — fn from(value: String) -> Self
+- serialize · function · L108-L113 — fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- deserialize · function · L117-L122 — fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+- SwarmLifecycleStatus · enum · L126-L141 — pub enum SwarmLifecycleStatus
+- as_str · function · L144-L161 — pub fn as_str(&self) -> Cow<'_, str>
+- from · function · L165-L182 — fn from(value: String) -> Self
+- serialize · function · L186-L191 — fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- deserialize · function · L195-L200 — fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+- SwarmMemberRecord · struct · L205-L221 — pub struct SwarmMemberRecord
+- ChannelIndex · struct · L225-L228 — pub struct ChannelIndex
+- subscribe · function · L231-L244 — pub fn subscribe(&mut self, session_id: &str, swarm_id: &str, channel: &str)
+- unsubscribe · function · L246-L276 — pub fn unsubscribe(&mut self, session_id: &str, swarm_id: &str, channel: &str)
+- remove_session · function · L278-L319 — pub fn remove_session(&mut self, session_id: &str)
+- members · function · L321-L330 — pub fn members(&self, swarm_id: &str, channel: &str) -> Vec<String>
+- channels_for_session · function · L333-L342 — pub fn channels_for_session(&self, session_id: &str, swarm_id: &str) -> Vec<String>
+- recent_output_tail · function · L348-L386 — pub fn recent_output_tail<'a>(
+- format_structured_completion_report · function · L388-L409 — pub fn format_structured_completion_report(
+- normalize_completion_report · function · L411-L426 — pub fn normalize_completion_report(report: Option<String>) -> Option<String>
+- completion_status_intro · function · L428-L436 — fn completion_status_intro(name: &str, status: &str) -> String
+- completion_notification_message · function · L438-L440 — pub fn completion_notification_message(name: &str, status: &str, report: Option<&str>) -> String
+- completion_notification_with_lane_plan · function · L444-L468 — pub fn completion_notification_with_lane_plan(
+- truncate_detail · function · L470-L483 — pub fn truncate_detail(text: &str, max_len: usize) -> String
+- summarize_plan_items · function · L485-L498 — pub fn summarize_plan_items(items: &[PlanItem], max_items: usize) -> String
+- tests · module · L501-L765 — mod tests
+- plan_item · function · L504-L515 — fn plan_item(id: &str, content: &str) -> PlanItem
+- truncate_detail_collapses_whitespace_and_ellipsizes · function · L518-L520 — fn truncate_detail_collapses_whitespace_and_ellipsizes()
+- validate_swarm_tldr_allows_short_body_without_tldr · function · L523-L525 — fn validate_swarm_tldr_allows_short_body_without_tldr()
+- validate_swarm_tldr_derives_preview_for_long_body · function · L528-L546 — fn validate_swarm_tldr_derives_preview_for_long_body()
+- validate_swarm_tldr_fallback_collapses_whitespace · function · L549-L563 — fn validate_swarm_tldr_fallback_collapses_whitespace()
+- validate_swarm_tldr_normalizes_whitespace · function · L566-L572 — fn validate_swarm_tldr_normalizes_whitespace()
+- validate_swarm_tldr_preserves_overlong_tldr · function · L575-L586 — fn validate_swarm_tldr_preserves_overlong_tldr()
+- validate_swarm_tldr_normalizes_overlong_tldr · function · L589-L595 — fn validate_swarm_tldr_normalizes_overlong_tldr()
+- validate_swarm_tldr_blank_tldr_counts_as_missing · function · L598-L608 — fn validate_swarm_tldr_blank_tldr_counts_as_missing()
+- summarize_plan_items_limits_output · function · L611-L618 — fn summarize_plan_items_limits_output()
+- output_tail_keeps_newest_chunks_within_token_budget · function · L621-L639 — fn output_tail_keeps_newest_chunks_within_token_budget()
+- completion_report_normalization_trims_and_truncates · function · L642-L665 — fn completion_report_normalization_trims_and_truncates()
+- completion_handoff_puts_lane_state_before_final_response · function · L668-L709 — fn completion_handoff_puts_lane_state_before_final_response()
+- channel_index_keeps_bidirectional_maps_in_sync · function · L712-L733 — fn channel_index_keeps_bidirectional_maps_in_sync()
+- task_label_takes_first_line_strips_prefixes_and_collapses_whitespace · function · L736-L749 — fn task_label_takes_first_line_strips_prefixes_and_collapses_whitespace()
+- task_label_truncates_long_prompts_with_ellipsis · function · L752-L757 — fn task_label_truncates_long_prompts_with_ellipsis()
+- task_label_rejects_empty_or_marker_only_text · function · L760-L764 — fn task_label_rejects_empty_or_marker_only_text()

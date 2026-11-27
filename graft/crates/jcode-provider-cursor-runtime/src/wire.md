@@ -1,0 +1,83 @@
+# crates/jcode-provider-cursor-runtime/src/wire.rs
+
+- MAX_VALUE_DEPTH · constant · L15-L15 — pub const MAX_VALUE_DEPTH: usize = 32;
+- MAX_VALUE_BYTES · constant · L18-L18 — pub const MAX_VALUE_BYTES: usize = 10 * 1024 * 1024;
+- JCODE_TOOL_PROVIDER · constant · L22-L22 — pub const JCODE_TOOL_PROVIDER: &str = "ccbridge";
+- JCODE_TOOL_PREFIX · constant · L23-L23 — pub const JCODE_TOOL_PREFIX: &str = "cc_";
+- MAX_CURSOR_TOOL_NAME_LEN · constant · L24-L24 — pub const MAX_CURSOR_TOOL_NAME_LEN: usize = 128;
+- encode_varint · function · L31-L37 — pub fn encode_varint(mut value: u64, out: &mut Vec<u8>)
+- field_ld · function · L40-L46 — pub fn field_ld(field: u64, data: &[u8]) -> Vec<u8>
+- field_varint · function · L49-L54 — pub fn field_varint(field: u64, value: u64) -> Vec<u8>
+- field_str · function · L57-L59 — pub fn field_str(field: u64, s: &str) -> Vec<u8>
+- field_fixed64 · function · L62-L67 — pub fn field_fixed64(field: u64, value: f64) -> Vec<u8>
+- field_bool · function · L70-L72 — pub fn field_bool(field: u64, value: bool) -> Vec<u8>
+- read_varint · function · L75-L89 — pub fn read_varint(buf: &[u8]) -> Option<(u64, &[u8])>
+- PbWireField · struct · L93-L98 — pub struct PbWireField<'a>
+- iter_fields · function · L101-L165 — pub fn iter_fields(mut buf: &[u8]) -> impl Iterator<Item = PbWireField<'_>>
+- encode_google_protobuf_value · function · L172-L204 — pub fn encode_google_protobuf_value(val: &Value, depth: usize) -> Result<Vec<u8>>
+- decode_google_protobuf_value · function · L207-L279 — pub fn decode_google_protobuf_value(bytes: &[u8], depth: usize) -> Result<Value>
+- mcp_wire_name · function · L286-L294 — pub fn mcp_wire_name(tool_name: &str) -> String
+- sanitize_cursor_name · function · L301-L314 — fn sanitize_cursor_name(name: &str) -> String
+- mcp_wire_aliases · function · L319-L353 — pub fn mcp_wire_aliases(tools: &[ToolDefinition]) -> HashMap<String, String>
+- fit_cursor_name · function · L355-L364 — fn fit_cursor_name(name: &str, original: &str) -> String
+- stable_name_hash · function · L366-L373 — fn stable_name_hash(value: &str) -> u32
+- mcp_bare_name · function · L376-L384 — pub fn mcp_bare_name(wire_name: &str) -> &str
+- encode_mcp_tool_definition · function · L392-L395 — pub fn encode_mcp_tool_definition(def: &ToolDefinition) -> Result<Vec<u8>>
+- encode_mcp_tool_definition_with_wire_name · function · L397-L419 — fn encode_mcp_tool_definition_with_wire_name(
+- encode_mcp_tools · function · L422-L434 — pub fn encode_mcp_tools(tools: &[ToolDefinition]) -> Result<Vec<u8>>
+- encode_mcp_state_result · function · L443-L476 — pub fn encode_mcp_state_result(
+- encode_mcp_state_error · function · L479-L483 — pub fn encode_mcp_state_error(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- encode_allowlist_precheck_result · function · L490-L498 — pub fn encode_allowlist_precheck_result(
+- decode_cursor_args_map · function · L506-L546 — pub fn decode_cursor_args_map(args_data: &[u8]) -> Result<Value>
+- ShellArgs · struct · L553-L556 — pub struct ShellArgs
+- WriteArgs · struct · L559-L563 — pub struct WriteArgs
+- DeleteArgs · struct · L566-L568 — pub struct DeleteArgs
+- GrepArgs · struct · L571-L576 — pub struct GrepArgs
+- ReadArgs · struct · L579-L581 — pub struct ReadArgs
+- LsArgs · struct · L584-L586 — pub struct LsArgs
+- DiagnosticsArgs · struct · L589-L591 — pub struct DiagnosticsArgs
+- RequestContextArgs · struct · L594-L594 — pub struct RequestContextArgs {}
+- McpArgs · struct · L597-L603 — pub struct McpArgs
+- ShellStreamArgs · struct · L606-L609 — pub struct ShellStreamArgs
+- BackgroundShellSpawnArgs · struct · L612-L615 — pub struct BackgroundShellSpawnArgs
+- ListMcpResourcesExecArgs · struct · L618-L618 — pub struct ListMcpResourcesExecArgs {}
+- ReadMcpResourceExecArgs · struct · L621-L624 — pub struct ReadMcpResourceExecArgs
+- FetchArgs · struct · L627-L630 — pub struct FetchArgs
+- RecordScreenArgs · struct · L633-L633 — pub struct RecordScreenArgs {}
+- ComputerUseArgs · struct · L636-L636 — pub struct ComputerUseArgs {}
+- WriteShellStdinArgs · struct · L639-L642 — pub struct WriteShellStdinArgs
+- ExecServerMessageVariant · enum · L645-L672 — pub enum ExecServerMessageVariant
+- McpStateExecArgs · struct · L678-L681 — pub struct McpStateExecArgs
+- ExecServerMessage · struct · L684-L688 — pub struct ExecServerMessage
+- decode_exec_server_message · function · L691-L1018 — pub fn decode_exec_server_message(bytes: &[u8]) -> Result<ExecServerMessage>
+- encode_exec_client_message · function · L1028-L1040 — pub fn encode_exec_client_message(
+- encode_agent_client_exec_message · function · L1043-L1045 — pub fn encode_agent_client_exec_message(exec_client_bytes: &[u8]) -> Vec<u8>
+- encode_agent_client_stream_close · function · L1048-L1053 — pub fn encode_agent_client_stream_close(id: u32) -> Vec<u8>
+- encode_request_context_result · function · L1055-L1072 — pub fn encode_request_context_result(
+- encode_request_context · function · L1074-L1102 — pub fn encode_request_context(system_prompt: &str, cwd: &str) -> Result<Vec<u8>>
+- extract_checkpoint_used_tokens · function · L1106-L1121 — pub fn extract_checkpoint_used_tokens(payload: &[u8]) -> Option<u64>
+- connect_frame · function · L1124-L1143 — pub fn connect_frame(payload: &[u8]) -> Vec<u8>
+- COMPRESS_MIN_BYTES · constant · L1125-L1125 — const COMPRESS_MIN_BYTES: usize = 1024;
+- encode_kv_set_blob_ack · function · L1148-L1155 — pub fn encode_kv_set_blob_ack(kv_id: u32) -> Vec<u8>
+- encode_kv_get_blob_result · function · L1159-L1167 — pub fn encode_kv_get_blob_result(kv_id: u32, data: &[u8]) -> Vec<u8>
+- native_local_exec_disabled_message · function · L1173-L1179 — pub fn native_local_exec_disabled_message(code_mode: bool) -> &'static str
+- native_shell_disabled_message · function · L1181-L1187 — pub fn native_shell_disabled_message(code_mode: bool) -> &'static str
+- native_fetch_disabled_message · function · L1189-L1195 — pub fn native_fetch_disabled_message(code_mode: bool) -> &'static str
+- reject_shell_exec · function · L1203-L1222 — pub fn reject_shell_exec(
+- reject_write_exec · function · L1226-L1234 — pub fn reject_write_exec(id: u32, exec_id: &str, path: &str, reason: &str) -> Vec<u8>
+- reject_delete_exec · function · L1238-L1246 — pub fn reject_delete_exec(id: u32, exec_id: &str, path: &str, reason: &str) -> Vec<u8>
+- reject_grep_exec · function · L1250-L1256 — pub fn reject_grep_exec(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- reject_read_exec · function · L1260-L1267 — pub fn reject_read_exec(id: u32, exec_id: &str, path: &str, error: &str) -> Vec<u8>
+- reject_ls_exec · function · L1271-L1278 — pub fn reject_ls_exec(id: u32, exec_id: &str, path: &str, error: &str) -> Vec<u8>
+- reject_diagnostics_exec · function · L1282-L1289 — pub fn reject_diagnostics_exec(id: u32, exec_id: &str, path: &str, error: &str) -> Vec<u8>
+- reject_shell_stream_exec · function · L1293-L1299 — pub fn reject_shell_stream_exec(id: u32, exec_id: &str, stderr: &str) -> Vec<u8>
+- reject_background_shell_spawn_exec · function · L1303-L1317 — pub fn reject_background_shell_spawn_exec(
+- reject_list_mcp_resources_exec · function · L1321-L1327 — pub fn reject_list_mcp_resources_exec(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- reject_read_mcp_resource_exec · function · L1331-L1338 — pub fn reject_read_mcp_resource_exec(id: u32, exec_id: &str, uri: &str, error: &str) -> Vec<u8>
+- reject_fetch_exec · function · L1342-L1349 — pub fn reject_fetch_exec(id: u32, exec_id: &str, url: &str, error: &str) -> Vec<u8>
+- reject_record_screen_exec · function · L1353-L1359 — pub fn reject_record_screen_exec(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- reject_computer_use_exec · function · L1363-L1371 — pub fn reject_computer_use_exec(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- reject_write_shell_stdin_exec · function · L1375-L1381 — pub fn reject_write_shell_stdin_exec(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- encode_mcp_success_result · function · L1391-L1404 — pub fn encode_mcp_success_result(id: u32, exec_id: &str, text: &str, is_error: bool) -> Vec<u8>
+- encode_mcp_error_result · function · L1408-L1414 — pub fn encode_mcp_error_result(id: u32, exec_id: &str, error: &str) -> Vec<u8>
+- encode_mcp_not_found_result · function · L1418-L1431 — pub fn encode_mcp_not_found_result(

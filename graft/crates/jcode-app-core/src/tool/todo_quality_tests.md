@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/tool/todo_quality_tests.rs
+
+- goal_changes_include_only_updated_quality_fields · function · L4-L36 — fn goal_changes_include_only_updated_quality_fields()
+- low_open_goal_records_an_observation_without_interrupting · function · L42-L67 — fn low_open_goal_records_an_observation_without_interrupting()
+- low_intent_is_plan_level_and_independent_of_goals · function · L70-L99 — fn low_intent_is_plan_level_and_independent_of_goals()
+- severely_low_first_intent_still_nudges_immediately · function · L105-L129 — fn severely_low_first_intent_still_nudges_immediately()
+- work_already_closed_before_this_write_records_nothing · function · L134-L146 — fn work_already_closed_before_this_write_records_nothing()
+- a_group_closed_by_this_write_is_still_observed · function · L152-L170 — fn a_group_closed_by_this_write_is_still_observed()
+- both_weak_links_are_recorded_independently · function · L173-L200 — fn both_weak_links_are_recorded_independently()
+- missing_quality_scores_still_record_observations · function · L203-L219 — fn missing_quality_scores_still_record_observations()
+- observations_skip_goals_closed_in_an_earlier_write · function · L224-L232 — fn observations_skip_goals_closed_in_an_earlier_write()
+- observations_cover_the_ungrouped_implicit_goal · function · L235-L247 — fn observations_cover_the_ungrouped_implicit_goal()
+- plan_and_goal_score_histories_are_tool_maintained · function · L252-L350 — fn plan_and_goal_score_histories_are_tool_maintained()
+- omitted_goal_fields_inherit_the_stored_assessment · function · L355-L392 — fn omitted_goal_fields_inherit_the_stored_assessment()
+- garbage_string_still_errors · function · L395-L397 — fn garbage_string_still_errors()
+- pre_rename_hill_climbability_keys_still_load · function · L403-L433 — fn pre_rename_hill_climbability_keys_still_load()
+- history_todo · function · L437-L447 — fn history_todo(id: &str, confidence: Option<CS>, history: Vec<CS>) -> TodoItem
+- confidence_history_appends_changes_and_skips_repeats · function · L450-L463 — fn confidence_history_appends_changes_and_skips_repeats()
+- confidence_history_records_completion_confidence · function · L466-L478 — fn confidence_history_records_completion_confidence()
+- completion_write_contributes_only_one_final_confidence_observation · function · L481-L494 — fn completion_write_contributes_only_one_final_confidence_observation()
+- confidence_history_seeds_legacy_todos_before_completion · function · L497-L510 — fn confidence_history_seeds_legacy_todos_before_completion()
+- confidence_history_ignores_model_supplied_history_for_new_todos · function · L513-L521 — fn confidence_history_ignores_model_supplied_history_for_new_todos()

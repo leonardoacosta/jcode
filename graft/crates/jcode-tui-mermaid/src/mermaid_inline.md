@@ -1,0 +1,24 @@
+# crates/jcode-tui-mermaid/src/mermaid_inline.rs
+
+- INLINE_DIMS_MAX · constant · L28-L28 — const INLINE_DIMS_MAX: usize = 256;
+- InlineDims · struct · L31-L34 — struct InlineDims
+- InlineDimsCache · type · L38-L38 — type InlineDimsCache = (HashMap<u64, InlineDims>, VecDeque<u64>);
+- INLINE_DIMS_CACHE · constant · L42-L43 — static INLINE_DIMS_CACHE: LazyLock<Mutex<InlineDimsCache>> =
+- inline_image_id · function · L47-L52 — pub fn inline_image_id(media_type: &str, data_b64: &str) -> u64
+- dims_cache_get · function · L54-L56 — fn dims_cache_get(id: u64) -> Option<InlineDims>
+- dims_cache_put · function · L58-L70 — fn dims_cache_put(id: u64, dims: InlineDims)
+- inline_image_dims · function · L77-L105 — pub fn inline_image_dims(media_type: &str, data_b64: &str) -> Option<(u64, u32, u32)>
+- materialize_inline_image · function · L113-L116 — pub fn materialize_inline_image(media_type: &str, data_b64: &str) -> Option<(u64, u32, u32)>
+- inline_image_is_materialized · function · L129-L134 — pub fn inline_image_is_materialized(id: u64) -> bool
+- materialize_inline_image_by_id · function · L140-L185 — pub fn materialize_inline_image_by_id(
+- inline_image_extension · function · L187-L197 — fn inline_image_extension(media_type: &str) -> &'static str
+- INLINE_EXTENSIONS · constant · L201-L201 — const INLINE_EXTENSIONS: [&str; 7] = ["png", "jpg", "gif", "webp", "bmp", "ico", "img"];
+- rediscover_inline_image · function · L212-L237 — pub fn rediscover_inline_image(id: u64) -> Option<(u64, u32, u32)>
+- mermaid_inline_extension_for_test · function · L242-L244 — pub(crate) fn mermaid_inline_extension_for_test(media_type: &str) -> &'static str
+- dims_from_b64_prefix · function · L248-L264 — fn dims_from_b64_prefix(data_b64: &str) -> Option<(u32, u32)>
+- PREFIX_B64_CHARS · constant · L251-L251 — const PREFIX_B64_CHARS: usize = 16 * 1024;
+- dimensions_from_header · function · L269-L346 — pub(crate) fn dimensions_from_header(data: &[u8]) -> Option<(u32, u32)>
+- tests · module · L349-L375 — mod tests
+- tiny_png_b64 · function · L352-L355 — fn tiny_png_b64() -> String
+- inline_dims_reads_png_header_without_full_decode · function · L358-L365 — fn inline_dims_reads_png_header_without_full_decode()
+- inline_id_is_stable_and_distinct · function · L368-L374 — fn inline_id_is_stable_and_distinct()

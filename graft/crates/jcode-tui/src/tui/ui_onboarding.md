@@ -1,0 +1,26 @@
+# crates/jcode-tui/src/tui/ui_onboarding.rs
+
+- GAP · constant · L16-L16 — const GAP: u16 = 1;
+- welcome_accent · function · L19-L21 — fn welcome_accent() -> Color
+- push_esc_skip_hint · function · L28-L37 — fn push_esc_skip_hint(lines: &mut Vec<Line<'static>>, align: Alignment)
+- rounded_pill_caps_supported · function · L44-L77 — fn rounded_pill_caps_supported() -> bool
+- SUPPORTED · constant · L45-L45 — static SUPPORTED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+- lozenge_pill_spans · function · L84-L117 — fn lozenge_pill_spans(label: &str, filled: bool) -> Vec<Span<'static>>
+- yes_no_pill_line · function · L122-L128 — fn yes_no_pill_line(yes_highlighted: bool, align: Alignment) -> Line<'static>
+- continue_pill_line · function · L134-L136 — fn continue_pill_line(focused: bool, align: Alignment) -> Line<'static>
+- import_summary_pills_line · function · L140-L158 — fn import_summary_pills_line(
+- telemetry_settings_lines · function · L163-L281 — fn telemetry_settings_lines(
+- COL_W · constant · L188-L188 — const COL_W: usize = 5;
+- GAP · constant · L189-L189 — const GAP: &str = "  ";
+- import_summary_lines · function · L286-L315 — fn import_summary_lines(prompt: &crate::tui::LoginImportPrompt) -> Vec<Line<'static>>
+- import_two_column_lines · function · L327-L416 — fn import_two_column_lines(prompt: &crate::tui::LoginImportPrompt) -> Vec<Line<'static>>
+- COL_W · constant · L344-L344 — const COL_W: usize = 5;
+- GAP · constant · L345-L345 — const GAP: &str = "  ";
+- welcome_title_line · function · L419-L427 — fn welcome_title_line() -> Line<'static>
+- keyboard_hint_line · function · L432-L438 — fn keyboard_hint_line() -> Line<'static>
+- welcome_body_lines · function · L442-L702 — fn welcome_body_lines(app: &dyn TuiState) -> Vec<Line<'static>>
+- draw_onboarding_welcome · function · L711-L767 — pub(super) fn draw_onboarding_welcome(frame: &mut Frame, app: &dyn TuiState, area: Rect)
+- TITLE_H · constant · L722-L722 — const TITLE_H: u16 = 1;
+- HINT_H · constant · L723-L723 — const HINT_H: u16 = 1;
+- ascii_pill_tests · module · L770-L803 — mod ascii_pill_tests
+- ascii_pill_caps_preserve_label · function · L774-L802 — fn ascii_pill_caps_preserve_label()

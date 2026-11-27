@@ -1,0 +1,29 @@
+# crates/jcode-tui-markdown/src/markdown_incremental.rs
+
+- count_unescaped_double_dollar · function · L2-L19 — fn count_unescaped_double_dollar(line: &str) -> usize
+- link_urls_setting_invalidates_unchanged_incremental_text · function · L25-L42 — fn link_urls_setting_invalidates_unchanged_incremental_text()
+- IncrementalMarkdownRenderer · struct · L44-L80 — pub struct IncrementalMarkdownRenderer
+- StableSplit · enum · L83-L90 — enum StableSplit
+- new · function · L93-L110 — pub fn new(max_width: Option<usize>) -> Self
+- stable_prefix · function · L116-L118 — pub fn stable_prefix(&self) -> (u64, usize)
+- clear_split · function · L120-L128 — fn clear_split(&mut self)
+- compose · function · L130-L142 — fn compose(
+- matching_separator · function · L146-L160 — fn matching_separator(
+- render_split · function · L173-L249 — fn render_split(&mut self, full_text: &str) -> Vec<Line<'static>>
+- update · function · L255-L257 — pub fn update(&mut self, full_text: &str) -> Vec<Line<'static>>
+- debug_memory_profile · function · L259-L268 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- update_internal · function · L270-L311 — fn update_internal(&mut self, full_text: &str) -> Vec<Line<'static>>
+- find_last_complete_block · function · L315-L318 — pub(crate) fn find_last_complete_block(&self, text: &str) -> Option<usize>
+- find_last_complete_block_checkpoint · function · L321-L417 — fn find_last_complete_block_checkpoint(&self, text: &str) -> Option<CompleteBlockCheckpoint>
+- reset · function · L420-L427 — pub fn reset(&mut self)
+- set_width · function · L430-L435 — pub fn set_width(&mut self, max_width: Option<usize>)
+- next_stable_generation · function · L440-L443 — fn next_stable_generation() -> u64
+- NEXT · constant · L441-L441 — static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+- count_newlines · function · L445-L447 — fn count_newlines(text: &str) -> usize
+- split_blocked · function · L452-L464 — fn split_blocked(text: &str) -> bool
+- find_stable_split · function · L469-L519 — fn find_stable_split(tail: &str) -> StableSplit
+- CompleteBlockCheckpoint · struct · L523-L526 — struct CompleteBlockCheckpoint
+- is_heading_line · function · L529-L532 — pub(crate) fn is_heading_line(line: &str) -> bool
+- is_thematic_break_line · function · L535-L555 — pub(crate) fn is_thematic_break_line(line: &str) -> bool
+- looks_like_ordered_list_item · function · L558-L564 — pub(crate) fn looks_like_ordered_list_item(line: &str) -> bool
+- infer_markdown_line_kind · function · L567-L586 — pub(crate) fn infer_markdown_line_kind(line: &str) -> MarkdownBlockKind

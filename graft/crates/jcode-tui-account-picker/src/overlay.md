@@ -1,0 +1,46 @@
+# crates/jcode-tui-account-picker/src/overlay.rs
+
+- render_support · module · L12-L12 — mod render_support;
+- PANEL_BG · constant · L19-L19 — const PANEL_BG: Color = Color::Rgb(24, 28, 40);
+- PANEL_BORDER · constant · L20-L20 — const PANEL_BORDER: Color = Color::Rgb(90, 95, 110);
+- PANEL_BORDER_ACTIVE · constant · L21-L21 — const PANEL_BORDER_ACTIVE: Color = Color::Rgb(120, 140, 190);
+- SECTION_BORDER · constant · L22-L22 — const SECTION_BORDER: Color = Color::Rgb(70, 78, 94);
+- SELECTED_BG · constant · L23-L23 — const SELECTED_BG: Color = Color::Rgb(38, 42, 56);
+- MUTED · constant · L24-L24 — const MUTED: Color = Color::Rgb(140, 146, 163);
+- MUTED_DARK · constant · L25-L25 — const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
+- OVERLAY_PERCENT_X · constant · L26-L26 — const OVERLAY_PERCENT_X: u16 = 88;
+- OVERLAY_PERCENT_Y · constant · L27-L27 — const OVERLAY_PERCENT_Y: u16 = 74;
+- AccountPicker · struct · L30-L38 — pub struct AccountPicker
+- OverlayAction · enum · L40-L44 — pub enum OverlayAction
+- new · function · L47-L49 — pub fn new(title: impl Into<String>, items: Vec<AccountPickerItem>) -> Self
+- debug_memory_profile · function · L51-L78 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- with_summary · function · L80-L96 — pub fn with_summary(
+- selected_item · function · L98-L102 — fn selected_item(&self) -> Option<&AccountPickerItem>
+- visible_window_start · function · L104-L107 — fn visible_window_start(&self, available_items: usize) -> usize
+- visible_index_for_action_row · function · L109-L143 — fn visible_index_for_action_row(&self, row: u16, list_height: u16) -> Option<usize>
+- apply_filter · function · L145-L167 — fn apply_filter(&mut self)
+- provider_order · function · L169-L186 — fn provider_order(&self) -> HashMap<String, usize>
+- filtered_provider_switch_count · function · L188-L197 — fn filtered_provider_switch_count(&self, provider_id: &str) -> usize
+- filtered_provider_secondary_count · function · L199-L208 — fn filtered_provider_secondary_count(&self, provider_id: &str) -> usize
+- select_prev_provider_group · function · L210-L233 — fn select_prev_provider_group(&mut self)
+- select_next_provider_group · function · L235-L248 — fn select_next_provider_group(&mut self)
+- provider_overview_line · function · L250-L303 — fn provider_overview_line(&self) -> Line<'static>
+- handle_overlay_key · function · L305-L372 — pub fn handle_overlay_key(
+- handle_overlay_mouse · function · L374-L400 — pub fn handle_overlay_mouse(&mut self, mouse: MouseEvent)
+- render · function · L402-L456 — pub fn render(&mut self, frame: &mut Frame)
+- render_header · function · L458-L496 — fn render_header(&self, frame: &mut Frame, area: Rect)
+- render_action_list · function · L498-L577 — fn render_action_list(&mut self, frame: &mut Frame, area: Rect)
+- render_detail_pane · function · L579-L771 — fn render_detail_pane(&self, frame: &mut Frame, area: Rect)
+- summary_line · function · L773-L807 — fn summary_line(&self) -> Line<'static>
+- defaults_line · function · L809-L830 — fn defaults_line(&self) -> Line<'static>
+- estimate_optional_string_bytes · function · L833-L835 — fn estimate_optional_string_bytes(value: &Option<String>) -> usize
+- estimate_command_bytes · function · L837-L860 — fn estimate_command_bytes(command: &AccountPickerCommand) -> usize
+- estimate_item_bytes · function · L862-L874 — fn estimate_item_bytes(item: &AccountPickerItem) -> usize
+- estimate_summary_bytes · function · L876-L879 — fn estimate_summary_bytes(summary: &AccountPickerSummary) -> usize
+- tests · module · L882-L1182 — mod tests
+- account_usage_details_wrap_without_changing_switch_action · function · L887-L967 — fn account_usage_details_wrap_without_changing_switch_action()
+- test_account_picker_preserves_underlying_background_outside_panels · function · L970-L1001 — fn test_account_picker_preserves_underlying_background_outside_panels()
+- test_account_picker_mouse_click_selects_visible_action_after_group_header · function · L1004-L1079 — fn test_account_picker_mouse_click_selects_visible_action_after_group_header()
+- test_prompt_value_command_preview_shows_placeholder · function · L1082-L1092 — fn test_prompt_value_command_preview_shows_placeholder()
+- test_account_picker_sorts_switches_before_settings · function · L1095-L1137 — fn test_account_picker_sorts_switches_before_settings()
+- test_account_picker_left_right_jump_by_provider_group · function · L1140-L1181 — fn test_account_picker_left_right_jump_by_provider_group()

@@ -1,0 +1,32 @@
+# crates/jcode-base/src/provider/tests/auth_refresh.rs
+
+- SetModelAuthRefreshMockProvider · struct · L2-L6 — struct SetModelAuthRefreshMockProvider
+- complete · function · L10-L18 — async fn complete(
+- name · function · L20-L22 — fn name(&self) -> &str
+- model · function · L24-L30 — fn model(&self) -> String
+- set_model · function · L32-L40 — fn set_model(&self, model: &str) -> Result<()>
+- on_auth_changed · function · L42-L45 — fn on_auth_changed(&self)
+- fork · function · L47-L49 — fn fork(&self) -> Arc<dyn Provider>
+- test_set_model_with_auth_refresh_reloads_auth_and_retries_once · function · L53-L69 — fn test_set_model_with_auth_refresh_reloads_auth_and_retries_once()
+- test_on_auth_changed_hot_initializes_openai_and_marks_routes_available · function · L72-L118 — fn test_on_auth_changed_hot_initializes_openai_and_marks_routes_available()
+- test_on_auth_changed_refreshes_existing_openai_provider_credentials · function · L121-L181 — fn test_on_auth_changed_refreshes_existing_openai_provider_credentials()
+- test_on_auth_changed_hot_initializes_anthropic_and_marks_routes_available · function · L184-L232 — fn test_on_auth_changed_hot_initializes_anthropic_and_marks_routes_available()
+- test_on_auth_changed_hot_initializes_anthropic_from_api_key_and_marks_routes_available · function · L235-L275 — fn test_on_auth_changed_hot_initializes_anthropic_from_api_key_and_marks_routes_available()
+- test_startup_initializes_anthropic_from_saved_api_key_and_marks_routes_available · function · L278-L298 — fn test_startup_initializes_anthropic_from_saved_api_key_and_marks_routes_available()
+- test_anthropic_model_routes_keep_plain_4_6_available_without_extra_usage · function · L301-L371 — fn test_anthropic_model_routes_keep_plain_4_6_available_without_extra_usage()
+- test_on_auth_changed_hot_initializes_openrouter_and_marks_routes_available · function · L374-L414 — fn test_on_auth_changed_hot_initializes_openrouter_and_marks_routes_available()
+- test_on_auth_changed_preserves_openrouter_model_and_explicit_provider_pin · function · L417-L466 — fn test_on_auth_changed_preserves_openrouter_model_and_explicit_provider_pin()
+- test_on_auth_changed_hot_initializes_copilot_and_marks_routes_available · function · L469-L511 — fn test_on_auth_changed_hot_initializes_copilot_and_marks_routes_available()
+- test_startup_initializes_antigravity_when_cached_tokens_are_expired · function · L514-L542 — fn test_startup_initializes_antigravity_when_cached_tokens_are_expired()
+- test_on_auth_changed_hot_initializes_antigravity_when_tokens_exist_but_are_expired · function · L545-L593 — fn test_on_auth_changed_hot_initializes_antigravity_when_tokens_exist_but_are_expired()
+- test_multi_provider_antigravity_routes_do_not_include_legacy_duplicate_entries · function · L596-L629 — fn test_multi_provider_antigravity_routes_do_not_include_legacy_duplicate_entries()
+- test_summarize_model_catalog_refresh_ignores_display_only_age_suffix_changes · function · L632-L660 — fn test_summarize_model_catalog_refresh_ignores_display_only_age_suffix_changes()
+- test_summarize_model_catalog_refresh_still_counts_meaningful_detail_changes · function · L663-L688 — fn test_summarize_model_catalog_refresh_still_counts_meaningful_detail_changes()
+- test_on_auth_changed_hot_initializes_gemini_and_marks_routes_available · function · L691-L765 — fn test_on_auth_changed_hot_initializes_gemini_and_marks_routes_available()
+- StubGeminiRuntime · struct · L700-L700 — struct StubGeminiRuntime;
+- complete · function · L703-L711 — async fn complete(
+- name · function · L712-L714 — fn name(&self) -> &'static str
+- model · function · L715-L717 — fn model(&self) -> String
+- available_models_display · function · L718-L720 — fn available_models_display(&self) -> Vec<String>
+- fork · function · L721-L723 — fn fork(&self) -> std::sync::Arc<dyn Provider>
+- test_on_auth_changed_hot_initializes_cursor_and_marks_routes_available · function · L768-L811 — fn test_on_auth_changed_hot_initializes_cursor_and_marks_routes_available()

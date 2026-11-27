@@ -1,0 +1,81 @@
+# crates/jcode-import-core/src/lib.rs
+
+- repo_ranking · module · L10-L10 — pub mod repo_ranking;
+- ImportCoreResult · type · L12-L12 — pub type ImportCoreResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+- truncate_str · function · L20-L29 — fn truncate_str(s: &str, max_bytes: usize) -> &str
+- SessionIndexEntry · struct · L34-L55 — pub struct SessionIndexEntry
+- SessionsIndex · struct · L59-L62 — pub struct SessionsIndex
+- ClaudeCodeSessionInfo · struct · L66-L75 — pub struct ClaudeCodeSessionInfo
+- ClaudeCodeEntry · struct · L80-L92 — pub struct ClaudeCodeEntry
+- ClaudeCodeMessage · struct · L97-L103 — pub struct ClaudeCodeMessage
+- ClaudeCodeContent · enum · L108-L113 — pub enum ClaudeCodeContent
+- ClaudeCodeContentBlock · enum · L118-L149 — pub enum ClaudeCodeContentBlock
+- deserialize_tool_result_content · function · L160-L166 — fn deserialize_tool_result_content<'de, D>(deserializer: D) -> Result<String, D::Error>
+- tool_result_content_to_text · function · L170-L205 — fn tool_result_content_to_text(value: &serde_json::Value) -> String
+- parse_rfc3339_string · function · L207-L211 — pub fn parse_rfc3339_string(value: Option<&str>) -> Option<DateTime<Utc>>
+- clean_optional_text · function · L213-L222 — pub fn clean_optional_text(value: Option<String>) -> Option<String>
+- resolve_claude_session_path · function · L224-L237 — pub fn resolve_claude_session_path(
+- claude_code_session_info_from_index · function · L239-L258 — pub fn claude_code_session_info_from_index(
+- claude_text_from_content · function · L260-L286 — pub fn claude_text_from_content(content: &ClaudeCodeContent) -> Option<String>
+- ordered_claude_code_message_entries · function · L288-L375 — pub fn ordered_claude_code_message_entries(entries: &[ClaudeCodeEntry]) -> Vec<&ClaudeCodeEntry>
+- collect_files_recursive · function · L377-L401 — pub fn collect_files_recursive(root: &Path, extension: &str) -> Vec<PathBuf>
+- walk · function · L378-L395 — fn walk(dir: &Path, extension: &str, out: &mut Vec<PathBuf>)
+- collect_recent_files_recursive · function · L403-L452 — pub fn collect_recent_files_recursive(root: &Path, extension: &str, limit: usize) -> Vec<PathBuf>
+- modified_sort_key · function · L404-L411 — fn modified_sort_key(path: &Path) -> u64
+- walk · function · L413-L441 — fn walk(
+- parse_rfc3339_json · function · L454-L459 — pub fn parse_rfc3339_json(value: Option<&serde_json::Value>) -> Option<DateTime<Utc>>
+- extract_external_text_from_json · function · L461-L502 — pub fn extract_external_text_from_json(value: &serde_json::Value, include_tools: bool) -> String
+- visit · function · L462-L498 — fn visit(value: &serde_json::Value, include_tools: bool, out: &mut Vec<String>)
+- extract_opencode_part_text · function · L511-L566 — pub fn extract_opencode_part_text(
+- file_modified_datetime · function · L568-L573 — pub fn file_modified_datetime(path: &Path) -> Option<DateTime<Utc>>
+- ExternalMessageRecord · struct · L576-L581 — pub struct ExternalMessageRecord
+- ExternalSessionRecord · struct · L584-L596 — pub struct ExternalSessionRecord
+- load_claude_external_messages · function · L598-L641 — pub fn load_claude_external_messages(
+- load_codex_external_session · function · L643-L732 — pub fn load_codex_external_session(
+- load_pi_external_session · function · L734-L824 — pub fn load_pi_external_session(
+- load_opencode_external_session · function · L826-L932 — pub fn load_opencode_external_session(
+- cursor_session_id_from_path · function · L940-L953 — pub fn cursor_session_id_from_path(path: &Path) -> String
+- looks_like_uuid · function · L955-L965 — fn looks_like_uuid(s: &str) -> bool
+- is_cursor_subagent_transcript · function · L972-L978 — pub fn is_cursor_subagent_transcript(path: &Path) -> bool
+- cursor_cwd_from_project_dir · function · L986-L1009 — pub fn cursor_cwd_from_project_dir(project_name: &str) -> Option<String>
+- cursor_cwd_from_transcript_path · function · L1013-L1024 — pub fn cursor_cwd_from_transcript_path(path: &Path) -> Option<String>
+- load_cursor_external_session · function · L1033-L1102 — pub fn load_cursor_external_session(
+- truncate_title_text · function · L1104-L1117 — pub fn truncate_title_text(text: &str, max_chars: usize) -> String
+- extract_text_from_json_value · function · L1119-L1156 — pub fn extract_text_from_json_value(value: &serde_json::Value) -> String
+- visit · function · L1120-L1151 — fn visit(value: &serde_json::Value, out: &mut Vec<String>)
+- truncate_title · function · L1158-L1171 — pub fn truncate_title(s: &str) -> String
+- MAX_CHARS · constant · L1160-L1160 — const MAX_CHARS: usize = 80;
+- codex_title_candidate · function · L1173-L1186 — pub fn codex_title_candidate(text: &str) -> Option<String>
+- claude_title_candidate · function · L1196-L1224 — pub fn claude_title_candidate(text: &str) -> Option<String>
+- WRAPPER_PREFIXES · constant · L1201-L1208 — const WRAPPER_PREFIXES: [&str; 6] = [
+- imported_claude_code_session_id · function · L1226-L1228 — pub fn imported_claude_code_session_id(session_id: &str) -> String
+- imported_codex_session_id · function · L1230-L1232 — pub fn imported_codex_session_id(session_id: &str) -> String
+- imported_opencode_session_id · function · L1234-L1236 — pub fn imported_opencode_session_id(session_id: &str) -> String
+- imported_pi_session_id · function · L1238-L1243 — pub fn imported_pi_session_id(session_path: &str) -> String
+- imported_cursor_session_id · function · L1245-L1247 — pub fn imported_cursor_session_id(session_id: &str) -> String
+- tests · module · L1250-L1645 — mod tests
+- clean_optional_text_trims_and_drops_empty · function · L1254-L1261 — fn clean_optional_text_trims_and_drops_empty()
+- cursor_session_id_from_path_uses_uuid_stem · function · L1264-L1278 — fn cursor_session_id_from_path_uses_uuid_stem()
+- cursor_cwd_decodes_project_dir_with_hyphenated_segment · function · L1281-L1293 — fn cursor_cwd_decodes_project_dir_with_hyphenated_segment()
+- cursor_cwd_from_transcript_path_walks_to_project_dir · function · L1296-L1302 — fn cursor_cwd_from_transcript_path_walks_to_project_dir()
+- cursor_subagent_transcripts_are_detected · function · L1305-L1313 — fn cursor_subagent_transcripts_are_detected()
+- load_cursor_external_session_skips_subagent_transcripts · function · L1316-L1343 — fn load_cursor_external_session_skips_subagent_transcripts()
+- load_cursor_external_session_parses_content_blocks · function · L1346-L1382 — fn load_cursor_external_session_parses_content_blocks()
+- claude_text_from_blocks_joins_textual_content · function · L1385-L1405 — fn claude_text_from_blocks_joins_textual_content()
+- ordered_claude_entries_follow_parent_chain · function · L1408-L1425 — fn ordered_claude_entries_follow_parent_chain()
+- tool_result_content_accepts_array_blocks · function · L1428-L1444 — fn tool_result_content_accepts_array_blocks()
+- tool_result_content_accepts_string · function · L1447-L1457 — fn tool_result_content_accepts_string()
+- ordered_claude_entries_sort_broken_chain_roots_by_timestamp · function · L1460-L1483 — fn ordered_claude_entries_sort_broken_chain_roots_by_timestamp()
+- claude_title_candidate_skips_command_wrappers · function · L1486-L1506 — fn claude_title_candidate_skips_command_wrappers()
+- imported_pi_id_is_stable_and_prefixed · function · L1509-L1515 — fn imported_pi_id_is_stable_and_prefixed()
+- collect_recent_files_returns_empty_for_zero_limit · function · L1518-L1520 — fn collect_recent_files_returns_empty_for_zero_limit()
+- extract_external_text_respects_include_tools · function · L1523-L1533 — fn extract_external_text_respects_include_tools()
+- extract_text_from_json_collects_nested_text · function · L1536-L1548 — fn extract_text_from_json_collects_nested_text()
+- codex_title_candidate_filters_environment_noise · function · L1551-L1563 — fn codex_title_candidate_filters_environment_noise()
+- tool_result_block · function · L1565-L1572 — fn tool_result_block(line: &str) -> ClaudeCodeContentBlock
+- tool_result_content_accepts_plain_string · function · L1575-L1581 — fn tool_result_content_accepts_plain_string()
+- tool_result_content_accepts_array_text_blocks · function · L1584-L1594 — fn tool_result_content_accepts_array_text_blocks()
+- tool_result_image_block_becomes_placeholder_not_base64 · function · L1597-L1614 — fn tool_result_image_block_becomes_placeholder_not_base64()
+- tool_result_mixed_text_and_image_blocks · function · L1617-L1625 — fn tool_result_mixed_text_and_image_blocks()
+- tool_result_null_content_keeps_entry_alive · function · L1628-L1635 — fn tool_result_null_content_keeps_entry_alive()
+- tool_result_missing_content_defaults_to_empty · function · L1638-L1644 — fn tool_result_missing_content_defaults_to_empty()

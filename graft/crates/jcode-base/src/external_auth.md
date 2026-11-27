@@ -1,0 +1,59 @@
+# crates/jcode-base/src/external_auth.rs
+
+- can_prompt_for_external_auth · function · L15-L19 — pub fn can_prompt_for_external_auth() -> bool
+- external_auth_blocked_message · function · L21-L34 — pub fn external_auth_blocked_message(
+- prompt_to_trust_external_auth · function · L36-L59 — pub fn prompt_to_trust_external_auth(
+- ExternalAuthReviewAction · enum · L62-L72 — enum ExternalAuthReviewAction
+- ExternalAuthReviewCandidate · struct · L75-L80 — pub struct ExternalAuthReviewCandidate
+- provider_summary · function · L85-L87 — pub fn provider_summary(&self) -> &str
+- source_name · function · L89-L91 — pub fn source_name(&self) -> &str
+- provider_ids · function · L96-L101 — pub fn provider_ids(&self) -> Vec<&'static str>
+- path · function · L104-L106 — pub fn path(&self) -> &std::path::Path
+- fixture · function · L112-L119 — pub fn fixture(provider_summary: impl Into<String>, source_name: impl Into<String>) -> Self
+- telemetry_auth_labels · function · L131-L149 — pub fn telemetry_auth_labels(&self) -> Vec<(&'static str, &'static str)>
+- METHOD · constant · L132-L132 — const METHOD: &str = "import";
+- telemetry_provider_id_for_label · function · L155-L157 — fn telemetry_provider_id_for_label(label: &str) -> Option<&'static str>
+- provider_id_for_label · function · L159-L170 — fn provider_id_for_label(label: &str) -> Option<&'static str>
+- ExternalAuthAutoImportOutcome · struct · L173-L181 — pub struct ExternalAuthAutoImportOutcome
+- preferred_activation_provider · function · L188-L203 — pub fn preferred_activation_provider(&self) -> Option<&'static str>
+- ORDER · constant · L189-L197 — const ORDER: &[&str] = &[
+- render_markdown · function · L205-L251 — pub fn render_markdown(&self) -> String
+- pending_external_auth_review_candidates · function · L256-L261 — pub fn pending_external_auth_review_candidates() -> Result<Vec<ExternalAuthReviewCandidate>>
+- detected_external_auth_review_candidates · function · L268-L358 — pub fn detected_external_auth_review_candidates() -> Result<Vec<ExternalAuthReviewCandidate>>
+- parse_external_auth_review_selection · function · L360-L394 — pub fn parse_external_auth_review_selection(input: &str, count: usize) -> Result<Vec<usize>>
+- prompt_to_review_external_auth_sources · function · L396-L428 — fn prompt_to_review_external_auth_sources(
+- external_auth_review_candidate_trusted · function · L433-L454 — fn external_auth_review_candidate_trusted(candidate: &ExternalAuthReviewCandidate) -> bool
+- approve_external_auth_review_candidate · function · L456-L494 — fn approve_external_auth_review_candidate(
+- revoke_external_auth_review_candidate · function · L496-L541 — fn revoke_external_auth_review_candidate(candidate: &ExternalAuthReviewCandidate) -> Result<()>
+- token_freshness_note · function · L546-L553 — fn token_freshness_note(expires_at_ms: i64) -> String
+- validate_claude_import · function · L563-L572 — async fn validate_claude_import() -> Result<String>
+- validate_openai_import · function · L574-L589 — async fn validate_openai_import() -> Result<String>
+- validate_gemini_import · function · L591-L597 — async fn validate_gemini_import() -> Result<String>
+- validate_antigravity_import · function · L599-L605 — async fn validate_antigravity_import() -> Result<String>
+- validate_copilot_import · function · L607-L612 — async fn validate_copilot_import() -> Result<String>
+- validate_cursor_import · function · L614-L625 — async fn validate_cursor_import() -> Result<String>
+- validate_openrouter_like_import · function · L627-L634 — fn validate_openrouter_like_import() -> Result<String>
+- validate_shared_external_import · function · L636-L656 — async fn validate_shared_external_import(
+- validate_external_auth_review_candidate · function · L658-L672 — async fn validate_external_auth_review_candidate(
+- maybe_run_external_auth_auto_import_flow · function · L674-L691 — pub async fn maybe_run_external_auth_auto_import_flow() -> Result<Option<usize>>
+- format_external_auth_review_candidates_markdown · function · L693-L709 — pub fn format_external_auth_review_candidates_markdown(
+- run_external_auth_auto_import_candidates · function · L711-L754 — pub async fn run_external_auth_auto_import_candidates(
+- provider_connected_in_jcode · function · L759-L771 — pub fn provider_connected_in_jcode(status: &auth::AuthStatus, provider_id: &str) -> bool
+- run_external_auth_import_candidates_preserving_existing · function · L779-L808 — pub async fn run_external_auth_import_candidates_preserving_existing(
+- rerun_safety_tests · module · L811-L901 — mod rerun_safety_tests
+- TempHome · struct · L814-L817 — struct TempHome
+- new · function · L820-L827 — fn new() -> Self
+- drop · function · L831-L838 — fn drop(&mut self)
+- gemini_path · function · L841-L845 — fn gemini_path() -> std::path::PathBuf
+- gemini_trusted · function · L847-L852 — fn gemini_trusted() -> bool
+- detected_candidates_include_trusted_sources_but_pending_does_not · function · L855-L870 — fn detected_candidates_include_trusted_sources_but_pending_does_not()
+- failed_reimport_keeps_trust_the_user_already_gave · function · L873-L886 — async fn failed_reimport_keeps_trust_the_user_already_gave()
+- failed_first_import_still_rolls_back_its_own_trust · function · L889-L900 — async fn failed_first_import_still_rolls_back_its_own_trust()
+- render_markdown_tests · module · L904-L1030 — mod render_markdown_tests
+- empty_outcome_reports_nothing_imported · function · L908-L918 — fn empty_outcome_reports_nothing_imported()
+- groups_imported_and_skipped_with_counts · function · L921-L947 — fn groups_imported_and_skipped_with_counts()
+- singular_wording_for_one_login · function · L950-L958 — fn singular_wording_for_one_login()
+- preferred_activation_provider_is_deterministic_for_multi_import · function · L961-L982 — fn preferred_activation_provider_is_deterministic_for_multi_import()
+- fixture_candidate_reports_import_auth_labels · function · L985-L993 — fn fixture_candidate_reports_import_auth_labels()
+- provider_ids_match_auth_status_ids · function · L996-L1013 — fn provider_ids_match_auth_status_ids()
+- existing_oauth_logins_block_import_but_api_keys_do_not · function · L1016-L1029 — fn existing_oauth_logins_block_import_but_api_keys_do_not()

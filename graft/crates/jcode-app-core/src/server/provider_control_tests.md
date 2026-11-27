@@ -1,0 +1,45 @@
+# crates/jcode-app-core/src/server/provider_control_tests.rs
+
+- recv_final_catalog_notification · function · L13-L37 — async fn recv_final_catalog_notification(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> String
+- account_invalidation · module · L40-L40 — mod account_invalidation;
+- compact_auth_catalog_activity_reports_changed_and_unchanged_in_two_lines · function · L43-L78 — fn compact_auth_catalog_activity_reports_changed_and_unchanged_in_two_lines()
+- AuthChangeMockState · struct · L81-L92 — struct AuthChangeMockState
+- AuthChangeMockProvider · struct · L94-L96 — struct AuthChangeMockProvider
+- PinnedAccountSwitchProvider · struct · L98-L100 — struct PinnedAccountSwitchProvider
+- complete · function · L104-L112 — async fn complete(
+- name · function · L114-L116 — fn name(&self) -> &str
+- model · function · L117-L119 — fn model(&self) -> String
+- set_route_selection · function · L120-L129 — fn set_route_selection(
+- oauth_account_label · function · L130-L136 — fn oauth_account_label(&self) -> Option<String>
+- active_resolved_credential · function · L137-L139 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- fork · function · L140-L144 — fn fork(&self) -> Arc<dyn Provider>
+- account_switch_rebinds_pinned_session_and_acknowledges_same_model_identity · function · L148-L222 — async fn account_switch_rebinds_pinned_session_and_acknowledges_same_model_identity()
+- account_switch_cross_provider_uses_target_oauth_catalog · function · L225-L245 — async fn account_switch_cross_provider_uses_target_oauth_catalog()
+- new · function · L248-L258 — fn new() -> Self
+- complete · function · L263-L281 — async fn complete(
+- name · function · L283-L285 — fn name(&self) -> &str
+- model · function · L287-L297 — fn model(&self) -> String
+- available_models_display · function · L299-L317 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L319-L321 — fn available_models_for_switching(&self) -> Vec<String>
+- set_model · function · L323-L336 — fn set_model(&self, model: &str) -> anyhow::Result<()>
+- model_routes · function · L338-L356 — fn model_routes(&self) -> Vec<ModelRoute>
+- on_auth_changed · function · L358-L374 — fn on_auth_changed(&self)
+- auth_model_refresh_pending · function · L376-L378 — fn auth_model_refresh_pending(&self) -> bool
+- fork · function · L380-L384 — fn fork(&self) -> Arc<dyn Provider>
+- lock_env · function · L389-L391 — fn lock_env() -> StdMutexGuard<'static, ()>
+- EnvGuard · struct · L393-L397 — struct EnvGuard
+- save · function · L409-L429 — fn save(keys: &[&'static str]) -> Self
+- drop · function · L433-L441 — fn drop(&mut self)
+- notify_auth_changed_emits_available_models_updated_after_provider_update · function · L445-L525 — async fn notify_auth_changed_emits_available_models_updated_after_provider_update()
+- notify_auth_changed_finishes_when_provider_work_finishes_without_debounce_tail · function · L528-L574 — async fn notify_auth_changed_finishes_when_provider_work_finishes_without_debounce_tail()
+- newer_auth_refresh_supersedes_older_final_completion_for_the_same_session · function · L577-L637 — async fn newer_auth_refresh_supersedes_older_final_completion_for_the_same_session()
+- notify_auth_changed_defers_busy_session_refresh_until_idle · function · L640-L698 — async fn notify_auth_changed_defers_busy_session_refresh_until_idle()
+- notify_auth_changed_with_azure_hint_applies_runtime_model_without_completion · function · L701-L799 — async fn notify_auth_changed_with_azure_hint_applies_runtime_model_without_completion()
+- cerebras_auth_hint_applies_openai_compatible_runtime_profile · function · L802-L854 — fn cerebras_auth_hint_applies_openai_compatible_runtime_profile()
+- notify_auth_changed_typed_cerebras_event_controls_user_visible_catalog_identity · function · L857-L935 — async fn notify_auth_changed_typed_cerebras_event_controls_user_visible_catalog_identity()
+- notify_auth_changed_switches_from_stale_model_to_matching_provider_route · function · L938-L1014 — async fn notify_auth_changed_switches_from_stale_model_to_matching_provider_route()
+- onboarding_auth_refresh_prefers_global_gpt_5_6_route_over_fable · function · L1017-L1080 — async fn onboarding_auth_refresh_prefers_global_gpt_5_6_route_over_fable()
+- notify_auth_changed_does_not_override_manual_model_selected_during_refresh · function · L1083-L1183 — async fn notify_auth_changed_does_not_override_manual_model_selected_during_refresh()
+- auth_selection · module · L1186-L1186 — mod auth_selection;
+- notify_auth_changed_switches_only_current_session_model · function · L1189-L1307 — async fn notify_auth_changed_switches_only_current_session_model()
+- model_catalog · module · L1310-L1310 — mod model_catalog;

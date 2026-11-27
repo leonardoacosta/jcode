@@ -1,0 +1,59 @@
+# crates/jcode-render-core/src/math.rs
+
+- MAX_PARSE_DEPTH · constant · L9-L9 — const MAX_PARSE_DEPTH: usize = 64;
+- Expr · enum · L12-L26 — enum Expr
+- MatrixDelimiters · enum · L29-L37 — enum MatrixDelimiters
+- render_inline_latex · function · L40-L48 — pub fn render_inline_latex(source: &str) -> String
+- render_display_latex · function · L51-L59 — pub fn render_display_latex(source: &str) -> Vec<String>
+- compact · function · L62-L105 — fn compact(&self) -> String
+- layout · function · L107-L170 — fn layout(&self) -> MathLayout
+- compact_group · function · L173-L183 — fn compact_group(expr: &Expr) -> String
+- superscript_or_group · function · L185-L187 — fn superscript_or_group(text: &str) -> String
+- subscript_or_group · function · L189-L191 — fn subscript_or_group(text: &str) -> String
+- map_script · function · L193-L257 — fn map_script(text: &str, superscript: bool) -> Option<String>
+- Parser · struct · L259-L262 — struct Parser<'a>
+- new · function · L265-L267 — fn new(source: &'a str) -> Self
+- parse · function · L269-L271 — fn parse(mut self) -> Expr
+- parse_sequence · function · L273-L308 — fn parse_sequence(&mut self, terminator: Option<char>, depth: usize) -> Expr
+- parse_atom · function · L310-L333 — fn parse_atom(&mut self, depth: usize) -> Expr
+- parse_argument · function · L335-L347 — fn parse_argument(&mut self, depth: usize) -> Expr
+- parse_command · function · L349-L427 — fn parse_command(&mut self, depth: usize) -> Expr
+- parse_environment · function · L429-L478 — fn parse_environment(&mut self, depth: usize) -> Expr
+- combining_accent · function · L480-L483 — fn combining_accent(&mut self, accent: char, depth: usize) -> Expr
+- parse_delimiter · function · L485-L506 — fn parse_delimiter(&mut self) -> String
+- parse_braced_raw · function · L508-L515 — fn parse_braced_raw(&mut self) -> String
+- take_until · function · L517-L527 — fn take_until(&mut self, terminator: char) -> String
+- take_balanced_group · function · L529-L548 — fn take_balanced_group(&mut self) -> String
+- take_bracketed_raw · function · L550-L572 — fn take_bracketed_raw(&mut self) -> String
+- skip_spaces · function · L574-L578 — fn skip_spaces(&mut self)
+- peek · function · L580-L582 — fn peek(&self) -> Option<char>
+- bump · function · L584-L588 — fn bump(&mut self) -> Option<char>
+- collapse_sequence · function · L591-L597 — fn collapse_sequence(mut items: Vec<Expr>) -> Expr
+- append_expr · function · L599-L608 — fn append_expr(existing: Option<Box<Expr>>, next: Expr) -> Expr
+- find_environment_end · function · L610-L638 — fn find_environment_end(source: &str, body_start: usize, name: &str) -> Option<(usize, usize)>
+- strip_leading_braced_group · function · L640-L659 — fn strip_leading_braced_group(source: &str) -> Option<&str>
+- split_matrix · function · L661-L721 — fn split_matrix(source: &str) -> Vec<Vec<&str>>
+- command_symbol · function · L723-L868 — fn command_symbol(command: &str) -> Option<String>
+- MathLayout · struct · L871-L874 — struct MathLayout
+- text · function · L877-L881 — fn text(text: impl Into<String>) -> Self
+- width · function · L883-L889 — fn width(&self) -> usize
+- horizontal · function · L891-L919 — fn horizontal(items: impl IntoIterator<Item = Self>) -> Self
+- fraction · function · L921-L932 — fn fraction(numerator: Self, denominator: Self) -> Self
+- scripts · function · L934-L965 — fn scripts(base: Self, superscript: Option<Self>, subscript: Option<Self>) -> Self
+- matrix · function · L967-L1008 — fn matrix(rows: &[Vec<Expr>], delimiters: MatrixDelimiters) -> Self
+- compact_pair · function · L1012-L1022 — fn compact_pair(self) -> (&'static str, &'static str)
+- glyphs · function · L1024-L1071 — fn glyphs(self, height: usize) -> (Vec<&'static str>, Vec<&'static str>)
+- center · function · L1074-L1079 — fn center(text: &str, width: usize) -> String
+- pad_right · function · L1081-L1083 — fn pad_right(text: &str, width: usize) -> String
+- tests · module · L1086-L1235 — mod tests
+- renders_common_inline_notation · function · L1090-L1101 — fn renders_common_inline_notation()
+- renders_fraction_as_display_layout · function · L1104-L1109 — fn renders_fraction_as_display_layout()
+- renders_matrix_with_tall_brackets · function · L1112-L1117 — fn renders_matrix_with_tall_brackets()
+- preserves_unknown_commands · function · L1120-L1122 — fn preserves_unknown_commands()
+- malformed_input_stays_visible_without_panicking · function · L1125-L1141 — fn malformed_input_stays_visible_without_panicking()
+- deeply_nested_input_is_bounded_and_does_not_overflow_the_stack · function · L1144-L1164 — fn deeply_nested_input_is_bounded_and_does_not_overflow_the_stack()
+- renders_braced_matrices_and_cases_with_their_distinct_delimiters · function · L1167-L1182 — fn renders_braced_matrices_and_cases_with_their_distinct_delimiters()
+- matrix_scanner_respects_nested_environments_escapes_and_spacing · function · L1185-L1204 — fn matrix_scanner_respects_nested_environments_escapes_and_spacing()
+- unmatched_environment_is_preserved_without_inventing_an_end_marker · function · L1207-L1210 — fn unmatched_environment_is_preserved_without_inventing_an_end_marker()
+- latexish_fuzz_corpus_never_panics_or_loses_all_visible_content · function · L1213-L1234 — fn latexish_fuzz_corpus_never_panics_or_loses_all_visible_content()
+- ALPHABET · constant · L1214-L1216 — const ALPHABET: &[char] = &[

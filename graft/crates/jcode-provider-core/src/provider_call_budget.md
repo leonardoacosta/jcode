@@ -1,0 +1,25 @@
+# crates/jcode-provider-core/src/provider_call_budget.rs
+
+- ProviderCallBudget · struct · L14-L17 — pub struct ProviderCallBudget
+- create · function · L20-L29 — pub fn create(directory: PathBuf, limit: u32) -> Result<Self>
+- open · function · L31-L38 — pub fn open(directory: PathBuf) -> Result<Self>
+- used · function · L40-L48 — pub fn used(&self) -> Result<u32>
+- acquire · function · L50-L68 — pub fn acquire(&self) -> Result<()>
+- Scope · struct · L72-L75 — struct Scope
+- current · function · L79-L81 — fn current() -> Option<Scope>
+- inherit · function · L85-L93 — pub fn inherit<F: Future>(future: F) -> impl Future<Output = F::Output>
+- spawn · function · L95-L101 — pub fn spawn<F>(future: F) -> tokio::task::JoinHandle<F::Output>
+- scope · function · L103-L111 — pub async fn scope<F: Future>(budget: Option<ProviderCallBudget>, future: F) -> F::Output
+- completion · function · L116-L130 — pub async fn completion<F, T>(future: F) -> Result<T>
+- record_call · function · L134-L137 — pub fn record_call() -> Result<()>
+- record_bounded_call · function · L139-L146 — pub(crate) fn record_bounded_call() -> Result<()>
+- reject_unmetered · function · L149-L157 — pub fn reject_unmetered(provider: &str) -> Result<()>
+- tests · module · L160-L304 — mod tests
+- directory · function · L163-L174 — fn directory() -> PathBuf
+- completion_retry_and_followup_share_nonrefundable_budget · function · L177-L216 — async fn completion_retry_and_followup_share_nonrefundable_budget()
+- inherited_future_has_bounded_inline_size · function · L219-L224 — fn inherited_future_has_bounded_inline_size()
+- plan_mode_scope_is_inherited_and_cleared · function · L227-L235 — async fn plan_mode_scope_is_inherited_and_cleared()
+- budget_child_process · function · L238-L244 — fn budget_child_process()
+- concurrent_processes_cannot_overspend_or_reset · function · L247-L268 — fn concurrent_processes_cannot_overspend_or_reset()
+- missing_or_corrupt_limit_fails_closed · function · L271-L277 — fn missing_or_corrupt_limit_fails_closed()
+- failed_or_cancelled_completion_does_not_refund · function · L280-L303 — async fn failed_or_cancelled_completion_does_not_refund()

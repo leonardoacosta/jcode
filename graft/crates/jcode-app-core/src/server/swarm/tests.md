@@ -1,0 +1,38 @@
+# crates/jcode-app-core/src/server/swarm/tests.rs
+
+- plan_item · function · L17-L28 — fn plan_item(id: &str, content: &str) -> PlanItem
+- truncate_detail_collapses_whitespace_and_ellipsizes · function · L31-L33 — fn truncate_detail_collapses_whitespace_and_ellipsizes()
+- summarize_plan_items_limits_output · function · L36-L47 — fn summarize_plan_items_limits_output()
+- parse_swarm_tasks_accepts_wrapped_json · function · L50-L58 — fn parse_swarm_tasks_accepts_wrapped_json()
+- parse_swarm_tasks_preserves_worker_prompt_without_injecting_reports · function · L61-L72 — fn parse_swarm_tasks_preserves_worker_prompt_without_injecting_reports()
+- swarm_member · function · L74-L105 — pub(super) fn swarm_member(
+- member_with_parent · function · L107-L111 — fn member_with_parent(session_id: &str, parent: Option<&str>) -> SwarmMember
+- idle_spawned_worker_reap_selects_only_finished_idle_spawned_agents · function · L114-L168 — fn idle_spawned_worker_reap_selects_only_finished_idle_spawned_agents()
+- idle_worker_reap_window_env_zero_disables · function · L171-L190 — fn idle_worker_reap_window_env_zero_disables()
+- status_broadcast_keeps_live_and_recently_terminal_members_only · function · L193-L212 — fn status_broadcast_keeps_live_and_recently_terminal_members_only()
+- swarm_depth_and_ancestry_follow_report_back_chain · function · L215-L238 — fn swarm_depth_and_ancestry_follow_report_back_chain()
+- swarm_ancestry_guards_against_cycles · function · L241-L248 — fn swarm_ancestry_guards_against_cycles()
+- broadcast_swarm_plan_with_previous_includes_newly_ready_ids · function · L251-L333 — async fn broadcast_swarm_plan_with_previous_includes_newly_ready_ids()
+- swarm_plan_broadcast_versions_can_invert_on_one_member_channel · function · L357-L437 — async fn swarm_plan_broadcast_versions_can_invert_on_one_member_channel()
+- swarm_status_immediate_broadcasts_preserve_order_on_one_member_channel · function · L443-L489 — async fn swarm_status_immediate_broadcasts_preserve_order_on_one_member_channel()
+- stale_participants_starve_live_members_of_plan_broadcasts · function · L498-L539 — async fn stale_participants_starve_live_members_of_plan_broadcasts()
+- remove_session_from_swarm_reassigns_to_non_headless_member · function · L542-L651 — async fn remove_session_from_swarm_reassigns_to_non_headless_member()
+- remove_session_reparents_children_to_live_grandparent · function · L654-L698 — async fn remove_session_reparents_children_to_live_grandparent()
+- remove_session_reparents_children_to_coordinator_when_no_grandparent · function · L701-L747 — async fn remove_session_reparents_children_to_coordinator_when_no_grandparent()
+- departing_sole_owner_keeps_its_workers_owned · function · L750-L791 — async fn departing_sole_owner_keeps_its_workers_owned()
+- owner_is_notified_once_of_idle_headless_workers_stopped_by_restart · function · L794-L868 — async fn owner_is_notified_once_of_idle_headless_workers_stopped_by_restart()
+- update_member_status_notifies_coordinator_when_headless_worker_returns_ready · function · L871-L912 — async fn update_member_status_notifies_coordinator_when_headless_worker_returns_ready()
+- member_elapsed_time_runs_only_while_active_and_freezes_afterward · function · L915-L981 — async fn member_elapsed_time_runs_only_while_active_and_freezes_afterward()
+- update_member_status_prefers_explicit_report_back_owner_over_coordinator · function · L984-L1042 — async fn update_member_status_prefers_explicit_report_back_owner_over_coordinator()
+- update_member_status_includes_completion_report_in_owner_notification · function · L1045-L1095 — async fn update_member_status_includes_completion_report_in_owner_notification()
+- update_member_status_skips_noop_broadcasts · function · L1098-L1144 — async fn update_member_status_skips_noop_broadcasts()
+- refresh_swarm_task_staleness_marks_running_tasks_stale_and_heartbeat_revives · function · L1147-L1231 — async fn refresh_swarm_task_staleness_marks_running_tasks_stale_and_heartbeat_revives()
+- member_status_is_dead_matches_terminal_non_success_states · function · L1234-L1241 — fn member_status_is_dead_matches_terminal_non_success_states()
+- running_plan_assigned_to · function · L1243-L1272 — fn running_plan_assigned_to(
+- salvage_requeues_dead_members_tasks_and_notifies_coordinator · function · L1275-L1325 — async fn salvage_requeues_dead_members_tasks_and_notifies_coordinator()
+- salvage_and_stranded_reclaim_wait_for_unsettled_predecessor · function · L1329-L1406 — async fn salvage_and_stranded_reclaim_wait_for_unsettled_predecessor()
+- salvage_fails_task_once_reclaim_cap_is_reached · function · L1409-L1440 — async fn salvage_fails_task_once_reclaim_cap_is_reached()
+- remove_session_from_swarm_salvages_running_assignments · function · L1443-L1476 — async fn remove_session_from_swarm_salvages_running_assignments()
+- staleness_sweep_salvages_tasks_of_vanished_assignee · function · L1479-L1519 — async fn staleness_sweep_salvages_tasks_of_vanished_assignee()
+- staleness_sweep_grants_grace_to_recently_crashed_member · function · L1522-L1558 — async fn staleness_sweep_grants_grace_to_recently_crashed_member()
+- update_member_status_notifies_owner_when_worker_crashes_mid_task · function · L1561-L1598 — async fn update_member_status_notifies_owner_when_worker_crashes_mid_task()

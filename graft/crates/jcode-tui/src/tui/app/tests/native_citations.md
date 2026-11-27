@@ -1,0 +1,4 @@
+# crates/jcode-tui/src/tui/app/tests/native_citations.rs
+
+- native_citation_suffix_correction_flushes_pacing_and_preserves_message_boundaries · function · L2-L80 — fn native_citation_suffix_correction_flushes_pacing_and_preserves_message_boundaries()
+- native_citation_suffix_correction_keeps_reasoning_prefix_and_ignores_stale_text · function · L83-L120 — fn native_citation_suffix_correction_keeps_reasoning_prefix_and_ignores_stale_text()

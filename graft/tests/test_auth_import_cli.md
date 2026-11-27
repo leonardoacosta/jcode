@@ -1,0 +1,16 @@
+# tests/test_auth_import_cli.py
+
+- envelope · function · L22-L25 — def envelope(provider='openai')
+- ImportCLI · class · L28-L175 — class ImportCLI(unittest.TestCase)
+- setUp · method · L29-L39 — def setUp(self)
+- command · method · L41-L42 — def command(self, provider='openai')
+- run_import · method · L44-L48 — def run_import(self, payload, provider='openai')
+- test_import_both_providers_is_private_and_acknowledges_only_status · method · L50-L59 — def test_import_both_providers_is_private_and_acknowledges_only_status(self)
+- test_existing_store_bytes_inode_and_mode_are_untouched · method · L61-L74 — def test_existing_store_bytes_inode_and_mode_are_untouched(self)
+- test_invalid_oversized_and_wrong_provider_make_no_store · method · L76-L80 — def test_invalid_oversized_and_wrong_provider_make_no_store(self)
+- test_unsupported_and_auto_provider_are_refused_before_stdin · method · L82-L93 — def test_unsupported_and_auto_provider_are_refused_before_stdin(self)
+- test_incremental_pipe_reads_wait_for_eof_then_import · method · L95-L110 — def test_incremental_pipe_reads_wait_for_eof_then_import(self)
+- test_simultaneous_imports_have_exactly_one_winner · method · L112-L128 — def test_simultaneous_imports_have_exactly_one_winner(self)
+- test_terminal_input_is_refused_without_prompting · method · L130-L140 — def test_terminal_input_is_refused_without_prompting(self)
+- test_invalid_arguments_and_help_do_not_modify_existing_credentials · method · L142-L161 — def test_invalid_arguments_and_help_do_not_modify_existing_credentials(self)
+- test_stalled_writer_times_out_without_runtime_shutdown_hang · method · L163-L175 — def test_stalled_writer_times_out_without_runtime_shutdown_hang(self)

@@ -1,0 +1,40 @@
+# crates/jcode-tui-workspace/src/color_support.rs
+
+- ColorCapability · enum · L8-L11 — pub enum ColorCapability
+- CAPABILITY · constant · L13-L13 — static CAPABILITY: OnceLock<ColorCapability> = OnceLock::new();
+- color_capability · function · L15-L21 — pub fn color_capability() -> ColorCapability
+- fragile_glyph_cache_terminal · function · L30-L50 — fn fragile_glyph_cache_terminal() -> bool
+- detect_color_capability · function · L52-L61 — fn detect_color_capability() -> ColorCapability
+- detect_raw_color_capability · function · L63-L103 — fn detect_raw_color_capability() -> ColorCapability
+- has_truecolor · function · L105-L107 — pub fn has_truecolor() -> bool
+- clear_buf · function · L109-L115 — pub fn clear_buf(area: Rect, buf: &mut Buffer)
+- rgb · function · L118-L124 — pub fn rgb(r: u8, g: u8, b: u8) -> Color
+- rgb_to_xterm256 · function · L129-L153 — fn rgb_to_xterm256(r: u8, g: u8, b: u8) -> u8
+- CUBE_VALUES · constant · L155-L155 — const CUBE_VALUES: [u8; 6] = [0, 95, 135, 175, 215, 255];
+- nearest_cube_components · function · L161-L179 — fn nearest_cube_components(v: u8) -> ([u8; 2], usize)
+- hue_scaled · function · L184-L200 — fn hue_scaled(r: u8, g: u8, b: u8) -> i32
+- hue_distance · function · L202-L205 — fn hue_distance(target_hue: i32, r: u8, g: u8, b: u8) -> i32
+- nearest_cube_index · function · L214-L242 — fn nearest_cube_index(r: u8, g: u8, b: u8) -> u16
+- cube_index_to_rgb · function · L244-L249 — fn cube_index_to_rgb(idx: u16) -> (u8, u8, u8)
+- nearest_gray_index · function · L251-L259 — fn nearest_gray_index(v: u8) -> u8
+- gray_index_to_value · function · L261-L263 — fn gray_index_to_value(idx: u8) -> u8
+- color_distance · function · L265-L271 — fn color_distance(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) -> u32
+- indexed_to_rgb · function · L273-L299 — pub fn indexed_to_rgb(idx: u8) -> (u8, u8, u8)
+- tests · module · L302-L409 — mod tests
+- test_pure_black · function · L306-L309 — fn test_pure_black()
+- test_pure_white · function · L312-L315 — fn test_pure_white()
+- test_mid_gray · function · L318-L326 — fn test_mid_gray()
+- test_dim_gray · function · L329-L336 — fn test_dim_gray()
+- test_red · function · L339-L342 — fn test_red()
+- test_green · function · L345-L348 — fn test_green()
+- test_blue · function · L351-L354 — fn test_blue()
+- test_rgb_truecolor · function · L357-L365 — fn test_rgb_truecolor()
+- test_near_colors_are_stable · function · L368-L372 — fn test_near_colors_are_stable()
+- test_near_neutral_dark_blue_quantizes_to_gray_not_navy · function · L381-L390 — fn test_near_neutral_dark_blue_quantizes_to_gray_not_navy()
+- test_light_blue_tint_keeps_blue_cast_on_tie · function · L399-L408 — fn test_light_blue_tint_keeps_blue_cast_on_tie()
+- fragile_glyph_tests · module · L412-L482 — mod fragile_glyph_tests
+- ENV_LOCK · constant · L416-L416 — static ENV_LOCK: Mutex<()> = Mutex::new(());
+- temp_env_scope · function · L418-L437 — fn temp_env_scope(vars: &[(&str, Option<&str>)], body: impl FnOnce())
+- override_off_forces_truecolor · function · L440-L448 — fn override_off_forces_truecolor()
+- override_on_forces_quantize · function · L451-L455 — fn override_on_forces_quantize()
+- detects_vscode_and_apple_terminal · function · L459-L481 — fn detects_vscode_and_apple_terminal()

@@ -1,0 +1,31 @@
+# crates/jcode-base/src/google_calendar.rs
+
+- API_BASE · constant · L11-L11 — const API_BASE: &str = "https://www.googleapis.com/calendar/v3";
+- CalendarClient · struct · L13-L15 — pub struct CalendarClient
+- default · function · L18-L20 — fn default() -> Self
+- EventTime · enum · L26-L36 — pub enum EventTime
+- to_json · function · L39-L48 — pub fn to_json(&self) -> Value
+- ParsedTime · enum · L53-L58 — pub enum ParsedTime
+- parse_time · function · L62-L87 — pub fn parse_time(input: &str) -> Result<ParsedTime>
+- new · function · L90-L94 — pub fn new() -> Self
+- is_configured · function · L96-L98 — pub fn is_configured(&self) -> bool
+- not_configured_message · function · L100-L118 — pub fn not_configured_message(&self) -> String
+- request · function · L120-L166 — async fn request(
+- list_calendars · function · L168-L178 — pub async fn list_calendars(&self) -> Result<Vec<Value>>
+- calendar_time_zone · function · L181-L194 — pub async fn calendar_time_zone(&self, calendar_id: &str) -> Result<String>
+- list_events · function · L196-L227 — pub async fn list_events(
+- get_event · function · L229-L237 — pub async fn get_event(&self, calendar_id: &str, event_id: &str) -> Result<Value>
+- create_event · function · L239-L252 — pub async fn create_event(
+- quick_add · function · L254-L265 — pub async fn quick_add(&self, calendar_id: &str, text: &str) -> Result<Value>
+- patch_event · function · L267-L281 — pub async fn patch_event(
+- delete_event · function · L283-L297 — pub async fn delete_event(
+- enc · function · L300-L302 — fn enc(value: &str) -> String
+- items · function · L304-L309 — fn items(resp: Value) -> Vec<Value>
+- truncate · function · L311-L319 — fn truncate(text: &str, max: usize) -> String
+- time_field · function · L321-L332 — fn time_field(event: &Value, key: &str) -> String
+- format_event · function · L335-L401 — pub fn format_event(event: &Value) -> String
+- format_calendar · function · L403-L417 — pub fn format_calendar(entry: &Value) -> String
+- tests · module · L420-L488 — mod tests
+- parse_time_classifies_inputs · function · L424-L446 — fn parse_time_classifies_inputs()
+- event_time_json_shapes · function · L449-L462 — fn event_time_json_shapes()
+- format_event_includes_key_fields · function · L465-L487 — fn format_event_includes_key_fields()

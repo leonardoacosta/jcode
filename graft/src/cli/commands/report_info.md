@@ -1,0 +1,42 @@
+# src/cli/commands/report_info.rs
+
+- AUTH_DOCTOR_VALIDATION_TIMEOUT_SECS · constant · L7-L7 — const AUTH_DOCTOR_VALIDATION_TIMEOUT_SECS: u64 = 120;
+- AuthStatusProviderReport · struct · L10-L24 — struct AuthStatusProviderReport
+- AuthStatusReport · struct · L27-L31 — struct AuthStatusReport
+- JevSupervisionReport · struct · L34-L41 — struct JevSupervisionReport
+- AuthDoctorProviderReport · struct · L44-L65 — struct AuthDoctorProviderReport
+- AuthDoctorRefreshDetail · struct · L68-L72 — struct AuthDoctorRefreshDetail
+- AuthDoctorValidationDetail · struct · L75-L82 — struct AuthDoctorValidationDetail
+- AuthDoctorReport · struct · L85-L90 — struct AuthDoctorReport
+- ProviderListEntry · struct · L93-L100 — pub(super) struct ProviderListEntry
+- ProviderListReport · struct · L103-L105 — struct ProviderListReport
+- ProviderCurrentReport · struct · L108-L113 — struct ProviderCurrentReport
+- VersionReport · struct · L116-L131 — pub(super) struct VersionReport
+- UsageLimitReport · struct · L134-L139 — struct UsageLimitReport
+- UsageBankedResetReport · struct · L144-L156 — struct UsageBankedResetReport
+- UsageProviderReport · struct · L159-L166 — struct UsageProviderReport
+- UsageReport · struct · L169-L171 — struct UsageReport
+- run_auth_status_command · function · L173-L193 — pub(super) fn run_auth_status_command(emit_json: bool) -> Result<()>
+- format_supervision_route · function · L195-L206 — fn format_supervision_route(route: &JevSupervisionReport) -> String
+- build_auth_status_report · function · L208-L263 — fn build_auth_status_report() -> AuthStatusReport
+- run_auth_doctor_command · function · L265-L320 — pub(super) async fn run_auth_doctor_command(
+- build_auth_doctor_report · function · L322-L405 — async fn build_auth_doctor_report(
+- run_auth_doctor_validation · function · L407-L423 — async fn run_auth_doctor_validation(
+- auth_doctor_validation_detail · function · L425-L436 — fn auth_doctor_validation_detail(
+- run_provider_list_command · function · L438-L455 — pub(super) fn run_provider_list_command(emit_json: bool) -> Result<()>
+- run_provider_current_command · function · L457-L482 — pub(super) async fn run_provider_current_command(
+- run_version_command · function · L484-L542 — pub(super) async fn run_version_command(emit_json: bool) -> Result<()>
+- run_usage_command · function · L544-L621 — pub(super) async fn run_usage_command(emit_json: bool) -> Result<()>
+- select_auth_doctor_providers · function · L623-L647 — fn select_auth_doctor_providers(
+- usage_provider_report · function · L649-L669 — fn usage_provider_report(provider: &crate::usage::ProviderUsage) -> UsageProviderReport
+- banked_reset_report · function · L671-L707 — fn banked_reset_report(provider: &crate::usage::ProviderUsage) -> Option<UsageBankedResetReport>
+- list_cli_providers · function · L709-L769 — pub(super) fn list_cli_providers() -> Vec<ProviderListEntry>
+- auth_state_label · function · L771-L777 — fn auth_state_label(state: crate::auth::AuthState) -> &'static str
+- tests · module · L780-L1069 — mod tests
+- auth_status_supervision_route_is_local_explicit_and_secret_free · function · L784-L837 — fn auth_status_supervision_route_is_local_explicit_and_secret_free()
+- supervision_plain_status_keeps_configured_model_on_one_row · function · L840-L854 — fn supervision_plain_status_keeps_configured_model_on_one_row()
+- usage_json_preserves_confirmed_zero_and_distinguishes_unknown_resets · function · L857-L918 — fn usage_json_preserves_confirmed_zero_and_distinguishes_unknown_resets()
+- provider_list_includes_novita_api_key_login · function · L921-L931 — fn provider_list_includes_novita_api_key_login()
+- provider_status · function · L933-L942 — fn provider_status<'a>(
+- provider_doctor · function · L944-L953 — fn provider_doctor<'a>(
+- cli_auth_status_doctor_and_login_lifecycle_uses_fresh_sandbox · function · L956-L1068 — async fn cli_auth_status_doctor_and_login_lifecycle_uses_fresh_sandbox()

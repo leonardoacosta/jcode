@@ -1,0 +1,84 @@
+# crates/jcode-app-core/src/server/util.rs
+
+- EMBEDDING_IDLE_UNLOAD_DEFAULT_SECS · constant · L11-L11 — const EMBEDDING_IDLE_UNLOAD_DEFAULT_SECS: u64 = 60;
+- debug_control_allowed · function · L13-L32 — pub(crate) fn debug_control_allowed() -> bool
+- embedding_idle_unload_secs · function · L34-L40 — pub(crate) fn embedding_idle_unload_secs() -> u64
+- parse_embedding_idle_unload_secs · function · L42-L47 — fn parse_embedding_idle_unload_secs(value: Option<&str>) -> u64
+- embedding_idle_tests · module · L50-L60 — mod embedding_idle_tests
+- idle_unload_defaults_to_one_minute_and_accepts_positive_override · function · L54-L59 — fn idle_unload_defaults_to_one_minute_and_accepts_positive_override()
+- get_shared_mcp_pool · function · L62-L68 — pub(crate) async fn get_shared_mcp_pool(
+- reload_exec_target · module · L71-L71 — mod reload_exec_target;
+- MANAGED_CLOUD_LIVE_RELOAD_MARKER · constant · L79-L79 — pub const MANAGED_CLOUD_LIVE_RELOAD_MARKER: &str = "jcode-managed-cloud-live-reload-v1";
+- MANAGED_CLOUD_LAUNCHER · constant · L82-L82 — pub(crate) const MANAGED_CLOUD_LAUNCHER: &str = "/opt/jcode-cloud/jcode";
+- MANAGED_CLOUD_RELEASES · constant · L83-L83 — const MANAGED_CLOUD_RELEASES: &str = "/opt/jcode-cloud/releases/";
+- managed_cloud_reload_target · function · L85-L91 — fn managed_cloud_reload_target(running: Option<&Path>) -> Option<(PathBuf, &'static str)>
+- managed_cloud_reload_target_in · function · L93-L106 — fn managed_cloud_reload_target_in(
+- binary_mtime · function · L108-L110 — fn binary_mtime(path: &Path) -> Option<std::time::SystemTime>
+- newest_reload_candidate · function · L121-L135 — fn newest_reload_candidate(is_selfdev_session: bool) -> Option<(PathBuf, &'static str)>
+- pick_newest_candidate · function · L143-L169 — fn pick_newest_candidate(
+- ReloadTargetDecision · enum · L172-L176 — enum ReloadTargetDecision
+- guarded_reload_target · function · L181-L212 — fn guarded_reload_target(
+- canonicalize_or · function · L214-L216 — fn canonicalize_or(path: PathBuf) -> PathBuf
+- strip_deleted_suffix · function · L222-L228 — fn strip_deleted_suffix(path: PathBuf) -> PathBuf
+- DELETED_MARKER · constant · L223-L223 — const DELETED_MARKER: &str = " (deleted)";
+- running_server_binary · function · L239-L250 — pub(crate) fn running_server_binary() -> Option<PathBuf>
+- RUNNING · constant · L240-L240 — static RUNNING: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
+- resolve_launch_path · function · L253-L256 — fn resolve_launch_path(exe: PathBuf) -> PathBuf
+- managed_cloud_target_tests · module · L259-L302 — mod managed_cloud_target_tests
+- managed_daemon_reloads_onto_the_selected_release_even_if_older · function · L263-L286 — fn managed_daemon_reloads_onto_the_selected_release_even_if_older()
+- unmanaged_daemons_keep_channel_selection · function · L289-L301 — fn unmanaged_daemons_keep_channel_selection()
+- running_server_binary_tests · module · L305-L336 — mod running_server_binary_tests
+- launch_path_pinned_before_the_channel_link_moves · function · L310-L335 — fn launch_path_pinned_before_the_channel_link_moves()
+- git_common_dir_for · function · L338-L375 — pub(crate) fn git_common_dir_for(path: &Path) -> Option<PathBuf>
+- swarm_id_for_dir · function · L377-L389 — pub(crate) fn swarm_id_for_dir(dir: Option<PathBuf>) -> Option<String>
+- swarm_id_for_session · function · L397-L405 — pub(crate) fn swarm_id_for_session(session_id: &str) -> Option<String>
+- default_swarm_id_for_session · function · L407-L413 — pub(super) fn default_swarm_id_for_session(session_id: &str) -> Option<String>
+- swarm_identity_tests · module · L416-L439 — mod swarm_identity_tests
+- independent_root_sessions_have_distinct_swarm_ids · function · L420-L433 — fn independent_root_sessions_have_distinct_swarm_ids()
+- empty_session_cannot_own_a_swarm · function · L436-L438 — fn empty_session_cannot_own_a_swarm()
+- newer_binary_available · function · L455-L484 — fn newer_binary_available(
+- server_has_newer_binary · function · L486-L544 — pub(crate) fn server_has_newer_binary() -> bool
+- ServerIdentity · struct · L548-L559 — pub struct ServerIdentity
+- display_name · function · L563-L565 — pub fn display_name(&self) -> String
+- startup_headless_recovery_test_delay · function · L568-L572 — pub(crate) fn startup_headless_recovery_test_delay() -> Option<std::time::Duration>
+- newer_binary_tests · module · L575-L678 — mod newer_binary_tests
+- t · function · L580-L582 — fn t(secs: u64) -> SystemTime
+- reports_update_when_candidate_is_strictly_newer · function · L585-L592 — fn reports_update_when_candidate_is_strictly_newer()
+- ignores_candidate_that_is_not_newer · function · L595-L602 — fn ignores_candidate_that_is_not_newer()
+- never_reloads_into_self_even_if_paths_were_equal · function · L605-L613 — fn never_reloads_into_self_even_if_paths_were_equal()
+- suppresses_update_when_current_mtime_unavailable · function · L616-L625 — fn suppresses_update_when_current_mtime_unavailable()
+- suppresses_update_when_candidate_mtime_unavailable · function · L628-L637 — fn suppresses_update_when_candidate_mtime_unavailable()
+- reports_update_if_any_candidate_is_newer · function · L640-L650 — fn reports_update_if_any_candidate_is_newer()
+- newer_server_is_not_outdated_by_older_channel_binary · function · L653-L665 — fn newer_server_is_not_outdated_by_older_channel_binary()
+- equal_mtime_channel_binary_is_not_an_update · function · L668-L677 — fn equal_mtime_channel_binary_is_not_an_update()
+- reload_target_tests · module · L681-L796 — mod reload_target_tests
+- t · function · L686-L688 — fn t(secs: u64) -> SystemTime
+- candidate · function · L690-L692 — fn candidate(path: &str) -> (PathBuf, &'static str)
+- same_binary_is_always_used · function · L695-L707 — fn same_binary_is_always_used()
+- newer_candidate_is_used · function · L710-L726 — fn newer_candidate_is_used()
+- equal_mtime_candidate_is_used · function · L729-L740 — fn equal_mtime_candidate_is_used()
+- strictly_older_candidate_is_blocked_and_uses_current_exe · function · L743-L761 — fn strictly_older_candidate_is_blocked_and_uses_current_exe()
+- unreadable_candidate_mtime_is_treated_as_downgrade · function · L764-L777 — fn unreadable_candidate_mtime_is_treated_as_downgrade()
+- downgrade_without_current_exe_falls_back_to_candidate · function · L780-L795 — fn downgrade_without_current_exe_falls_back_to_candidate()
+- pick_newest_candidate_tests · module · L799-L889 — mod pick_newest_candidate_tests
+- t · function · L804-L806 — fn t(secs: u64) -> SystemTime
+- entry · function · L808-L815 — fn entry(
+- other_flavor_wins_when_strictly_newer · function · L818-L833 — fn other_flavor_wins_when_strictly_newer()
+- own_flavor_wins_on_tie · function · L836-L845 — fn own_flavor_wins_on_tie()
+- own_flavor_wins_when_strictly_newer · function · L848-L859 — fn own_flavor_wins_when_strictly_newer()
+- unknown_other_mtime_never_displaces_preferred · function · L862-L871 — fn unknown_other_mtime_never_displaces_preferred()
+- duplicate_canonical_paths_collapse · function · L874-L883 — fn duplicate_canonical_paths_collapse()
+- empty_is_none · function · L886-L888 — fn empty_is_none()
+- newest_reload_candidate_integration_tests · module · L892-L1163 — mod newest_reload_candidate_integration_tests
+- install_versioned_binary · function · L903-L918 — fn install_versioned_binary(version: &str, mtime: SystemTime) -> std::path::PathBuf
+- candidate_version_for · function · L920-L927 — fn candidate_version_for(is_selfdev: bool) -> Option<String>
+- selfdev_daemon_reloads_into_fresh_release_after_update · function · L930-L968 — fn selfdev_daemon_reloads_into_fresh_release_after_update()
+- selfdev_pin_is_preserved_when_it_is_the_freshest_build · function · L971-L999 — fn selfdev_pin_is_preserved_when_it_is_the_freshest_build()
+- daemon_reports_update · function · L1007-L1026 — fn daemon_reports_update(running: &Path, running_mtime: SystemTime) -> bool
+- normal_user_daemon_detects_and_targets_update_after_update · function · L1039-L1080 — fn normal_user_daemon_detects_and_targets_update_after_update()
+- install_release_style_binary · function · L1086-L1113 — fn install_release_style_binary(
+- freshly_updated_release_daemon_reports_no_phantom_update · function · L1124-L1162 — fn freshly_updated_release_daemon_reports_no_phantom_update()
+- deleted_suffix_tests · module · L1166-L1191 — mod deleted_suffix_tests
+- strips_linux_deleted_marker · function · L1171-L1177 — fn strips_linux_deleted_marker()
+- leaves_normal_paths_untouched · function · L1180-L1183 — fn leaves_normal_paths_untouched()
+- only_strips_trailing_marker · function · L1186-L1190 — fn only_strips_trailing_marker()

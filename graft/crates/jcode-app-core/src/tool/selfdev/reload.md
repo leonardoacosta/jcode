@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/tool/selfdev/reload.rs
+
+- sanitize_session_id · function · L5-L16 — fn sanitize_session_id(session_id: &str) -> String
+- path_for_session · function · L18-L21 — pub fn path_for_session(session_id: &str) -> Result<std::path::PathBuf>
+- legacy_path · function · L23-L25 — fn legacy_path() -> Result<std::path::PathBuf>
+- save · function · L27-L31 — pub fn save(&self) -> Result<()>
+- load · function · L33-L41 — pub fn load() -> Result<Option<Self>>
+- peek_for_session · function · L44-L62 — pub fn peek_for_session(session_id: &str) -> Result<Option<Self>>
+- load_for_session · function · L65-L85 — pub fn load_for_session(session_id: &str) -> Result<Option<Self>>
+- task_info_suffix · function · L87-L92 — fn task_info_suffix(&self) -> String
+- reconnect_notice_line · function · L94-L96 — pub fn reconnect_notice_line(&self) -> String
+- continuation_message · function · L98-L118 — pub fn continuation_message(
+- interrupted_session_continuation_message · function · L120-L122 — pub fn interrupted_session_continuation_message() -> String
+- recovery_continuation_message · function · L124-L132 — pub fn recovery_continuation_message(
+- recovery_directive · function · L134-L156 — pub fn recovery_directive(
+- recovery_directive_for_session · function · L158-L174 — pub fn recovery_directive_for_session(
+- log_recovery_outcome · function · L176-L181 — pub fn log_recovery_outcome(flow: &str, session_id: &str, outcome: &str, detail: &str)
+- persisted_background_tasks_note · function · L184-L248 — pub fn persisted_background_tasks_note(session_id: &str) -> String
+- session_status_is_finished · function · L252-L260 — fn session_status_is_finished(status: &crate::session::SessionStatus) -> bool
+- resolve_selfdev_reload_repo_dir · function · L262-L266 — pub(super) fn resolve_selfdev_reload_repo_dir(
+- resolve_selfdev_reload_repo_dir_from · function · L272-L279 — pub(super) fn resolve_selfdev_reload_repo_dir_from(
+- do_reload · function · L282-L492 — pub(super) async fn do_reload(
+- finished_member_tests · module · L496-L592 — mod finished_member_tests
+- reload_note_skips_awaits_whose_members_all_finished · function · L501-L572 — fn reload_note_skips_awaits_whose_members_all_finished()
+- closed_crashed_and_errored_members_are_finished · function · L575-L591 — fn closed_crashed_and_errored_members_are_finished()

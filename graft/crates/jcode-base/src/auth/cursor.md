@@ -1,0 +1,52 @@
+# crates/jcode-base/src/auth/cursor.rs
+
+- CURSOR_API_BASE · constant · L10-L10 — const CURSOR_API_BASE: &str = "https://api2.cursor.sh";
+- CURSOR_DIRECT_CLIENT_VERSION_DEFAULT · constant · L15-L15 — const CURSOR_DIRECT_CLIENT_VERSION_DEFAULT: &str = "3.8.24";
+- CURSOR_OAUTH_CLIENT_ID · constant · L16-L16 — const CURSOR_OAUTH_CLIENT_ID: &str = "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB";
+- CURSOR_AUTH_FILE_SOURCE_ID · constant · L17-L17 — pub const CURSOR_AUTH_FILE_SOURCE_ID: &str = "cursor_auth_json";
+- CURSOR_VSCDB_SOURCE_ID · constant · L18-L18 — pub const CURSOR_VSCDB_SOURCE_ID: &str = "cursor_vscdb";
+- ExternalCursorAuthSource · enum · L21-L24 — pub enum ExternalCursorAuthSource
+- source_id · function · L27-L32 — pub fn source_id(self) -> &'static str
+- display_name · function · L34-L39 — pub fn display_name(self) -> &'static str
+- path · function · L41-L46 — pub fn path(self) -> Result<PathBuf>
+- CursorDirectTokens · struct · L50-L54 — pub struct CursorDirectTokens
+- CursorAuthFileData · struct · L58-L61 — struct CursorAuthFileData
+- CursorRefreshResponse · struct · L64-L70 — struct CursorRefreshResponse
+- CursorApiKeyExchangeResponse · struct · L74-L78 — struct CursorApiKeyExchangeResponse
+- JwtClaims · struct · L81-L83 — struct JwtClaims
+- CursorRefreshRequest · struct · L86-L90 — struct CursorRefreshRequest<'a>
+- has_cursor_api_key · function · L93-L95 — pub fn has_cursor_api_key() -> bool
+- has_cursor_native_auth · function · L98-L100 — pub fn has_cursor_native_auth() -> bool
+- has_cursor_auth_file_token · function · L103-L119 — pub fn has_cursor_auth_file_token() -> bool
+- preferred_external_auth_source · function · L121-L134 — pub fn preferred_external_auth_source() -> Option<ExternalCursorAuthSource>
+- has_unconsented_external_auth · function · L136-L146 — pub fn has_unconsented_external_auth() -> Option<ExternalCursorAuthSource>
+- trust_external_auth_source · function · L148-L155 — pub fn trust_external_auth_source(source: ExternalCursorAuthSource) -> Result<()>
+- cursor_direct_client_version · function · L158-L164 — pub fn cursor_direct_client_version() -> String
+- has_cursor_vscdb_token · function · L167-L178 — pub fn has_cursor_vscdb_token() -> bool
+- read_vscdb_token · function · L182-L185 — pub fn read_vscdb_token() -> Result<String>
+- read_vscdb_refresh_token · function · L188-L191 — pub fn read_vscdb_refresh_token() -> Result<String>
+- read_vscdb_machine_id · function · L194-L197 — pub fn read_vscdb_machine_id() -> Result<String>
+- vscdb_cached_email · function · L201-L206 — pub fn vscdb_cached_email() -> Option<String>
+- find_cursor_vscdb · function · L209-L217 — fn find_cursor_vscdb() -> Result<PathBuf>
+- cursor_vscdb_paths · function · L220-L247 — fn cursor_vscdb_paths() -> Vec<PathBuf>
+- read_vscdb_key · function · L251-L271 — fn read_vscdb_key(db_path: &PathBuf, key: &str) -> Result<String>
+- load_api_key · function · L276-L304 — pub fn load_api_key() -> Result<String>
+- save_api_key · function · L307-L313 — pub fn save_api_key(key: &str) -> Result<()>
+- clear_api_key · function · L317-L323 — pub fn clear_api_key() -> Result<()>
+- config_file_path · function · L325-L328 — fn config_file_path() -> Result<PathBuf>
+- cursor_auth_file_path · function · L331-L371 — pub fn cursor_auth_file_path() -> Result<PathBuf>
+- load_access_token_from_env_or_file · function · L374-L421 — pub fn load_access_token_from_env_or_file() -> Result<CursorDirectTokens>
+- resolve_direct_tokens · function · L424-L474 — pub async fn resolve_direct_tokens(client: &Client) -> Result<CursorDirectTokens>
+- refresh_resolved_tokens · function · L477-L491 — pub async fn refresh_resolved_tokens(
+- save_auth_file_tokens · function · L493-L511 — fn save_auth_file_tokens(tokens: &CursorDirectTokens) -> Result<()>
+- error_indicates_not_logged_in · function · L513-L519 — pub fn error_indicates_not_logged_in(err: &anyhow::Error) -> bool
+- client_key_for_access_token · function · L522-L524 — pub fn client_key_for_access_token(access_token: &str) -> String
+- session_id_for_access_token · function · L527-L529 — pub fn session_id_for_access_token(access_token: &str) -> String
+- checksum_for_access_token · function · L532-L536 — pub fn checksum_for_access_token(access_token: &str) -> String
+- refresh_direct_access_token · function · L538-L591 — async fn refresh_direct_access_token(
+- exchange_api_key_for_tokens · function · L593-L622 — async fn exchange_api_key_for_tokens(client: &Client, api_key: &str) -> Result<CursorDirectTokens>
+- token_is_expiring_soon · function · L624-L633 — fn token_is_expiring_soon(token: &str) -> bool
+- token_expiry_epoch_secs · function · L635-L639 — fn token_expiry_epoch_secs(token: &str) -> Option<u64>
+- sha256_hex · function · L641-L645 — fn sha256_hex(input: &str) -> String
+- timestamp_header_now · function · L647-L666 — fn timestamp_header_now() -> String
+- tests · module · L670-L670 — mod tests;

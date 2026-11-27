@@ -1,0 +1,33 @@
+# scripts/update_rehearsal.py
+
+- log · function · L52-L53 — def log(msg: str) -> None
+- asset_stem · function · L56-L60 — def asset_stem() -> str
+- default_root · function · L63-L65 — def default_root() -> Path
+- default_binary · function · L68-L73 — def default_binary() -> Path
+- cargo_version · function · L76-L80 — def cargo_version() -> str
+- bump · function · L83-L85 — def bump(version: str, patch_delta: int) -> str
+- git_short_hash · function · L88-L92 — def git_short_hash() -> str
+- wrapper_script · function · L95-L113 — def wrapper_script(version: str, payload_name: str) -> str: # Mirrors the fast-release wrapper produced by scripts/quick-release.sh.
+- link_or_copy · function · L116-L123 — def link_or_copy(src: Path, dst: Path) -> None
+- prepare_payload · function · L126-L145 — def prepare_payload(binary: Path, cache_dir: Path, strip: bool) -> Path
+- build_release_tarball · function · L148-L171 — def build_release_tarball(payload: Path, version: str, stem: str, cache_dir: Path) -> Path
+- sha256_file · function · L174-L179 — def sha256_file(path: Path) -> str
+- install_old_version · function · L182-L196 — def install_old_version(home: Path, payload: Path, version: str, stem: str) -> Path
+- write_sandbox_config · function · L199-L217 — def write_sandbox_config(home: Path, manual: bool) -> None
+- Scenario · class · L220-L250 — class Scenario
+- __init__ · method · L221-L230 — def __init__(self, args: argparse.Namespace, tarball: Path, checksum: str, stem: str, new_version: str)
+- release_json · method · L232-L246 — def release_json(self) -> bytes
+- sums · method · L248-L250 — def sums(self) -> bytes
+- make_handler · function · L253-L333 — def make_handler(sc: Scenario)
+- Handler · class · L254-L331 — class Handler(http.server.BaseHTTPRequestHandler)
+- log_message · method · L257-L259 — def log_message(self, fmt, *a): # keep the TUI terminal clean
+- send_bytes · method · L261-L266 — def send_bytes(self, body: bytes, ctype: str = "application/json") -> None
+- do_GET · method · L268-L277 — def do_GET(self): # noqa: N802
+- serve_asset · method · L279-L331 — def serve_asset(self)
+- sandbox_pids · function · L336-L352 — def sandbox_pids(home: Path) -> list[int]
+- kill_sandbox_processes · function · L355-L368 — def kill_sandbox_processes(home: Path) -> None
+- scrubbed_env · function · L371-L387 — def scrubbed_env(home: Path, run_dir: Path, release_url: str) -> dict[str, str]
+- summarize · function · L390-L405 — def summarize(home: Path, old: str, new: str) -> None
+- run_version · function · L408-L410 — def run_version(launcher: Path, env: dict[str, str]) -> str
+- headless_check · function · L413-L446 — def headless_check(launcher, env, workspace, home, old, new, server, args) -> int
+- main · function · L449-L558 — def main() -> int

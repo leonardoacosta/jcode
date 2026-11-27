@@ -1,0 +1,49 @@
+# crates/jcode-base/src/usage/cache.rs
+
+- ANTHROPIC_USAGE_CACHE · constant · L12-L13 — static ANTHROPIC_USAGE_CACHE: std::sync::OnceLock<std::sync::Mutex<HashMap<String, UsageData>>> =
+- OPENAI_USAGE_GENERATION · constant · L15-L15 — static OPENAI_USAGE_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- openai_usage_generation · function · L17-L19 — pub(super) fn openai_usage_generation() -> u64
+- OPENAI_ACCOUNT_USAGE_CACHE · constant · L22-L24 — static OPENAI_ACCOUNT_USAGE_CACHE: std::sync::OnceLock<
+- anthropic_usage_cache · function · L26-L28 — pub(super) fn anthropic_usage_cache() -> &'static std::sync::Mutex<HashMap<String, UsageData>>
+- openai_usage_cache · function · L30-L32 — pub(super) fn openai_usage_cache() -> &'static std::sync::Mutex<HashMap<String, OpenAIUsageData>>
+- hydrate_persisted_account_usage · function · L38-L50 — pub(crate) fn hydrate_persisted_account_usage()
+- cached_account_usage_snapshot · function · L55-L60 — pub fn cached_account_usage_snapshot(
+- cached_account_usage_status_snapshot · function · L65-L95 — pub fn cached_account_usage_status_snapshot(
+- account_known_exhausted · function · L103-L132 — pub fn account_known_exhausted(provider: super::MultiAccountProviderKind, label: &str) -> bool
+- reset_in_future · function · L134-L138 — fn reset_in_future(reset: Option<&str>) -> bool
+- anthropic_known_exhausted · function · L140-L154 — fn anthropic_known_exhausted(data: &UsageData) -> bool
+- openai_known_exhausted · function · L156-L169 — fn openai_known_exhausted(data: &OpenAIUsageData) -> bool
+- account_snapshot_tests · module · L172-L467 — mod account_snapshot_tests
+- persisted_routing_hydration_honors_resets_and_never_replaces_live_usage · function · L177-L226 — fn persisted_routing_hydration_honors_resets_and_never_replaces_live_usage()
+- Restore · struct · L180-L180 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L182-L187 — fn drop(&mut self)
+- stale_samples_stay_exhausted_until_their_window_resets · function · L229-L288 — fn stale_samples_stay_exhausted_until_their_window_resets()
+- anthropic_keys_share_saved_identity_without_exposing_token_prefixes · function · L291-L312 — fn anthropic_keys_share_saved_identity_without_exposing_token_prefixes()
+- anthropic_snapshot_either_shared_window_exhausted_and_errors_unknown · function · L315-L339 — fn anthropic_snapshot_either_shared_window_exhausted_and_errors_unknown()
+- cached_account_snapshot_is_scoped_fresh_and_nonblocking · function · L342-L394 — fn cached_account_snapshot_is_scoped_fresh_and_nonblocking()
+- pool_prefers_fresh_quota_within_priority_tier · function · L397-L466 — fn pool_prefers_fresh_quota_within_priority_tier()
+- invalidate_openai_usage_after_reset · function · L469-L489 — pub(super) fn invalidate_openai_usage_after_reset(access_token: &str, account_label: Option<&str>)
+- invalidate_anthropic_usage_after_reset · function · L493-L524 — pub(super) fn invalidate_anthropic_usage_after_reset(account_label: Option<&str>)
+- anthropic_usage_cache_key · function · L526-L535 — pub(super) fn anthropic_usage_cache_key(access_token: &str, account_label: Option<&str>) -> String
+- anthropic_usage_cache_key_with_accounts · function · L537-L565 — fn anthropic_usage_cache_key_with_accounts<'a>(
+- openai_usage_cache_key · function · L567-L581 — pub(super) fn openai_usage_cache_key(access_token: &str, account_label: Option<&str>) -> String
+- cached_anthropic_usage · function · L583-L588 — pub(super) fn cached_anthropic_usage(cache_key: &str) -> Option<UsageData>
+- cached_or_shared_anthropic_usage · function · L592-L616 — pub(super) fn cached_or_shared_anthropic_usage(cache_key: &str) -> Option<UsageData>
+- store_anthropic_usage · function · L618-L622 — pub(super) fn store_anthropic_usage(cache_key: String, data: UsageData)
+- cached_openai_usage · function · L624-L629 — pub(super) fn cached_openai_usage(cache_key: &str) -> Option<OpenAIUsageData>
+- recent_good_openai_usage · function · L633-L653 — pub(super) fn recent_good_openai_usage(cache_key: &str) -> Option<OpenAIUsageData>
+- store_openai_usage · function · L656-L658 — pub(super) fn store_openai_usage(cache_key: String, data: OpenAIUsageData)
+- store_openai_usage_for_generation · function · L660-L696 — pub(super) fn store_openai_usage_for_generation(
+- provider_report_from_usage_data · function · L698-L756 — pub(super) fn provider_report_from_usage_data(
+- usage_data_from_provider_report · function · L758-L821 — pub(super) fn usage_data_from_provider_report(report: &ProviderUsage) -> UsageData
+- openai_usage_data_from_provider_report · function · L823-L834 — pub(super) fn openai_usage_data_from_provider_report(report: &ProviderUsage) -> OpenAIUsageData
+- provider_report_from_openai_usage_data · function · L836-L881 — pub(super) fn provider_report_from_openai_usage_data(
+- openai_snapshot_from_usage · function · L883-L928 — pub(super) fn openai_snapshot_from_usage(
+- anthropic_snapshot_from_usage · function · L930-L1000 — pub(super) fn anthropic_snapshot_from_usage(
+- stale_account_snapshot_tests · module · L1003-L1165 — mod stale_account_snapshot_tests
+- account_snapshot_preserves_all_model_and_future_provider_windows · function · L1007-L1061 — fn account_snapshot_preserves_all_model_and_future_provider_windows()
+- last_good · function · L1063-L1078 — fn last_good() -> UsageData
+- stale_limits_preserve_error_but_never_exhaust_or_route · function · L1081-L1088 — fn stale_limits_preserve_error_but_never_exhaust_or_route()
+- additional_model_windows_filter_expiry_invalid_values_and_unproven_stale_data · function · L1091-L1122 — fn additional_model_windows_filter_expiry_invalid_values_and_unproven_stale_data()
+- stale_limits_require_provenance_and_each_unexpired_valid_window · function · L1125-L1150 — fn stale_limits_require_provenance_and_each_unexpired_valid_window()
+- successful_but_rolled_over_window_does_not_exhaust · function · L1153-L1164 — fn successful_but_rolled_over_window_does_not_exhaust()

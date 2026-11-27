@@ -1,0 +1,45 @@
+# crates/jcode-base/src/mcp/oauth_tests.rs
+
+- serialized_token_form_does_not_borrow_secret_storage · function · L7-L24 — fn serialized_token_form_does_not_borrow_secret_storage()
+- borrowed_registration_preserves_legacy_bytes_and_owns_serialized_body · function · L27-L58 — fn borrowed_registration_preserves_legacy_bytes_and_owns_serialized_body()
+- Sandbox · struct · L62-L66 — struct Sandbox
+- new · function · L69-L79 — fn new() -> Self
+- path · function · L81-L83 — fn path(&self) -> PathBuf
+- drop · function · L87-L93 — fn drop(&mut self)
+- Options · struct · L97-L112 — struct Options
+- State · struct · L115-L123 — struct State
+- Fixture · struct · L125-L129 — struct Fixture
+- drop · function · L132-L134 — fn drop(&mut self)
+- new · function · L138-L169 — async fn new(options: Options) -> Self
+- resource · function · L171-L173 — fn resource(&self) -> String
+- entry · function · L175-L185 — fn entry(&self, expired: bool) -> StoredOAuth
+- seed · function · L187-L189 — fn seed(&self, expired: bool)
+- seed · function · L192-L201 — fn seed(resource: &str, entry: StoredOAuth)
+- read_request · function · L203-L246 — async fn read_request(
+- serve · function · L248-L275 — async fn serve(
+- response · function · L277-L282 — fn response(status: &str, headers: &str, body: &str) -> String
+- json_response · function · L284-L286 — fn json_response(value: Value) -> String
+- route · function · L288-L454 — fn route(
+- browser_login · function · L456-L501 — async fn browser_login(auth_url: String, inject_bad_callbacks: bool) -> Result<()>
+- do_login · function · L503-L515 — async fn do_login(fixture: &Fixture, inject_bad_callbacks: bool) -> Result<()>
+- canonical_resource_redacts_query_fragment_and_userinfo · function · L518-L531 — fn canonical_resource_redacts_query_fragment_and_userinfo()
+- bearer_challenge_parser_respects_schemes_escaping_and_whitespace · function · L534-L561 — fn bearer_challenge_parser_respects_schemes_escaping_and_whitespace()
+- url_policy_requires_https_except_explicit_loopback · function · L564-L592 — fn url_policy_requires_https_except_explicit_loopback()
+- metadata_discovery_preserves_issuer_path_and_priority · function · L595-L612 — fn metadata_discovery_preserves_issuer_path_and_priority()
+- metadata · function · L614-L620 — fn metadata() -> AuthServerMetadata
+- callback_checks_state_before_errors_and_exact_issuer · function · L623-L670 — fn callback_checks_state_before_errors_and_exact_issuer()
+- pkce_pair_is_random_s256 · function · L673-L681 — fn pkce_pair_is_random_s256()
+- freshness_is_overflow_safe_and_honors_skew · function · L684-L698 — fn freshness_is_overflow_safe_and_honors_skew()
+- token_validation_is_atomic_and_debug_is_redacted · function · L701-L719 — fn token_validation_is_atomic_and_debug_is_redacted()
+- localhost_full_login_pkce_callback_401_refresh_rotation_and_logout · function · L722-L807 — async fn localhost_full_login_pkce_callback_401_refresh_rotation_and_logout()
+- localhost_well_known_fallback_and_oidc_path_append · function · L810-L846 — async fn localhost_well_known_fallback_and_oidc_path_append()
+- localhost_metadata_mismatches_fail_before_registration · function · L849-L880 — async fn localhost_metadata_mismatches_fail_before_registration()
+- localhost_redirects_and_provider_errors_do_not_leak_credentials · function · L883-L937 — async fn localhost_redirects_and_provider_errors_do_not_leak_credentials()
+- refresh_preserves_omitted_refresh_token_and_never_retries_same_rejected_token · function · L940-L981 — async fn refresh_preserves_omitted_refresh_token_and_never_retries_same_rejected_token()
+- expired_unrefreshable_token_is_not_returned_and_new_login_is_picked_up · function · L984-L1009 — async fn expired_unrefreshable_token_is_not_returned_and_new_login_is_picked_up()
+- logout_during_refresh_does_not_block_or_resurrect_credentials · function · L1012-L1040 — async fn logout_during_refresh_does_not_block_or_resurrect_credentials()
+- newer_login_during_refresh_is_not_overwritten · function · L1043-L1076 — async fn newer_login_during_refresh_is_not_overwritten()
+- exact_validated_metadata_resource_is_preserved_in_grants · function · L1079-L1098 — async fn exact_validated_metadata_resource_is_preserved_in_grants()
+- corrupt_store_is_not_silently_overwritten_or_exposed · function · L1101-L1109 — fn corrupt_store_is_not_silently_overwritten_or_exposed()
+- store_rejects_symlinks_hardlinks_and_repairs_legacy_mode · function · L1113-L1137 — fn store_rejects_symlinks_hardlinks_and_repairs_legacy_mode()
+- cross_process_lock_contends_and_releases_without_blocking_runtime · function · L1140-L1161 — async fn cross_process_lock_contends_and_releases_without_blocking_runtime()

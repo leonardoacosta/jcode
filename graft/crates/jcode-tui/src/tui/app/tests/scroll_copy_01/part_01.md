@@ -1,0 +1,63 @@
+# crates/jcode-tui/src/tui/app/tests/scroll_copy_01/part_01.rs
+
+- buffer_to_text · function · L5-L23 — fn buffer_to_text(terminal: &ratatui::Terminal<ratatui::backend::TestBackend>) -> String
+- create_scroll_test_app · function · L26-L73 — fn create_scroll_test_app(
+- create_copy_test_app · function · L75-L106 — fn create_copy_test_app() -> (App, ratatui::Terminal<ratatui::backend::TestBackend>)
+- create_blockquote_copy_test_app · function · L108-L140 — fn create_blockquote_copy_test_app() -> (App, ratatui::Terminal<ratatui::backend::TestBackend>)
+- create_error_copy_test_app · function · L142-L159 — fn create_error_copy_test_app() -> (App, ratatui::Terminal<ratatui::backend::TestBackend>)
+- create_tool_error_copy_test_app · function · L161-L187 — fn create_tool_error_copy_test_app() -> (App, ratatui::Terminal<ratatui::backend::TestBackend>)
+- create_tool_failed_output_copy_test_app · function · L189-L216 — fn create_tool_failed_output_copy_test_app()
+- scroll_up_key · function · L219-L224 — fn scroll_up_key(app: &App) -> (KeyCode, KeyModifiers)
+- scroll_down_key · function · L227-L232 — fn scroll_down_key(app: &App) -> (KeyCode, KeyModifiers)
+- scroll_up_fallback_key · function · L235-L241 — fn scroll_up_fallback_key(app: &App) -> (KeyCode, KeyModifiers)
+- scroll_down_fallback_key · function · L244-L250 — fn scroll_down_fallback_key(app: &App) -> (KeyCode, KeyModifiers)
+- prompt_up_key · function · L253-L258 — fn prompt_up_key(app: &App) -> (KeyCode, KeyModifiers)
+- scroll_render_test_lock · function · L262-L264 — fn scroll_render_test_lock() -> crate::tui::ui::RenderStateTestGuard
+- CapturedClipboard · struct · L273-L273 — struct CapturedClipboard;
+- new · function · L276-L279 — fn new() -> Self
+- text · function · L282-L284 — fn text(&self) -> Option<String>
+- drop · function · L288-L290 — fn drop(&mut self)
+- perf_assertions_enabled · function · L301-L304 — fn perf_assertions_enabled() -> bool
+- assert_perf_budget · function · L309-L319 — fn assert_perf_budget(within_budget: bool, message: impl FnOnce() -> String)
+- render_and_snap · function · L322-L330 — fn render_and_snap(
+- test_blockquote_paragraph_border_is_continuous_in_terminal_cells · function · L333-L368 — fn test_blockquote_paragraph_border_is_continuous_in_terminal_cells()
+- test_armed_new_session_mode_shows_input_hint_and_indicator · function · L371-L394 — fn test_armed_new_session_mode_shows_input_hint_and_indicator()
+- test_chat_native_scrollbar_hidden_when_content_fits · function · L397-L426 — fn test_chat_native_scrollbar_hidden_when_content_fits()
+- test_chat_native_scrollbar_hides_scroll_counters · function · L429-L464 — fn test_chat_native_scrollbar_hides_scroll_counters()
+- test_streaming_repaint_does_not_leave_bracket_artifact · function · L467-L493 — fn test_streaming_repaint_does_not_leave_bracket_artifact()
+- test_chat_mouse_scroll_requests_immediate_redraw_during_streaming · function · L496-L531 — fn test_chat_mouse_scroll_requests_immediate_redraw_during_streaming()
+- test_chat_mouse_wheel_scroll_does_not_recall_prompt_history · function · L534-L558 — fn test_chat_mouse_wheel_scroll_does_not_recall_prompt_history()
+- test_chat_mouse_scroll_down_reaches_bottom_without_dead_zone · function · L561-L604 — fn test_chat_mouse_scroll_down_reaches_bottom_without_dead_zone()
+- test_queued_file_activity_repaint_does_not_leave_trailing_digit_artifact · function · L607-L648 — fn test_queued_file_activity_repaint_does_not_leave_trailing_digit_artifact()
+- test_notification_file_activity_repaint_does_not_leave_trailing_digit_artifact · function · L651-L682 — fn test_notification_file_activity_repaint_does_not_leave_trailing_digit_artifact()
+- test_file_activity_scroll_reproduces_trailing_ghost_after_native_scroll_like_mutation · function · L685-L754 — fn test_file_activity_scroll_reproduces_trailing_ghost_after_native_scroll_like_mutation()
+- test_remote_typing_resumes_bottom_follow_mode · function · L757-L771 — fn test_remote_typing_resumes_bottom_follow_mode()
+- test_local_typing_resumes_bottom_follow_mode · function · L774-L789 — fn test_local_typing_resumes_bottom_follow_mode()
+- test_local_typing_snaps_rendered_viewport_to_bottom_in_one_frame · function · L792-L818 — fn test_local_typing_snaps_rendered_viewport_to_bottom_in_one_frame()
+- test_remote_shift_slash_preserves_layout_translated_slash · function · L821-L832 — fn test_remote_shift_slash_preserves_layout_translated_slash()
+- test_remote_key_event_shift_slash_preserves_layout_translated_slash · function · L835-L852 — fn test_remote_key_event_shift_slash_preserves_layout_translated_slash()
+- test_remote_control_alt_symbol_inserts_layout_translated_text · function · L855-L870 — fn test_remote_control_alt_symbol_inserts_layout_translated_text()
+- test_local_alt_s_toggles_typing_scroll_lock · function · L873-L889 — fn test_local_alt_s_toggles_typing_scroll_lock()
+- test_local_alt_m_cycles_side_panel_split_fullscreen_hidden · function · L892-L919 — fn test_local_alt_m_cycles_side_panel_split_fullscreen_hidden()
+- test_local_alt_m_hidden_side_panel_stays_hidden_across_snapshot_update · function · L922-L944 — fn test_local_alt_m_hidden_side_panel_stays_hidden_across_snapshot_update()
+- test_local_alt_m_does_not_toggle_diagram_pane_when_side_panel_is_empty · function · L947-L962 — fn test_local_alt_m_does_not_toggle_diagram_pane_when_side_panel_is_empty()
+- test_local_alt_shift_m_toggles_diagram_pane · function · L965-L980 — fn test_local_alt_shift_m_toggles_diagram_pane()
+- test_images_do_not_drive_side_panel_visibility · function · L983-L1004 — fn test_images_do_not_drive_side_panel_visibility()
+- test_remote_alt_m_cycles_side_panel_split_fullscreen_hidden · function · L1007-L1035 — fn test_remote_alt_m_cycles_side_panel_split_fullscreen_hidden()
+- test_remote_alt_y_toggles_copy_selection_instead_of_typing · function · L1038-L1049 — fn test_remote_alt_y_toggles_copy_selection_instead_of_typing()
+- test_remote_alt_i_toggles_info_widget_instead_of_typing · function · L1052-L1065 — fn test_remote_alt_i_toggles_info_widget_instead_of_typing()
+- test_remote_typing_scroll_lock_preserves_scroll_position · function · L1068-L1088 — fn test_remote_typing_scroll_lock_preserves_scroll_position()
+- test_local_typing_scroll_lock_preserves_scroll_position · function · L1091-L1108 — fn test_local_typing_scroll_lock_preserves_scroll_position()
+- test_remote_typing_scroll_lock_can_be_toggled_back_off · function · L1111-L1131 — fn test_remote_typing_scroll_lock_can_be_toggled_back_off()
+- test_should_allow_reconnect_takeover_only_after_successful_attach · function · L1134-L1169 — fn test_should_allow_reconnect_takeover_only_after_successful_attach()
+- test_reconnect_target_prefers_remote_session_id · function · L1172-L1181 — fn test_reconnect_target_prefers_remote_session_id()
+- test_reconnect_target_uses_resume_when_remote_missing · function · L1184-L1193 — fn test_reconnect_target_uses_resume_when_remote_missing()
+- test_reconnect_target_does_not_consume_resume_session_id · function · L1196-L1210 — fn test_reconnect_target_does_not_consume_resume_session_id()
+- test_prompt_jump_ctrl_brackets · function · L1213-L1232 — fn test_prompt_jump_ctrl_brackets()
+- test_prompt_jump_ctrl_esc_fallback_on_macos · function · L1240-L1250 — fn test_prompt_jump_ctrl_esc_fallback_on_macos()
+- test_ctrl_digit_side_panel_preset_in_app · function · L1253-L1271 — fn test_ctrl_digit_side_panel_preset_in_app()
+- renderer_publishes_the_prepared_frame_as_geometry · function · L1274-L1311 — fn renderer_publishes_the_prepared_frame_as_geometry()
+- retained_frame_row_matches_the_rendered_screen · function · L1314-L1350 — fn retained_frame_row_matches_the_rendered_screen()
+- status_line_is_always_pinned_with_pink_model_on_real_app · function · L1356-L1395 — fn status_line_is_always_pinned_with_pink_model_on_real_app()
+- git_widgets · module · L1402-L1402 — mod git_widgets;
+- status_notice · module · L1404-L1404 — mod status_notice;

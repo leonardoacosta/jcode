@@ -1,0 +1,153 @@
+# crates/jcode-provider-openrouter-runtime/src/lib.rs
+
+- catalog_fetch · module · L55-L55 — mod catalog_fetch;
+- openai_compatible_runtime · module · L58-L58 — mod openai_compatible_runtime;
+- request_headers · module · L60-L60 — mod request_headers;
+- session_cache_affinity · module · L61-L61 — mod session_cache_affinity;
+- RETRY_BASE_DELAY_MS · constant · L65-L65 — const RETRY_BASE_DELAY_MS: u64 = 1000;
+- DEFAULT_API_BASE · constant · L68-L68 — const DEFAULT_API_BASE: &str = "https://openrouter.ai/api/v1";
+- DEFAULT_API_KEY_NAME · constant · L69-L69 — const DEFAULT_API_KEY_NAME: &str = "OPENROUTER_API_KEY";
+- DEFAULT_ENV_FILE · constant · L70-L70 — const DEFAULT_ENV_FILE: &str = "openrouter.env";
+- OPENROUTER_TRANSPORT_STATE_ENV · constant · L71-L71 — const OPENROUTER_TRANSPORT_STATE_ENV: &str = "JCODE_OPENROUTER_TRANSPORT_STATE";
+- DEFAULT_MODEL · constant · L76-L76 — const DEFAULT_MODEL: &str = "anthropic/claude-opus-5.5";
+- default_selection · module · L80-L80 — mod default_selection;
+- MODEL_CATALOG_SOFT_REFRESH_SECS · constant · L88-L88 — const MODEL_CATALOG_SOFT_REFRESH_SECS: u64 = 15 * 60;
+- MODEL_CATALOG_REFRESH_RETRY_SECS · constant · L90-L90 — const MODEL_CATALOG_REFRESH_RETRY_SECS: u64 = 60;
+- STANDARD_OPENROUTER_CATALOG_TTL_SECS · constant · L93-L93 — const STANDARD_OPENROUTER_CATALOG_TTL_SECS: u64 = 24 * 60 * 60;
+- ENDPOINTS_CACHE_TTL_SECS · constant · L96-L96 — const ENDPOINTS_CACHE_TTL_SECS: u64 = 60 * 60;
+- MAX_BACKGROUND_ENDPOINT_REFRESHES · constant · L97-L97 — const MAX_BACKGROUND_ENDPOINT_REFRESHES: usize = 8;
+- explicit_openrouter_runtime_configured · function · L99-L108 — fn explicit_openrouter_runtime_configured() -> bool
+- autodetected_openai_compatible_profile · function · L110-L143 — fn autodetected_openai_compatible_profile()
+- configured_api_base · function · L145-L159 — fn configured_api_base() -> String
+- configured_api_key_name · function · L161-L177 — fn configured_api_key_name() -> String
+- configured_env_file_name · function · L179-L195 — fn configured_env_file_name() -> String
+- load_named_profile_api_key · function · L197-L214 — fn load_named_profile_api_key(
+- parse_env_bool · function · L216-L222 — fn parse_env_bool(value: &str) -> Option<bool>
+- provider_features_enabled · function · L224-L235 — fn provider_features_enabled(api_base: &str) -> bool
+- model_catalog_enabled · function · L237-L248 — fn model_catalog_enabled() -> bool
+- AuthHeaderMode · enum · L251-L254 — enum AuthHeaderMode
+- configured_auth_header_mode · function · L256-L276 — fn configured_auth_header_mode() -> AuthHeaderMode
+- configured_auth_header_name · function · L278-L291 — fn configured_auth_header_name() -> HeaderName
+- configured_dynamic_bearer_provider · function · L293-L298 — fn configured_dynamic_bearer_provider() -> Option<String>
+- configured_allow_no_auth · function · L300-L314 — fn configured_allow_no_auth() -> bool
+- OpenRouterTransportState · enum · L317-L329 — pub enum OpenRouterTransportState
+- from_current_env · function · L332-L365 — pub fn from_current_env(runtime_provider: Option<&str>) -> Self
+- from_env_marker · function · L367-L391 — fn from_env_marker() -> Option<Self>
+- runtime_provider_is_direct_compatible · function · L393-L398 — fn runtime_provider_is_direct_compatible(runtime_provider: Option<&str>) -> bool
+- accrues_user_api_key_cost · function · L400-L402 — pub fn accrues_user_api_key_cost(self) -> bool
+- is_real_openrouter · function · L404-L406 — pub fn is_real_openrouter(self) -> bool
+- GROK_BUILD_MODELS · constant · L410-L410 — pub const GROK_BUILD_MODELS: &[&str] = &["grok-4.6", "grok-4.5", "grok-code-fast-1"];
+- GROK_BUILD_AUTH_LABEL · constant · L411-L411 — const GROK_BUILD_AUTH_LABEL: &str = "Grok Build subscription (Grok CLI OIDC)";
+- apply_grok_cli_turn_headers · function · L414-L431 — fn apply_grok_cli_turn_headers(
+- ProviderAuth · enum · L434-L456 — enum ProviderAuth
+- apply · function · L459-L479 — async fn apply(&self, req: reqwest::RequestBuilder) -> Result<reqwest::RequestBuilder>
+- label · function · L481-L489 — fn label(&self) -> &str
+- cache_breakpoints · module · L493-L493 — mod cache_breakpoints;
+- models_fingerprint · function · L495-L497 — fn models_fingerprint(models: &[ModelInfo]) -> String
+- endpoints_fingerprint · function · L499-L501 — fn endpoints_fingerprint(endpoints: &[EndpointInfo]) -> String
+- EndpointsCache · type · L503-L503 — type EndpointsCache = HashMap<String, (u64, Vec<EndpointInfo>)>;
+- EndpointRefreshTracker · struct · L506-L509 — struct EndpointRefreshTracker
+- GLOBAL_ENDPOINT_REFRESH · constant · L511-L511 — static GLOBAL_ENDPOINT_REFRESH: OnceLock<Mutex<EndpointRefreshTracker>> = OnceLock::new();
+- global_endpoint_refresh · function · L513-L515 — fn global_endpoint_refresh() -> &'static Mutex<EndpointRefreshTracker>
+- ProfileCatalogRefreshTracker · struct · L518-L526 — struct ProfileCatalogRefreshTracker
+- GLOBAL_PROFILE_CATALOG_REFRESH · constant · L528-L529 — static GLOBAL_PROFILE_CATALOG_REFRESH: OnceLock<Mutex<ProfileCatalogRefreshTracker>> =
+- global_profile_catalog_refresh · function · L531-L534 — fn global_profile_catalog_refresh() -> &'static Mutex<ProfileCatalogRefreshTracker>
+- reset_profile_catalog_refresh_tracker_for_tests · function · L539-L543 — pub fn reset_profile_catalog_refresh_tracker_for_tests()
+- begin_profile_catalog_refresh · function · L545-L570 — fn begin_profile_catalog_refresh(profile_id: &str) -> bool
+- finish_profile_catalog_refresh · function · L572-L576 — fn finish_profile_catalog_refresh(profile_id: &str)
+- profile_catalog_retry_delay_secs · function · L581-L586 — fn profile_catalog_retry_delay_secs(consecutive_failures: u32) -> u64
+- MAX_RETRY_SECS · constant · L582-L582 — const MAX_RETRY_SECS: u64 = 60 * 60;
+- finish_profile_catalog_refresh_with_outcome · function · L588-L601 — fn finish_profile_catalog_refresh_with_outcome(profile_id: &str, succeeded: bool)
+- maybe_schedule_openai_compatible_profile_catalog_refresh · function · L603-L681 — pub fn maybe_schedule_openai_compatible_profile_catalog_refresh(
+- maybe_schedule_standard_openrouter_catalog_refresh · function · L694-L787 — pub fn maybe_schedule_standard_openrouter_catalog_refresh(context: &'static str) -> bool
+- AuthResolver · type · L791-L791 — type AuthResolver = Arc<dyn Fn() -> anyhow::Result<ProviderAuth> + Send + Sync>;
+- OpenRouterProvider · struct · L793-L835 — pub struct OpenRouterProvider
+- apply_resolved_reasoning_effort · function · L839-L880 — fn apply_resolved_reasoning_effort(
+- profile_supports_reasoning_effort · function · L882-L884 — fn profile_supports_reasoning_effort(profile_id: Option<&str>) -> bool
+- profile_supports_openai_reasoning_effort · function · L886-L888 — fn profile_supports_openai_reasoning_effort(profile_id: Option<&str>) -> bool
+- model_is_deepseek_family · function · L894-L896 — fn model_is_deepseek_family(model: &str) -> bool
+- supports_deepseek_reasoning_effort · function · L902-L918 — pub(crate) fn supports_deepseek_reasoning_effort(&self) -> bool
+- model_is_openai_reasoning_family · function · L924-L933 — fn model_is_openai_reasoning_family(model: &str) -> bool
+- supports_openai_reasoning_effort · function · L939-L957 — pub(crate) fn supports_openai_reasoning_effort(&self) -> bool
+- model_snapshot · function · L959-L964 — fn model_snapshot(&self) -> String
+- model_reasoning_config · function · L966-L969 — fn model_reasoning_config(&self) -> Option<&(Option<bool>, Option<String>)>
+- model_reasoning_support · function · L971-L973 — fn model_reasoning_support(&self) -> Option<bool>
+- configured_effort_for_model · function · L975-L989 — fn configured_effort_for_model(&self) -> Option<String>
+- supports_any_reasoning_effort · function · L991-L998 — pub(crate) fn supports_any_reasoning_effort(&self) -> bool
+- normalize_reasoning_effort_for_self · function · L1000-L1008 — pub(crate) fn normalize_reasoning_effort_for_self(&self, effort: &str) -> Option<String>
+- initial_reasoning_effort · function · L1013-L1035 — fn initial_reasoning_effort(
+- profile_rejects_image_input · function · L1037-L1039 — fn profile_rejects_image_input(profile_id: Option<&str>) -> bool
+- profile_supports_unified_reasoning · function · L1041-L1052 — fn profile_supports_unified_reasoning(
+- normalize_reasoning_effort · function · L1054-L1071 — fn normalize_reasoning_effort(raw: &str) -> Option<String>
+- normalize_openai_reasoning_effort · function · L1073-L1090 — fn normalize_openai_reasoning_effort(raw: &str) -> Option<String>
+- normalize_unified_reasoning_effort · function · L1092-L1108 — fn normalize_unified_reasoning_effort(raw: &str) -> Option<String>
+- configured_max_tokens · function · L1110-L1127 — fn configured_max_tokens(_profile_id: Option<&str>) -> Option<u32>
+- resolve_extra_body · function · L1144-L1184 — fn resolve_extra_body(
+- with_profile_default_extra_body · function · L1188-L1207 — fn with_profile_default_extra_body(
+- supports_provider_routing_features · function · L1209-L1211 — pub fn supports_provider_routing_features(&self) -> bool
+- runtime_display_name · function · L1219-L1259 — pub fn runtime_display_name(&self) -> String
+- direct_openai_compatible_route_parts · function · L1261-L1297 — pub fn direct_openai_compatible_route_parts(&self) -> Option<(String, String, String)>
+- is_jcode_subscription_runtime · function · L1304-L1314 — fn is_jcode_subscription_runtime(&self) -> bool
+- new_named_openai_compatible · function · L1316-L1490 — pub fn new_named_openai_compatible(
+- is_kimi_model · function · L1493-L1495 — fn is_kimi_model(model: &str) -> bool
+- strip_session_profile_prefix · function · L1513-L1541 — fn strip_session_profile_prefix<'a>(&self, model: &'a str) -> &'a str
+- is_kimi_coding_endpoint · function · L1549-L1555 — fn is_kimi_coding_endpoint(&self, model: &str) -> bool
+- thinking_override · function · L1559-L1574 — fn thinking_override() -> Option<bool>
+- strict_openai_schema_endpoint · function · L1580-L1588 — fn strict_openai_schema_endpoint(profile_id: Option<&str>, api_base: &str) -> bool
+- new · function · L1590-L1725 — pub fn new() -> Result<Self>
+- new_grok_build_subscription · function · L1733-L1784 — pub fn new_grok_build_subscription(model: &str) -> Self
+- new_openrouter_api_key_runtime · function · L1786-L1835 — pub fn new_openrouter_api_key_runtime() -> Result<Self>
+- should_background_refresh_model_catalog · function · L1837-L1858 — fn should_background_refresh_model_catalog(&self, cache_age_secs: u64) -> bool
+- filter_profile_chat_supported_models · function · L1860-L1873 — pub(crate) fn filter_profile_chat_supported_models(&self, models: Vec<String>) -> Vec<String>
+- model_disk_cache_source_matches · function · L1875-L1894 — fn model_disk_cache_source_matches(
+- begin_background_model_catalog_refresh · function · L1896-L1918 — fn begin_background_model_catalog_refresh(&self) -> bool
+- finish_background_model_catalog_refresh · function · L1920-L1926 — fn finish_background_model_catalog_refresh(
+- begin_background_endpoint_refresh · function · L1928-L1968 — fn begin_background_endpoint_refresh(&self, model: &str) -> bool
+- finish_background_endpoint_refresh · function · L1970-L1980 — fn finish_background_endpoint_refresh(
+- maybe_schedule_endpoint_refresh · function · L1982-L2080 — fn maybe_schedule_endpoint_refresh(
+- maybe_schedule_model_catalog_refresh · function · L2082-L2130 — fn maybe_schedule_model_catalog_refresh(&self, cache_age_secs: u64, context: &'static str)
+- parse_provider_routing · function · L2133-L2135 — fn parse_provider_routing() -> ProviderRouting
+- set_explicit_pin · function · L2137-L2149 — fn set_explicit_pin(&self, model: &str, provider: ParsedProvider)
+- clear_pin_if_model_changed · function · L2151-L2163 — fn clear_pin_if_model_changed(&self, model: &str, clear_explicit: bool)
+- explicit_provider_pin_for_current_model · function · L2165-L2177 — pub fn explicit_provider_pin_for_current_model(&self) -> Option<String>
+- rank_providers_from_endpoints · function · L2179-L2181 — fn rank_providers_from_endpoints(endpoints: &[EndpointInfo]) -> Vec<String>
+- effective_routing · function · L2183-L2268 — async fn effective_routing(&self, model: &str) -> ProviderRouting
+- set_provider_routing · function · L2271-L2277 — pub async fn set_provider_routing(&self, routing: ProviderRouting)
+- get_provider_routing · function · L2280-L2282 — pub async fn get_provider_routing(&self) -> ProviderRouting
+- preferred_provider · function · L2286-L2334 — pub fn preferred_provider(&self) -> Option<String>
+- available_providers_for_model · function · L2337-L2372 — pub fn available_providers_for_model(&self, model: &str) -> Vec<String>
+- provider_details_for_model · function · L2375-L2409 — pub fn provider_details_for_model(&self, model: &str) -> Vec<(String, String)>
+- maybe_schedule_endpoint_refresh_for_display · function · L2411-L2418 — pub fn maybe_schedule_endpoint_refresh_for_display(
+- cached_model_catalog_fingerprint · function · L2420-L2430 — fn cached_model_catalog_fingerprint(&self) -> String
+- cached_live_model_ids_for_display · function · L2432-L2447 — pub(crate) fn cached_live_model_ids_for_display(&self) -> Option<HashSet<String>>
+- cached_endpoints_fingerprint · function · L2449-L2459 — fn cached_endpoints_fingerprint(&self, model: &str) -> String
+- has_credentials · function · L2462-L2473 — pub fn has_credentials() -> bool
+- resolve_auth · function · L2475-L2536 — fn resolve_auth() -> Result<ProviderAuth>
+- get_api_key · function · L2539-L2543 — fn get_api_key() -> Option<String>
+- promote_placeholder_default_model · function · L2550-L2569 — pub(crate) fn promote_placeholder_default_model(&self, catalog: &[ModelInfo])
+- fetch_models · function · L2572-L2613 — pub async fn fetch_models(&self) -> Result<Vec<ModelInfo>>
+- refresh_models · function · L2616-L2629 — pub async fn refresh_models(&self) -> Result<Vec<ModelInfo>>
+- fetch_endpoints · function · L2633-L2702 — pub async fn fetch_endpoints(&self, model: &str) -> Result<Vec<EndpointInfo>>
+- EndpointsWrapper · struct · L2676-L2678 — struct EndpointsWrapper
+- EndpointsResponse · struct · L2681-L2683 — struct EndpointsResponse
+- refresh_endpoints · function · L2705-L2751 — pub async fn refresh_endpoints(&self, model: &str) -> Result<Vec<EndpointInfo>>
+- EndpointsWrapper · struct · L2730-L2732 — struct EndpointsWrapper
+- EndpointsResponse · struct · L2735-L2737 — struct EndpointsResponse
+- context_length_for_model · function · L2754-L2763 — pub async fn context_length_for_model(&self, model_id: &str) -> Option<u64>
+- model_pricing · function · L2765-L2800 — async fn model_pricing(&self, model_id: &str) -> Option<ModelPricing>
+- model_supports_cache · function · L2802-L2843 — async fn model_supports_cache(&self, model_id: &str) -> bool
+- models_catalog_parse · module · L2846-L2846 — mod models_catalog_parse;
+- ollama_context · module · L2847-L2847 — mod ollama_context;
+- opencode_go_responses · module · L2848-L2848 — mod opencode_go_responses;
+- openrouter_provider_impl · module · L2850-L2850 — mod openrouter_provider_impl;
+- openrouter_sse_stream · module · L2852-L2852 — mod openrouter_sse_stream;
+- tests · module · L2857-L2857 — pub(crate) mod tests;
+- ollama_context_tests · module · L2861-L2861 — mod ollama_context_tests;
+- openrouter_catalog_merge_tests · module · L2865-L2865 — mod openrouter_catalog_merge_tests;
+- openrouter_pricing_deadlock_tests · module · L2869-L2869 — mod openrouter_pricing_deadlock_tests;
+- openrouter_input_modalities_tests · module · L2873-L2873 — mod openrouter_input_modalities_tests;
+- issue_1056_tests · module · L2877-L2877 — mod issue_1056_tests;
+- profile_catalog_backoff_tests · module · L2881-L2881 — mod profile_catalog_backoff_tests;
+- muse_native_tests · module · L2884-L2884 — mod muse_native_tests;
+- placeholder_default_tests · module · L2888-L2888 — mod placeholder_default_tests;
+- session_cache_affinity_tests · module · L2891-L2891 — mod session_cache_affinity_tests;

@@ -1,0 +1,17 @@
+# crates/jcode-base/src/auth/external_tests.rs
+
+- write_auth_file · function · L4-L9 — fn write_auth_file(path: &std::path::Path, value: serde_json::Value)
+- novita_api_key_import_requires_trust · function · L12-L35 — fn novita_api_key_import_requires_trust()
+- opencode_api_key_imports_from_trusted_file · function · L38-L64 — fn opencode_api_key_imports_from_trusted_file()
+- pi_api_key_env_reference_uses_named_env_var · function · L67-L99 — fn pi_api_key_env_reference_uses_named_env_var()
+- pi_shell_command_api_keys_are_not_executed · function · L102-L124 — fn pi_shell_command_api_keys_are_not_executed()
+- load_copilot_oauth_token_from_pi_auth · function · L127-L154 — fn load_copilot_oauth_token_from_pi_auth()
+- unconsented_source_detects_supported_api_key_files · function · L157-L181 — fn unconsented_source_detects_supported_api_key_files()
+- source_provider_labels_reports_supported_oauth_and_api_key_imports · function · L184-L220 — fn source_provider_labels_reports_supported_oauth_and_api_key_imports()
+- openclaw_api_key_imports_from_trusted_file · function · L223-L249 — fn openclaw_api_key_imports_from_trusted_file()
+- openclaw_oauth_tokens_import_like_pi · function · L252-L282 — fn openclaw_oauth_tokens_import_like_pi()
+- hermes_api_key_imports_from_credential_pool · function · L285-L324 — fn hermes_api_key_imports_from_credential_pool()
+- hermes_oauth_tokens_import_from_credential_pool · function · L327-L366 — fn hermes_oauth_tokens_import_from_credential_pool()
+- hermes_oauth_tokens_parse_rfc3339_expiry · function · L369-L404 — fn hermes_oauth_tokens_parse_rfc3339_expiry()
+- openclaw_auth_profiles_store_resolves_and_flattens · function · L407-L461 — fn openclaw_auth_profiles_store_resolves_and_flattens()
+- openclaw_legacy_flat_auth_json_still_wins_when_present · function · L464-L493 — fn openclaw_legacy_flat_auth_json_still_wins_when_present()

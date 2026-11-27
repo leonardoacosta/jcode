@@ -1,0 +1,59 @@
+# crates/jcode-base/src/auth/grok_build.rs
+
+- CLI_CHAT_PROXY_BASE_URL · constant · L24-L24 — pub const CLI_CHAT_PROXY_BASE_URL: &str = "https://cli-chat-proxy.grok.com/v1";
+- CLI_CHAT_PROXY_BASE_URL_ENV · constant · L26-L26 — pub const CLI_CHAT_PROXY_BASE_URL_ENV: &str = "GROK_CLI_CHAT_PROXY_BASE_URL";
+- CLI_VERSION_ENV · constant · L28-L28 — pub const CLI_VERSION_ENV: &str = "JCODE_GROK_CLI_VERSION";
+- DEFAULT_CLI_VERSION · constant · L30-L30 — pub const DEFAULT_CLI_VERSION: &str = "1.0.41";
+- HEADER_TOKEN_AUTH · constant · L34-L34 — pub const HEADER_TOKEN_AUTH: &str = "X-XAI-Token-Auth";
+- TOKEN_AUTH_VALUE · constant · L35-L35 — pub const TOKEN_AUTH_VALUE: &str = "xai-grok-cli";
+- HEADER_CLIENT_VERSION · constant · L36-L36 — pub const HEADER_CLIENT_VERSION: &str = "x-grok-client-version";
+- HEADER_CLIENT_IDENTIFIER · constant · L37-L37 — pub const HEADER_CLIENT_IDENTIFIER: &str = "x-grok-client-identifier";
+- CLIENT_IDENTIFIER_VALUE · constant · L38-L38 — pub const CLIENT_IDENTIFIER_VALUE: &str = "grok-shell";
+- HEADER_CLIENT_SURFACE · constant · L39-L39 — pub const HEADER_CLIENT_SURFACE: &str = "x-grok-client-surface";
+- HEADER_MODEL_OVERRIDE · constant · L40-L40 — pub const HEADER_MODEL_OVERRIDE: &str = "x-grok-model-override";
+- HEADER_CONV_ID · constant · L41-L41 — pub const HEADER_CONV_ID: &str = "x-grok-conv-id";
+- HEADER_REQ_ID · constant · L42-L42 — pub const HEADER_REQ_ID: &str = "x-grok-req-id";
+- OAUTH_ISSUER · constant · L44-L44 — pub const OAUTH_ISSUER: &str = "https://auth.x.ai";
+- OAUTH_CLIENT_ID · constant · L45-L45 — pub const OAUTH_CLIENT_ID: &str = "b1a00492-073a-47ea-816f-4c329264a828";
+- OAUTH_SCOPES · constant · L46-L46 — const OAUTH_SCOPES: &str = "openid profile email offline_access grok-cli:access api:access conversations:read conversations:write workspaces:read workspaces:write";
+- EXPIRY_SKEW_SECS · constant · L48-L48 — const EXPIRY_SKEW_SECS: i64 = 60;
+- cli_version · function · L51-L53 — pub fn cli_version() -> String
+- cli_version_from · function · L55-L61 — fn cli_version_from(env_value: Option<&str>) -> String
+- cli_user_agent · function · L64-L66 — pub fn cli_user_agent() -> String
+- chat_proxy_base_url · function · L69-L75 — pub fn chat_proxy_base_url() -> String
+- chat_proxy_identity_headers · function · L79-L91 — pub fn chat_proxy_identity_headers() -> Vec<(&'static str, String)>
+- chat_proxy_turn_headers · function · L95-L105 — pub fn chat_proxy_turn_headers(
+- oauth_headers · function · L107-L112 — fn oauth_headers(request: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- DeviceAuthorization · struct · L115-L123 — pub struct DeviceAuthorization
+- TokenResponse · struct · L126-L130 — struct TokenResponse
+- TokenError · struct · L133-L136 — struct TokenError
+- JwtClaims · struct · L139-L144 — struct JwtClaims
+- default_poll_interval · function · L146-L148 — fn default_poll_interval() -> u64
+- initiate_device_login · function · L151-L164 — pub async fn initiate_device_login(client: &reqwest::Client) -> Result<DeviceAuthorization>
+- complete_device_login · function · L167-L209 — pub async fn complete_device_login(
+- jwt_claims · function · L211-L222 — fn jwt_claims(token: &str) -> JwtClaims
+- store_tokens · function · L228-L230 — fn store_tokens(path: &Path, tokens: TokenResponse, previous_refresh: Option<&str>) -> Result<()>
+- store_tokens_at · function · L232-L304 — fn store_tokens_at(
+- grok_home · function · L306-L318 — fn grok_home(
+- auth_json_path · function · L321-L328 — pub fn auth_json_path() -> Option<PathBuf>
+- credential_scope_key · function · L330-L332 — fn credential_scope_key() -> String
+- GrokCredential · struct · L336-L341 — pub struct GrokCredential
+- needs_refresh_at · function · L344-L347 — pub fn needs_refresh_at(&self, now: chrono::DateTime<chrono::Utc>) -> bool
+- parse_credential · function · L352-L389 — pub fn parse_credential(bytes: &[u8]) -> Option<GrokCredential>
+- load_credential · function · L391-L393 — pub fn load_credential() -> Option<GrokCredential>
+- deployment_key · function · L395-L400 — fn deployment_key() -> Option<String>
+- has_cached_login · function · L404-L406 — pub fn has_cached_login() -> bool
+- bearer_token · function · L410-L434 — pub async fn bearer_token(force_refresh: bool) -> Result<String>
+- refresh_tokens · function · L436-L444 — async fn refresh_tokens(client: &reqwest::Client, path: &Path, refresh: &str) -> Result<()>
+- refresh_tokens_at · function · L446-L476 — async fn refresh_tokens_at(
+- tests · module · L479-L703 — mod tests
+- scoped · function · L482-L484 — fn scoped(entry: &str) -> String
+- fake_jwt · function · L486-L493 — fn fake_jwt(claims: &str) -> String
+- selects_only_the_grok_cli_oidc_scope · function · L496-L510 — fn selects_only_the_grok_cli_oidc_scope()
+- rejects_api_key_mode_mismatched_issuer_and_empty_keys · function · L513-L526 — fn rejects_api_key_mode_mismatched_issuer_and_empty_keys()
+- honours_expires_at_with_skew_and_jwt_exp_fallback · function · L529-L554 — fn honours_expires_at_with_skew_and_jwt_exp_fallback()
+- store_tokens_preserves_other_scopes_and_cli_fields · function · L557-L591 — fn store_tokens_preserves_other_scopes_and_cli_fields()
+- refresh_posts_refresh_grant_and_rotates_tokens · function · L594-L650 — async fn refresh_posts_refresh_grant_and_rotates_tokens()
+- cli_version_env_override_is_a_single_token · function · L653-L658 — fn cli_version_env_override_is_a_single_token()
+- chat_proxy_headers_identify_as_grok_cli · function · L661-L682 — fn chat_proxy_headers_identify_as_grok_cli()
+- grok_home_prefers_env_then_home_then_user_profile · function · L685-L702 — fn grok_home_prefers_env_then_home_then_user_profile()

@@ -1,0 +1,59 @@
+# crates/jcode-build-support/src/paths.rs
+
+- get_repo_dir · function · L14-L53 — pub fn get_repo_dir() -> Option<PathBuf>
+- find_repo_in_ancestors · function · L55-L62 — pub fn find_repo_in_ancestors(start: &Path) -> Option<PathBuf>
+- binary_stem · function · L64-L66 — pub fn binary_stem() -> &'static str
+- binary_name · function · L68-L74 — pub fn binary_name() -> &'static str
+- SELFDEV_CARGO_PROFILE · constant · L76-L76 — pub const SELFDEV_CARGO_PROFILE: &str = "selfdev";
+- resolve_binary_payload · function · L93-L96 — pub fn resolve_binary_payload(path: &Path) -> PathBuf
+- wrapper_payload_sibling · function · L98-L131 — fn wrapper_payload_sibling(path: &Path) -> Option<PathBuf>
+- profile_binary_path · function · L133-L135 — fn profile_binary_path(repo_dir: &Path, profile: &str) -> PathBuf
+- release_binary_path · function · L137-L139 — pub fn release_binary_path(repo_dir: &Path) -> PathBuf
+- selfdev_binary_path · function · L141-L143 — pub fn selfdev_binary_path(repo_dir: &Path) -> PathBuf
+- binary_mtime · function · L145-L149 — fn binary_mtime(path: &Path) -> Option<SystemTime>
+- newest_existing_binary · function · L151-L158 — fn newest_existing_binary(
+- existing_binary · function · L160-L164 — fn existing_binary(path: Result<PathBuf>, label: &'static str) -> Option<(PathBuf, &'static str)>
+- selfdev_build_command · function · L166-L168 — pub fn selfdev_build_command(repo_dir: &Path) -> SelfDevBuildCommand
+- selfdev_build_command_for_target · function · L170-L175 — pub fn selfdev_build_command_for_target(
+- selfdev_build_command_for_target_on_platform · function · L177-L231 — fn selfdev_build_command_for_target_on_platform(
+- cargo_build_args · function · L233-L248 — fn cargo_build_args(specs: &[(&str, &str)]) -> Vec<String>
+- display_build_command · function · L250-L261 — fn display_build_command(program: &str, specs: &[(&str, &str)]) -> String
+- infer_selfdev_build_target · function · L263-L277 — fn infer_selfdev_build_target(repo_dir: &Path) -> SelfDevBuildTarget
+- porcelain_path · function · L280-L286 — fn porcelain_path(line: &str) -> String
+- build_target_for_paths · function · L291-L300 — fn build_target_for_paths<'a>(paths: impl Iterator<Item = &'a str>) -> SelfDevBuildTarget
+- shell_escape · function · L302-L304 — fn shell_escape(value: &str) -> String
+- run_selfdev_build · function · L306-L322 — pub fn run_selfdev_build(repo_dir: &Path) -> Result<SelfDevBuildCommand>
+- current_binary_built_at · function · L324-L330 — pub fn current_binary_built_at() -> Option<DateTime<Utc>>
+- current_binary_build_time_string · function · L332-L334 — pub fn current_binary_build_time_string() -> Option<String>
+- find_dev_binary · function · L338-L344 — pub fn find_dev_binary(repo_dir: &Path) -> Option<PathBuf>
+- home_dir · function · L346-L351 — fn home_dir() -> Result<PathBuf>
+- non_empty_env_path · function · L353-L359 — fn non_empty_env_path(name: &str) -> Option<PathBuf>
+- launcher_dir · function · L365-L389 — pub fn launcher_dir() -> Result<PathBuf>
+- launcher_binary_path · function · L392-L394 — pub fn launcher_binary_path() -> Result<PathBuf>
+- update_launcher_symlink · function · L396-L414 — fn update_launcher_symlink(target: &Path) -> Result<PathBuf>
+- update_launcher_symlink_to_current · function · L417-L420 — pub fn update_launcher_symlink_to_current() -> Result<PathBuf>
+- update_launcher_symlink_to_stable · function · L423-L426 — pub fn update_launcher_symlink_to_stable() -> Result<PathBuf>
+- client_update_candidate · function · L437-L463 — pub fn client_update_candidate(is_selfdev_session: bool) -> Option<(PathBuf, &'static str)>
+- shared_server_update_candidate · function · L471-L488 — pub fn shared_server_update_candidate(is_selfdev_session: bool) -> Option<(PathBuf, &'static str)>
+- shared_server_channel_is_current_enough · function · L490-L516 — fn shared_server_channel_is_current_enough() -> bool
+- normalize_version_marker · function · L518-L527 — fn normalize_version_marker(value: &str) -> String
+- version_matches_installed_channel · function · L529-L553 — pub fn version_matches_installed_channel(version: &str, git_hash: &str) -> bool
+- preferred_reload_candidate · function · L561-L596 — pub fn preferred_reload_candidate(is_selfdev_session: bool) -> Option<(PathBuf, &'static str)>
+- is_jcode_repo · function · L599-L619 — pub fn is_jcode_repo(dir: &Path) -> bool
+- tests · module · L622-L887 — mod tests
+- repo_fixture · function · L625-L639 — fn repo_fixture(git_file: bool) -> tempfile::TempDir
+- find_repo_in_ancestors_finds_workspace_from_crate_dir · function · L642-L651 — fn find_repo_in_ancestors_finds_workspace_from_crate_dir()
+- every_build_target_builds_its_own_package · function · L656-L673 — fn every_build_target_builds_its_own_package()
+- windows_selfdev_build_invokes_native_cargo_without_a_shell · function · L676-L705 — fn windows_selfdev_build_invokes_native_cargo_without_a_shell()
+- unix_selfdev_build_keeps_using_the_wrapper · function · L708-L728 — fn unix_selfdev_build_keeps_using_the_wrapper()
+- windows_cargo_args_build_the_tui_for_all · function · L731-L751 — fn windows_cargo_args_build_the_tui_for_all()
+- auto_routes_changed_paths_to_the_right_binary · function · L755-L770 — fn auto_routes_changed_paths_to_the_right_binary()
+- porcelain_lines_are_parsed_including_renames · function · L773-L783 — fn porcelain_lines_are_parsed_including_renames()
+- build_targets_parse_from_their_names · function · L786-L805 — fn build_targets_parse_from_their_names()
+- is_jcode_repo_accepts_git_file_for_worktree · function · L808-L811 — fn is_jcode_repo_accepts_git_file_for_worktree()
+- release_install_fixture · function · L814-L825 — fn release_install_fixture() -> (tempfile::TempDir, PathBuf, PathBuf)
+- resolve_binary_payload_maps_wrapper_to_payload · function · L828-L834 — fn resolve_binary_payload_maps_wrapper_to_payload()
+- resolve_binary_payload_follows_channel_symlink_to_wrapper · function · L837-L851 — fn resolve_binary_payload_follows_channel_symlink_to_wrapper()
+- resolve_binary_payload_keeps_real_binary · function · L854-L865 — fn resolve_binary_payload_keeps_real_binary()
+- resolve_binary_payload_keeps_small_script_without_payload · function · L868-L876 — fn resolve_binary_payload_keeps_small_script_without_payload()
+- resolve_binary_payload_refuses_ambiguous_payloads · function · L879-L886 — fn resolve_binary_payload_refuses_ambiguous_payloads()

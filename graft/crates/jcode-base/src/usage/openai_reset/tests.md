@@ -1,0 +1,23 @@
+# crates/jcode-base/src/usage/openai_reset/tests.rs
+
+- automatic_reset_receipts_survive_retries_and_fail_closed_on_corruption · function · L6-L20 — fn automatic_reset_receipts_survive_retries_and_fail_closed_on_corruption()
+- exhausted_weekly_usage · function · L22-L38 — fn exhausted_weekly_usage() -> OpenAIUsageData
+- automatic_reset_requires_enforced_weekly_limit_and_matching_account · function · L41-L54 — fn automatic_reset_requires_enforced_weekly_limit_and_matching_account()
+- automatic_reset_rejects_rounded_allowed_unknown_stale_or_failed_usage · function · L57-L81 — fn automatic_reset_rejects_rounded_allowed_unknown_stale_or_failed_usage()
+- credentials · function · L83-L91 — fn credentials() -> auth::codex::CodexCredentials
+- credit · function · L93-L97 — fn credit(id: &str, expiry: Option<&str>, status: &str) -> Value
+- server · function · L99-L143 — async fn server(responses: Vec<(u16, Value)>) -> (String, tokio::task::JoinHandle<Vec<String>>)
+- prepare · function · L145-L154 — async fn prepare(client: &reqwest::Client, url: &str) -> Result<Option<PendingOpenAiUsageReset>>
+- preparation_is_read_only_and_selects_earliest_expiring_available_credit · function · L157-L191 — async fn preparation_is_read_only_and_selects_earliest_expiring_available_credit()
+- no_available_credits_does_not_prepare_redemption · function · L194-L203 — async fn no_available_credits_does_not_prepare_redemption()
+- inconsistent_or_unknown_payload_fails_closed · function · L206-L216 — async fn inconsistent_or_unknown_payload_fails_closed()
+- consume_retries_pin_credit_account_and_idempotency_key · function · L219-L254 — async fn consume_retries_pin_credit_account_and_idempotency_key()
+- all_official_outcomes_are_handled_and_unknown_codes_are_not_success · function · L257-L272 — fn all_official_outcomes_are_handled_and_unknown_codes_are_not_success()
+- auth_rate_limit_and_unsupported_errors_have_actionable_safe_messages · function · L275-L291 — async fn auth_rate_limit_and_unsupported_errors_have_actionable_safe_messages()
+- reset_cache_invalidation_is_scoped_to_target_account · function · L294-L309 — fn reset_cache_invalidation_is_scoped_to_target_account()
+- provider_text_cannot_inject_terminal_controls · function · L312-L315 — fn provider_text_cannot_inject_terminal_controls()
+- reset_generation_prevents_old_fetches_from_repopulating_usage · function · L318-L356 — async fn reset_generation_prevents_old_fetches_from_repopulating_usage()
+- reset_metadata_survives_cache_roundtrip_but_not_errors · function · L359-L382 — fn reset_metadata_survives_cache_roundtrip_but_not_errors()
+- live_openai_banked_reset_availability_read_only · function · L387-L417 — async fn live_openai_banked_reset_availability_read_only()
+- expiry_metadata_lookup_is_read_only_and_filters_unavailable_credits · function · L420-L444 — async fn expiry_metadata_lookup_is_read_only_and_filters_unavailable_credits()
+- expiry_metadata_lookup_failure_is_reported_without_redemption · function · L447-L457 — async fn expiry_metadata_lookup_failure_is_reported_without_redemption()

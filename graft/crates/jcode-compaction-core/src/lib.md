@@ -1,0 +1,63 @@
+# crates/jcode-compaction-core/src/lib.rs
+
+- DEFAULT_TOKEN_BUDGET · constant · L6-L6 — pub const DEFAULT_TOKEN_BUDGET: usize = 200_000;
+- COMPACTION_THRESHOLD · constant · L9-L9 — pub const COMPACTION_THRESHOLD: f32 = 0.80;
+- CRITICAL_THRESHOLD · constant · L13-L13 — pub const CRITICAL_THRESHOLD: f32 = 0.95;
+- MANUAL_COMPACT_MIN_THRESHOLD · constant · L16-L16 — pub const MANUAL_COMPACT_MIN_THRESHOLD: f32 = 0.10;
+- RECENT_TURNS_TO_KEEP · constant · L19-L19 — pub const RECENT_TURNS_TO_KEEP: usize = 10;
+- MIN_TURNS_TO_KEEP · constant · L22-L22 — pub const MIN_TURNS_TO_KEEP: usize = 2;
+- EMERGENCY_TOOL_RESULT_MAX_CHARS · constant · L25-L25 — pub const EMERGENCY_TOOL_RESULT_MAX_CHARS: usize = 4000;
+- EMERGENCY_IMAGE_MAX_CHARS · constant · L31-L31 — pub const EMERGENCY_IMAGE_MAX_CHARS: usize = 1024;
+- PAYLOAD_IMAGE_CHAR_BUDGET · constant · L40-L40 — pub const PAYLOAD_IMAGE_CHAR_BUDGET: usize = 12 * 1024 * 1024;
+- CHARS_PER_TOKEN · constant · L43-L43 — pub const CHARS_PER_TOKEN: usize = 4;
+- IMAGE_TOKEN_COST · constant · L58-L58 — pub const IMAGE_TOKEN_COST: usize = 1_600;
+- OPENAI_COMPACTION_TOKEN_COST · constant · L66-L66 — pub const OPENAI_COMPACTION_TOKEN_COST: usize = 8_000;
+- SYSTEM_OVERHEAD_TOKENS · constant · L71-L71 — pub const SYSTEM_OVERHEAD_TOKENS: usize = 18_000;
+- TOKEN_HISTORY_WINDOW · constant · L74-L74 — pub const TOKEN_HISTORY_WINDOW: usize = 20;
+- EMBED_MAX_CHARS_PER_MSG · constant · L77-L77 — pub const EMBED_MAX_CHARS_PER_MSG: usize = 512;
+- EMBEDDING_HISTORY_WINDOW · constant · L80-L80 — pub const EMBEDDING_HISTORY_WINDOW: usize = 10;
+- SEMANTIC_EMBED_CACHE_CAPACITY · constant · L83-L83 — pub const SEMANTIC_EMBED_CACHE_CAPACITY: usize = 256;
+- SUMMARY_PROMPT · constant · L85-L93 — pub const SUMMARY_PROMPT: &str = r#"Summarize our conversation so you can continue this work later.
+- Summary · struct · L97-L102 — pub struct Summary
+- CompactionEvent · struct · L106-L116 — pub struct CompactionEvent
+- CompactionAction · enum · L120-L127 — pub enum CompactionAction
+- CompactionStats · struct · L131-L140 — pub struct CompactionStats
+- compacted_summary_text_block · function · L142-L144 — pub fn compacted_summary_text_block(summary: &str) -> String
+- build_compaction_prompt · function · L146-L160 — pub fn build_compaction_prompt(
+- build_compaction_conversation_text · function · L162-L238 — pub fn build_compaction_conversation_text(
+- truncate_str_boundary · function · L240-L249 — pub fn truncate_str_boundary(value: &str, max_bytes: usize) -> &str
+- mean_embedding · function · L251-L271 — pub fn mean_embedding(embeddings: &[&Vec<f32>], dim: usize) -> Vec<f32>
+- safe_compaction_cutoff · function · L275-L328 — pub fn safe_compaction_cutoff(messages: &[Message], initial_cutoff: usize) -> usize
+- message_char_count · function · L330-L332 — pub fn message_char_count(msg: &Message) -> usize
+- content_char_count · function · L334-L372 — pub fn content_char_count(content: &[ContentBlock]) -> usize
+- summary_payload_char_count · function · L374-L380 — pub fn summary_payload_char_count(summary: &Summary) -> usize
+- estimate_compaction_tokens · function · L382-L389 — pub fn estimate_compaction_tokens(
+- effective_context_tokens_from_usage · function · L405-L432 — pub fn effective_context_tokens_from_usage(
+- reusable_cache_tokens_from_usage · function · L437-L460 — pub fn reusable_cache_tokens_from_usage(
+- estimate_compaction_tokens_from_chars · function · L462-L473 — pub fn estimate_compaction_tokens_from_chars(total_chars: usize, token_budget: usize) -> usize
+- semantic_goal_text · function · L475-L491 — pub fn semantic_goal_text(messages: &[Message]) -> String
+- semantic_message_text · function · L493-L504 — pub fn semantic_message_text(msg: &Message) -> String
+- push_semantic_excerpt · function · L506-L514 — pub fn push_semantic_excerpt(target: &mut String, source: &str, max_chars: usize)
+- semantic_cache_key · function · L516-L520 — pub fn semantic_cache_key(text: &str) -> u64
+- build_emergency_summary_text · function · L522-L565 — pub fn build_emergency_summary_text(
+- collect_emergency_summary_hints · function · L567-L583 — fn collect_emergency_summary_hints(
+- extract_file_mentions · function · L585-L594 — pub fn extract_file_mentions(text: &str, file_mentions: &mut Vec<String>)
+- looks_like_file_reference · function · L596-L608 — pub fn looks_like_file_reference(word: &str) -> bool
+- clean_file_reference · function · L610-L614 — pub fn clean_file_reference(word: &str) -> &str
+- emergency_truncate_tool_results · function · L616-L637 — pub fn emergency_truncate_tool_results(messages: &mut [Message], max_chars: usize) -> usize
+- emergency_truncate_large_payloads · function · L639-L681 — pub fn emergency_truncate_large_payloads(
+- is_image_rejection_error · function · L688-L707 — pub fn is_image_rejection_error(error: &str) -> bool
+- strip_all_images_in_contents · function · L712-L735 — pub fn strip_all_images_in_contents<C: AsRef<[ContentBlock]> + AsMut<[ContentBlock]>>(
+- is_request_payload_too_large_error · function · L744-L753 — pub fn is_request_payload_too_large_error(error: &str) -> bool
+- contains_independent_status_code · function · L758-L766 — fn contains_independent_status_code(haystack: &str, code: &str) -> bool
+- emergency_strip_large_images · function · L779-L782 — pub fn emergency_strip_large_images(messages: &mut [Message], target_total_chars: usize) -> usize
+- strip_large_images_in_contents · function · L787-L832 — pub fn strip_large_images_in_contents<C: AsRef<[ContentBlock]> + AsMut<[ContentBlock]>>(
+- TOOL_IMAGE_DECAY_TRIGGER_COUNT · constant · L837-L837 — pub const TOOL_IMAGE_DECAY_TRIGGER_COUNT: usize = 12;
+- TOOL_IMAGE_DECAY_TRIGGER_CHARS · constant · L841-L841 — pub const TOOL_IMAGE_DECAY_TRIGGER_CHARS: usize = 48 * 1024 * 1024;
+- TOOL_IMAGE_DECAY_KEEP_COUNT · constant · L847-L847 — pub const TOOL_IMAGE_DECAY_KEEP_COUNT: usize = 6;
+- TOOL_IMAGE_DECAY_KEEP_CHARS · constant · L851-L851 — pub const TOOL_IMAGE_DECAY_KEEP_CHARS: usize = 24 * 1024 * 1024;
+- decay_old_tool_images_in_contents · function · L865-L916 — pub fn decay_old_tool_images_in_contents<C: AsRef<[ContentBlock]> + AsMut<[ContentBlock]>>(
+- emergency_truncated_tool_result · function · L918-L929 — pub fn emergency_truncated_tool_result(content: &str, max_chars: usize) -> String
+- tail_str_boundary · function · L931-L940 — pub fn tail_str_boundary(value: &str, max_bytes: usize) -> &str
+- tests · module · L943-L943 — mod tests;
+- image_rejection_tests · module · L947-L947 — mod image_rejection_tests;

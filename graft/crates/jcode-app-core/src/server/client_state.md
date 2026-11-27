@@ -1,0 +1,38 @@
+# crates/jcode-app-core/src/server/client_state.rs
+
+- HistoryPayloadMode · enum · L19-L21 — pub(super) enum HistoryPayloadMode
+- ATTACH_MODEL_PREFETCH_DEBOUNCE_SECS · constant · L25-L25 — const ATTACH_MODEL_PREFETCH_DEBOUNCE_SECS: u64 = 15;
+- RELOAD_RESTORE_MARKER_MAX_AGE · constant · L26-L26 — const RELOAD_RESTORE_MARKER_MAX_AGE: Duration = Duration::from_secs(60);
+- history_timing · module · L29-L29 — mod history_timing;
+- provider_oauth_email · function · L36-L42 — pub(crate) fn provider_oauth_email(
+- selected_provider_oauth_email · function · L44-L58 — fn selected_provider_oauth_email(
+- optional_token_usage_totals · function · L60-L62 — fn optional_token_usage_totals(totals: TokenUsageTotals) -> Option<TokenUsageTotals>
+- optional_total_tokens · function · L64-L66 — fn optional_total_tokens(totals: TokenUsageTotals) -> Option<(u64, u64)>
+- LAST_ATTACH_MODEL_PREFETCH · constant · L68-L69 — static LAST_ATTACH_MODEL_PREFETCH: LazyLock<StdMutex<HashMap<String, Instant>>> =
+- should_debounce_attach_model_prefetch · function · L71-L85 — fn should_debounce_attach_model_prefetch(provider_name: &str) -> bool
+- history_provider_label · module · L88-L88 — mod history_provider_label;
+- handle_get_state · function · L91-L116 — pub(super) async fn handle_get_state(
+- handle_get_history · function · L122-L213 — pub(super) async fn handle_get_history(
+- build_model_catalog · function · L215-L363 — async fn build_model_catalog(
+- handle_get_model_catalog · function · L365-L417 — pub(super) async fn handle_get_model_catalog(
+- history_paging · module · L420-L420 — mod history_paging;
+- recent_history_window · function · L425-L511 — pub(super) fn recent_history_window(
+- apply_recent_history_base · function · L513-L528 — fn apply_recent_history_base(
+- apply_history_base · function · L536-L562 — pub(super) fn apply_history_base(
+- apply_history_images_base · function · L565-L576 — pub(super) fn apply_history_images_base(
+- rendered_to_history_message · function · L578-L590 — fn rendered_to_history_message(msg: crate::session::RenderedMessage) -> HistoryMessage
+- history_reload_recovery_snapshot · function · L593-L600 — fn history_reload_recovery_snapshot(
+- history_reload_recovery_snapshot_with · function · L602-L666 — fn history_reload_recovery_snapshot_with(
+- persisted_session_has_reload_interruption_marker · function · L668-L687 — fn persisted_session_has_reload_interruption_marker(session: &Session) -> bool
+- infer_persisted_session_interrupted_by_reload · function · L690-L705 — fn infer_persisted_session_interrupted_by_reload(session_id: &str) -> bool
+- session_interrupted_by_reload · function · L707-L736 — fn session_interrupted_by_reload(session: &Session) -> bool
+- send_history_from_persisted_session · function · L742-L902 — async fn send_history_from_persisted_session(
+- HISTORY_MODEL_CATALOG_BUDGET · constant · L912-L912 — const HISTORY_MODEL_CATALOG_BUDGET: Duration = Duration::from_millis(5);
+- available_models_for_history · function · L919-L932 — async fn available_models_for_history(provider: Arc<dyn Provider>) -> Vec<String>
+- send_history_with_guard · function · L938-L1306 — async fn send_history_with_guard(
+- session_activity_snapshot · function · L1308-L1349 — pub(super) async fn session_activity_snapshot(
+- history_turn_state · function · L1351-L1360 — fn history_turn_state(sessions: &SessionAgents, session_id: &str) -> Option<ServerEvent>
+- write_event · function · L1362-L1373 — async fn write_event(writer: &Arc<Mutex<WriteHalf>>, event: &ServerEvent) -> Result<()>
+- tests · module · L1377-L1377 — mod tests;
+- spawn_model_prefetch_update · function · L1379-L1425 — pub(super) fn spawn_model_prefetch_update(provider: Arc<dyn Provider>, agent: Arc<Mutex<Agent>>)
+- client_state_tests · module · L1429-L1429 — mod client_state_tests;

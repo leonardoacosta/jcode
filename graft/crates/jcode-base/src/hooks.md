@@ -1,0 +1,49 @@
+# crates/jcode-base/src/hooks.rs
+
+- PAYLOAD_ENV_LIMIT · constant · L39-L39 — const PAYLOAD_ENV_LIMIT: usize = 16 * 1024;
+- TOOL_INPUT_ENV_LIMIT · constant · L41-L41 — const TOOL_INPUT_ENV_LIMIT: usize = 16 * 1024;
+- BLOCK_REASON_LIMIT · constant · L43-L43 — const BLOCK_REASON_LIMIT: usize = 2000;
+- FEEDBACK_LIMIT · constant · L46-L46 — const FEEDBACK_LIMIT: usize = 8 * 1024;
+- GATE_CONTEXT_LIMIT · constant · L49-L49 — const GATE_CONTEXT_LIMIT: usize = 8 * 1024;
+- GateDecision · enum · L53-L56 — pub enum GateDecision
+- GateOutcome · struct · L60-L68 — pub struct GateOutcome
+- allow · function · L71-L77 — fn allow() -> Self
+- CommandVerdict · struct · L82-L91 — struct CommandVerdict
+- block · function · L94-L99 — fn block(reason: String) -> Self
+- json_str · function · L102-L108 — fn json_str<'a>(value: &'a Value, key: &str) -> Option<&'a str>
+- parse_gate_stdout · function · L118-L120 — fn parse_gate_stdout(stdout: &str) -> CommandVerdict
+- parse_decision_stdout · function · L124-L196 — fn parse_decision_stdout(stdout: &str, label: &str) -> CommandVerdict
+- HookEvent · struct · L200-L209 — pub struct HookEvent
+- new · function · L212-L219 — pub fn new(event: &'static str) -> Self
+- session_id · function · L221-L224 — pub fn session_id(mut self, session_id: impl Into<String>) -> Self
+- cwd · function · L226-L229 — pub fn cwd(mut self, cwd: impl Into<String>) -> Self
+- field · function · L231-L234 — pub fn field(mut self, key: &'static str, value: impl Into<String>) -> Self
+- with_client_terminal_env · function · L241-L246 — pub async fn with_client_terminal_env<F>(env: Vec<(String, String)>, future: F) -> F::Output
+- client_terminal_env · function · L253-L258 — pub fn client_terminal_env() -> Option<Vec<(String, String)>>
+- strict_hooks_config · function · L265-L276 — fn strict_hooks_config() -> Option<&'static crate::config::HooksConfig>
+- broken_config_may_hide_hooks · function · L284-L299 — fn broken_config_may_hide_hooks() -> bool
+- hook_policy_denial · function · L310-L326 — pub fn hook_policy_denial() -> Option<String>
+- hook_commands · function · L329-L357 — pub fn hook_commands(event: &str) -> Vec<String>
+- hook_command · function · L360-L362 — pub fn hook_command(event: &str) -> Option<String>
+- hook_configured · function · L366-L368 — pub fn hook_configured(event: &str) -> bool
+- transform_tool_input · function · L374-L462 — pub async fn transform_tool_input(
+- hooks_suppressed · function · L465-L467 — fn hooks_suppressed() -> bool
+- expand_home · function · L469-L476 — fn expand_home(program: &str) -> PathBuf
+- truncate_bytes · function · L478-L487 — fn truncate_bytes(value: &str, limit: usize) -> &str
+- truncate_tool_input · function · L490-L492 — pub fn truncate_tool_input(tool_input_json: &str) -> &str
+- tool_input_json_prefix · function · L500-L502 — pub fn tool_input_json_prefix(value: &serde_json::Value) -> String
+- json_prefix · function · L504-L550 — fn json_prefix(value: &serde_json::Value, limit: usize) -> String
+- PrefixWriter · struct · L505-L509 — struct PrefixWriter
+- write · function · L511-L522 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- flush · function · L523-L525 — fn flush(&mut self) -> std::io::Result<()>
+- payload_json · function · L553-L576 — fn payload_json(event: &HookEvent) -> String
+- apply_event_env · function · L578-L591 — fn apply_event_env(cmd: &mut std::process::Command, event: &HookEvent)
+- build_hook_process · function · L593-L626 — fn build_hook_process(
+- dispatch_observer · function · L632-L662 — pub fn dispatch_observer(event: HookEvent)
+- run_pre_tool_gate · function · L673-L721 — pub async fn run_pre_tool_gate(
+- run_pre_tool_command · function · L723-L812 — async fn run_pre_tool_command(
+- run_post_tool_feedback · function · L821-L841 — pub async fn run_post_tool_feedback(event: &HookEvent, tool_input_json: &str) -> Option<String>
+- run_post_tool_feedback_command · function · L843-L910 — async fn run_post_tool_feedback_command(
+- lifecycle · module · L913-L913 — mod lifecycle;
+- tests · module · L919-L919 — mod tests;
+- json_prefix_tests · module · L923-L923 — mod json_prefix_tests;

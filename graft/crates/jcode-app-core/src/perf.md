@@ -1,0 +1,61 @@
+# crates/jcode-app-core/src/perf.rs
+
+- PerformanceTier · enum · L4-L8 — pub enum PerformanceTier
+- label · function · L11-L17 — pub fn label(self) -> &'static str
+- badge · function · L19-L25 — pub fn badge(self) -> Option<&'static str>
+- animations_enabled · function · L27-L29 — pub fn animations_enabled(self) -> bool
+- idle_animation_enabled · function · L31-L33 — pub fn idle_animation_enabled(self) -> bool
+- prompt_entry_animation_enabled · function · L35-L37 — pub fn prompt_entry_animation_enabled(self) -> bool
+- fmt · function · L41-L43 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- SystemProfile · struct · L47-L63 — pub struct SystemProfile
+- SyntheticSystemProfile · enum · L66-L70 — pub enum SyntheticSystemProfile
+- label · function · L73-L79 — pub fn label(self) -> &'static str
+- TuiPerfPolicy · struct · L83-L93 — pub struct TuiPerfPolicy
+- load_ratio · function · L96-L101 — pub fn load_ratio(&self) -> Option<f64>
+- memory_pressure · function · L103-L108 — pub fn memory_pressure(&self) -> Option<f64>
+- is_windows_terminal · function · L110-L112 — pub fn is_windows_terminal(&self) -> bool
+- is_windows_terminal_family · function · L114-L119 — pub fn is_windows_terminal_family(&self) -> bool
+- is_wsl_windows_terminal · function · L121-L123 — pub fn is_wsl_windows_terminal(&self) -> bool
+- PROFILE · constant · L126-L126 — static PROFILE: OnceLock<SystemProfile> = OnceLock::new();
+- profile · function · L128-L130 — pub fn profile() -> &'static SystemProfile
+- pin_full_profile_for_tests · function · L139-L141 — pub fn pin_full_profile_for_tests()
+- synthetic_profile · function · L143-L195 — pub fn synthetic_profile(kind: SyntheticSystemProfile) -> SystemProfile
+- tui_policy · function · L197-L199 — pub fn tui_policy() -> TuiPerfPolicy
+- tui_policy_for · function · L201-L275 — pub fn tui_policy_for(
+- init_background · function · L277-L301 — pub fn init_background()
+- detect · function · L303-L353 — fn detect() -> SystemProfile
+- detect_fragile_glyph_cache · function · L364-L380 — fn detect_fragile_glyph_cache(terminal: &str) -> bool
+- compute_tier · function · L382-L432 — fn compute_tier(
+- detect_wsl · function · L434-L448 — fn detect_wsl() -> bool
+- detect_terminal · function · L450-L470 — fn detect_terminal() -> String
+- detect_load · function · L473-L487 — fn detect_load() -> (Option<f64>, Option<usize>)
+- detect_load · function · L490-L498 — fn detect_load() -> (Option<f64>, Option<usize>)
+- detect_load · function · L501-L504 — fn detect_load() -> (Option<f64>, Option<usize>)
+- detect_load · function · L507-L510 — fn detect_load() -> (Option<f64>, Option<usize>)
+- detect_memory · function · L513-L534 — fn detect_memory() -> (Option<u64>, Option<u64>)
+- parse_meminfo_kb · function · L537-L539 — fn parse_meminfo_kb(s: &str) -> Option<u64>
+- detect_memory · function · L542-L560 — fn detect_memory() -> (Option<u64>, Option<u64>)
+- MemoryStatusEx · struct · L546-L556 — struct MemoryStatusEx
+- GlobalMemoryStatusEx · function · L558-L559 — unsafe extern "system"
+- detect_memory · function · L576-L601 — fn detect_memory() -> (Option<u64>, Option<u64>)
+- detect_memory · function · L604-L606 — fn detect_memory() -> (Option<u64>, Option<u64>)
+- tests · module · L609-L925 — mod tests
+- test_ssh_is_minimal · function · L613-L624 — fn test_ssh_is_minimal()
+- test_healthy_system_is_full · function · L627-L638 — fn test_healthy_system_is_full()
+- test_high_load_reduces · function · L641-L655 — fn test_high_load_reduces()
+- test_low_memory_reduces · function · L658-L672 — fn test_low_memory_reduces()
+- test_wsl_penalty · function · L675-L695 — fn test_wsl_penalty()
+- test_windows_terminal_penalty · function · L698-L718 — fn test_windows_terminal_penalty()
+- test_profile_accessors · function · L721-L735 — fn test_profile_accessors()
+- test_tier_display · function · L738-L742 — fn test_tier_display()
+- test_badge · function · L745-L749 — fn test_badge()
+- test_animation_gates · function · L752-L764 — fn test_animation_gates()
+- test_tui_policy_caps_wsl_windows_terminal · function · L767-L786 — fn test_tui_policy_caps_wsl_windows_terminal()
+- test_tui_policy_keeps_native_defaults · function · L789-L808 — fn test_tui_policy_keeps_native_defaults()
+- test_tui_policy_caps_generic_wsl_without_disabling_terminal_features · function · L811-L829 — fn test_tui_policy_caps_generic_wsl_without_disabling_terminal_features()
+- test_tui_policy_disables_decorative_animation_on_windows_terminal_family · function · L832-L851 — fn test_tui_policy_disables_decorative_animation_on_windows_terminal_family()
+- test_detect_runs · function · L854-L857 — fn test_detect_runs()
+- glyph_safe_profile · function · L859-L871 — fn glyph_safe_profile(terminal: &str) -> SystemProfile
+- test_glyph_safe_mode_keeps_animations_and_caps_redraw · function · L874-L890 — fn test_glyph_safe_mode_keeps_animations_and_caps_redraw()
+- test_non_fragile_terminal_keeps_decorative_animations · function · L893-L904 — fn test_non_fragile_terminal_keeps_decorative_animations()
+- test_detect_fragile_glyph_cache_targets_macos_terminals · function · L908-L924 — fn test_detect_fragile_glyph_cache_targets_macos_terminals()

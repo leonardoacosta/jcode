@@ -1,0 +1,54 @@
+# crates/jcode-overnight-core/src/lib.rs
+
+- OVERNIGHT_VERSION · constant · L6-L6 — pub const OVERNIGHT_VERSION: u32 = 1;
+- usage_reconcile · module · L8-L8 — mod usage_reconcile;
+- OvernightDuration · struct · L17-L19 — pub struct OvernightDuration
+- OvernightCommand · enum · L22-L32 — pub enum OvernightCommand
+- OvernightRunStatus · enum · L36-L46 — pub enum OvernightRunStatus
+- label · function · L49-L58 — pub fn label(&self) -> &'static str
+- OvernightTaskAttempt · struct · L62-L69 — pub struct OvernightTaskAttempt
+- OvernightManifest · struct · L72-L112 — pub struct OvernightManifest
+- OvernightEvent · struct · L115-L126 — pub struct OvernightEvent
+- ResourceSnapshot · struct · L129-L151 — pub struct ResourceSnapshot
+- UsageProviderSnapshot · struct · L154-L161 — pub struct UsageProviderSnapshot
+- UsageLimitSnapshot · struct · L164-L169 — pub struct UsageLimitSnapshot
+- UsageProjection · struct · L172-L182 — pub struct UsageProjection
+- GitSnapshot · struct · L185-L195 — pub struct GitSnapshot
+- OvernightPreflight · struct · L198-L203 — pub struct OvernightPreflight
+- OvernightTaskCardBefore · struct · L206-L211 — pub struct OvernightTaskCardBefore
+- OvernightTaskCardAfter · struct · L214-L221 — pub struct OvernightTaskCardAfter
+- OvernightTaskCardValidation · struct · L224-L231 — pub struct OvernightTaskCardValidation
+- OvernightTaskCard · struct · L234-L263 — pub struct OvernightTaskCard
+- OvernightTaskStatusCounts · struct · L266-L274 — pub struct OvernightTaskStatusCounts
+- OvernightTaskCardSummary · struct · L277-L286 — pub struct OvernightTaskCardSummary
+- OvernightProgressCard · struct · L289-L321 — pub struct OvernightProgressCard
+- parse_overnight_command · function · L323-L359 — pub fn parse_overnight_command(trimmed: &str) -> Option<Result<OvernightCommand, String>>
+- overnight_usage · function · L361-L363 — pub fn overnight_usage() -> &'static str
+- parse_duration · function · L365-L397 — pub fn parse_duration(input: &str) -> std::result::Result<OvernightDuration, String>
+- summarize_task_cards_slice · function · L399-L435 — pub fn summarize_task_cards_slice(cards: &[OvernightTaskCard]) -> OvernightTaskCardSummary
+- task_card_title · function · L437-L445 — pub fn task_card_title(card: &OvernightTaskCard) -> String
+- task_status_bucket · function · L447-L458 — pub fn task_status_bucket(status: &str) -> &'static str
+- task_card_validated · function · L460-L471 — pub fn task_card_validated(card: &OvernightTaskCard) -> bool
+- event_class · function · L473-L483 — pub fn event_class(kind: &str) -> &'static str
+- html_escape · function · L485-L492 — pub fn html_escape(input: &str) -> String
+- render_task_cards_html · function · L494-L532 — pub fn render_task_cards_html(cards: &[OvernightTaskCard]) -> String
+- task_card_meta · function · L534-L569 — pub fn task_card_meta(card: &OvernightTaskCard) -> String
+- push_optional_task_paragraph · function · L571-L580 — pub fn push_optional_task_paragraph(out: &mut String, label: &str, value: Option<&str>)
+- push_list · function · L582-L600 — pub fn push_list(out: &mut String, label: &str, values: &[String])
+- build_review_html · function · L602-L610 — pub fn build_review_html(
+- build_review_html_with_usage · function · L612-L749 — pub fn build_review_html_with_usage(
+- render_timeline_html · function · L751-L771 — pub fn render_timeline_html(events: &[OvernightEvent], limit: usize) -> String
+- resource_summary · function · L773-L798 — pub fn resource_summary(snapshot: &ResourceSnapshot) -> String
+- git_summary · function · L800-L816 — pub fn git_summary(snapshot: &GitSnapshot) -> String
+- format_minutes · function · L818-L829 — pub fn format_minutes(minutes: u32) -> String
+- build_progress_card_from_parts · function · L831-L911 — pub fn build_progress_card_from_parts(
+- format_status_markdown_from_summary · function · L913-L919 — pub fn format_status_markdown_from_summary(
+- format_status_markdown_with_stale · function · L923-L966 — pub fn format_status_markdown_with_stale(
+- format_log_markdown_from_events · function · L968-L991 — pub fn format_log_markdown_from_events(
+- prompts · module · L993-L993 — mod prompts;
+- preflight_summary · function · L1002-L1017 — pub fn preflight_summary(preflight: &OvernightPreflight) -> String
+- helper_tests · module · L1020-L1020 — mod helper_tests;
+- status_tests · module · L1023-L1044 — mod status_tests
+- parse · function · L1026-L1034 — fn parse(status: &str) -> OvernightRunStatus
+- Fragment · struct · L1028-L1030 — struct Fragment
+- legacy_and_unknown_status_deserialize · function · L1037-L1043 — fn legacy_and_unknown_status_deserialize()

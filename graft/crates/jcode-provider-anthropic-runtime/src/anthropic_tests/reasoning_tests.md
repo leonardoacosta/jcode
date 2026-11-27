@@ -1,0 +1,15 @@
+# crates/jcode-provider-anthropic-runtime/src/anthropic_tests/reasoning_tests.rs
+
+- test_anthropic_reasoning_effort_request_parts · function · L4-L42 — fn test_anthropic_reasoning_effort_request_parts()
+- test_anthropic_preserves_swarm_sentinel_for_cycling · function · L45-L58 — fn test_anthropic_preserves_swarm_sentinel_for_cycling()
+- test_anthropic_show_thinking_enables_adaptive_thinking_without_effort · function · L61-L104 — fn test_anthropic_show_thinking_enables_adaptive_thinking_without_effort()
+- test_anthropic_explicit_none_effort_disables_thinking_even_with_show_thinking · function · L107-L137 — fn test_anthropic_explicit_none_effort_disables_thinking_even_with_show_thinking()
+- test_anthropic_opus_5_5_defaults_to_low_effort · function · L140-L168 — fn test_anthropic_opus_5_5_defaults_to_low_effort()
+- test_anthropic_fable_defaults_to_high_effort · function · L171-L214 — fn test_anthropic_fable_defaults_to_high_effort()
+- test_anthropic_sonnet_5_supports_full_effort_ladder · function · L217-L265 — fn test_anthropic_sonnet_5_supports_full_effort_ladder()
+- test_anthropic_opus_defaults_to_xhigh_effort · function · L268-L320 — fn test_anthropic_opus_defaults_to_xhigh_effort()
+- test_anthropic_show_thinking_enables_manual_thinking_without_effort · function · L323-L343 — fn test_anthropic_show_thinking_enables_manual_thinking_without_effort()
+- test_anthropic_max_alias_uses_strongest_real_effort · function · L346-L383 — fn test_anthropic_max_alias_uses_strongest_real_effort()
+- test_anthropic_opus_48_fast_mode_service_tier_serializes_priority · function · L386-L413 — fn test_anthropic_opus_48_fast_mode_service_tier_serializes_priority()
+- test_anthropic_fast_mode_is_limited_to_opus_48 · function · L416-L432 — fn test_anthropic_fast_mode_is_limited_to_opus_48()
+- test_anthropic_manual_thinking_budget_for_opus_45 · function · L435-L454 — fn test_anthropic_manual_thinking_budget_for_opus_45()

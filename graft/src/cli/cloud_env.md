@@ -1,0 +1,36 @@
+# src/cli/cloud_env.rs
+
+- Payload · struct · L10-L16 — struct Payload
+- Source · enum · L19-L22 — enum Source
+- Entry · struct · L25-L30 — struct Entry
+- repository_root · function · L32-L49 — fn repository_root(path: &Path) -> Result<PathBuf>
+- current_root · function · L51-L59 — fn current_root() -> Result<PathBuf>
+- append_entry · function · L61-L79 — fn append_entry(
+- collect · function · L81-L142 — fn collect(root: &Path, request: &Request, source: Source) -> Result<Payload>
+- exchange_bounded · function · L144-L262 — fn exchange_bounded(
+- transmit · function · L264-L279 — fn transmit(target: &Target, host: &str, payload: &Payload) -> Result<Status>
+- send · function · L281-L297 — fn send(root: &Path, target: &Target, request: &Request, source: Source) -> Result<Status>
+- callback_target · function · L299-L310 — fn callback_target(host: String) -> Result<Target>
+- fulfill · function · L312-L340 — fn fulfill(session: &str, request: Request) -> Result<Status>
+- read_bounded · function · L342-L350 — fn read_bounded(limit: usize) -> Result<Vec<u8>>
+- validate_payload · function · L352-L437 — fn validate_payload(payload: &Payload) -> Result<(PathBuf, Vec<Vec<u8>>)>
+- receive · function · L439-L472 — fn receive(payload: Payload) -> Result<Status>
+- run_cli · function · L474-L502 — pub(crate) fn run_cli(action: super::super::args::CloudEnvCommand) -> Result<()>
+- write_status · function · L504-L515 — fn write_status(result: Result<Status>, mut output: impl std::io::Write) -> Result<()>
+- sync_saved · function · L517-L526 — pub(super) fn sync_saved(root: &Path, target: &super::Target) -> Result<()>
+- tests · module · L529-L788 — mod tests
+- rejected_cli_request_returns_redacted_failure · function · L532-L539 — fn rejected_cli_request_returns_redacted_failure()
+- callback_rejects_non_unicode_binary_without_leaking_it · function · L543-L558 — fn callback_rejects_non_unicode_binary_without_leaking_it()
+- concurrent_workspace_receives_publish_once · function · L562-L605 — fn concurrent_workspace_receives_publish_once()
+- rejects_payload_before_writing · function · L608-L639 — fn rejects_payload_before_writing()
+- rejects_private_key_environment_before_publishing_project_files · function · L642-L675 — fn rejects_private_key_environment_before_publishing_project_files()
+- bounded_transport_times_out_blocked_pipes_and_descendants · function · L679-L693 — fn bounded_transport_times_out_blocked_pipes_and_descendants()
+- bounded_transport_success · function · L696-L709 — fn bounded_transport_success()
+- fulfillment_transport_stays_in_caller_process_group · function · L712-L736 — fn fulfillment_transport_stays_in_caller_process_group()
+- Restore · struct · L714-L714 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L716-L722 — fn drop(&mut self)
+- callback_honors_remote_binary · function · L738-L765 — fn callback_honors_remote_binary()
+- Restore · struct · L740-L740 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L742-L748 — fn drop(&mut self)
+- source_and_request_are_strict · function · L767-L773 — fn source_and_request_are_strict()
+- status_never_reflects_errors · function · L775-L787 — fn status_never_reflects_errors()

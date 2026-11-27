@@ -1,0 +1,21 @@
+# crates/jcode-command-risk/src/paths_tests.rs
+
+- ctx · function · L9-L15 — fn ctx() -> RiskContext
+- home_directory_is_catastrophic_in_every_spelling · function · L18-L41 — fn home_directory_is_catastrophic_in_every_spelling()
+- parent_traversal_out_of_home_reaches_root_and_is_caught · function · L44-L51 — fn parent_traversal_out_of_home_reaches_root_and_is_caught()
+- root_and_system_paths_are_catastrophic · function · L54-L62 — fn root_and_system_paths_are_catastrophic()
+- credential_stores_inside_home_are_catastrophic · function · L65-L71 — fn credential_stores_inside_home_are_catastrophic()
+- ordinary_project_paths_are_not_catastrophic · function · L74-L89 — fn ordinary_project_paths_are_not_catastrophic()
+- home_subdirectory_is_not_itself_catastrophic · function · L92-L97 — fn home_subdirectory_is_not_itself_catastrophic()
+- inside_working_directory_is_low_risk_not_confirm · function · L100-L105 — fn inside_working_directory_is_low_risk_not_confirm()
+- non_recursive_delete_inside_cwd_is_unremarkable · function · L108-L112 — fn non_recursive_delete_inside_cwd_is_unremarkable()
+- concrete_outside_working_directory_target_is_low_risk · function · L115-L120 — fn concrete_outside_working_directory_target_is_low_risk()
+- temp_paths_are_exempt · function · L123-L130 — fn temp_paths_are_exempt()
+- glob_over_a_protected_directory_is_catastrophic · function · L133-L145 — fn glob_over_a_protected_directory_is_catastrophic()
+- unresolvable_targets_escalate_rather_than_pass · function · L148-L160 — fn unresolvable_targets_escalate_rather_than_pass()
+- missing_home_context_does_not_panic_or_misfire · function · L163-L172 — fn missing_home_context_does_not_panic_or_misfire()
+- normalize_never_escapes_above_root · function · L175-L181 — fn normalize_never_escapes_above_root()
+- individual_credential_files_are_protected_not_just_their_directory · function · L184-L200 — fn individual_credential_files_are_protected_not_just_their_directory()
+- ordinary_config_files_remain_editable · function · L203-L221 — fn ordinary_config_files_remain_editable()
+- known_variable_logs_are_bounded_but_unknown_expansions_still_confirm · function · L224-L253 — fn known_variable_logs_are_bounded_but_unknown_expansions_still_confirm()
+- known_variables_do_not_bypass_protected_paths · function · L256-L282 — fn known_variables_do_not_bypass_protected_paths()

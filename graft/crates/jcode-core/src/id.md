@@ -1,0 +1,34 @@
+# crates/jcode-core/src/id.rs
+
+- new_id · function · L6-L10 — pub fn new_id(prefix: &str) -> String
+- SERVER_MODIFIERS · constant · L19-L54 — const SERVER_MODIFIERS: &[(&str, &str)] = &[
+- SESSION_NAMES · constant · L57-L193 — const SESSION_NAMES: &[(&str, &str)] = &[
+- session_name_cursor · function · L195-L198 — fn session_name_cursor() -> &'static AtomicUsize
+- CURSOR · constant · L196-L196 — static CURSOR: OnceLock<AtomicUsize> = OnceLock::new();
+- session_icon · function · L201-L207 — pub fn session_icon(name: &str) -> &'static str
+- server_icon · function · L210-L216 — pub fn server_icon(name: &str) -> &'static str
+- new_memorable_server_id · function · L222-L234 — pub fn new_memorable_server_id() -> (String, String)
+- extract_server_name · function · L239-L246 — pub fn extract_server_name(server_id: &str) -> Option<&str>
+- new_memorable_session_id · function · L252-L254 — pub fn new_memorable_session_id() -> (String, String)
+- new_memorable_session_id_avoiding · function · L263-L273 — pub fn new_memorable_session_id_avoiding(used_names: &HashSet<String>) -> (String, String)
+- select_available_session_name · function · L275-L301 — fn select_available_session_name(
+- extract_session_name · function · L305-L315 — pub fn extract_session_name(session_id: &str) -> Option<&str>
+- is_generated_session_id · function · L322-L341 — pub fn is_generated_session_id(value: &str) -> bool
+- tests · module · L344-L614 — mod tests
+- generated_session_id_detection · function · L348-L362 — fn generated_session_id_detection()
+- test_new_memorable_session_id · function · L365-L384 — fn test_new_memorable_session_id()
+- test_extract_session_name · function · L387-L407 — fn test_extract_session_name()
+- test_unique_session_ids · function · L410-L418 — fn test_unique_session_ids()
+- test_all_names_have_icons · function · L421-L427 — fn test_all_names_have_icons()
+- session_identity_pool_is_expanded_and_reserves_bee_for_swarm · function · L430-L439 — fn session_identity_pool_is_expanded_and_reserves_bee_for_swarm()
+- avoiding_allocator_uses_every_available_identity_before_reuse · function · L442-L454 — fn avoiding_allocator_uses_every_available_identity_before_reuse()
+- avoiding_allocator_finds_the_last_free_identity_while_others_advance_the_cursor · function · L457-L477 — fn avoiding_allocator_finds_the_last_free_identity_while_others_advance_the_cursor()
+- is_fragile_emoji · function · L490-L508 — fn is_fragile_emoji(emoji: &str) -> bool
+- UNSAFE_SUPPLEMENTAL · constant · L492-L498 — const UNSAFE_SUPPLEMENTAL: &[u32] = &[
+- session_icons_render_as_single_safe_glyphs · function · L511-L521 — fn session_icons_render_as_single_safe_glyphs()
+- session_names_and_icons_are_unique · function · L524-L536 — fn session_names_and_icons_are_unique()
+- server_icons_render_as_single_safe_glyphs · function · L539-L549 — fn server_icons_render_as_single_safe_glyphs()
+- test_new_memorable_server_id · function · L552-L571 — fn test_new_memorable_server_id()
+- test_extract_server_name · function · L574-L589 — fn test_extract_server_name()
+- test_unique_server_ids · function · L592-L600 — fn test_unique_server_ids()
+- test_all_modifiers_have_icons · function · L603-L613 — fn test_all_modifiers_have_icons()

@@ -1,0 +1,38 @@
+# crates/jcode-sdk/src/worktrees.rs
+
+- Worktree · struct · L15-L23 — pub struct Worktree
+- git · function · L25-L57 — fn git(working_dir: &str, args: &[&str]) -> Result<Vec<u8>>
+- list · function · L61-L66 — pub fn list(working_dir: &str) -> Result<Vec<Worktree>>
+- parse · function · L68-L108 — fn parse(bytes: &[u8]) -> Result<Vec<Worktree>>
+- safe_name · function · L111-L122 — fn safe_name(branch: &str) -> String
+- create · function · L125-L127 — pub fn create(_working_dir: &str, _branch: &str) -> Result<Worktree>
+- WorktreeRequest · struct · L132-L143 — pub struct WorktreeRequest
+- repository_identity · function · L147-L192 — pub fn repository_identity(working_dir: &str) -> Result<String>
+- component · function · L194-L206 — fn component(value: &str) -> Result<()>
+- inspect_path · function · L210-L235 — fn inspect_path(path: &Path) -> Result<()>
+- Ownership · struct · L238-L247 — struct Ownership
+- ownership_path · function · L249-L252 — fn ownership_path(path: &str) -> Result<std::path::PathBuf>
+- create_with_policy · function · L256-L452 — pub fn create_with_policy(
+- tests · module · L455-L957 — mod tests
+- repo · function · L459-L472 — fn repo() -> (TempDir, String)
+- policy · function · L474-L480 — fn policy(temp: &TempDir) -> jcode_config_types::WorktreesConfig
+- request · function · L482-L498 — fn request(path: &str, branch: &str) -> WorktreeRequest
+- worktrees_policy_requires_authority_identity_and_safe_names · function · L501-L522 — fn worktrees_policy_requires_authority_identity_and_safe_names()
+- worktrees_policy_reuse_checks_dirty_base_and_live_owner · function · L525-L552 — fn worktrees_policy_reuse_checks_dirty_base_and_live_owner()
+- worktrees_policy_rejects_assume_unchanged_without_mutation · function · L555-L557 — fn worktrees_policy_rejects_assume_unchanged_without_mutation()
+- worktrees_policy_rejects_skip_worktree_without_mutation · function · L560-L562 — fn worktrees_policy_rejects_skip_worktree_without_mutation()
+- hidden_index_reuse_is_rejected · function · L564-L594 — fn hidden_index_reuse_is_rejected(flag: &str, tag: u8)
+- worktrees_policy_rejects_ancestor_symlink_escape · function · L598-L608 — fn worktrees_policy_rejects_ancestor_symlink_escape()
+- worktrees_policy_preserves_existing_unowned_destination_and_remote_credentials · function · L611-L639 — fn worktrees_policy_preserves_existing_unowned_destination_and_remote_credentials()
+- worktrees_policy_rejects_symlink_owner_metadata · function · L643-L656 — fn worktrees_policy_rejects_symlink_owner_metadata()
+- worktrees_policy_does_not_execute_repository_checkout_hooks · function · L659-L685 — fn worktrees_policy_does_not_execute_repository_checkout_hooks()
+- worktrees_policy_refuses_configured_filters_before_creation_and_reuse · function · L689-L734 — fn worktrees_policy_refuses_configured_filters_before_creation_and_reuse()
+- request_without_git · function · L737-L743 — fn request_without_git(existing: &WorktreeRequest, branch: &str) -> WorktreeRequest
+- worktrees_policy_reuse_does_not_execute_fsmonitor · function · L747-L772 — fn worktrees_policy_reuse_does_not_execute_fsmonitor()
+- parses_nul_records_without_trimming_paths_or_reasons · function · L775-L787 — fn parses_nul_records_without_trimming_paths_or_reasons()
+- authorized_create · function · L789-L816 — fn authorized_create(path: &str, branch: &str) -> Result<Worktree>
+- creation_isolates_dirty_edits_and_nested_invocation · function · L819-L862 — fn creation_isolates_dirty_edits_and_nested_invocation()
+- rejects_invalid_branches_collisions_and_non_repositories · function · L865-L901 — fn rejects_invalid_branches_collisions_and_non_repositories()
+- lists_existing_detached_locked_prunable_and_bare_worktrees · function · L904-L936 — fn lists_existing_detached_locked_prunable_and_bare_worktrees()
+- unborn_head_does_not_create_a_branch · function · L939-L945 — fn unborn_head_does_not_create_a_branch()
+- refuses_symlink_destination_root · function · L949-L956 — fn refuses_symlink_destination_root()

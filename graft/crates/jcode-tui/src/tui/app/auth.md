@@ -1,0 +1,68 @@
+# crates/jcode-tui/src/tui/app/auth.rs
+
+- subscription_status · module · L2-L2 — mod subscription_status;
+- auth_account_commands · module · L5-L5 — mod auth_account_commands;
+- auth_account_picker · module · L7-L7 — mod auth_account_picker;
+- auth_muse · module · L9-L9 — pub(super) mod auth_muse;
+- auth_progress · module · L11-L11 — mod auth_progress;
+- auth_types · module · L15-L15 — mod auth_types;
+- saved_account_route_selection · function · L27-L79 — fn saved_account_route_selection(
+- saved_account_route_tests · module · L83-L83 — mod saved_account_route_tests;
+- open_auth_browser · function · L86-L92 — pub(super) fn open_auth_browser(url: &str) -> bool
+- record_oauth_preflight · function · L94-L134 — fn record_oauth_preflight(
+- show_auth_status · function · L136-L186 — pub(super) fn show_auth_status(&mut self)
+- show_interactive_login · function · L188-L192 — pub(super) fn show_interactive_login(&mut self)
+- show_interactive_logout · function · L194-L197 — pub(super) fn show_interactive_logout(&mut self)
+- start_logout_provider · function · L199-L296 — pub(super) fn start_logout_provider(
+- start_logout_all · function · L298-L433 — pub(super) fn start_logout_all(&mut self)
+- clear_api_key_login · function · L435-L437 — fn clear_api_key_login(env_key: &str, env_file: &str) -> anyhow::Result<()>
+- clear_api_key_logout_summary · function · L439-L453 — fn clear_api_key_logout_summary(
+- start_login_provider · function · L455-L535 — pub(super) fn start_login_provider(
+- begin_pending_login · function · L537-L542 — fn begin_pending_login(&mut self, pending: PendingLogin)
+- start_claude_login · function · L544-L548 — fn start_claude_login(&mut self)
+- start_jcode_login · function · L550-L733 — fn start_jcode_login(&mut self)
+- open_jcode_account_management · function · L735-L748 — pub(super) fn open_jcode_account_management(&mut self)
+- start_jcode_account_logout · function · L750-L800 — pub(super) fn start_jcode_account_logout(&mut self)
+- start_claude_login_for_account · function · L802-L941 — pub(super) fn start_claude_login_for_account(&mut self, label: &str)
+- CHARSET · constant · L808-L809 — const CHARSET: &[u8] =
+- claude_login_callback · function · L943-L959 — async fn claude_login_callback(
+- switch_account · function · L961-L963 — pub(super) fn switch_account(&mut self, label: &str)
+- switch_saved_oauth_account · function · L965-L1016 — fn switch_saved_oauth_account(&mut self, provider_id: &str, label: &str)
+- switch_account_by_label · function · L1018-L1040 — pub(super) fn switch_account_by_label(&mut self, label: &str)
+- remove_account · function · L1042-L1057 — pub(super) fn remove_account(&mut self, label: &str)
+- switch_openai_account · function · L1059-L1061 — pub(super) fn switch_openai_account(&mut self, label: &str)
+- remove_openai_account · function · L1063-L1078 — pub(super) fn remove_openai_account(&mut self, label: &str)
+- start_openai_login · function · L1080-L1084 — fn start_openai_login(&mut self)
+- start_openai_login_for_account · function · L1086-L1196 — pub(super) fn start_openai_login_for_account(&mut self, label: &str)
+- CHARSET · constant · L1092-L1093 — const CHARSET: &[u8] =
+- openai_login_callback · function · L1198-L1215 — async fn openai_login_callback(
+- openai_token_exchange · function · L1217-L1247 — async fn openai_token_exchange(
+- start_gemini_login · function · L1249-L1410 — fn start_gemini_login(&mut self)
+- start_openrouter_login · function · L1412-L1423 — fn start_openrouter_login(&mut self)
+- start_bedrock_login · function · L1425-L1438 — fn start_bedrock_login(&mut self)
+- start_openai_api_key_login · function · L1440-L1451 — fn start_openai_api_key_login(&mut self)
+- start_anthropic_api_key_login · function · L1453-L1464 — fn start_anthropic_api_key_login(&mut self)
+- start_openai_compatible_profile_login · function · L1466-L1485 — fn start_openai_compatible_profile_login(
+- start_openai_compatible_key_login · function · L1487-L1502 — fn start_openai_compatible_key_login(
+- start_api_key_login · function · L1508-L1578 — fn start_api_key_login(
+- start_azure_login · function · L1580-L1589 — fn start_azure_login(&mut self)
+- start_cursor_login · function · L1591-L1604 — fn start_cursor_login(&mut self)
+- start_grok_build_login · function · L1606-L1670 — fn start_grok_build_login(&mut self)
+- start_antigravity_login · function · L1672-L1803 — fn start_antigravity_login(&mut self)
+- antigravity_token_exchange · function · L1805-L1839 — async fn antigravity_token_exchange(
+- handle_login_input · function · L1841-L2612 — pub(super) fn handle_login_input(&mut self, pending: PendingLogin, input: String)
+- onboarding_should_prefer_strongest_model · function · L2614-L2636 — pub(super) fn onboarding_should_prefer_strongest_model(&self) -> bool
+- trigger_provider_auth_changed · function · L2638-L2797 — fn trigger_provider_auth_changed(
+- maybe_apply_event_driven_onboarding_model · function · L2801-L2832 — pub(super) fn maybe_apply_event_driven_onboarding_model(&mut self)
+- login_provider_is_azure · function · L2834-L2839 — fn login_provider_is_azure(provider: &str) -> bool
+- activate_azure_runtime_model_after_login · function · L2841-L2897 — fn activate_azure_runtime_model_after_login(&mut self)
+- start_openai_compatible_post_login_activation · function · L2899-L3109 — pub(super) fn start_openai_compatible_post_login_activation(
+- handle_login_completed · function · L3111-L3287 — pub(super) fn handle_login_completed(&mut self, login: LoginCompleted)
+- claude_token_exchange · function · L3289-L3328 — async fn claude_token_exchange(
+- save_azure_config · function · L3330-L3362 — fn save_azure_config(
+- finish_azure_login · function · L3364-L3397 — fn finish_azure_login(&mut self, use_entra: bool)
+- save_tui_openai_compatible_api_base · function · L3401-L3418 — fn save_tui_openai_compatible_api_base(
+- save_tui_openai_compatible_key · function · L3421-L3458 — fn save_tui_openai_compatible_key(
+- looks_like_oauth_callback_input · function · L3460-L3467 — fn looks_like_oauth_callback_input(input: &str) -> bool
+- antigravity_input_requires_state_validation · function · L3469-L3471 — fn antigravity_input_requires_state_validation(input: &str, expected_state: Option<&str>) -> bool
+- tests · module · L3475-L3475 — mod tests;

@@ -1,0 +1,25 @@
+# crates/jcode-setup-hints/src/keymap/external.rs
+
+- Mods · struct · L24-L29 — struct Mods
+- or · function · L32-L39 — fn or(self, other: Mods) -> Mods
+- apply_modifier · function · L45-L59 — fn apply_modifier(token: &str, mods: &mut Mods, hyper_mods: Mods) -> bool
+- parse_hyper_mods · function · L63-L71 — fn parse_hyper_mods(spec: &str) -> Mods
+- chord_from_tokens · function · L76-L96 — fn chord_from_tokens<'a>(
+- parse_omniwm · function · L115-L160 — pub fn parse_omniwm(text: &str) -> Vec<DiscoveredBinding>
+- read_omniwm · function · L163-L171 — pub fn read_omniwm() -> Vec<DiscoveredBinding>
+- parse_aerospace · function · L186-L215 — pub fn parse_aerospace(text: &str) -> Vec<DiscoveredBinding>
+- aerospace_action_label · function · L217-L227 — fn aerospace_action_label(value: &toml::Value) -> String
+- read_aerospace · function · L230-L241 — pub fn read_aerospace() -> Vec<DiscoveredBinding>
+- parse_skhd · function · L258-L298 — pub fn parse_skhd(text: &str) -> Vec<DiscoveredBinding>
+- read_skhd · function · L301-L312 — pub fn read_skhd() -> Vec<DiscoveredBinding>
+- read_external_bindings · function · L319-L325 — pub fn read_external_bindings() -> Vec<DiscoveredBinding>
+- read_to_string · function · L327-L329 — fn read_to_string(path: &Path) -> Option<String>
+- external_config_paths · function · L333-L344 — pub fn external_config_paths() -> Vec<PathBuf>
+- tests · module · L347-L462 — mod tests
+- omniwm_cmd_jk_focus_bindings · function · L351-L386 — fn omniwm_cmd_jk_focus_bindings()
+- omniwm_hyper_defaults_to_option_when_unset · function · L389-L398 — fn omniwm_hyper_defaults_to_option_when_unset()
+- omniwm_cmd_shift_move_bindings · function · L401-L411 — fn omniwm_cmd_shift_move_bindings()
+- aerospace_binding_section · function · L414-L433 — fn aerospace_binding_section()
+- skhd_basic_lines · function · L436-L448 — fn skhd_basic_lines()
+- skhd_keyless_modifier_only_is_skipped · function · L451-L455 — fn skhd_keyless_modifier_only_is_skipped()
+- malformed_toml_yields_nothing · function · L458-L461 — fn malformed_toml_yields_nothing()

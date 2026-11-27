@@ -1,0 +1,27 @@
+# crates/jcode-base/src/recent_session_index.rs
+
+- RecentSessionMetadata · struct · L16-L26 — pub struct RecentSessionMetadata
+- display_title · function · L29-L41 — pub fn display_title(&self) -> Option<&str>
+- non_empty · function · L44-L47 — fn non_empty(value: &str) -> Option<&str>
+- SharedConnection · struct · L56-L59 — struct SharedConnection
+- SHARED · constant · L61-L61 — static SHARED: std::sync::Mutex<Option<SharedConnection>> = std::sync::Mutex::new(None);
+- with_connection · function · L63-L79 — fn with_connection<R>(f: impl FnOnce(&Connection) -> Result<R>) -> Result<R>
+- open_at · function · L81-L129 — fn open_at(path: &std::path::Path) -> Result<Connection>
+- recent · function · L131-L133 — pub fn recent(limit: usize) -> Result<Vec<RecentSessionMetadata>>
+- recent_with · function · L135-L159 — fn recent_with(connection: &Connection, limit: usize) -> Result<Vec<RecentSessionMetadata>>
+- upsert_session · function · L162-L165 — pub fn upsert_session(session: &Session) -> Result<()>
+- backfill_resume_session · function · L169-L174 — pub(crate) fn backfill_resume_session(
+- index_session · function · L176-L223 — fn index_session(
+- upsert · function · L225-L227 — pub fn upsert(entry: &RecentSessionMetadata) -> Result<()>
+- upsert_with · function · L229-L231 — fn upsert_with(connection: &Connection, entry: &RecentSessionMetadata) -> Result<()>
+- upsert_with_resume · function · L233-L274 — fn upsert_with_resume(
+- resume_entries · function · L279-L345 — pub(crate) fn resume_entries() -> Result<std::collections::HashMap<String, ResumeEntry>>
+- invalidate_resume_entries · function · L347-L365 — pub(crate) fn invalidate_resume_entries(ids: &[&str]) -> Result<()>
+- backfill_resume_metadata_in_background · function · L368-L384 — pub fn backfill_resume_metadata_in_background()
+- STARTED · constant · L369-L369 — static STARTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+- refresh_todo_title · function · L387-L389 — pub fn refresh_todo_title(session_id: &str) -> Result<()>
+- refresh_todo_title_with · function · L391-L407 — fn refresh_todo_title_with(connection: &Connection, session_id: &str) -> Result<()>
+- resume_tests · module · L410-L410 — mod resume_tests;
+- tests · module · L413-L454 — mod tests
+- display_title_uses_custom_then_todo_then_generated · function · L417-L432 — fn display_title_uses_custom_then_todo_then_generated()
+- display_title_prefers_save_label_over_derived_titles · function · L435-L453 — fn display_title_prefers_save_label_over_derived_titles()

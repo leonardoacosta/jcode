@@ -1,0 +1,34 @@
+# crates/jcode-tui/src/tui/ui_header/header_tests.rs
+
+- header_rows_clip_unicode_and_controls_without_losing_style · function · L12-L36 — fn header_rows_clip_unicode_and_controls_without_losing_style()
+- startup_header_never_adds_wraparound_rows_at_narrow_widths · function · L39-L55 — fn startup_header_never_adds_wraparound_rows_at_narrow_widths()
+- changelog_override_is_cleared_after_a_render_test_panics · function · L58-L75 — fn changelog_override_is_cleared_after_a_render_test_panics()
+- MockProvider · struct · L77-L77 — struct MockProvider;
+- complete · function · L81-L91 — async fn complete(
+- name · function · L93-L95 — fn name(&self) -> &str
+- fork · function · L97-L99 — fn fork(&self) -> Arc<dyn Provider>
+- ensure_test_jcode_home_if_unset · function · L102-L115 — fn ensure_test_jcode_home_if_unset()
+- TEST_HOME · constant · L103-L103 — static TEST_HOME: OnceLock<std::path::PathBuf> = OnceLock::new();
+- create_test_app · function · L117-L124 — fn create_test_app() -> crate::tui::app::App
+- left_aligned_mode_keeps_persistent_header_left_aligned · function · L127-L144 — fn left_aligned_mode_keeps_persistent_header_left_aligned()
+- left_aligned_mode_keeps_secondary_header_left_aligned · function · L147-L164 — fn left_aligned_mode_keeps_secondary_header_left_aligned()
+- combined_header_sections_match_individual_builders · function · L167-L173 — fn combined_header_sections_match_individual_builders()
+- version_display_candidates_compact_for_narrow_width · function · L176-L180 — fn version_display_candidates_compact_for_narrow_width()
+- rendered_header_lines · function · L182-L192 — fn rendered_header_lines(app: &crate::tui::app::App, width: u16) -> Vec<String>
+- persistent_header_labels_server_and_client_versions · function · L195-L227 — fn persistent_header_labels_server_and_client_versions()
+- persistent_header_keeps_git_hash_when_semvers_match_but_builds_differ · function · L230-L259 — fn persistent_header_keeps_git_hash_when_semvers_match_but_builds_differ()
+- persistent_header_omits_version_suffix_when_too_narrow · function · L262-L280 — fn persistent_header_omits_version_suffix_when_too_narrow()
+- persistent_header_local_mode_has_no_version_labels · function · L283-L296 — fn persistent_header_local_mode_has_no_version_labels()
+- persistent_header_client_line_shows_name_icon_with_connection_hint · function · L299-L326 — fn persistent_header_client_line_shows_name_icon_with_connection_hint()
+- persistent_header_client_line_has_no_connection_hint_when_unknown · function · L329-L353 — fn persistent_header_client_line_has_no_connection_hint_when_unknown()
+- prettify_model_id_title_cases_unknown_models · function · L356-L390 — fn prettify_model_id_title_cases_unknown_models()
+- header_model_display_name_sweeps_real_model_catalog · function · L393-L454 — fn header_model_display_name_sweeps_real_model_catalog()
+- compact_version_label_strips_hash_suffix · function · L457-L464 — fn compact_version_label_strips_hash_suffix()
+- configured_auth_count_includes_non_model_auth_surfaces · function · L467-L482 — fn configured_auth_count_includes_non_model_auth_surfaces()
+- header_provider_auth_tag_reports_active_credential_for_openai · function · L485-L505 — fn header_provider_auth_tag_reports_active_credential_for_openai()
+- header_provider_auth_tag_prefers_app_resolved_credential_over_env · function · L508-L537 — fn header_provider_auth_tag_prefers_app_resolved_credential_over_env()
+- header_provider_auth_tag_honors_runtime_selection_and_oauth_first · function · L540-L605 — fn header_provider_auth_tag_honors_runtime_selection_and_oauth_first()
+- build_persistent_header_prefers_configured_model_during_remote_connect · function · L608-L636 — fn build_persistent_header_prefers_configured_model_during_remote_connect()
+- build_header_lines_omits_placeholder_provider_label_when_unknown · function · L639-L679 — fn build_header_lines_omits_placeholder_provider_label_when_unknown()
+- build_header_lines_hides_secondary_placeholder_during_brief_connecting_phase · function · L682-L700 — fn build_header_lines_hides_secondary_placeholder_during_brief_connecting_phase()
+- format_model_name_labels_slashed_models_with_active_provider · function · L703-L725 — fn format_model_name_labels_slashed_models_with_active_provider()

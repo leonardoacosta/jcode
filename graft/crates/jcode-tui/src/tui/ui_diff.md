@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/ui_diff.rs
+
+- diff_add_color · function · L4-L6 — pub(super) fn diff_add_color() -> Color
+- diff_del_color · function · L8-L10 — pub(super) fn diff_del_color() -> Color
+- DiffLineKind · enum · L13-L16 — pub(super) enum DiffLineKind
+- ParsedDiffLine · struct · L19-L24 — pub(super) struct ParsedDiffLine
+- diff_change_counts · function · L26-L37 — pub(super) fn diff_change_counts(content: &str) -> (usize, usize)
+- diff_change_counts_for_tool · function · L39-L62 — pub(super) fn diff_change_counts_for_tool(tool: &ToolCall, content: &str) -> (usize, usize)
+- diff_counts_from_input_pair · function · L64-L72 — fn diff_counts_from_input_pair(
+- diff_counts_from_multiedit · function · L74-L97 — fn diff_counts_from_multiedit(input: &serde_json::Value) -> Option<(usize, usize)>
+- diff_counts_from_unified_patch_input · function · L99-L122 — fn diff_counts_from_unified_patch_input(input: &serde_json::Value) -> Option<(usize, usize)>
+- diff_counts_from_apply_patch_input · function · L124-L142 — fn diff_counts_from_apply_patch_input(input: &serde_json::Value) -> Option<(usize, usize)>
+- diff_counts_from_strings · function · L144-L158 — fn diff_counts_from_strings(old: &str, new: &str) -> (usize, usize)
+- generate_diff_lines_from_tool_input · function · L160-L219 — pub(super) fn generate_diff_lines_from_tool_input(tool: &ToolCall) -> Vec<ParsedDiffLine>
+- generate_diff_lines_from_strings · function · L221-L256 — fn generate_diff_lines_from_strings(old: &str, new: &str) -> Vec<ParsedDiffLine>
+- collect_diff_lines · function · L258-L274 — pub(super) fn collect_diff_lines(content: &str) -> Vec<ParsedDiffLine>
+- diff_file_path · function · L276-L299 — fn diff_file_path(raw_line: &str) -> Option<String>
+- unified_diff_path · function · L301-L314 — fn unified_diff_path(raw_path: &str) -> Option<String>
+- non_empty_diff_path · function · L316-L319 — fn non_empty_diff_path(path: &str) -> Option<String>
+- parse_diff_line · function · L321-L378 — fn parse_diff_line(raw_line: &str) -> Option<ParsedDiffLine>
+- tint_span_with_diff_color · function · L380-L400 — pub(super) fn tint_span_with_diff_color(span: Span<'static>, diff_color: Color) -> Span<'static>
+- tests · module · L403-L548 — mod tests
+- numbered_diff_consumes_only_the_format_separator · function · L412-L424 — fn numbered_diff_consumes_only_the_format_separator()
+- raw_diff_preserves_every_character_after_the_sign · function · L427-L452 — fn raw_diff_preserves_every_character_after_the_sign()
+- generated_diff_retains_indentation_trailing_space_and_blank_lines · function · L455-L470 — fn generated_diff_retains_indentation_trailing_space_and_blank_lines()
+- apply_patch_counts_ignore_context_lines_with_plus_or_minus_prefixes · function · L473-L479 — fn apply_patch_counts_ignore_context_lines_with_plus_or_minus_prefixes()
+- collected_apply_patch_lines_retain_file_boundaries · function · L482-L498 — fn collected_apply_patch_lines_retain_file_boundaries()
+- write_tool_falls_back_to_content_diff_counts · function · L501-L514 — fn write_tool_falls_back_to_content_diff_counts()
+- multiedit_pascal_case_falls_back_to_input_diff_counts · function · L517-L533 — fn multiedit_pascal_case_falls_back_to_input_diff_counts()
+- generated_diff_lines_use_old_and_new_line_numbers · function · L536-L547 — fn generated_diff_lines_use_old_and_new_line_numbers()

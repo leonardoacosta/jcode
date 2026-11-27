@@ -1,0 +1,26 @@
+# crates/jcode-tui-messages/src/prepared.rs
+
+- ImageRegion · struct · L8-L22 — pub struct ImageRegion
+- ImageRegionRender · enum · L26-L34 — pub enum ImageRegionRender
+- CopyTarget · struct · L37-L43 — pub struct CopyTarget
+- EditToolRange · struct · L46-L53 — pub struct EditToolRange
+- MessageBoundary · struct · L60-L73 — pub struct MessageBoundary
+- PreparedMessages · struct · L76-L109 — pub struct PreparedMessages
+- PreparedSection · struct · L112-L117 — pub struct PreparedSection
+- PreparedSectionKind · enum · L120-L132 — pub enum PreparedSectionKind
+- PreparedChatFrame · struct · L135-L146 — pub struct PreparedChatFrame
+- from_single · function · L149-L151 — pub fn from_single(prepared: Arc<PreparedMessages>) -> Self
+- mermaid_pending_epoch · function · L156-L161 — pub fn mermaid_pending_epoch(&self) -> Option<u64>
+- from_sections · function · L163-L249 — pub fn from_sections(sections: Vec<(PreparedSectionKind, Arc<PreparedMessages>)>) -> Self
+- total_wrapped_lines · function · L251-L253 — pub fn total_wrapped_lines(&self) -> usize
+- wrapped_plain_line_count · function · L255-L257 — pub fn wrapped_plain_line_count(&self) -> usize
+- visible_intersects_section · function · L259-L277 — pub fn visible_intersects_section(
+- line_section · function · L279-L284 — fn line_section(&self, abs_line: usize) -> Option<(&PreparedSection, usize)>
+- raw_section · function · L286-L291 — fn raw_section(&self, raw_line: usize) -> Option<(&PreparedSection, usize)>
+- wrapped_plain_line · function · L293-L300 — pub fn wrapped_plain_line(&self, abs_line: usize) -> Option<&str>
+- wrapped_copy_offset · function · L302-L305 — pub fn wrapped_copy_offset(&self, abs_line: usize) -> Option<usize>
+- raw_plain_line · function · L307-L314 — pub fn raw_plain_line(&self, raw_line: usize) -> Option<&str>
+- wrapped_line_map · function · L316-L324 — pub fn wrapped_line_map(&self, abs_line: usize) -> Option<WrappedLineMap>
+- message_index_at_line · function · L330-L341 — pub fn message_index_at_line(&self, abs_line: usize) -> Option<usize>
+- materialize_line_slice · function · L343-L363 — pub fn materialize_line_slice(&self, start: usize, end: usize) -> Vec<Line<'static>>
+- materialize_all_lines · function · L365-L367 — pub fn materialize_all_lines(&self) -> Vec<Line<'static>>

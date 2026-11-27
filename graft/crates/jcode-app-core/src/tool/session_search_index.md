@@ -1,0 +1,47 @@
+# crates/jcode-app-core/src/tool/session_search_index.rs
+
+- MAX_INDEX_TOKEN_LEN · constant · L28-L28 — pub const MAX_INDEX_TOKEN_LEN: usize = 32;
+- MAX_TOKENS_PER_FILE · constant · L31-L31 — pub const MAX_TOKENS_PER_FILE: usize = 200_000;
+- MAGIC · constant · L32-L32 — const MAGIC: &[u8; 4] = b"JSIX";
+- VERSION · constant · L36-L36 — const VERSION: u32 = 2;
+- INDEX_THREADS · constant · L37-L37 — const INDEX_THREADS: usize = 8;
+- BLOOM_BITS_PER_TOKEN · constant · L42-L42 — const BLOOM_BITS_PER_TOKEN: usize = 8;
+- BLOOM_HASHES · constant · L46-L46 — const BLOOM_HASHES: u32 = 4;
+- INDEX_CACHE · constant · L48-L48 — static INDEX_CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<TokenHashIndex>>>> = OnceLock::new();
+- cache_memory_stats · function · L52-L66 — pub fn cache_memory_stats() -> (usize, usize, usize)
+- IndexFileSpec · struct · L70-L75 — pub struct IndexFileSpec
+- IndexEntry · struct · L78-L85 — struct IndexEntry
+- TokenBloom · struct · L94-L98 — struct TokenBloom
+- from_hashes · function · L102-L120 — fn from_hashes(hashes: &[u32]) -> Self
+- contains · function · L124-L133 — fn contains(&self, hash: u32) -> bool
+- probe_positions · function · L137-L149 — fn probe_positions(hash: u32) -> [u64; BLOOM_HASHES as usize]
+- TokenHashIndex · struct · L153-L155 — pub struct TokenHashIndex
+- hash_token · function · L158-L165 — pub fn hash_token(token: &str) -> u32
+- normalization_tests · module · L169-L169 — mod normalization_tests;
+- hash_tokens_for_text · function · L173-L188 — pub fn hash_tokens_for_text(text: &str) -> (Vec<u32>, bool)
+- candidate_slots · function · L194-L219 — pub fn candidate_slots(&self, terms: &[String], min_term_matches: usize) -> Vec<usize>
+- len · function · L222-L224 — pub fn len(&self) -> usize
+- is_empty · function · L227-L229 — pub fn is_empty(&self) -> bool
+- approx_resident_bytes · function · L234-L241 — pub fn approx_resident_bytes(&self) -> usize
+- matches_specs · function · L243-L248 — fn matches_specs(&self, specs: &[IndexFileSpec]) -> bool
+- save · function · L250-L277 — fn save(&self, path: &Path) -> Result<()>
+- load · function · L279-L323 — fn load(path: &Path) -> Result<Self>
+- Cursor · struct · L326-L329 — struct Cursor<'a>
+- new · function · L332-L334 — fn new(raw: &'a [u8]) -> Self
+- take · function · L336-L345 — fn take(&mut self, len: usize) -> Result<&'a [u8]>
+- read_u16 · function · L347-L350 — fn read_u16(&mut self) -> Result<u16>
+- read_u32 · function · L352-L355 — fn read_u32(&mut self) -> Result<u32>
+- read_u64 · function · L357-L362 — fn read_u64(&mut self) -> Result<u64>
+- build_or_update · function · L370-L435 — pub fn build_or_update(
+- tokenize_slots_parallel · function · L437-L481 — fn tokenize_slots_parallel(
+- stat_ms_size · function · L484-L497 — pub fn stat_ms_size(path: &Path) -> (u64, u64)
+- tests · module · L500-L659 — mod tests
+- spec · function · L503-L509 — fn spec(key: &str, mtime_ms: u64, size: u64) -> IndexFileSpec
+- candidates_respect_min_term_matches_and_wildcards · function · L512-L531 — fn candidates_respect_min_term_matches_and_wildcards()
+- incremental_update_reuses_unchanged_entries_and_persists · function · L534-L568 — fn incremental_update_reuses_unchanged_entries_and_persists()
+- unreadable_files_stay_candidates · function · L571-L577 — fn unreadable_files_stay_candidates()
+- bloom_has_no_false_negatives · function · L582-L592 — fn bloom_has_no_false_negatives()
+- bloom_false_positive_rate_is_bounded · function · L597-L614 — fn bloom_false_positive_rate_is_bounded()
+- PROBES · constant · L603-L603 — const PROBES: usize = 20_000;
+- bloom_is_smaller_than_exact_token_sets · function · L620-L632 — fn bloom_is_smaller_than_exact_token_sets()
+- approx_resident_bytes_tracks_filter_size · function · L636-L658 — fn approx_resident_bytes_tracks_filter_size()

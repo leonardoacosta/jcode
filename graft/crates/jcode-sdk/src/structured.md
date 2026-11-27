@@ -1,0 +1,39 @@
+# crates/jcode-sdk/src/structured.rs
+
+- StructuredOutputSchema · type · L16-L16 — pub type StructuredOutputSchema = Value;
+- StructuredEventCallback · type · L19-L19 — pub type StructuredEventCallback = Arc<dyn Fn(&ApiEvent) + Send + Sync>;
+- RunStructuredOptions · struct · L22-L33 — pub struct RunStructuredOptions
+- new · function · L38-L46 — pub fn new(schema: StructuredOutputSchema) -> Self
+- run_options · function · L48-L58 — fn run_options(&self) -> RunOptions
+- StructuredValidationIssue · struct · L63-L72 — pub struct StructuredValidationIssue
+- StructuredOutputAttempt · struct · L76-L83 — pub struct StructuredOutputAttempt
+- StructuredTurnResult · struct · L87-L96 — pub struct StructuredTurnResult<T>
+- from_turn · function · L99-L108 — fn from_turn(data: T, attempts: Vec<StructuredOutputAttempt>, turn: TurnResult) -> Self
+- StructuredSchemaError · struct · L113-L115 — pub struct StructuredSchemaError
+- fmt · function · L118-L120 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- StructuredOutputError · struct · L127-L131 — pub struct StructuredOutputError
+- new · function · L134-L148 — fn new(attempts: Vec<StructuredOutputAttempt>) -> Self
+- code · function · L151-L153 — pub fn code(&self) -> &'static str
+- fmt · function · L157-L175 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- RunStructuredError · enum · L182-L189 — pub enum RunStructuredError
+- code · function · L193-L199 — pub fn code(&self) -> &'static str
+- fmt · function · L203-L213 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- source · function · L217-L223 — fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+- from · function · L227-L229 — fn from(error: Error) -> Self
+- run_structured · function · L238-L279 — pub fn run_structured<T: DeserializeOwned>(
+- validate_structured_text · function · L282-L304 — fn validate_structured_text<T: DeserializeOwned>(
+- normalize_validation_error · function · L306-L323 — fn normalize_validation_error(
+- ajv_style_details · function · L325-L369 — fn ajv_style_details(
+- parse_json_from_text · function · L371-L386 — fn parse_json_from_text(text: &str) -> Result<Value, StructuredValidationIssue>
+- json_candidates · function · L388-L418 — fn json_candidates(text: &str) -> Vec<String>
+- first_json_container · function · L420-L456 — fn first_json_container(text: &str) -> Option<&str>
+- build_structured_prompt · function · L458-L460 — fn build_structured_prompt(content: &str, schema: &Value) -> String
+- build_structured_correction_prompt · function · L462-L477 — fn build_structured_correction_prompt(schema: &Value, attempt: &StructuredOutputAttempt) -> String
+- structured_instructions · function · L479-L485 — fn structured_instructions(schema: &Value) -> String
+- stable_stringify · function · L487-L489 — fn stable_stringify(value: &Value) -> String
+- sort_json · function · L491-L506 — fn sort_json(value: &Value) -> Value
+- format_issue · function · L508-L510 — fn format_issue(issue: &StructuredValidationIssue) -> String
+- truncate · function · L512-L519 — fn truncate(value: &str, max_chars: usize) -> String
+- tests · module · L522-L545 — mod tests
+- extracts_fenced_and_embedded_json_like_typescript · function · L527-L536 — fn extracts_fenced_and_embedded_json_like_typescript()
+- correction_text_truncation_is_unicode_safe · function · L539-L544 — fn correction_text_truncation_is_unicode_safe()

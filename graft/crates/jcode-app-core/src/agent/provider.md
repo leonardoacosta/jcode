@@ -1,0 +1,53 @@
+# crates/jcode-app-core/src/agent/provider.rs
+
+- set_premium_mode · function · L4-L6 — pub fn set_premium_mode(&self, mode: crate::provider::copilot::PremiumMode)
+- premium_mode · function · L8-L10 — pub fn premium_mode(&self) -> crate::provider::copilot::PremiumMode
+- provider_fork · function · L12-L14 — pub fn provider_fork(&self) -> Arc<dyn Provider>
+- provider_handle · function · L16-L18 — pub fn provider_handle(&self) -> Arc<dyn Provider>
+- available_models · function · L20-L22 — pub fn available_models(&self) -> Vec<&'static str>
+- available_models_for_switching · function · L24-L26 — pub fn available_models_for_switching(&self) -> Vec<String>
+- available_models_display · function · L28-L30 — pub fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L32-L36 — pub fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- begin_model_usage_turn · function · L38-L40 — pub(super) fn begin_model_usage_turn(&mut self, message_id: &str)
+- model_usage_turn_id · function · L42-L65 — pub(super) fn model_usage_turn_id(&mut self) -> String
+- sync_bound_account_route · function · L67-L101 — pub(super) fn sync_bound_account_route(&mut self)
+- record_failed_account_route · function · L103-L136 — pub(super) fn record_failed_account_route(&mut self, error: &str)
+- record_model_turn_usage · function · L138-L156 — pub(super) fn record_model_turn_usage(&mut self, turn_id: &str)
+- model_catalog_snapshot · function · L158-L165 — pub fn model_catalog_snapshot(&self) -> jcode_provider_core::ModelCatalogSnapshot
+- registry · function · L167-L169 — pub fn registry(&self) -> Registry
+- compaction_mode · function · L171-L173 — pub async fn compaction_mode(&self) -> crate::config::CompactionMode
+- set_compaction_mode · function · L175-L180 — pub async fn set_compaction_mode(&self, mode: crate::config::CompactionMode) -> Result<()>
+- effective_context_budget · function · L183-L188 — pub async fn effective_context_budget(&self) -> usize
+- set_context_cap · function · L191-L204 — pub async fn set_context_cap(&mut self, max_context_tokens: Option<usize>) -> Result<usize>
+- refresh_compaction_budget · function · L206-L214 — fn refresh_compaction_budget(&self)
+- provider_context_window · function · L221-L223 — pub fn provider_context_window(&self) -> usize
+- compaction_token_budget · function · L226-L228 — pub(crate) async fn compaction_token_budget(&self) -> usize
+- provider_messages · function · L230-L232 — pub fn provider_messages(&mut self) -> Vec<Message>
+- set_model · function · L234-L239 — pub fn set_model(&mut self, model: &str) -> Result<()>
+- set_route_selection · function · L241-L249 — pub fn set_route_selection(
+- set_route_selection_from_auth · function · L251-L259 — pub(crate) fn set_route_selection_from_auth(
+- set_route_selection_from_provider_state_event · function · L261-L277 — fn set_route_selection_from_provider_state_event(
+- set_model_from_auth · function · L279-L284 — pub(crate) fn set_model_from_auth(&mut self, model: &str) -> Result<()>
+- set_model_from_provider_state_event · function · L286-L321 — fn set_model_from_provider_state_event(
+- provider_model_selection_generation · function · L323-L325 — pub(crate) fn provider_model_selection_generation(&self) -> u64
+- user_selected_provider_model_after · function · L327-L329 — pub(crate) fn user_selected_provider_model_after(&self, generation: u64) -> bool
+- restore_reasoning_effort_from_session · function · L331-L349 — pub fn restore_reasoning_effort_from_session(&mut self)
+- set_reasoning_effort · function · L351-L360 — pub fn set_reasoning_effort(&mut self, effort: &str) -> Result<Option<String>>
+- set_agent_model_override · function · L362-L365 — pub fn set_agent_model_override(&mut self, target: &str, model: Option<String>) -> Result<()>
+- subagent_model · function · L367-L369 — pub fn subagent_model(&self) -> Option<String>
+- set_subagent_model · function · L371-L376 — pub fn set_subagent_model(&mut self, model: Option<String>) -> Result<()>
+- session_provider_key · function · L378-L380 — pub fn session_provider_key(&self) -> Option<String>
+- session_route_api_method · function · L386-L396 — pub fn session_route_api_method(&self) -> Option<String>
+- active_resolved_credential · function · L402-L404 — pub fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- set_session_provider_key · function · L406-L408 — pub fn set_session_provider_key(&mut self, provider_key: Option<String>)
+- persist_session_now · function · L412-L414 — pub fn persist_session_now(&mut self) -> Result<()>
+- set_session_saved · function · L417-L429 — pub fn set_session_saved(
+- rename_session_title · function · L431-L436 — pub fn rename_session_title(&mut self, title: Option<String>) -> Result<String>
+- session_display_title_or_name · function · L438-L440 — pub fn session_display_title_or_name(&self) -> String
+- autoreview_enabled · function · L442-L444 — pub fn autoreview_enabled(&self) -> Option<bool>
+- set_autoreview_enabled · function · L446-L451 — pub fn set_autoreview_enabled(&mut self, enabled: bool) -> Result<()>
+- autojudge_enabled · function · L453-L455 — pub fn autojudge_enabled(&self) -> Option<bool>
+- set_autojudge_enabled · function · L457-L462 — pub fn set_autojudge_enabled(&mut self, enabled: bool) -> Result<()>
+- set_working_dir · function · L465-L482 — pub fn set_working_dir(&mut self, dir: &str)
+- working_dir · function · L485-L487 — pub fn working_dir(&self) -> Option<&str>
+- messages · function · L490-L492 — pub fn messages(&self) -> &[StoredMessage]

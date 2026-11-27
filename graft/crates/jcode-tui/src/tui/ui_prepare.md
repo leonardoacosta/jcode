@@ -1,0 +1,72 @@
+# crates/jcode-tui/src/tui/ui_prepare.rs
+
+- assistant_aux · module · L2-L2 — mod assistant_aux;
+- message_rendering · module · L5-L5 — mod message_rendering;
+- AssistantAuxData · struct · L19-L25 — struct AssistantAuxData
+- AssistantAuxKey · struct · L28-L35 — struct AssistantAuxKey
+- ASSISTANT_AUX_CACHE_LIMIT · constant · L37-L37 — const ASSISTANT_AUX_CACHE_LIMIT: usize = 2048;
+- AssistantAuxCacheState · struct · L40-L43 — struct AssistantAuxCacheState
+- assistant_aux_cache · function · L45-L49 — fn assistant_aux_cache() -> &'static std::sync::Mutex<AssistantAuxCacheState>
+- CACHE · constant · L46-L47 — static CACHE: std::sync::OnceLock<std::sync::Mutex<AssistantAuxCacheState>> =
+- debug_assistant_aux_memory_profile · function · L52-L66 — pub(super) fn debug_assistant_aux_memory_profile() -> serde_json::Value
+- content_prefers_display_as_logical_lines · function · L68-L73 — fn content_prefers_display_as_logical_lines(content: &str) -> bool
+- semantic_swarm_line_text · function · L75-L84 — fn semantic_swarm_line_text(plain: &str) -> (String, usize)
+- map_display_lines_to_logical_lines · function · L86-L123 — fn map_display_lines_to_logical_lines(
+- user_prompt_number_style · function · L125-L127 — fn user_prompt_number_style(color: Color) -> Style
+- user_prompt_accent_style · function · L129-L131 — fn user_prompt_accent_style() -> Style
+- user_prompt_text_style · function · L133-L135 — fn user_prompt_text_style() -> Style
+- default_message_alignment · function · L137-L148 — fn default_message_alignment(role: &str, centered: bool) -> ratatui::layout::Alignment
+- is_error_copy_content · function · L150-L153 — fn is_error_copy_content(content: &str) -> bool
+- copy_targets · module · L156-L156 — mod copy_targets;
+- todo_change_lines · function · L165-L185 — fn todo_change_lines(
+- push_user_prompt_lines · function · L191-L250 — fn push_user_prompt_lines(
+- empty_prepared_messages · function · L252-L269 — fn empty_prepared_messages() -> PreparedMessages
+- stamp_mermaid_pending · function · L276-L282 — fn stamp_mermaid_pending(prepared: &mut PreparedMessages, epoch_before: u64)
+- merge_mermaid_pending · function · L286-L296 — fn merge_mermaid_pending(
+- first_mermaid_pending_message · function · L301-L311 — fn first_mermaid_pending_message(prepared: &PreparedMessages) -> Option<usize>
+- active_codemode · function · L313-L324 — fn active_codemode(app: &dyn TuiState) -> Option<crate::message::ToolCall>
+- active_batch_progress · function · L326-L331 — fn active_batch_progress(app: &dyn TuiState) -> Option<crate::bus::BatchProgress>
+- active_batch_progress_hash · function · L333-L368 — pub(super) fn active_batch_progress_hash(app: &dyn TuiState) -> u64
+- swarm_members_signature · function · L370-L385 — fn swarm_members_signature(members: &[crate::protocol::SwarmMemberStatus]) -> u64
+- spawned_member_for_tool · function · L387-L426 — fn spawned_member_for_tool<'a>(
+- prepare_active_batch_progress · function · L428-L548 — fn prepare_active_batch_progress(
+- prepare_messages · function · L550-L647 — pub(super) fn prepare_messages(
+- initial_header_pad_top · function · L653-L658 — pub(crate) fn initial_header_pad_top(height: u16, header_lines: usize) -> usize
+- build_top_pad_lines · function · L665-L683 — fn build_top_pad_lines(width: u16, pad_top: usize) -> Vec<Line<'static>>
+- prepare_messages_inner · function · L685-L914 — fn prepare_messages_inner(app: &dyn TuiState, width: u16, height: u16) -> PreparedChatFrame
+- prepare_todo_blockers · function · L916-L924 — fn prepare_todo_blockers(app: &dyn TuiState, width: u16) -> PreparedMessages
+- HEADER_PREP_CACHE_TTL · constant · L954-L954 — const HEADER_PREP_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(30);
+- HeaderPrepCacheState · struct · L956-L960 — struct HeaderPrepCacheState
+- header_prep_cache · function · L962-L973 — fn header_prep_cache() -> &'static std::sync::Mutex<Option<HeaderPrepCacheState>>
+- CACHE · constant · L963-L964 — static CACHE: std::sync::OnceLock<std::sync::Mutex<Option<HeaderPrepCacheState>>> =
+- SECONDARY · constant · L967-L968 — static SECONDARY: std::sync::OnceLock<std::sync::Mutex<Option<HeaderPrepCacheState>>> =
+- invalidate_header_prep_cache · function · L982-L991 — pub(crate) fn invalidate_header_prep_cache()
+- header_prep_signature · function · L995-L1035 — fn header_prep_signature(app: &dyn TuiState, width: u16) -> u64
+- prepare_header_cached · function · L1037-L1067 — fn prepare_header_cached(app: &dyn TuiState, width: u16) -> Arc<PreparedMessages>
+- prepare_body_cached · function · L1069-L1160 — fn prepare_body_cached(app: &dyn TuiState, width: u16) -> Arc<PreparedMessages>
+- build_body_from_base · function · L1167-L1259 — pub(super) fn build_body_from_base(
+- BodyRenderCtx · struct · L1264-L1278 — struct BodyRenderCtx<'a>
+- prepare_history_preview · function · L1284-L1292 — pub(crate) fn prepare_history_preview(
+- preview_fallback · module · L1296-L1296 — mod preview_fallback;
+- prepare_history_preview_for_viewport · function · L1302-L1329 — pub(crate) fn prepare_history_preview_for_viewport(
+- prepare_history_preview_bounded · function · L1332-L1378 — fn prepare_history_preview_bounded(
+- viewport_preview_tests · module · L1382-L1382 — mod viewport_preview_tests;
+- BodyAcc · struct · L1389-L1414 — struct BodyAcc
+- push_auto · function · L1424-L1436 — fn push_auto(&mut self, line: Line<'static>)
+- push_blank · function · L1440-L1442 — fn push_blank(&mut self)
+- prepare_body_incremental · function · L1449-L1637 — pub(super) fn prepare_body_incremental(
+- truncate_prepared_to_boundary · function · L1649-L1697 — pub(super) fn truncate_prepared_to_boundary(prepared: &mut PreparedMessages, keep_msgs: usize)
+- matching_prefix_len · function · L1703-L1715 — pub(super) fn matching_prefix_len(base: &PreparedMessages, messages: &[DisplayMessage]) -> usize
+- matching_suffix_len · function · L1720-L1736 — pub(super) fn matching_suffix_len(base: &PreparedMessages, messages: &[DisplayMessage]) -> usize
+- suffix_reuse_compatible · function · L1755-L1782 — pub(super) fn suffix_reuse_compatible(
+- prepare_body_prepended · function · L1791-L2024 — pub(super) fn prepare_body_prepended(
+- prepare_streaming_cached · function · L2026-L2128 — fn prepare_streaming_cached(
+- StreamingHeadKey · struct · L2132-L2138 — struct StreamingHeadKey
+- append_wrapped_tail · function · L2149-L2193 — fn append_wrapped_tail(head: &PreparedMessages, tail: PreparedMessages) -> PreparedMessages
+- prepare_body · function · L2195-L2327 — pub(super) fn prepare_body(
+- wrap_lines · function · L2329-L2429 — fn wrap_lines(
+- shrink_wrapped_lines · function · L2434-L2439 — fn shrink_wrapped_lines(wrapped_lines: &mut Vec<Line<'static>>)
+- wrap_lines_with_map · function · L2445-L2621 — fn wrap_lines_with_map(
+- tests · module · L2625-L2625 — mod tests;
+- set_prep_cache_enabled_for_tests · function · L2637-L2639 — pub(crate) fn set_prep_cache_enabled_for_tests(enabled: bool)
+- prep_cache_bypassed · function · L2642-L2651 — fn prep_cache_bypassed() -> bool

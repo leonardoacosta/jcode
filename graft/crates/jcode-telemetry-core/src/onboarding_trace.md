@@ -1,0 +1,23 @@
+# crates/jcode-telemetry-core/src/onboarding_trace.rs
+
+- DT_BUCKET_MS · constant · L36-L36 — pub const DT_BUCKET_MS: u64 = 100;
+- DT_CAP_MS · constant · L41-L41 — pub const DT_CAP_MS: u64 = 300_000;
+- MAX_STEPS · constant · L45-L45 — pub const MAX_STEPS: usize = 64;
+- TraceOutcome · enum · L49-L60 — pub enum TraceOutcome
+- label · function · L63-L70 — pub fn label(self) -> &'static str
+- bucket_dt_ms · function · L77-L80 — pub fn bucket_dt_ms(raw_ms: u64) -> u64
+- TraceRecorder · struct · L88-L94 — pub struct TraceRecorder
+- new · function · L99-L107 — pub fn new(env: BTreeMap<String, &'static str>) -> Self
+- step · function · L113-L135 — pub fn step(
+- len · function · L138-L140 — pub fn len(&self) -> usize
+- is_empty · function · L142-L144 — pub fn is_empty(&self) -> bool
+- build · function · L149-L171 — pub fn build(&self, id: &str, outcome: TraceOutcome) -> OnboardingTraceEvent
+- preview_json · function · L176-L179 — pub fn preview_json(&self, outcome: TraceOutcome) -> String
+- tests · module · L183-L323 — mod tests
+- env_fixture · function · L186-L192 — fn env_fixture() -> BTreeMap<String, &'static str>
+- timings_are_bucketed_and_capped · function · L195-L208 — fn timings_are_bucketed_and_capped()
+- traces_are_bounded_and_report_truncation · function · L211-L222 — fn traces_are_bounded_and_report_truncation()
+- payload_contains_only_closed_vocabulary · function · L225-L291 — fn payload_contains_only_closed_vocabulary()
+- walk · function · L253-L274 — fn walk(value: &serde_json::Value, key: Option<&str>, allowed: &[&str], vocab: &[&str])
+- preview_matches_the_payload_that_would_be_sent · function · L294-L306 — fn preview_matches_the_payload_that_would_be_sent()
+- outcome_labels_are_stable_identifiers · function · L309-L322 — fn outcome_labels_are_stable_identifiers()

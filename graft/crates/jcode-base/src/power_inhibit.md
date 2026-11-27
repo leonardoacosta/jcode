@@ -1,0 +1,51 @@
+# crates/jcode-base/src/power_inhibit.rs
+
+- DISABLE_ENV · constant · L30-L30 — const DISABLE_ENV: &str = "JCODE_DISABLE_POWER_INHIBIT";
+- INHIBIT_TTL · constant · L34-L34 — const INHIBIT_TTL: Duration = Duration::from_secs(150);
+- INHIBIT_REFRESH_AFTER · constant · L38-L38 — const INHIBIT_REFRESH_AFTER: Duration = Duration::from_secs(90);
+- HANDOVER_OVERLAP · constant · L44-L44 — const HANDOVER_OVERLAP: Duration = Duration::from_secs(3);
+- INITIAL_RETRY_BACKOFF · constant · L49-L49 — const INITIAL_RETRY_BACKOFF: Duration = Duration::from_secs(10);
+- MAX_RETRY_BACKOFF · constant · L50-L50 — const MAX_RETRY_BACKOFF: Duration = Duration::from_secs(600);
+- PowerInhibitor · struct · L54-L64 — pub struct PowerInhibitor
+- InhibitHandle · enum · L66-L70 — enum InhibitHandle
+- InhibitHandleStatus · struct · L72-L75 — struct InhibitHandleStatus
+- status · function · L78-L87 — fn status(&mut self) -> InhibitHandleStatus
+- default · function · L91-L93 — fn default() -> Self
+- new · function · L103-L114 — pub fn new() -> Self
+- is_available · function · L117-L119 — pub fn is_available(&self) -> bool
+- set_active · function · L123-L133 — pub fn set_active(&mut self, active: bool)
+- acquire · function · L135-L220 — fn acquire(&mut self)
+- release · function · L222-L228 — fn release(&mut self)
+- retire_previous · function · L230-L234 — fn retire_previous(&mut self)
+- stop_handle · function · L237-L260 — fn stop_handle(handle: InhibitHandle)
+- drop · function · L263-L265 — fn drop(&mut self)
+- child_status · function · L268-L283 — fn child_status(child: &mut Child) -> InhibitHandleStatus
+- should_refresh · function · L286-L288 — fn should_refresh(acquired_at: Instant, now: Instant, refresh_after: Duration) -> bool
+- InhibitPlatform · enum · L291-L295 — enum InhibitPlatform
+- requires_refresh · function · L298-L300 — fn requires_refresh(self) -> bool
+- power_inhibit_available · function · L303-L308 — fn power_inhibit_available(
+- current_platform · function · L310-L320 — fn current_platform() -> Option<InhibitPlatform>
+- build_inhibit_command · function · L322-L330 — fn build_inhibit_command(platform: InhibitPlatform, ttl: Duration) -> Command
+- acquire_windows_inhibit_handle · function · L333-L335 — fn acquire_windows_inhibit_handle() -> io::Result<InhibitHandle>
+- acquire_windows_inhibit_handle · function · L338-L343 — fn acquire_windows_inhibit_handle() -> io::Result<InhibitHandle>
+- WindowsPowerGuard · struct · L346-L350 — struct WindowsPowerGuard
+- acquire · function · L354-L384 — fn acquire() -> io::Result<Self>
+- is_running · function · L386-L390 — fn is_running(&self) -> bool
+- stop · function · L392-L414 — fn stop(&mut self) -> io::Result<()>
+- drop · function · L419-L423 — fn drop(&mut self)
+- run_windows_power_guard · function · L427-L455 — fn run_windows_power_guard(
+- windows_execution_state_flags · function · L458-L462 — fn windows_execution_state_flags() -> u32
+- windows_clear_execution_state_flags · function · L465-L467 — fn windows_clear_execution_state_flags() -> u32
+- build_linux_systemd_inhibit_command · function · L469-L485 — fn build_linux_systemd_inhibit_command(ttl: Duration) -> Command
+- build_macos_caffeinate_command · function · L487-L501 — fn build_macos_caffeinate_command(ttl: Duration) -> Command
+- tests · module · L504-L685 — mod tests
+- command_name · function · L508-L510 — fn command_name(command: &std::process::Command) -> String
+- command_args · function · L512-L517 — fn command_args(command: &std::process::Command) -> Vec<String>
+- availability_requires_no_legacy_disable_and_supported_platform · function · L520-L536 — fn availability_requires_no_legacy_disable_and_supported_platform()
+- linux_inhibitor_blocks_sleep_and_lid_switch_with_bounded_ttl · function · L539-L552 — fn linux_inhibitor_blocks_sleep_and_lid_switch_with_bounded_ttl()
+- failed_linux_inhibitor_backs_off_instead_of_disabling_forever · function · L556-L585 — fn failed_linux_inhibitor_backs_off_instead_of_disabling_forever()
+- refresh_keeps_previous_helper_alive_until_successor_registers · function · L589-L620 — fn refresh_keeps_previous_helper_alive_until_successor_registers()
+- macos_inhibitor_prevents_system_sleep_without_display_assertion · function · L623-L633 — fn macos_inhibitor_prevents_system_sleep_without_display_assertion()
+- refresh_is_due_only_after_the_threshold_elapses · function · L636-L659 — fn refresh_is_due_only_after_the_threshold_elapses()
+- windows_guard_is_long_lived_instead_of_ttl_refreshed · function · L662-L666 — fn windows_guard_is_long_lived_instead_of_ttl_refreshed()
+- windows_guard_prevents_idle_system_sleep_and_releases_cleanly · function · L670-L684 — fn windows_guard_prevents_idle_system_sleep_and_releases_cleanly()

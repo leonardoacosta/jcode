@@ -1,0 +1,44 @@
+# crates/jcode-telemetry-core/src/state_support.rs
+
+- telemetry_id_path · function · L7-L9 — pub(super) fn telemetry_id_path() -> Option<PathBuf>
+- install_recorded_path · function · L11-L15 — pub(super) fn install_recorded_path() -> Option<PathBuf>
+- install_conversion_id_path · function · L17-L21 — pub(super) fn install_conversion_id_path() -> Option<PathBuf>
+- version_recorded_path · function · L23-L27 — pub(super) fn version_recorded_path() -> Option<PathBuf>
+- telemetry_state_path · function · L29-L31 — pub(super) fn telemetry_state_path(name: &str) -> Option<PathBuf>
+- milestone_recorded_path · function · L33-L39 — pub(super) fn milestone_recorded_path(id: &str, key: &str) -> Option<PathBuf>
+- onboarding_step_milestone_key · function · L41-L70 — pub(super) fn onboarding_step_milestone_key(
+- normalize_part · function · L46-L54 — fn normalize_part(value: &str) -> String
+- active_days_path · function · L72-L74 — pub(super) fn active_days_path(id: &str) -> Option<PathBuf>
+- session_starts_path · function · L76-L78 — pub(super) fn session_starts_path(id: &str) -> Option<PathBuf>
+- write_private_file · function · L80-L90 — pub(super) fn write_private_file(path: &PathBuf, value: &str)
+- utc_hour · function · L92-L94 — pub(super) fn utc_hour(timestamp: DateTime<Utc>) -> u32
+- utc_weekday · function · L96-L98 — pub(super) fn utc_weekday(timestamp: DateTime<Utc>) -> u32
+- write_private_dir_file · function · L100-L105 — pub(super) fn write_private_dir_file(path: &PathBuf, value: &str)
+- read_epoch_lines · function · L107-L119 — pub(super) fn read_epoch_lines(path: &PathBuf) -> Vec<i64>
+- update_session_start_history · function · L121-L161 — pub(super) fn update_session_start_history(
+- get_or_create_id · function · L163-L179 — pub(super) fn get_or_create_id() -> Option<String>
+- read_existing_id · function · L181-L189 — pub(super) fn read_existing_id() -> Option<String>
+- read_install_conversion_id · function · L191-L211 — pub(super) fn read_install_conversion_id() -> Option<String>
+- install_conversion_id_is_fresh · function · L213-L217 — pub(super) fn install_conversion_id_is_fresh(modified: SystemTime) -> bool
+- clear_install_conversion_id · function · L219-L223 — pub(super) fn clear_install_conversion_id()
+- is_first_run · function · L225-L227 — pub(super) fn is_first_run() -> bool
+- version · function · L229-L231 — pub(super) fn version() -> String
+- install_recorded_for_id · function · L233-L238 — pub(super) fn install_recorded_for_id(id: &str) -> bool
+- mark_install_recorded · function · L240-L244 — pub(super) fn mark_install_recorded(id: &str)
+- previously_recorded_version · function · L246-L251 — pub(super) fn previously_recorded_version() -> Option<String>
+- mark_current_version_recorded · function · L253-L257 — pub(super) fn mark_current_version_recorded()
+- new_event_id · function · L259-L261 — pub(super) fn new_event_id() -> String
+- is_jcode_repo_dir · function · L263-L272 — pub(super) fn is_jcode_repo_dir(dir: &Path) -> bool
+- find_jcode_repo_in_ancestors · function · L274-L279 — fn find_jcode_repo_in_ancestors(start: &Path) -> Option<PathBuf>
+- telemetry_jcode_repo_dir · function · L281-L307 — fn telemetry_jcode_repo_dir() -> Option<PathBuf>
+- build_channel · function · L309-L332 — pub(super) fn build_channel() -> String
+- is_git_checkout · function · L334-L336 — pub(super) fn is_git_checkout() -> bool
+- is_ci · function · L338-L377 — pub(super) fn is_ci() -> bool
+- CI_MARKERS · constant · L352-L369 — const CI_MARKERS: [&str; 16] = [
+- ran_from_cargo · function · L379-L381 — pub(super) fn ran_from_cargo() -> bool
+- install_anchor_time · function · L383-L393 — pub(super) fn install_anchor_time(id: &str) -> Option<SystemTime>
+- elapsed_since_install_ms · function · L395-L399 — pub(super) fn elapsed_since_install_ms(id: &str) -> Option<u64>
+- days_since_install · function · L401-L405 — pub(super) fn days_since_install(id: &str) -> Option<u32>
+- milestone_recorded · function · L407-L411 — pub(super) fn milestone_recorded(id: &str, step: &str) -> bool
+- mark_milestone_recorded · function · L413-L417 — pub(super) fn mark_milestone_recorded(id: &str, step: &str)
+- current_session_id · function · L419-L425 — pub(super) fn current_session_id() -> Option<String>

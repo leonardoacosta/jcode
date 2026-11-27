@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/tool/todo_name_tests.rs
+
+- named · function · L3-L5 — fn named(name: &str) -> Value
+- hierarchy · function · L7-L9 — fn hierarchy(items: Vec<Value>) -> Value
+- create · function · L11-L13 — fn create(input: Value) -> Value
+- parsed · function · L15-L17 — fn parsed(input: Value) -> Vec<TodoItem>
+- patch · function · L19-L21 — fn patch(input: Value, stored: &Value) -> Value
+- names_create_internal_ids_and_map_descriptions_to_storage · function · L24-L35 — fn names_create_internal_ids_and_map_descriptions_to_storage()
+- names_select_updates_and_removals_without_changing_identity · function · L38-L53 — fn names_select_updates_and_removals_without_changing_identity()
+- explicit_rename_preserves_id_and_future_name_lookup · function · L56-L79 — fn explicit_rename_preserves_id_and_future_name_lookup()
+- replacement_preserves_ids_by_name_not_position · function · L82-L94 — fn replacement_preserves_ids_by_name_not_position()
+- add_after_name_inherits_membership_and_inserts_after_anchor · function · L97-L112 — fn add_after_name_inherits_membership_and_inserts_after_anchor()
+- lane_dependency_names_resolve_to_ids_and_follow_renames · function · L115-L145 — fn lane_dependency_names_resolve_to_ids_and_follow_renames()
+- names_must_be_nonblank_and_globally_unique · function · L148-L170 — fn names_must_be_nonblank_and_globally_unique()
+- ambiguous_legacy_names_are_rejected_for_every_name_lookup · function · L173-L190 — fn ambiguous_legacy_names_are_rejected_for_every_name_lookup()
+- legacy_id_content_details_calls_remain_supported · function · L193-L206 — fn legacy_id_content_details_calls_remain_supported()
+- public_schema_uses_names_and_descriptions_not_storage_fields · function · L209-L236 — fn public_schema_uses_names_and_descriptions_not_storage_fields()
+- named_edits_accept_null_phases_singletons_and_stringified_arguments · function · L239-L254 — fn named_edits_accept_null_phases_singletons_and_stringified_arguments()
+- incremental_dependencies_can_reference_tasks_added_in_the_same_call · function · L257-L271 — fn incremental_dependencies_can_reference_tasks_added_in_the_same_call()
+- named_tool_execution_persists_ids_but_returns_public_names · function · L274-L331 — async fn named_tool_execution_persists_ids_but_returns_public_names()
+- RestoreHome · struct · L276-L276 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L278-L284 — fn drop(&mut self)
+- stringified_null_containers_do_not_conflict_with_edits · function · L334-L348 — fn stringified_null_containers_do_not_conflict_with_edits()
+- null_filled_strict_schema_edits_behave_like_omitted_fields · function · L351-L382 — fn null_filled_strict_schema_edits_behave_like_omitted_fields()

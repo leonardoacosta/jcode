@@ -1,0 +1,50 @@
+# crates/jcode-tui/src/tui/ui_todo_stages_tests.rs
+
+- layout_and_prerequisites · module · L5-L5 — mod layout_and_prerequisites;
+- self_ownership_does_not_override_blocked_or_finished_states · function · L8-L16 — fn self_ownership_does_not_override_blocked_or_finished_states()
+- mixed_complete_blocker_lane_keeps_independent_peer_visible · function · L19-L41 — fn mixed_complete_blocker_lane_keeps_independent_peer_visible()
+- terminal_worker_reason_beats_stale_intent_with_or_without_telemetry · function · L44-L69 — fn terminal_worker_reason_beats_stale_intent_with_or_without_telemetry()
+- lane_live_status_omits_transport_and_preserves_stop_precedence · function · L72-L129 — fn lane_live_status_omits_transport_and_preserves_stop_precedence()
+- pinned_worker_status_hides_duplicate_intent_but_keeps_connection_progress · function · L132-L156 — fn pinned_worker_status_hides_duplicate_intent_but_keeps_connection_progress()
+- live_telemetry_uses_one_compact_lane_row_without_task_summaries · function · L159-L213 — fn live_telemetry_uses_one_compact_lane_row_without_task_summaries()
+- inline_columns_stay_fixed_across_activity_and_name_changes · function · L216-L257 — fn inline_columns_stay_fixed_across_activity_and_name_changes()
+- simultaneous_live_lanes_keep_columns_during_animation · function · L260-L322 — fn simultaneous_live_lanes_keep_columns_during_animation()
+- inline_worker_states_have_only_one_activity_indicator · function · L325-L374 — fn inline_worker_states_have_only_one_activity_indicator()
+- inline_tool_intent_is_single_line_and_bounded · function · L377-L406 — fn inline_tool_intent_is_single_line_and_bounded()
+- complete_blocker_overrides_live_workers_and_has_two_cell_phase_and_lane_pips · function · L409-L449 — fn complete_blocker_overrides_live_workers_and_has_two_cell_phase_and_lane_pips()
+- complete_blocker_requires_reason_and_never_marks_terminal_todos · function · L452-L473 — fn complete_blocker_requires_reason_and_never_marks_terminal_todos()
+- blocked_todos_have_distinct_phase_and_lane_pips · function · L476-L497 — fn blocked_todos_have_distinct_phase_and_lane_pips()
+- blocked_marker_overrides_live_worker_and_clears_with_the_dependency · function · L500-L520 — fn blocked_marker_overrides_live_worker_and_clears_with_the_dependency()
+- shortcut_badges_are_hidden_and_respect_lane_width · function · L523-L540 — fn shortcut_badges_are_hidden_and_respect_lane_width()
+- shortcut_payload_is_optional_and_round_trips · function · L543-L559 — fn shortcut_payload_is_optional_and_round_trips()
+- inactive_lanes_keep_ownership_without_live_activity · function · L562-L577 — fn inactive_lanes_keep_ownership_without_live_activity()
+- todo · function · L579-L588 — fn todo(id: &str, content: &str, status: &str, stage: Option<u32>) -> TodoItem
+- assigned · function · L590-L593 — fn assigned(mut item: TodoItem, who: &str) -> TodoItem
+- agent · function · L595-L609 — fn agent(name: &str, status: &str, activity: Option<&str>, age: Option<u64>) -> TodoCardAgent
+- explicit_waits_show_clock_reason_and_age_without_busy_or_quiet_indicators · function · L612-L639 — fn explicit_waits_show_clock_reason_and_age_without_busy_or_quiet_indicators()
+- wait_snapshot_clears_and_does_not_override_terminal_or_blocked_status · function · L642-L661 — fn wait_snapshot_clears_and_does_not_override_terminal_or_blocked_status()
+- lane_dots_use_worker_items_once_and_fall_back_without_items · function · L664-L703 — fn lane_dots_use_worker_items_once_and_fall_back_without_items()
+- worker_dots_prefer_complete_status_snapshot · function · L706-L729 — fn worker_dots_prefer_complete_status_snapshot()
+- worker_dot_strip_fits_narrow_width · function · L732-L738 — fn worker_dot_strip_fits_narrow_width()
+- render · function · L740-L758 — fn render(todos: &[TodoItem], agents: &[TodoCardAgent], width: u16) -> Vec<String>
+- assert_fits · function · L760-L768 — fn assert_fits(rows: &[String], width: u16)
+- laned · function · L770-L774 — fn laned(id: &str, status: &str, stage: u32, group: &str) -> TodoItem
+- unstaged_list_renders_as_plain_checklist · function · L777-L787 — fn unstaged_list_renders_as_plain_checklist()
+- header_labels_each_phase_with_its_pips · function · L790-L821 — fn header_labels_each_phase_with_its_pips()
+- grid_todos · function · L823-L835 — fn grid_todos() -> Vec<TodoItem>
+- each_lane_row_leads_with_dots_then_name_then_titles · function · L838-L855 — fn each_lane_row_leads_with_dots_then_name_then_titles()
+- narrow_rows_fold_finished_titles_and_never_wrap · function · L858-L875 — fn narrow_rows_fold_finished_titles_and_never_wrap()
+- lane_row_shows_agent_emoji_and_activity · function · L878-L904 — fn lane_row_shows_agent_emoji_and_activity()
+- finished_phases_keep_their_lanes · function · L907-L919 — fn finished_phases_keep_their_lanes()
+- unstaged_agent_rows_keep_inline_chip · function · L922-L936 — fn unstaged_agent_rows_keep_inline_chip()
+- stage_field_parses_loose_values_and_legacy_wave_key · function · L939-L956 — fn stage_field_parses_loose_values_and_legacy_wave_key()
+- unknown_agent_falls_back_to_name_emoji_and_never_overflows · function · L959-L981 — fn unknown_agent_falls_back_to_name_emoji_and_never_overflows()
+- lanes_of_later_phases_are_dimmed · function · L984-L1015 — fn lanes_of_later_phases_are_dimmed()
+- live_lane_todos · function · L1017-L1022 — fn live_lane_todos() -> Vec<TodoItem>
+- live_worker_dot_spins_and_quiet_worker_turns_amber · function · L1025-L1067 — fn live_worker_dot_spins_and_quiet_worker_turns_amber()
+- roster_groups_working_agents_before_finished_ones · function · L1070-L1096 — fn roster_groups_working_agents_before_finished_ones()
+- failed_lane_blocks_its_phase_and_offers_retry · function · L1099-L1111 — fn failed_lane_blocks_its_phase_and_offers_retry()
+- worker_headings · module · L1114-L1114 — mod worker_headings;
+- waiting_worker_reason_shares_its_todo_row · function · L1119-L1160 — fn waiting_worker_reason_shares_its_todo_row()
+- lane_name_shared_by_every_lane_is_not_drawn · function · L1163-L1176 — fn lane_name_shared_by_every_lane_is_not_drawn()
+- additional_self_owned_todos_have_amber_pips_and_you_badges · module · L1179-L1179 — mod additional_self_owned_todos_have_amber_pips_and_you_badges;

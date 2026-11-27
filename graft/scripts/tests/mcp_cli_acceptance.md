@@ -1,0 +1,26 @@
+# scripts/tests/mcp_cli_acceptance.py
+
+- require · function · L28-L30 — def require(condition, message)
+- Fixture · class · L33-L204 — class Fixture
+- __init__ · method · L34-L198 — def __init__(self)
+- Handler · class · L47-L192 — class Handler(http.server.BaseHTTPRequestHandler)
+- log_message · method · L50-L51 — def log_message(self, *args)
+- reply · method · L53-L65 — def reply(self, status, value=None, headers=None)
+- dispatch · method · L67-L179 — def dispatch(self)
+- safe_dispatch · method · L181-L188 — def safe_dispatch(self)
+- close · method · L200-L204 — def close(self)
+- Replay · class · L207-L281 — class Replay
+- __init__ · method · L208-L230 — def __init__(self, binary, root, fixture)
+- config · method · L232-L233 — def config(self, servers)
+- command · method · L235-L240 — def command(self, *args, success=True, timeout=12)
+- login · method · L242-L281 — def login(self)
+- drain · function · L246-L248 — def drain(pipe)
+- main · function · L284-L410 — def main()
+- case · function · L302-L316 — def case(name, fn)
+- listing · function · L318-L323 — def listing()
+- unauthenticated · function · L326-L336 — def unauthenticated()
+- private_store · function · L341-L349 — def private_store()
+- authenticated · function · L352-L364 — def authenticated(name='remote', path='/mcp', kind='oauth', session=True)
+- logout · function · L366-L372 — def logout()
+- static_precedence · function · L380-L386 — def static_precedence()
+- legacy_test · function · L391-L401 — def legacy_test(name=name, path=path)

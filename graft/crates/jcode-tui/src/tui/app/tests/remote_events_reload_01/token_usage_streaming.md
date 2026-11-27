@@ -1,0 +1,11 @@
+# crates/jcode-tui/src/tui/app/tests/remote_events_reload_01/token_usage_streaming.rs
+
+- test_handle_server_event_token_usage_uses_per_call_deltas · function · L2-L45 — fn test_handle_server_event_token_usage_uses_per_call_deltas()
+- test_handle_server_event_tool_exec_pauses_tps_but_collects_final_tool_usage · function · L48-L104 — fn test_handle_server_event_tool_exec_pauses_tps_but_collects_final_tool_usage()
+- test_handle_server_event_kv_cache_request_resets_tps_output_watermark_for_next_api_call · function · L107-L168 — fn test_handle_server_event_kv_cache_request_resets_tps_output_watermark_for_next_api_call()
+- test_handle_server_event_message_end_marks_stream_as_finalizing_without_stall_mode · function · L171-L190 — fn test_handle_server_event_message_end_marks_stream_as_finalizing_without_stall_mode()
+- test_remote_done_waits_for_paced_backlog_and_one_live_frame · function · L193-L240 — fn test_remote_done_waits_for_paced_backlog_and_one_live_frame()
+- test_handle_server_event_tps_connection_phase_streaming_starts_collection_only_for_streaming · function · L243-L269 — fn test_handle_server_event_tps_connection_phase_streaming_starts_collection_only_for_streaming()
+- test_connection_phase_elapsed_resets_per_attempt_not_per_turn · function · L272-L327 — fn test_connection_phase_elapsed_resets_per_attempt_not_per_turn()
+- test_handle_server_event_tps_message_end_counts_late_usage_without_timer_running · function · L330-L368 — fn test_handle_server_event_tps_message_end_counts_late_usage_without_timer_running()
+- test_handle_server_event_tps_redundant_late_usage_after_message_end_does_not_double_count · function · L371-L423 — fn test_handle_server_event_tps_redundant_late_usage_after_message_end_does_not_double_count()

@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/tool/memory.rs
+
+- MemoryTool · struct · L11-L13 — pub struct MemoryTool
+- new · function · L16-L20 — pub fn new() -> Self
+- new_test · function · L23-L27 — pub fn new_test() -> Self
+- parse_scope · function · L29-L43 — fn parse_scope(scope: Option<&str>, default: MemoryScope) -> Result<MemoryScope>
+- scoped_manager · function · L49-L54 — fn scoped_manager(&self, ctx: &ToolContext) -> MemoryManager
+- MemoryInput · struct · L58-L90 — struct MemoryInput
+- name · function · L94-L96 — fn name(&self) -> &str
+- description · function · L98-L100 — fn description(&self) -> &str
+- parameters_schema · function · L102-L127 — fn parameters_schema(&self) -> Value
+- execute · function · L129-L461 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- truncate_for_widget · function · L464-L471 — fn truncate_for_widget(s: &str, max: usize) -> String
+- tests · module · L474-L882 — mod tests
+- schema_only_advertises_core_memory_fields · function · L478-L497 — fn schema_only_advertises_core_memory_fields()
+- test_ctx · function · L499-L509 — fn test_ctx(working_dir: Option<std::path::PathBuf>) -> ToolContext
+- OfflineEnv · struct · L513-L513 — struct OfflineEnv(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- new · function · L516-L534 — fn new(home: &std::path::Path) -> Self
+- drop · function · L538-L546 — fn drop(&mut self)
+- remember_secret_request_never_reaches_activity_or_storage · function · L550-L593 — async fn remember_secret_request_never_reaches_activity_or_storage()
+- recent_recall_is_not_lowered_by_the_injection_cap · function · L599-L623 — async fn recent_recall_is_not_lowered_by_the_injection_cap()
+- queried_recall_uses_jev_for_default_and_legacy_aliases · function · L626-L680 — async fn queried_recall_uses_jev_for_default_and_legacy_aliases()
+- local_memory_operations_honor_scope_and_limits_without_credentials · function · L683-L763 — async fn local_memory_operations_honor_scope_and_limits_without_credentials()
+- project_scope_round_trips_with_working_dir · function · L769-L808 — async fn project_scope_round_trips_with_working_dir()
+- swarm_worker_memory_sees_the_spawning_session_only_without_isolation · function · L823-L881 — async fn swarm_worker_memory_sees_the_spawning_session_only_without_isolation()

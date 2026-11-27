@@ -1,0 +1,50 @@
+# crates/jcode-telemetry-core/src/oauth_account.rs
+
+- OAUTH_ACCOUNT_NOTICE_TEXT · constant · L14-L15 — pub const OAUTH_ACCOUNT_NOTICE_TEXT: &str =
+- OAuthAccountNotice · struct · L20-L22 — pub struct OAuthAccountNotice
+- Candidate · struct · L23-L26 — struct Candidate
+- Pending · struct · L27-L34 — struct Pending
+- PENDING · constant · L35-L35 — static PENDING: Mutex<Option<Pending>> = Mutex::new(None);
+- SENDER · constant · L36-L36 — static SENDER: OnceLock<Option<SyncSender<Command>>> = OnceLock::new();
+- Command · enum · L37-L40 — enum Command
+- enqueue_oauth_account · function · L44-L70 — pub fn enqueue_oauth_account(provider: &str, email: &str) -> bool
+- recently_enqueued · function · L72-L87 — fn recently_enqueued(provider: &str, email: &str, now: std::time::Instant) -> bool
+- LAST · constant · L73-L74 — static LAST: std::sync::Mutex<Option<(String, String, std::time::Instant)>> =
+- pending_oauth_account_notice · function · L90-L107 — pub fn pending_oauth_account_notice() -> Option<OAuthAccountNotice>
+- acknowledge_oauth_account_notice_displayed · function · L111-L126 — pub fn acknowledge_oauth_account_notice_displayed(notice: &OAuthAccountNotice) -> bool
+- send · function · L127-L170 — fn send(command: Command) -> bool
+- valid_email · function · L171-L184 — fn valid_email(email: &str) -> bool
+- canonical_email · function · L185-L187 — fn canonical_email(email: &str) -> String
+- hash · function · L188-L190 — fn hash(value: &str) -> String
+- Check · struct · L191-L194 — struct Check
+- Transport · interface · L195-L198 — trait Transport
+- check · function · L196-L196 — fn check(&self, id: &str, candidate: &Candidate) -> Option<Check>;
+- upload · function · L197-L197 — fn upload(&self, id: &str, candidate: &Candidate);
+- Http · struct · L199-L199 — struct Http(reqwest::blocking::Client);
+- check · function · L201-L228 — fn check(&self, id: &str, c: &Candidate) -> Option<Check>
+- upload · function · L229-L244 — fn upload(&self, id: &str, c: &Candidate)
+- Decision · enum · L247-L252 — enum Decision
+- decision · function · L253-L263 — fn decision(enabled: bool, check: Option<Check>, displayed: bool) -> Decision
+- private_file · function · L264-L279 — fn private_file(path: &Path) -> Option<File>
+- notice_displayed · function · L280-L282 — fn notice_displayed(path: &Path) -> bool
+- persist_displayed · function · L283-L289 — fn persist_displayed(path: &Path) -> bool
+- handle · function · L290-L309 — fn handle(command: Command, transport: &impl Transport)
+- handle_in · function · L310-L396 — fn handle_in(
+- tests · module · L399-L718 — mod tests
+- repeated_enqueue_is_dropped_before_waking_worker · function · L403-L421 — fn repeated_enqueue_is_dropped_before_waking_worker()
+- check · function · L423-L428 — fn check(known: bool, tracked: bool) -> Option<Check>
+- Mock · struct · L429-L436 — struct Mock
+- new · function · L438-L447 — fn new(known: bool, tracked: bool, fail: bool) -> Self
+- check · function · L450-L460 — fn check(&self, _: &str, _: &Candidate) -> Option<Check>
+- upload · function · L461-L463 — fn upload(&self, _: &str, _: &Candidate)
+- candidate · function · L465-L470 — fn candidate() -> Command
+- mock_notice_ack_restart_and_stale_ack · function · L472-L524 — fn mock_notice_ack_restart_and_stale_ack()
+- mock_opt_out_before_identity_and_during_preflight · function · L526-L551 — fn mock_opt_out_before_identity_and_during_preflight()
+- mock_opt_out_after_render_persists_notice_without_traffic · function · L553-L574 — fn mock_opt_out_after_render_persists_notice_without_traffic()
+- mock_new_tracked_and_failed_preflight · function · L576-L597 — fn mock_new_tracked_and_failed_preflight()
+- mock_concurrent_pending_and_failed_ack_preflight · function · L599-L627 — fn mock_concurrent_pending_and_failed_ack_preflight()
+- incomplete_marker_is_not_acknowledgment · function · L629-L636 — fn incomplete_marker_is_not_acknowledgment()
+- strict_email_validation · function · L638-L653 — fn strict_email_validation()
+- canonical_hash · function · L655-L664 — fn canonical_hash()
+- preflight_state_machine · function · L666-L687 — fn preflight_state_machine()
+- persistent_install_marker_and_kernel_lease · function · L689-L717 — fn persistent_install_marker_and_kernel_lease()

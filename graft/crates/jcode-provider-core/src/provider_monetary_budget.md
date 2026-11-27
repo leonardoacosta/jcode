@@ -1,0 +1,51 @@
+# crates/jcode-provider-core/src/provider_monetary_budget.rs
+
+- MonetaryBudget · struct · L13-L18 — pub struct MonetaryBudget
+- MonetaryTotals · struct · L21-L25 — pub struct MonetaryTotals
+- Entry · enum · L29-L34 — enum Entry
+- State · struct · L36-L39 — struct State
+- safe_directory · function · L41-L57 — fn safe_directory(path: &Path) -> Result<PathBuf>
+- open_journal · function · L59-L80 — fn open_journal(directory: &Path, create: bool) -> Result<File>
+- append · function · L82-L89 — fn append(file: &mut File, entry: &Entry) -> Result<()>
+- create · function · L92-L122 — pub fn create(
+- open · function · L124-L134 — pub fn open(directory: PathBuf, task_id: &str, original_limit_microusd: u64) -> Result<Self>
+- task_id · function · L136-L138 — pub fn task_id(&self) -> &str
+- original_limit_microusd · function · L139-L141 — pub fn original_limit_microusd(&self) -> u64
+- ceiling_microusd · function · L142-L144 — pub fn ceiling_microusd(&self) -> u64
+- same_account · function · L146-L150 — fn same_account(&self, other: &Self) -> bool
+- with_ceiling · function · L153-L167 — pub fn with_ceiling(mut self, total_ceiling_microusd: u64) -> Result<Self>
+- read · function · L169-L229 — fn read(&self, file: &mut File) -> Result<State>
+- totals · function · L231-L243 — pub fn totals(&self) -> Result<MonetaryTotals>
+- reserve · function · L245-L280 — fn reserve(&self, capability: &MonetaryCapability) -> Result<Reservation>
+- Reservation · struct · L283-L287 — struct Reservation
+- settle · function · L289-L307 — fn settle(self, actual: u64) -> Result<()>
+- MonetaryCapability · struct · L313-L315 — pub struct MonetaryCapability
+- matches_budget · function · L317-L319 — pub fn matches_budget(&self, budget: &MonetaryBudget) -> bool
+- route · function · L320-L322 — pub fn route(&self) -> &str
+- model · function · L323-L325 — pub fn model(&self) -> &str
+- max_request_bytes · function · L326-L328 — pub fn max_request_bytes(&self) -> usize
+- max_response_bytes · function · L329-L331 — pub fn max_response_bytes(&self) -> usize
+- max_charge_microusd · function · L333-L335 — pub fn max_charge_microusd(&self) -> u64
+- current · function · L339-L341 — fn current() -> Option<MonetaryBudget>
+- scope · function · L343-L357 — pub async fn scope<F, T>(budget: MonetaryBudget, future: F) -> Result<T>
+- inherit · function · L359-L368 — pub(crate) fn inherit<F: Future>(future: F) -> impl Future<Output = F::Output>
+- reject_unsupported · function · L371-L377 — pub fn reject_unsupported() -> Result<()>
+- OfflineBoundedProvider · struct · L382-L384 — pub struct OfflineBoundedProvider
+- new · function · L386-L388 — pub fn new(budget: MonetaryBudget) -> Self
+- fork · function · L393-L395 — fn fork(&self) -> std::sync::Arc<dyn crate::Provider>
+- name · function · L396-L398 — fn name(&self) -> &str
+- model · function · L399-L401 — fn model(&self) -> String
+- monetary_capability · function · L402-L406 — fn monetary_capability(&self) -> Option<MonetaryCapability>
+- complete · function · L407-L441 — async fn complete(
+- tests · module · L445-L762 — mod tests
+- directory · function · L450-L459 — fn directory() -> PathBuf
+- offline_completion_reserves_before_send_and_cannot_refund_or_widen · function · L462-L499 — async fn offline_completion_reserves_before_send_and_cannot_refund_or_widen()
+- retries_children_side_calls_and_bare_spawn_share_one_account · function · L501-L543 — async fn retries_children_side_calls_and_bare_spawn_share_one_account()
+- request_bounds_and_nested_account_substitution_fail_closed · function · L546-L573 — async fn request_bounds_and_nested_account_substitution_fail_closed()
+- crash_reservations_and_invalid_settlement_never_refund · function · L576-L595 — fn crash_reservations_and_invalid_settlement_never_refund()
+- monetary_budget_child_process · function · L598-L609 — fn monetary_budget_child_process()
+- concurrent_processes_never_overspend_original_account · function · L612-L639 — fn concurrent_processes_never_overspend_original_account()
+- incomplete_corrupt_symlinked_or_overflow_journal_fails_closed · function · L642-L673 — fn incomplete_corrupt_symlinked_or_overflow_journal_fails_closed()
+- unsupported_shared_transport_fails_before_tcp_connect · function · L675-L703 — async fn unsupported_shared_transport_fails_before_tcp_connect()
+- offline_adapter_preserves_existing_council_call_limit · function · L705-L726 — async fn offline_adapter_preserves_existing_council_call_limit()
+- aborted_operation_retains_synced_reservation · function · L729-L761 — async fn aborted_operation_retains_synced_reservation()

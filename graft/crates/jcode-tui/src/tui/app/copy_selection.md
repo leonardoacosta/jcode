@@ -1,0 +1,42 @@
+# crates/jcode-tui/src/tui/app/copy_selection.rs
+
+- COPY_VIEWPORT_CONTEXT_LINES · constant · L6-L6 — const COPY_VIEWPORT_CONTEXT_LINES: usize = 4;
+- copy_failed_prompt_to_clipboard · function · L8-L10 — pub(super) fn copy_failed_prompt_to_clipboard(&mut self) -> bool
+- copy_failed_prompt_with · function · L12-L32 — pub(super) fn copy_failed_prompt_with<F>(&mut self, copy_text: F) -> bool
+- enter_copy_selection_mode · function · L34-L40 — pub(super) fn enter_copy_selection_mode(&mut self)
+- exit_copy_selection_mode · function · L42-L52 — pub(super) fn exit_copy_selection_mode(&mut self)
+- toggle_copy_selection_mode · function · L54-L60 — pub(super) fn toggle_copy_selection_mode(&mut self)
+- current_copy_selection_pane · function · L62-L66 — pub(super) fn current_copy_selection_pane(&self) -> Option<crate::tui::CopySelectionPane>
+- normalized_copy_selection · function · L68-L85 — pub(super) fn normalized_copy_selection(&self) -> Option<crate::tui::CopySelectionRange>
+- current_copy_selection_text · function · L87-L90 — pub(super) fn current_copy_selection_text(&self) -> Option<String>
+- line_text · function · L92-L102 — fn line_text(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<String>
+- line_width · function · L104-L106 — fn line_width(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<usize>
+- line_count · function · L108-L114 — fn line_count(pane: crate::tui::CopySelectionPane) -> Option<usize>
+- clamp_point · function · L116-L128 — fn clamp_point(
+- preferred_copy_pane · function · L130-L137 — fn preferred_copy_pane(&self) -> crate::tui::CopySelectionPane
+- first_visible_copy_point · function · L139-L143 — fn first_visible_copy_point(
+- default_copy_point · function · L145-L152 — fn default_copy_point(&self) -> Option<crate::tui::CopySelectionPoint>
+- note_copy_selection_activity · function · L154-L166 — fn note_copy_selection_activity(&mut self, pane: crate::tui::CopySelectionPane)
+- collapse_selection_to · function · L168-L173 — fn collapse_selection_to(&mut self, point: crate::tui::CopySelectionPoint)
+- extend_selection_to · function · L175-L186 — fn extend_selection_to(&mut self, point: crate::tui::CopySelectionPoint)
+- update_selection_with_point · function · L188-L197 — fn update_selection_with_point(&mut self, point: crate::tui::CopySelectionPoint, extend: bool)
+- display_col_to_prev_boundary · function · L199-L211 — fn display_col_to_prev_boundary(text: &str, current: usize) -> usize
+- display_col_to_next_boundary · function · L213-L227 — fn display_col_to_next_boundary(text: &str, current: usize) -> usize
+- move_copy_selection_horizontally · function · L229-L243 — fn move_copy_selection_horizontally(&mut self, direction: i32, extend: bool) -> bool
+- move_copy_selection_vertically · function · L245-L262 — fn move_copy_selection_vertically(&mut self, delta: i32, extend: bool) -> bool
+- move_copy_selection_to_line_edge · function · L264-L275 — fn move_copy_selection_to_line_edge(&mut self, end: bool, extend: bool) -> bool
+- move_copy_selection_to_document_edge · function · L277-L300 — fn move_copy_selection_to_document_edge(&mut self, end: bool, extend: bool) -> bool
+- select_all_in_copy_mode · function · L302-L328 — pub(super) fn select_all_in_copy_mode(&mut self) -> bool
+- select_chat_viewport_context · function · L330-L365 — pub(super) fn select_chat_viewport_context(&mut self) -> bool
+- copy_chat_viewport_context_to_clipboard · function · L367-L369 — pub(super) fn copy_chat_viewport_context_to_clipboard(&mut self) -> bool
+- copy_chat_viewport_context_to_clipboard_with · function · L371-L396 — pub(super) fn copy_chat_viewport_context_to_clipboard_with<F>(&mut self, copy_text: F) -> bool
+- copy_current_selection_to_clipboard · function · L398-L400 — pub(super) fn copy_current_selection_to_clipboard(&mut self) -> bool
+- copy_current_selection_to_clipboard_with · function · L402-L419 — pub(super) fn copy_current_selection_to_clipboard_with<F>(&mut self, copy_text: F) -> bool
+- copy_current_selection_preserving_highlight · function · L427-L448 — fn copy_current_selection_preserving_highlight<F>(&mut self, copy_text: F) -> bool
+- handle_copy_selection_key · function · L450-L522 — pub(super) fn handle_copy_selection_key(
+- progress_copy_selection_edge_autoscroll · function · L527-L544 — pub(super) fn progress_copy_selection_edge_autoscroll(&mut self) -> bool
+- copy_selection_scroll_target · function · L546-L555 — fn copy_selection_scroll_target(
+- step_copy_selection_scroll · function · L559-L599 — fn step_copy_selection_scroll(
+- scroll_copy_selection_pane · function · L601-L611 — fn scroll_copy_selection_pane(
+- handle_copy_selection_mouse · function · L613-L615 — pub(super) fn handle_copy_selection_mouse(&mut self, mouse: MouseEvent) -> Option<bool>
+- handle_copy_selection_mouse_with · function · L617-L794 — pub(super) fn handle_copy_selection_mouse_with<F>(

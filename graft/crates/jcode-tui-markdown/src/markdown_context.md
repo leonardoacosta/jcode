@@ -1,0 +1,23 @@
+# crates/jcode-tui-markdown/src/markdown_context.rs
+
+- DIAGRAM_MODE_OVERRIDE · constant · L5-L6 — static DIAGRAM_MODE_OVERRIDE: LazyLock<Mutex<Option<DiagramDisplayMode>>> =
+- ScopedReset · struct · L32-L35 — struct ScopedReset<'a, T: Copy>
+- drop · function · L38-L40 — fn drop(&mut self)
+- with_scoped_cell_value · function · L43-L47 — fn with_scoped_cell_value<T: Copy, R>(cell: &Cell<T>, value: T, f: impl FnOnce() -> R) -> R
+- set_diagram_mode_override · function · L49-L53 — pub fn set_diagram_mode_override(mode: Option<DiagramDisplayMode>)
+- get_diagram_mode_override · function · L55-L57 — pub fn get_diagram_mode_override() -> Option<DiagramDisplayMode>
+- effective_diagram_mode · function · L59-L69 — pub(super) fn effective_diagram_mode() -> DiagramDisplayMode
+- with_diagram_mode_scope · function · L76-L78 — pub fn with_diagram_mode_scope<T>(mode: DiagramDisplayMode, f: impl FnOnce() -> T) -> T
+- effective_markdown_spacing_mode · function · L80-L85 — pub(super) fn effective_markdown_spacing_mode() -> MarkdownSpacingMode
+- mermaid_rendering_enabled · function · L92-L97 — pub fn mermaid_rendering_enabled() -> bool
+- with_mermaid_rendering_override · function · L102-L104 — pub fn with_mermaid_rendering_override<T>(enabled: Option<bool>, f: impl FnOnce() -> T) -> T
+- with_markdown_spacing_mode_override · function · L107-L112 — pub(crate) fn with_markdown_spacing_mode_override<T>(
+- with_streaming_render_context · function · L114-L116 — pub(super) fn with_streaming_render_context<T>(f: impl FnOnce() -> T) -> T
+- streaming_render_context_enabled · function · L118-L120 — pub(super) fn streaming_render_context_enabled() -> bool
+- with_deferred_mermaid_render_context · function · L122-L124 — pub fn with_deferred_mermaid_render_context<T>(f: impl FnOnce() -> T) -> T
+- deferred_mermaid_render_context_enabled · function · L126-L128 — pub(super) fn deferred_mermaid_render_context_enabled() -> bool
+- set_center_code_blocks · function · L130-L132 — pub fn set_center_code_blocks(centered: bool)
+- center_code_blocks · function · L134-L136 — pub fn center_code_blocks() -> bool
+- with_center_code_blocks · function · L140-L142 — pub fn with_center_code_blocks<T>(centered: bool, f: impl FnOnce() -> T) -> T
+- tests · module · L145-L162 — mod tests
+- centered_scope_restores_nested_and_panicking_overrides · function · L149-L161 — fn centered_scope_restores_nested_and_panicking_overrides()

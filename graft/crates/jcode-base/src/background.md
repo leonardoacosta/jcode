@@ -1,0 +1,60 @@
+# crates/jcode-base/src/background.rs
+
+- model · module · L22-L22 — mod model;
+- stall_watchdog · module · L24-L24 — mod stall_watchdog;
+- GenerationSource · type · L41-L41 — pub type GenerationSource = fn(&str) -> Option<u64>;
+- GENERATION_SOURCE · constant · L43-L43 — static GENERATION_SOURCE: std::sync::OnceLock<GenerationSource> = std::sync::OnceLock::new();
+- set_generation_source · function · L46-L48 — pub fn set_generation_source(source: GenerationSource)
+- current_owner_generation · function · L50-L54 — fn current_owner_generation(session_id: &str) -> Option<u64>
+- ProcessIdentity · enum · L58-L64 — enum ProcessIdentity
+- ReattachReport · struct · L68-L77 — pub struct ReattachReport
+- BackgroundTaskManager · struct · L80-L100 — pub struct BackgroundTaskManager
+- with_output_dir · function · L106-L121 — pub fn with_output_dir(output_dir: PathBuf) -> Self
+- new · function · L124-L127 — pub fn new() -> Self
+- generate_task_id · function · L130-L150 — fn generate_task_id() -> String
+- TASK_ID_ALPHABET · constant · L132-L132 — const TASK_ID_ALPHABET: &[u8; 36] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+- output_path_for · function · L152-L154 — pub fn output_path_for(&self, task_id: &str) -> PathBuf
+- status_path_for · function · L156-L158 — pub fn status_path_for(&self, task_id: &str) -> PathBuf
+- publish_task_started_activity · function · L160-L178 — fn publish_task_started_activity(
+- status_duration_secs · function · L180-L185 — fn status_duration_secs(started_at: &str, completed_at: DateTime<Utc>) -> Option<f64>
+- parse_exit_code_from_output · function · L187-L194 — fn parse_exit_code_from_output(output: &str) -> Option<i32>
+- read_status_file · function · L196-L199 — async fn read_status_file(&self, path: &std::path::Path) -> Option<TaskStatusFile>
+- write_status_file · function · L201-L205 — async fn write_status_file(&self, path: &std::path::Path, status: &TaskStatusFile)
+- detached_process_identity · function · L212-L228 — fn detached_process_identity(status: &TaskStatusFile) -> ProcessIdentity
+- finalize_detached_status_if_needed · function · L230-L327 — async fn finalize_detached_status_if_needed(
+- status_is_reconcilable_orphan · function · L348-L363 — fn status_is_reconcilable_orphan(status: &TaskStatusFile) -> bool
+- finalize_orphaned_status_if_needed · function · L371-L422 — async fn finalize_orphaned_status_if_needed(
+- reconcile_orphaned_tasks · function · L434-L457 — pub async fn reconcile_orphaned_tasks(&self) -> usize
+- reattach_detached_tasks · function · L474-L509 — pub async fn reattach_detached_tasks(&self) -> ReattachReport
+- owner_generation_of · function · L514-L518 — pub async fn owner_generation_of(&self, task_id: &str) -> Option<u64>
+- reserve_task_info · function · L520-L529 — pub fn reserve_task_info(&self) -> BackgroundTaskInfo
+- register_detached_task · function · L535-L580 — pub async fn register_detached_task(
+- spawn · function · L586-L598 — pub async fn spawn<F, Fut>(
+- spawn_with_notify · function · L601-L807 — pub async fn spawn_with_notify<F, Fut>(
+- adopt · function · L813-L821 — pub async fn adopt(
+- adopt_with_options · function · L827-L1034 — pub async fn adopt_with_options(
+- sweep · function · L1051-L1093 — pub async fn sweep(&self) -> usize
+- list · function · L1096-L1118 — pub async fn list(&self) -> Vec<TaskStatusFile>
+- status · function · L1121-L1131 — pub async fn status(&self, task_id: &str) -> Option<TaskStatusFile>
+- is_live_task · function · L1134-L1139 — pub fn is_live_task(&self, task_id: &str) -> bool
+- output · function · L1142-L1145 — pub async fn output(&self, task_id: &str) -> Option<String>
+- wait · function · L1152-L1295 — pub async fn wait(
+- update_progress · function · L1298-L1305 — pub async fn update_progress(
+- update_checkpoint · function · L1308-L1315 — pub async fn update_checkpoint(
+- update_progress_with_event_kind · function · L1317-L1389 — async fn update_progress_with_event_kind(
+- STALL_POLL_INTERVAL · constant · L1392-L1392 — const STALL_POLL_INTERVAL: Duration = Duration::from_secs(5);
+- MIN_STALL_WAKE_SECONDS · constant · L1394-L1394 — pub const MIN_STALL_WAKE_SECONDS: u64 = 30;
+- update_delivery · function · L1399-L1438 — pub async fn update_delivery(
+- cancel · function · L1441-L1444 — pub async fn cancel(&self, task_id: &str) -> Result<bool>
+- cancel_with_grace · function · L1448-L1556 — pub async fn cancel_with_grace(
+- abort_live_tasks_for_reload · function · L1570-L1634 — pub async fn abort_live_tasks_for_reload(&self) -> usize
+- running_snapshot · function · L1638-L1671 — pub fn running_snapshot(&self) -> (usize, Vec<String>, Option<RunningBackgroundProgress>)
+- persisted_detached_running_tasks_for_session · function · L1679-L1754 — pub fn persisted_detached_running_tasks_for_session(
+- Index · struct · L1689-L1693 — struct Index
+- INDEX · constant · L1694-L1695 — static INDEX: std::sync::LazyLock<std::sync::Mutex<Option<Index>>> =
+- TTL · constant · L1700-L1700 — const TTL: std::time::Duration = std::time::Duration::from_secs(30);
+- default · function · L1758-L1760 — fn default() -> Self
+- BACKGROUND_MANAGER · constant · L1764-L1764 — static BACKGROUND_MANAGER: std::sync::OnceLock<BackgroundTaskManager> = std::sync::OnceLock::new();
+- global · function · L1767-L1769 — pub fn global() -> &'static BackgroundTaskManager
+- tests · module · L1772-L1772 — mod tests;
+- cleanup · module · L1775-L1775 — mod cleanup;

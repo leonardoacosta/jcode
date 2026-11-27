@@ -1,0 +1,45 @@
+# crates/jcode-build-support/src/tests.rs
+
+- test_env_lock · function · L3-L9 — fn test_env_lock() -> std::sync::MutexGuard<'static, ()>
+- ENV_LOCK · constant · L4-L4 — static ENV_LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+- with_temp_jcode_home · function · L11-L23 — fn with_temp_jcode_home<T>(f: impl FnOnce() -> T) -> T
+- create_git_repo_fixture · function · L25-L59 — fn create_git_repo_fixture() -> tempfile::TempDir
+- source_state_fixture · function · L61-L72 — fn source_state_fixture(short_hash: &str, fingerprint: &str) -> SourceState
+- test_build_manifest_default · function · L75-L80 — fn test_build_manifest_default()
+- test_binary_version_hash_mismatch_rejects_publish_candidate · function · L83-L98 — fn test_binary_version_hash_mismatch_rejects_publish_candidate()
+- test_dev_binary_source_metadata_mismatch_rejects_publish_candidate · function · L101-L114 — fn test_dev_binary_source_metadata_mismatch_rejects_publish_candidate()
+- test_smoke_test_server_protocol_uses_fresh_connection_after_ping · function · L118-L150 — fn test_smoke_test_server_protocol_uses_fresh_connection_after_ping()
+- test_binary_choice_for_canary_session · function · L153-L171 — fn test_binary_choice_for_canary_session()
+- test_find_repo_in_ancestors_walks_upward · function · L174-L189 — fn test_find_repo_in_ancestors_walks_upward()
+- test_client_update_candidate_prefers_dev_binary_for_selfdev · function · L192-L216 — fn test_client_update_candidate_prefers_dev_binary_for_selfdev()
+- launcher_dir_uses_sandbox_bin_when_jcode_home_is_set · function · L219-L225 — fn launcher_dir_uses_sandbox_bin_when_jcode_home_is_set()
+- update_launcher_symlink_stays_inside_sandbox_home · function · L228-L247 — fn update_launcher_symlink_stays_inside_sandbox_home()
+- test_canary_status_serialization · function · L250-L259 — fn test_canary_status_serialization()
+- dirty_source_state_uses_fingerprint_in_version_label · function · L262-L274 — fn dirty_source_state_uses_fingerprint_in_version_label()
+- pending_activation_can_complete_and_roll_back · function · L277-L334 — fn pending_activation_can_complete_and_roll_back()
+- explicit_promotion_pins_installed_version_without_moving_client_channels · function · L337-L367 — fn explicit_promotion_pins_installed_version_without_moving_client_channels()
+- explicit_promotion_rejects_missing_and_path_like_versions · function · L370-L387 — fn explicit_promotion_rejects_missing_and_path_like_versions()
+- shared_server_candidate_prefers_approved_channel_over_current · function · L390-L409 — fn shared_server_candidate_prefers_approved_channel_over_current()
+- normal_shared_server_candidate_repairs_stale_shared_channel_to_stable · function · L412-L432 — fn normal_shared_server_candidate_repairs_stale_shared_channel_to_stable()
+- normal_shared_server_candidate_allows_shared_channel_matching_stable · function · L435-L447 — fn normal_shared_server_candidate_allows_shared_channel_matching_stable()
+- normal_shared_server_candidate_ignores_shared_channel_with_missing_marker · function · L450-L466 — fn normal_shared_server_candidate_ignores_shared_channel_with_missing_marker()
+- normal_shared_server_candidate_ignores_shared_channel_with_corrupt_marker · function · L469-L489 — fn normal_shared_server_candidate_ignores_shared_channel_with_corrupt_marker()
+- version_match_detects_installed_channel_by_semver_or_git_hash · function · L492-L509 — fn version_match_detects_installed_channel_by_semver_or_git_hash()
+- shared_server_tracks_stable_when_marker_missing · function · L512-L518 — fn shared_server_tracks_stable_when_marker_missing()
+- shared_server_tracks_stable_when_equal_to_stable · function · L521-L528 — fn shared_server_tracks_stable_when_equal_to_stable()
+- shared_server_does_not_track_stable_when_pinned_to_selfdev · function · L531-L542 — fn shared_server_does_not_track_stable_when_pinned_to_selfdev()
+- advance_shared_server_carries_forward_when_tracking_stable · function · L545-L564 — fn advance_shared_server_carries_forward_when_tracking_stable()
+- advance_shared_server_preserves_pinned_selfdev_build · function · L567-L589 — fn advance_shared_server_preserves_pinned_selfdev_build()
+- simulate_stable_update_channel_swap · function · L595-L604 — fn simulate_stable_update_channel_swap(new_version: &str)
+- daemon_reload_target_version · function · L610-L618 — fn daemon_reload_target_version() -> Option<String>
+- update_leaves_daemon_reload_target_stale_when_shared_server_pinned_to_selfdev · function · L634-L675 — fn update_leaves_daemon_reload_target_stale_when_shared_server_pinned_to_selfdev()
+- update_advances_daemon_reload_target_when_shared_server_tracks_stable · function · L682-L700 — fn update_advances_daemon_reload_target_when_shared_server_tracks_stable()
+- candidate_version · function · L702-L709 — fn candidate_version(candidate: Option<(PathBuf, &'static str)>) -> Option<String>
+- selfdev_reload_target_diverges_from_update_probe_when_shared_server_pinned · function · L730-L771 — fn selfdev_reload_target_diverges_from_update_probe_when_shared_server_pinned()
+- write_versioned_binary · function · L776-L786 — fn write_versioned_binary(version: &str, mtime: std::time::SystemTime) -> PathBuf
+- repair_repoints_stale_shared_server_to_newer_stable · function · L789-L816 — fn repair_repoints_stale_shared_server_to_newer_stable()
+- repair_is_noop_when_shared_server_already_matches_stable · function · L819-L834 — fn repair_is_noop_when_shared_server_already_matches_stable()
+- repair_preserves_fresher_selfdev_pin · function · L837-L860 — fn repair_preserves_fresher_selfdev_pin()
+- repair_preserves_older_selfdev_pin · function · L863-L884 — fn repair_preserves_older_selfdev_pin()
+- repair_never_downgrades_when_stable_is_older · function · L887-L908 — fn repair_never_downgrades_when_stable_is_older()
+- reload_identity_requires_exact_known_serving_revision · function · L910-L925 — fn reload_identity_requires_exact_known_serving_revision()

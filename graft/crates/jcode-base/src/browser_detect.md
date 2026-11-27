@@ -1,0 +1,33 @@
+# crates/jcode-base/src/browser_detect.rs
+
+- BrowserKind · enum · L14-L21 — pub enum BrowserKind
+- BrowserFamily · enum · L24-L31 — pub enum BrowserFamily
+- DetectionSource · enum · L36-L43 — pub enum DetectionSource
+- describe · function · L46-L55 — pub fn describe(&self) -> &'static str
+- BrowserDetection · struct · L59-L64 — pub struct BrowserDetection
+- ALL_BROWSERS · constant · L66-L73 — pub const ALL_BROWSERS: &[BrowserKind] = &[
+- id · function · L76-L85 — pub fn id(self) -> &'static str
+- display_name · function · L87-L96 — pub fn display_name(self) -> &'static str
+- family · function · L98-L104 — pub fn family(self) -> BrowserFamily
+- parse · function · L106-L116 — pub fn parse(value: &str) -> Option<BrowserKind>
+- supported_on_this_os · function · L119-L121 — pub fn supported_on_this_os(self) -> bool
+- extensions_page · function · L124-L132 — pub fn extensions_page(self) -> &'static str
+- process_names · function · L135-L169 — pub fn process_names(self) -> &'static [&'static str]
+- linux_commands · function · L172-L201 — pub fn linux_commands(self) -> &'static [&'static [&'static str]]
+- flatpak_id · function · L203-L212 — pub fn flatpak_id(self) -> Option<&'static str>
+- macos_app_name · function · L215-L224 — pub fn macos_app_name(self) -> &'static str
+- macos_bundle_id · function · L226-L235 — pub fn macos_bundle_id(self) -> &'static str
+- windows_start_target · function · L238-L246 — pub fn windows_start_target(self) -> &'static str
+- windows_native_host_registry_roots · function · L249-L262 — pub fn windows_native_host_registry_roots(self) -> &'static [&'static str]
+- native_messaging_dirs · function · L266-L332 — pub fn native_messaging_dirs(self) -> Vec<PathBuf>
+- is_installed · function · L334-L374 — pub fn is_installed(self) -> bool
+- find_in_path · function · L378-L383 — fn find_in_path(name: &str) -> Option<PathBuf>
+- flatpak_installed · function · L386-L392 — fn flatpak_installed(app_id: &str) -> bool
+- browser_from_linux_desktop_id · function · L395-L413 — pub fn browser_from_linux_desktop_id(desktop_id: &str) -> Option<BrowserKind>
+- browser_from_macos_bundle_id · function · L416-L435 — pub fn browser_from_macos_bundle_id(bundle_id: &str) -> Option<BrowserKind>
+- browser_from_windows_prog_id · function · L438-L453 — pub fn browser_from_windows_prog_id(prog_id: &str) -> Option<BrowserKind>
+- macos_default_bundle_from_launchservices · function · L457-L470 — pub fn macos_default_bundle_from_launchservices(json: &serde_json::Value) -> Option<String>
+- system_default_browser_id · function · L473-L525 — pub fn system_default_browser_id() -> Option<String>
+- browser_from_system_id · function · L527-L540 — pub fn browser_from_system_id(id: &str) -> Option<BrowserKind>
+- resolve_detection · function · L543-L589 — pub fn resolve_detection(
+- browser_detect_tests · module · L593-L593 — mod browser_detect_tests;

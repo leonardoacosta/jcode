@@ -1,0 +1,57 @@
+# crates/jcode-build-support/src/lib.rs
+
+- paths · module · L1-L1 — mod paths;
+- platform_support · module · L2-L2 — mod platform_support;
+- runtime_evidence · module · L3-L3 — mod runtime_evidence;
+- source_state · module · L4-L4 — mod source_state;
+- storage_helpers · module · L6-L6 — mod storage_helpers;
+- version_gc · module · L7-L7 — mod version_gc;
+- BuildManifest · struct · L55-L73 — pub struct BuildManifest
+- load · function · L77-L84 — pub fn load() -> Result<Self>
+- save · function · L87-L90 — pub fn save(&self) -> Result<()>
+- binary_for_session · function · L93-L107 — pub fn binary_for_session(&self, session_id: &str) -> BinaryChoice
+- start_canary · function · L110-L115 — pub fn start_canary(&mut self, hash: &str, session_id: &str) -> Result<()>
+- mark_canary_passed · function · L118-L121 — pub fn mark_canary_passed(&mut self) -> Result<()>
+- mark_canary_failed · function · L124-L127 — pub fn mark_canary_failed(&mut self) -> Result<()>
+- record_crash · function · L130-L146 — pub fn record_crash(
+- clear_crash · function · L149-L152 — pub fn clear_crash(&mut self) -> Result<()>
+- set_pending_activation · function · L154-L157 — pub fn set_pending_activation(&mut self, activation: PendingActivation) -> Result<()>
+- clear_pending_activation · function · L159-L162 — pub fn clear_pending_activation(&mut self) -> Result<()>
+- add_to_history · function · L165-L170 — pub fn add_to_history(&mut self, info: BuildInfo) -> Result<()>
+- complete_pending_activation_for_session · function · L173-L189 — pub fn complete_pending_activation_for_session(session_id: &str) -> Result<Option<String>>
+- verify_reload_revision · function · L192-L204 — pub fn verify_reload_revision(expected: &str, serving: Option<&RuntimeIdentity>) -> Result<()>
+- rollback_pending_activation_for_session · function · L206-L226 — pub fn rollback_pending_activation_for_session(session_id: &str) -> Result<Option<String>>
+- install_binary_at_version · function · L229-L252 — pub fn install_binary_at_version(source: &std::path::Path, version: &str) -> Result<PathBuf>
+- binary_source_metadata_path · function · L254-L261 — fn binary_source_metadata_path(binary: &Path) -> PathBuf
+- write_dev_binary_source_metadata · function · L263-L267 — pub fn write_dev_binary_source_metadata(binary: &Path, source: &SourceState) -> Result<PathBuf>
+- write_current_dev_binary_source_metadata · function · L269-L276 — pub fn write_current_dev_binary_source_metadata(
+- read_binary_version_report · function · L278-L300 — fn read_binary_version_report(binary: &Path) -> Result<BinaryVersionReport>
+- smoke_test_binary · function · L302-L311 — pub fn smoke_test_binary(binary: &Path) -> Result<()>
+- validate_binary_version_matches_source_report · function · L313-L336 — fn validate_binary_version_matches_source_report(
+- dirty_status_paths · function · L338-L368 — fn dirty_status_paths(repo_dir: &Path) -> Result<Vec<(PathBuf, bool)>>
+- validate_dirty_binary_freshness_without_metadata · function · L370-L427 — fn validate_dirty_binary_freshness_without_metadata(
+- validate_dev_binary_source_metadata · function · L429-L452 — fn validate_dev_binary_source_metadata(binary: &Path, source: &SourceState) -> Result<bool>
+- validate_dev_binary_matches_source · function · L454-L471 — fn validate_dev_binary_matches_source(
+- SmokeTestReplyKind · enum · L475-L478 — enum SmokeTestReplyKind
+- smoke_test_server_request · function · L481-L522 — fn smoke_test_server_request(
+- smoke_test_server_connect · function · L525-L532 — fn smoke_test_server_connect(
+- smoke_test_server_protocol · function · L535-L564 — fn smoke_test_server_protocol(path: &Path, working_dir: &str) -> Result<()>
+- smoke_test_server_binary · function · L567-L651 — pub fn smoke_test_server_binary(binary: &Path) -> Result<()>
+- smoke_test_server_binary · function · L654-L656 — pub fn smoke_test_server_binary(binary: &Path) -> Result<()>
+- update_channel_symlink · function · L658-L677 — fn update_channel_symlink(channel: &str, version: &str) -> Result<PathBuf>
+- update_stable_symlink · function · L680-L684 — pub fn update_stable_symlink(version: &str) -> Result<PathBuf>
+- update_current_symlink · function · L687-L691 — pub fn update_current_symlink(version: &str) -> Result<PathBuf>
+- update_shared_server_symlink · function · L695-L699 — pub fn update_shared_server_symlink(version: &str) -> Result<PathBuf>
+- publish_local_current_build_for_source · function · L701-L738 — pub fn publish_local_current_build_for_source(
+- publish_local_current_build · function · L742-L745 — pub fn publish_local_current_build(repo_dir: &std::path::Path) -> Result<PathBuf>
+- promote_version_to_shared_server · function · L748-L767 — pub fn promote_version_to_shared_server(version: &str) -> Result<Option<String>>
+- shared_server_tracks_stable · function · L782-L791 — pub fn shared_server_tracks_stable() -> Result<bool>
+- advance_shared_server_if_tracking_stable · function · L799-L806 — pub fn advance_shared_server_if_tracking_stable(version: &str) -> Result<bool>
+- SharedServerRepair · enum · L810-L820 — pub enum SharedServerRepair
+- repair_stale_shared_server_channel · function · L839-L886 — pub fn repair_stale_shared_server_channel() -> Result<SharedServerRepair>
+- is_release_channel_marker · function · L888-L895 — fn is_release_channel_marker(marker: &str) -> bool
+- shared_server_binary_is_strictly_older_than · function · L906-L927 — fn shared_server_binary_is_strictly_older_than(
+- install_local_release · function · L931-L946 — pub fn install_local_release(repo_dir: &std::path::Path) -> Result<PathBuf>
+- install_version · function · L949-L952 — pub fn install_version(repo_dir: &std::path::Path, hash: &str) -> Result<PathBuf>
+- update_canary_symlink · function · L955-L958 — pub fn update_canary_symlink(hash: &str) -> Result<()>
+- tests · module · L961-L961 — mod tests;

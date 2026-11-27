@@ -1,0 +1,21 @@
+# crates/jcode-notify-email/src/lib.rs
+
+- ReplyAction · enum · L4-L14 — pub enum ReplyAction
+- SendEmailRequest · struct · L16-L26 — pub struct SendEmailRequest<'a>
+- send_email · function · L28-L63 — pub async fn send_email(request: SendEmailRequest<'_>) -> Result<()>
+- poll_imap_once · function · L65-L146 — pub fn poll_imap_once(host: &str, port: u16, user: &str, pass: &str) -> Result<Vec<ReplyAction>>
+- extract_permission_id · function · L148-L156 — pub fn extract_permission_id(text: &str) -> Option<String>
+- parse_permission_reply · function · L158-L178 — pub fn parse_permission_reply(text: &str) -> (bool, Option<String>)
+- build_permission_email_html · function · L180-L324 — pub fn build_permission_email_html(
+- markdown_to_html_email · function · L326-L417 — fn markdown_to_html_email(markdown: &str) -> String
+- strip_quoted_reply · function · L419-L431 — fn strip_quoted_reply(text: &str) -> String
+- tests · module · L434-L529 — mod tests
+- test_markdown_to_html_email · function · L438-L444 — fn test_markdown_to_html_email()
+- test_strip_quoted_reply · function · L447-L452 — fn test_strip_quoted_reply()
+- test_strip_quoted_reply_signature · function · L455-L460 — fn test_strip_quoted_reply_signature()
+- test_parse_permission_reply_approve · function · L463-L474 — fn test_parse_permission_reply_approve()
+- test_parse_permission_reply_deny · function · L477-L488 — fn test_parse_permission_reply_deny()
+- test_parse_permission_reply_ambiguous_defaults_deny · function · L491-L496 — fn test_parse_permission_reply_ambiguous_defaults_deny()
+- test_parse_permission_reply_message · function · L499-L506 — fn test_parse_permission_reply_message()
+- test_extract_permission_id · function · L509-L515 — fn test_extract_permission_id()
+- test_build_permission_email_html · function · L518-L528 — fn test_build_permission_email_html()

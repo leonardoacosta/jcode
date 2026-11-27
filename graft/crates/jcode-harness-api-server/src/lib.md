@@ -1,0 +1,38 @@
+# crates/jcode-harness-api-server/src/lib.rs
+
+- allocator · module · L19-L19 — pub mod allocator;
+- background_progress · module · L20-L20 — pub mod background_progress;
+- timing · module · L21-L21 — pub mod timing;
+- translate · module · L22-L22 — pub mod translate;
+- session_presence_tests · module · L25-L25 — mod session_presence_tests;
+- stdio_tests · module · L27-L27 — mod stdio_tests;
+- LARGE_FRAME_BYTES · constant · L47-L47 — const LARGE_FRAME_BYTES: usize = 256 * 1024;
+- release_large_frame · function · L49-L54 — fn release_large_frame(buffer: &mut Vec<u8>)
+- daemon_capabilities · function · L62-L90 — async fn daemon_capabilities(socket: &std::path::Path) -> Option<Vec<String>>
+- daemon_user_connections · function · L94-L126 — async fn daemon_user_connections(socket: &std::path::Path) -> std::collections::HashSet<String>
+- MAX_FRAME_BYTES · constant · L135-L135 — const MAX_FRAME_BYTES: u64 = 64 * 1024 * 1024;
+- read_frame · function · L139-L155 — async fn read_frame<R>(reader: &mut R, line: &mut String) -> std::io::Result<usize>
+- read_frame_bytes · function · L160-L176 — async fn read_frame_bytes<R>(reader: &mut R, frame: &mut Vec<u8>) -> std::io::Result<usize>
+- InstanceLock · struct · L180-L183 — pub(crate) struct InstanceLock
+- drop · function · L187-L191 — fn drop(&mut self)
+- single_instance_lock · function · L198-L213 — pub(crate) fn single_instance_lock(api_socket: &std::path::Path) -> Result<Option<InstanceLock>>
+- run_bridge · function · L215-L288 — pub async fn run_bridge(api_socket: PathBuf, legacy_socket: PathBuf) -> Result<()>
+- handle_api_client · function · L290-L293 — async fn handle_api_client(stream: Stream, legacy_socket: PathBuf) -> Result<()>
+- run_bridge_stdio · function · L301-L312 — pub async fn run_bridge_stdio(legacy_socket: PathBuf) -> Result<()>
+- run_bridge_stream · function · L316-L590 — pub async fn run_bridge_stream<R, W>(
+- write_frame_timed · function · L593-L616 — async fn write_frame_timed<W>(
+- write_json_line · function · L618-L628 — async fn write_json_line<W, T>(writer: &mut W, value: &T) -> Result<()>
+- runtime_command_compat_tests · module · L631-L631 — mod runtime_command_compat_tests;
+- public_acceptance_tests · module · L634-L811 — mod public_acceptance_tests
+- stdio_stream_handshake_ping_and_eof · function · L642-L682 — async fn stdio_stream_handshake_ping_and_eof()
+- stdio_does_not_confirm_handshake_when_native_daemon_is_missing · function · L685-L701 — async fn stdio_does_not_confirm_handshake_when_native_daemon_is_missing()
+- JcodeHomeGuard · struct · L703-L703 — struct JcodeHomeGuard(Option<OsString>);
+- drop · function · L706-L711 — fn drop(&mut self)
+- public_socket_keeps_its_attachment_after_another_sessions_state · function · L715-L810 — async fn public_socket_keeps_its_attachment_after_another_sessions_state()
+- framing_tests · module · L815-L815 — mod framing_tests;
+- single_instance_tests · module · L818-L843 — mod single_instance_tests
+- a_second_bridge_cannot_take_the_socket · function · L825-L842 — fn a_second_bridge_cannot_take_the_socket()
+- socket_permission_tests · module · L846-L888 — mod socket_permission_tests
+- the_api_socket_is_owner_only · function · L856-L887 — async fn the_api_socket_is_owner_only()
+- fragmented_reply_tests · module · L891-L965 — mod fragmented_reply_tests
+- concurrent_history_replies_survive_api_requests_between_fragments · function · L897-L964 — async fn concurrent_history_replies_survive_api_requests_between_fragments()

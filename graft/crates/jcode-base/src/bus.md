@@ -1,0 +1,72 @@
+# crates/jcode-base/src/bus.rs
+
+- ToolStatus · enum · L18-L22 — pub enum ToolStatus
+- as_str · function · L25-L31 — pub fn as_str(&self) -> &'static str
+- ToolEvent · struct · L35-L44 — pub struct ToolEvent
+- TodoEvent · struct · L47-L50 — pub struct TodoEvent
+- LaneEdited · struct · L53-L58 — pub struct LaneEdited
+- ToolSummaryState · struct · L61-L64 — pub struct ToolSummaryState
+- ToolSummary · struct · L67-L71 — pub struct ToolSummary
+- SubagentStatus · struct · L75-L79 — pub struct SubagentStatus
+- ManualToolCompleted · struct · L82-L89 — pub struct ManualToolCompleted
+- FileOp · enum · L93-L97 — pub enum FileOp
+- as_str · function · L100-L106 — pub fn as_str(&self) -> &'static str
+- is_modification · function · L108-L110 — pub fn is_modification(&self) -> bool
+- FileTouch · struct · L115-L129 — pub struct FileTouch
+- SwarmOutputTail · struct · L135-L140 — pub struct SwarmOutputTail
+- LoginCompleted · struct · L143-L147 — pub struct LoginCompleted
+- OnboardingModelValidated · struct · L154-L166 — pub struct OnboardingModelValidated
+- InputShellCompleted · struct · L169-L172 — pub struct InputShellCompleted
+- ClipboardPasteKind · enum · L175-L179 — pub enum ClipboardPasteKind
+- ClipboardPasteContent · enum · L182-L190 — pub enum ClipboardPasteContent
+- ClipboardPasteCompleted · struct · L193-L197 — pub struct ClipboardPasteCompleted
+- ModelRefreshCompleted · struct · L200-L203 — pub struct ModelRefreshCompleted
+- UiActivityKind · enum · L206-L210 — pub enum UiActivityKind
+- scope · function · L213-L219 — pub fn scope(&self) -> &'static str
+- UiActivity · struct · L223-L228 — pub struct UiActivity
+- new · function · L231-L243 — pub fn new(
+- auth · function · L245-L251 — pub fn auth(
+- catalog · function · L253-L259 — pub fn catalog(
+- background · function · L261-L272 — pub fn background(
+- is_visible_to_session · function · L274-L279 — pub fn is_visible_to_session(&self, session_id: &str) -> bool
+- GitStatusCompleted · struct · L283-L286 — pub struct GitStatusCompleted
+- SwarmAwaitCompleted · struct · L295-L308 — pub struct SwarmAwaitCompleted
+- SwarmWorkerReported · struct · L312-L316 — pub struct SwarmWorkerReported
+- ProductivityReportReady · struct · L324-L327 — pub struct ProductivityReportReady
+- ProductivityReportPayload · struct · L330-L337 — pub struct ProductivityReportPayload
+- SidePanelUpdated · struct · L340-L343 — pub struct SidePanelUpdated
+- AppletsUpdated · struct · L346-L349 — pub struct AppletsUpdated
+- UpdateStatus · enum · L352-L377 — pub enum UpdateStatus
+- ClientMaintenanceAction · enum · L381-L384 — pub enum ClientMaintenanceAction
+- noun · function · L387-L392 — pub fn noun(&self) -> &'static str
+- title · function · L394-L399 — pub fn title(&self) -> &'static str
+- SessionUpdateStatus · enum · L403-L423 — pub enum SessionUpdateStatus
+- BusEvent · enum · L426-L524 — pub enum BusEvent
+- runtime_session_id · function · L529-L546 — pub fn runtime_session_id(&self) -> Option<&str>
+- RuntimeBusDelivery · struct · L552-L558 — pub struct RuntimeBusDelivery
+- PendingRuntimeDelivery · struct · L560-L560 — struct PendingRuntimeDelivery(Arc<AtomicUsize>);
+- drop · function · L563-L565 — fn drop(&mut self)
+- Bus · struct · L568-L577 — pub struct Bus
+- MODELS_UPDATED_DEBOUNCE · constant · L579-L579 — const MODELS_UPDATED_DEBOUNCE: Duration = Duration::from_millis(750);
+- latest_update_status · function · L581-L584 — fn latest_update_status() -> &'static Mutex<Option<UpdateStatus>>
+- STATE · constant · L582-L582 — static STATE: OnceLock<Mutex<Option<UpdateStatus>>> = OnceLock::new();
+- ModelsUpdatedPublishState · struct · L587-L590 — struct ModelsUpdatedPublishState
+- reset_models_updated_publish_state_for_tests · function · L593-L599 — pub fn reset_models_updated_publish_state_for_tests()
+- global · function · L602-L605 — pub fn global() -> &'static Bus
+- INSTANCE · constant · L603-L603 — static INSTANCE: OnceLock<Bus> = OnceLock::new();
+- new_isolated_for_tests · function · L610-L612 — pub fn new_isolated_for_tests() -> std::sync::Arc<Bus>
+- new · function · L614-L625 — fn new() -> Bus
+- subscribe · function · L627-L629 — pub fn subscribe(&self) -> broadcast::Receiver<BusEvent>
+- subscribe_runtime · function · L631-L638 — pub fn subscribe_runtime(&self) -> tokio::sync::mpsc::UnboundedReceiver<RuntimeBusDelivery>
+- runtime_delivery_checkpoint · function · L644-L648 — pub fn runtime_delivery_checkpoint(&self) -> Option<usize>
+- try_runtime_delivery_idle · function · L650-L658 — pub fn try_runtime_delivery_idle(&self, checkpoint: usize) -> Option<impl Drop + '_>
+- publish · function · L660-L711 — pub fn publish(&self, event: BusEvent)
+- latest_update_status · function · L713-L718 — pub fn latest_update_status(&self) -> Option<UpdateStatus>
+- publish_models_updated · function · L720-L786 — pub fn publish_models_updated(&self)
+- tests · module · L790-L917 — mod tests
+- completion · function · L794-L803 — fn completion() -> BusEvent
+- worker_report_uses_reliable_owner_scoped_runtime_delivery · function · L806-L822 — async fn worker_report_uses_reliable_owner_scoped_runtime_delivery()
+- runtime_delivery_fences_queued_and_delayed_continuations · function · L825-L851 — async fn runtime_delivery_fences_queued_and_delayed_continuations()
+- runtime_delivery_after_checkpoint_invalidates_even_if_fully_dispatched · function · L854-L866 — async fn runtime_delivery_after_checkpoint_invalidates_even_if_fully_dispatched()
+- runtime_delivery_publication_is_atomic_with_final_exec_fence · function · L869-L887 — fn runtime_delivery_publication_is_atomic_with_final_exec_fence()
+- models_updated_publishes_are_coalesced · function · L890-L916 — async fn models_updated_publishes_are_coalesced()

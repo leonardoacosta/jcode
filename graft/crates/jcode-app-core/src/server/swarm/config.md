@@ -1,0 +1,32 @@
+# crates/jcode-app-core/src/server/swarm/config.rs
+
+- DEFAULT_SWARM_STATUS_DEBOUNCE_MEMBER_THRESHOLD · constant · L3-L3 — pub(in crate::server) const DEFAULT_SWARM_STATUS_DEBOUNCE_MEMBER_THRESHOLD: usize = 2;
+- DEFAULT_SWARM_STATUS_DEBOUNCE_MS · constant · L4-L4 — pub(in crate::server) const DEFAULT_SWARM_STATUS_DEBOUNCE_MS: u64 = 75;
+- DEFAULT_SWARM_TASK_HEARTBEAT_SECS · constant · L5-L5 — pub(in crate::server) const DEFAULT_SWARM_TASK_HEARTBEAT_SECS: u64 = 10;
+- DEFAULT_SWARM_TASK_STALE_AFTER_SECS · constant · L6-L6 — pub(in crate::server) const DEFAULT_SWARM_TASK_STALE_AFTER_SECS: u64 = 45;
+- DEFAULT_SWARM_TASK_SWEEP_INTERVAL_SECS · constant · L7-L7 — pub(in crate::server) const DEFAULT_SWARM_TASK_SWEEP_INTERVAL_SECS: u64 = 5;
+- DEFAULT_SWARM_TERMINAL_MEMBER_RETENTION_SECS · constant · L8-L8 — pub(in crate::server) const DEFAULT_SWARM_TERMINAL_MEMBER_RETENTION_SECS: u64 = 24 * 60 * 60;
+- DEFAULT_SWARM_TERMINAL_MEMBER_GC_INTERVAL_SECS · constant · L9-L9 — pub(in crate::server) const DEFAULT_SWARM_TERMINAL_MEMBER_GC_INTERVAL_SECS: u64 = 60;
+- DEFAULT_SWARM_STATUS_BROADCAST_TERMINAL_SECS · constant · L17-L17 — pub(in crate::server) const DEFAULT_SWARM_STATUS_BROADCAST_TERMINAL_SECS: u64 = 15 * 60;
+- PendingSwarmStatusBroadcast · struct · L19-L22 — pub(in crate::server) struct PendingSwarmStatusBroadcast
+- pending_swarm_status_broadcasts · function · L24-L29 — pub(in crate::server) fn pending_swarm_status_broadcasts()
+- PENDING · constant · L26-L27 — static PENDING: OnceLock<StdMutex<HashMap<String, PendingSwarmStatusBroadcast>>> =
+- swarm_status_debounce_member_threshold · function · L31-L43 — pub(in crate::server) fn swarm_status_debounce_member_threshold() -> usize
+- CACHED · constant · L32-L32 — static CACHED: OnceLock<AtomicUsize> = OnceLock::new();
+- swarm_status_debounce_ms · function · L45-L57 — pub(in crate::server) fn swarm_status_debounce_ms() -> u64
+- CACHED · constant · L46-L46 — static CACHED: OnceLock<AtomicU64> = OnceLock::new();
+- configured_positive_u64 · function · L59-L65 — pub(in crate::server) fn configured_positive_u64(name: &str, default: u64) -> u64
+- now_unix_ms · function · L67-L72 — pub(in crate::server) fn now_unix_ms() -> u64
+- swarm_task_heartbeat_interval · function · L74-L79 — pub(in crate::server) fn swarm_task_heartbeat_interval() -> Duration
+- swarm_task_stale_after · function · L81-L86 — pub(in crate::server) fn swarm_task_stale_after() -> Duration
+- swarm_task_sweep_interval · function · L88-L93 — pub(in crate::server) fn swarm_task_sweep_interval() -> Duration
+- swarm_terminal_member_retention · function · L98-L103 — pub(in crate::server) fn swarm_terminal_member_retention() -> Duration
+- swarm_terminal_member_gc_interval · function · L107-L112 — pub(in crate::server) fn swarm_terminal_member_gc_interval() -> Duration
+- swarm_status_broadcast_terminal_retention · function · L116-L121 — pub(in crate::server) fn swarm_status_broadcast_terminal_retention() -> Duration
+- member_in_status_broadcast · function · L126-L131 — pub(in crate::server) fn member_in_status_broadcast(
+- member_status_is_terminal · function · L136-L141 — pub(in crate::server) fn member_status_is_terminal(status: &str) -> bool
+- member_consumes_swarm_capacity · function · L143-L145 — pub(in crate::server) fn member_consumes_swarm_capacity(member: &SwarmMember) -> bool
+- expired_terminal_member_ids · function · L147-L157 — pub(in crate::server) fn expired_terminal_member_ids(
+- member_status_is_dead · function · L162-L164 — pub(in crate::server) fn member_status_is_dead(status: &str) -> bool
+- DEFAULT_SWARM_IDLE_WORKER_REAP_SECS · constant · L173-L173 — pub(in crate::server) const DEFAULT_SWARM_IDLE_WORKER_REAP_SECS: u64 = 30 * 60;
+- swarm_idle_worker_reap_after · function · L175-L181 — pub(in crate::server) fn swarm_idle_worker_reap_after() -> Option<Duration>

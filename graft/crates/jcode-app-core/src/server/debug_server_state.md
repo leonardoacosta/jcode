@@ -1,0 +1,34 @@
+# crates/jcode-app-core/src/server/debug_server_state.rs
+
+- ChannelSubscriptions · type · L14-L14 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- MEMORY_INCIDENT_WINDOW_MS · constant · L16-L16 — const MEMORY_INCIDENT_WINDOW_MS: u128 = 15 * 60 * 1_000;
+- MEMORY_WARNING_PSS_BYTES · constant · L17-L17 — const MEMORY_WARNING_PSS_BYTES: u64 = 1024 * 1024 * 1024;
+- MEMORY_CRITICAL_PSS_BYTES · constant · L18-L18 — const MEMORY_CRITICAL_PSS_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+- MEMORY_WARNING_GROWTH_BYTES · constant · L19-L19 — const MEMORY_WARNING_GROWTH_BYTES: u64 = 256 * 1024 * 1024;
+- MEMORY_CRITICAL_GROWTH_BYTES · constant · L20-L20 — const MEMORY_CRITICAL_GROWTH_BYTES: u64 = 1024 * 1024 * 1024;
+- MEMORY_WARNING_LIVE_SESSIONS · constant · L21-L21 — const MEMORY_WARNING_LIVE_SESSIONS: usize = 128;
+- MEMORY_CRITICAL_LIVE_SESSIONS · constant · L22-L22 — const MEMORY_CRITICAL_LIVE_SESSIONS: usize = 512;
+- CompactionMemoryTotals · struct · L25-L31 — struct CompactionMemoryTotals
+- observe · function · L34-L57 — fn observe(&mut self, session_id: &str, profile: &serde_json::Value)
+- into_json · function · L59-L80 — fn into_json(mut self) -> serde_json::Value
+- MemoryIncidentDecision · struct · L84-L88 — struct MemoryIncidentDecision
+- LiveSwarmPopulation · struct · L91-L96 — struct LiveSwarmPopulation
+- MemoryIncidentMetrics · struct · L99-L107 — struct MemoryIncidentMetrics
+- count_live_spawned_swarm_agents · function · L109-L117 — fn count_live_spawned_swarm_agents<'a>(
+- connected_session_snapshot · function · L119-L144 — async fn connected_session_snapshot(
+- maybe_handle_server_state_command · function · L150-L418 — pub(super) async fn maybe_handle_server_state_command(
+- classify_memory_incident · function · L420-L461 — fn classify_memory_incident(metrics: MemoryIncidentMetrics) -> MemoryIncidentDecision
+- MemoryIncidentTrend · struct · L463-L467 — struct MemoryIncidentTrend<'a>
+- memory_incident_trend · function · L469-L490 — fn memory_incident_trend(
+- build_server_memory_incident_payload · function · L492-L740 — async fn build_server_memory_incident_payload(
+- build_server_memory_payload · function · L746-L1163 — async fn build_server_memory_payload(
+- summarize_status_counts · function · L1165-L1171 — fn summarize_status_counts<'a>(statuses: impl Iterator<Item = &'a str>) -> HashMap<String, usize>
+- estimate_client_connection_bytes · function · L1173-L1186 — fn estimate_client_connection_bytes(info: &ClientConnectionInfo) -> usize
+- estimate_swarm_member_bytes · function · L1188-L1208 — fn estimate_swarm_member_bytes(member: &SwarmMember) -> usize
+- estimate_shared_context_bytes · function · L1210-L1219 — fn estimate_shared_context_bytes(context: &SharedContext) -> usize
+- estimate_file_access_bytes · function · L1221-L1230 — fn estimate_file_access_bytes(access: &FileAccess) -> usize
+- estimate_debug_job_bytes · function · L1232-L1242 — fn estimate_debug_job_bytes(job: &DebugJob) -> usize
+- estimate_swarm_event_bytes · function · L1244-L1246 — fn estimate_swarm_event_bytes(event: &SwarmEvent) -> usize
+- path_len · function · L1248-L1250 — fn path_len(path: &std::path::Path) -> usize
+- tests · module · L1254-L1254 — mod tests;
+- efficiency_tests · module · L1258-L1258 — mod efficiency_tests;

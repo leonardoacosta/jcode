@@ -1,0 +1,45 @@
+# crates/jcode-message-types/src/provider_native.rs
+
+- PROVIDER_NATIVE_ANTHROPIC · constant · L16-L16 — pub const PROVIDER_NATIVE_ANTHROPIC: &str = "anthropic";
+- PROVIDER_NATIVE_OPENAI · constant · L18-L18 — pub const PROVIDER_NATIVE_OPENAI: &str = "openai";
+- PROVIDER_NATIVE_WEB_SEARCH_TOOL · constant · L20-L20 — pub const PROVIDER_NATIVE_WEB_SEARCH_TOOL: &str = "web_search";
+- LOCAL_WEBSEARCH_TOOL · constant · L24-L24 — pub const LOCAL_WEBSEARCH_TOOL: &str = "websearch";
+- LOCAL_WEBSEARCH_DESCRIPTION · constant · L29-L29 — pub const LOCAL_WEBSEARCH_DESCRIPTION: &str = "Search the web.";
+- is_builtin_local_websearch · function · L33-L35 — pub fn is_builtin_local_websearch(tool: &crate::ToolDefinition) -> bool
+- ANTHROPIC_SERVER_TOOL_BLOCK_TYPES · constant · L39-L40 — pub const ANTHROPIC_SERVER_TOOL_BLOCK_TYPES: &[&str] =
+- MAX_DISPLAY_RESULTS · constant · L43-L43 — const MAX_DISPLAY_RESULTS: usize = 10;
+- ProviderNativeDisplay · struct · L47-L58 — pub struct ProviderNativeDisplay
+- is_anthropic_server_tool_block · function · L61-L63 — pub fn is_anthropic_server_tool_block(block_type: &str) -> bool
+- is_provider_native_tool_id · function · L68-L70 — pub fn is_provider_native_tool_id(id: &str) -> bool
+- str_field · function · L72-L74 — fn str_field<'a>(value: &'a Value, key: &str) -> Option<&'a str>
+- provider_native_display · function · L78-L152 — pub fn provider_native_display(provider: &str, item: &Value) -> Option<ProviderNativeDisplay>
+- provider_native_text_fallback · function · L161-L168 — pub fn provider_native_text_fallback(
+- provider_native_display_text_fallback · function · L171-L190 — pub fn provider_native_display_text_fallback(
+- NOTE · constant · L184-L185 — const NOTE: &str =
+- ProviderNativeToolEvent · enum · L194-L210 — pub enum ProviderNativeToolEvent
+- ProviderNativeTracker · struct · L215-L217 — pub struct ProviderNativeTracker
+- observe · function · L221-L248 — pub fn observe(&mut self, provider: &str, item: &Value) -> Option<ProviderNativeToolEvent>
+- is_started · function · L251-L253 — pub fn is_started(&self, id: &str) -> bool
+- clear · function · L256-L258 — pub fn clear(&mut self)
+- ProviderNativeItems · struct · L266-L269 — pub struct ProviderNativeItems
+- push · function · L273-L286 — pub fn push(&mut self, text_len: usize, provider: String, item: Value)
+- is_empty · function · L288-L290 — pub fn is_empty(&self) -> bool
+- clear · function · L292-L294 — pub fn clear(&mut self)
+- replace_text_suffix · function · L299-L320 — pub fn replace_text_suffix(&mut self, text: &mut String, old: &str, new: &str) -> bool
+- call_input · function · L323-L330 — pub fn call_input(&self, id: &str) -> Value
+- interleave · function · L336-L361 — pub fn interleave(&self, text: &str) -> Vec<crate::ContentBlock>
+- format_results · function · L364-L390 — fn format_results<'a>(results: impl Iterator<Item = &'a Value>) -> String
+- tests · module · L393-L637 — mod tests
+- suffix_correction_keeps_native_item_end_offsets_in_sync · function · L397-L417 — fn suffix_correction_keeps_native_item_end_offsets_in_sync()
+- suffix_correction_rejects_ambiguous_native_item_inside_message · function · L420-L430 — fn suffix_correction_rejects_ambiguous_native_item_inside_message()
+- anthropic_server_tool_use_is_a_call_start · function · L434-L446 — fn anthropic_server_tool_use_is_a_call_start()
+- anthropic_result_lists_titles_and_urls · function · L449-L465 — fn anthropic_result_lists_titles_and_urls()
+- anthropic_result_error_is_flagged · function · L468-L480 — fn anthropic_result_error_is_flagged()
+- openai_web_search_call_is_call_and_result · function · L483-L494 — fn openai_web_search_call_is_call_and_result()
+- openai_search_lifecycle_handles_concurrent_failure_and_rollback · function · L497-L519 — fn openai_search_lifecycle_handles_concurrent_failure_and_rollback()
+- openai_completed_only_search_still_finishes_with_query_and_sources · function · L522-L539 — fn openai_completed_only_search_still_finishes_with_query_and_sources()
+- tracker_pairs_start_with_result · function · L542-L565 — fn tracker_pairs_start_with_result()
+- text_fallback_keeps_query_and_results · function · L568-L590 — fn text_fallback_keeps_query_and_results()
+- interleave_places_items_at_arrival_offsets · function · L593-L620 — fn interleave_places_items_at_arrival_offsets()
+- interleave_without_items_is_plain_text · function · L623-L630 — fn interleave_without_items_is_plain_text()
+- unknown_items_have_no_display · function · L633-L636 — fn unknown_items_have_no_display()

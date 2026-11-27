@@ -1,0 +1,73 @@
+# src/cli/commands_tests.rs
+
+- run_auto_poke_default_skips_quality_reviews_but_keeps_unfinished_work · function · L15-L40 — fn run_auto_poke_default_skips_quality_reviews_but_keeps_unfinished_work()
+- run_report_names_local_profile_instead_of_openrouter_slot · function · L43-L71 — fn run_report_names_local_profile_instead_of_openrouter_slot()
+- spawn_single_response_http_server · function · L73-L75 — fn spawn_single_response_http_server(status: u16, body: &str) -> String
+- spawn_single_response_http_server_on_host · function · L77-L104 — fn spawn_single_response_http_server_on_host(host: &str, status: u16, body: &str) -> String
+- test_parse_tailscale_dns_name_trims_trailing_dot · function · L107-L111 — fn test_parse_tailscale_dns_name_trims_trailing_dot()
+- test_parse_tailscale_dns_name_handles_missing_or_empty · function · L114-L120 — fn test_parse_tailscale_dns_name_handles_missing_or_empty()
+- test_parse_tailscale_dns_name_invalid_json · function · L123-L125 — fn test_parse_tailscale_dns_name_invalid_json()
+- configured_auth_test_targets_only_include_configured_supported_providers · function · L128-L171 — fn configured_auth_test_targets_only_include_configured_supported_providers()
+- explicit_supported_provider_maps_to_single_auth_target · function · L174-L182 — fn explicit_supported_provider_maps_to_single_auth_target()
+- explicit_generic_provider_maps_to_generic_auth_target · function · L185-L198 — fn explicit_generic_provider_maps_to_generic_auth_target()
+- collect_cli_model_names_prefers_available_routes_and_dedupes · function · L201-L238 — fn collect_cli_model_names_prefers_available_routes_and_dedupes()
+- test_route · function · L240-L250 — fn test_route(model: &str, provider: &str, api_method: &str) -> ModelRoute
+- cli_route_display_uses_typed_api_methods · function · L253-L265 — fn cli_route_display_uses_typed_api_methods()
+- test_todo · function · L267-L283 — fn test_todo(
+- dependency_todo · function · L285-L289 — fn dependency_todo(id: &str, dependencies: &[&str]) -> crate::todo::TodoItem
+- user_auth_cli_pauses_only_that_todo_and_keeps_peers_actionable · function · L292-L324 — async fn user_auth_cli_pauses_only_that_todo_and_keeps_peers_actionable()
+- cli_notice_reports_user_auth_and_goal_that_cannot_complete · function · L327-L354 — fn cli_notice_reports_user_auth_and_goal_that_cannot_complete()
+- run_await_dependency_waits_without_poking_and_resumes_on_terminal_or_timeout · function · L357-L412 — async fn run_await_dependency_waits_without_poking_and_resumes_on_terminal_or_timeout()
+- run_dependency_mixed_work_stays_actionable_and_scoped · function · L415-L467 — async fn run_dependency_mixed_work_stays_actionable_and_scoped()
+- run_dependency_all_waits_resume_with_terminal_status_and_output · function · L470-L524 — async fn run_dependency_all_waits_resume_with_terminal_status_and_output()
+- run_dependency_waits_any_but_does_not_resume_still_blocked_todo · function · L527-L565 — async fn run_dependency_waits_any_but_does_not_resume_still_blocked_todo()
+- run_dependency_unknown_stale_and_cancelled_do_not_wait_forever · function · L568-L626 — async fn run_dependency_unknown_stale_and_cancelled_do_not_wait_forever()
+- run_auto_poke_followup_targets_below_threshold_todos · function · L629-L664 — fn run_auto_poke_followup_targets_below_threshold_todos()
+- run_auto_poke_followup_challenges_abrupt_confidence_once · function · L667-L690 — fn run_auto_poke_followup_challenges_abrupt_confidence_once()
+- run_auto_poke_followup_silent_when_confident_and_earned · function · L693-L722 — fn run_auto_poke_followup_silent_when_confident_and_earned()
+- run_auto_poke_followup_prioritizes_incomplete_todos · function · L725-L755 — fn run_auto_poke_followup_prioritizes_incomplete_todos()
+- run_auto_poke_treats_completion_synonyms_and_case_as_finished · function · L758-L772 — fn run_auto_poke_treats_completion_synonyms_and_case_as_finished()
+- run_auto_poke_treats_cancelled_spelling_variants_as_finished · function · L775-L783 — fn run_auto_poke_treats_cancelled_spelling_variants_as_finished()
+- run_auto_poke_delivers_the_deferred_gate_digest_before_confidence · function · L788-L814 — fn run_auto_poke_delivers_the_deferred_gate_digest_before_confidence()
+- run_auto_poke_prefers_incomplete_todos_over_the_gate_digest · function · L819-L836 — fn run_auto_poke_prefers_incomplete_todos_over_the_gate_digest()
+- open_todos_do_not_consume_the_pending_gate_digest · function · L843-L913 — fn open_todos_do_not_consume_the_pending_gate_digest()
+- take_run_gate_digest_consumes_the_log_and_respects_delivery · function · L918-L969 — fn take_run_gate_digest_consumes_the_log_and_respects_delivery()
+- run_auto_poke_followup_rechecks_completion_confidence_until_it_passes · function · L972-L999 — fn run_auto_poke_followup_rechecks_completion_confidence_until_it_passes()
+- cli_provider_choice_filter_uses_typed_api_methods · function · L1002-L1039 — fn cli_provider_choice_filter_uses_typed_api_methods()
+- auth_test_retryable_error_detection_handles_rate_limits · function · L1042-L1047 — fn auth_test_retryable_error_detection_handles_rate_limits()
+- auth_test_retryable_error_detection_rejects_hard_usage_limit_exhaustion · function · L1050-L1059 — fn auth_test_retryable_error_detection_rejects_hard_usage_limit_exhaustion()
+- auth_test_retryable_error_detection_rejects_schema_errors · function · L1062-L1067 — fn auth_test_retryable_error_detection_rejects_schema_errors()
+- auth_test_choice_plan_preserves_explicit_model_for_local_provider · function · L1070-L1082 — async fn auth_test_choice_plan_preserves_explicit_model_for_local_provider()
+- auth_test_choice_plan_leaves_non_compat_provider_unchanged · function · L1085-L1097 — async fn auth_test_choice_plan_leaves_non_compat_provider_unchanged()
+- auth_test_choice_plan_discovers_model_for_local_custom_compat_endpoint · function · L1100-L1130 — async fn auth_test_choice_plan_discovers_model_for_local_custom_compat_endpoint()
+- auth_test_choice_plan_discovers_model_for_bare_ip_custom_compat_endpoint_with_api_key · function · L1133-L1182 — async fn auth_test_choice_plan_discovers_model_for_bare_ip_custom_compat_endpoint_with_api_key()
+- auth_test_choice_plan_skips_local_custom_compat_endpoint_without_models · function · L1185-L1218 — async fn auth_test_choice_plan_skips_local_custom_compat_endpoint_without_models()
+- collect_cli_model_names_falls_back_when_no_routes_are_available · function · L1221-L1235 — fn collect_cli_model_names_falls_back_when_no_routes_are_available()
+- list_cli_providers_includes_auto_and_openai · function · L1238-L1248 — fn list_cli_providers_includes_auto_and_openai()
+- list_cli_providers_includes_conifer · function · L1251-L1260 — fn list_cli_providers_includes_conifer()
+- version_command_plain_output_includes_core_fields · function · L1263-L1301 — fn version_command_plain_output_includes_core_fields()
+- restore_agent_session_if_requested_restores_resumed_session · function · L1304-L1325 — async fn restore_agent_session_if_requested_restores_resumed_session()
+- incomplete_todo_followups_stop_after_three_in_all_output_modes · function · L1328-L1383 — async fn incomplete_todo_followups_stop_after_three_in_all_output_modes()
+- run_dependency_resumes_same_session_in_all_output_modes · function · L1386-L1473 — async fn run_dependency_resumes_same_session_in_all_output_modes()
+- one_shot_output_modes_close_sessions_and_clear_active_pid_markers · function · L1476-L1525 — async fn one_shot_output_modes_close_sessions_and_clear_active_pid_markers()
+- resumed_one_shot_closes_the_restored_session · function · L1528-L1579 — async fn resumed_one_shot_closes_the_restored_session()
+- one_shot_cleanup_preserves_the_original_command_error · function · L1582-L1630 — async fn one_shot_cleanup_preserves_the_original_command_error()
+- ndjson_tool_done_ignores_required_check_identity · function · L1633-L1648 — fn ndjson_tool_done_ignores_required_check_identity()
+- cloud_sessions · module · L1650-L1650 — mod cloud_sessions;
+- ndjson_metadata · module · L1652-L1652 — mod ndjson_metadata;
+- SavedEnv · struct · L1654-L1656 — struct SavedEnv
+- capture · function · L1659-L1666 — fn capture(keys: &[&str]) -> Self
+- drop · function · L1670-L1678 — fn drop(&mut self)
+- TestProvider · struct · L1681-L1681 — struct TestProvider;
+- complete · function · L1685-L1702 — async fn complete(
+- name · function · L1704-L1706 — fn name(&self) -> &str
+- fork · function · L1708-L1710 — fn fork(&self) -> Arc<dyn Provider>
+- FailingTestProvider · struct · L1713-L1713 — struct FailingTestProvider;
+- complete · function · L1717-L1725 — async fn complete(
+- name · function · L1727-L1729 — fn name(&self) -> &str
+- fork · function · L1731-L1733 — fn fork(&self) -> Arc<dyn Provider>
+- OpenRouterSlotProvider · struct · L1736-L1736 — struct OpenRouterSlotProvider;
+- complete · function · L1740-L1750 — async fn complete(
+- name · function · L1752-L1754 — fn name(&self) -> &str
+- fork · function · L1756-L1758 — fn fork(&self) -> Arc<dyn Provider>
+- memory · module · L1762-L1762 — mod memory;

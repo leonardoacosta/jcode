@@ -1,0 +1,45 @@
+# crates/jcode-tui-workspace/src/workspace_map.rs
+
+- WorkspaceSessionVisualState · enum · L5-L13 — pub enum WorkspaceSessionVisualState
+- WorkspaceSessionTile · struct · L17-L20 — pub struct WorkspaceSessionTile
+- new · function · L23-L28 — pub fn new(session_id: impl Into<String>) -> Self
+- with_state · function · L30-L35 — pub fn with_state(session_id: impl Into<String>, state: WorkspaceSessionVisualState) -> Self
+- WorkspaceRow · struct · L40-L44 — pub struct WorkspaceRow
+- is_empty · function · L47-L49 — pub fn is_empty(&self) -> bool
+- focused_index · function · L51-L56 — pub fn focused_index(&self) -> Option<usize>
+- focus · function · L58-L65 — pub fn focus(&mut self, index: usize) -> bool
+- insert_right_of_focus · function · L69-L77 — pub fn insert_right_of_focus(&mut self, tile: WorkspaceSessionTile) -> usize
+- move_focus_left · function · L79-L88 — pub fn move_focus_left(&mut self) -> bool
+- move_focus_right · function · L90-L99 — pub fn move_focus_right(&mut self) -> bool
+- WorkspaceMapModel · struct · L107-L110 — pub struct WorkspaceMapModel
+- new · function · L113-L115 — pub fn new() -> Self
+- current_workspace · function · L117-L119 — pub fn current_workspace(&self) -> i32
+- set_current_workspace · function · L121-L124 — pub fn set_current_workspace(&mut self, workspace: i32)
+- row · function · L126-L128 — pub fn row(&self, workspace: i32) -> Option<&WorkspaceRow>
+- row_mut · function · L130-L132 — pub fn row_mut(&mut self, workspace: i32) -> &mut WorkspaceRow
+- current_row · function · L134-L136 — pub fn current_row(&self) -> Option<&WorkspaceRow>
+- current_row_mut · function · L138-L140 — pub fn current_row_mut(&mut self) -> &mut WorkspaceRow
+- is_empty · function · L142-L144 — pub fn is_empty(&self) -> bool
+- add_session_to_current_workspace · function · L146-L150 — pub fn add_session_to_current_workspace(&mut self, tile: WorkspaceSessionTile) -> (i32, usize)
+- focus_session_in_workspace · function · L152-L154 — pub fn focus_session_in_workspace(&mut self, workspace: i32, index: usize) -> bool
+- locate_session · function · L156-L163 — pub fn locate_session(&self, session_id: &str) -> Option<(i32, usize)>
+- focus_session_by_id · function · L165-L171 — pub fn focus_session_by_id(&mut self, session_id: &str) -> bool
+- current_focused_session_id · function · L173-L177 — pub fn current_focused_session_id(&self) -> Option<&str>
+- set_row_sessions · function · L179-L188 — pub fn set_row_sessions(
+- insert_session_in_workspace · function · L190-L197 — pub fn insert_session_in_workspace(
+- focused_session_in_workspace · function · L199-L203 — pub fn focused_session_in_workspace(&self, workspace: i32) -> Option<&str>
+- nearest_populated_workspace_above · function · L205-L212 — pub fn nearest_populated_workspace_above(&self) -> Option<i32>
+- nearest_populated_workspace_below · function · L214-L221 — pub fn nearest_populated_workspace_below(&self) -> Option<i32>
+- move_left · function · L223-L225 — pub fn move_left(&mut self) -> bool
+- move_right · function · L227-L229 — pub fn move_right(&mut self) -> bool
+- move_up · function · L232-L235 — pub fn move_up(&mut self)
+- move_down · function · L238-L241 — pub fn move_down(&mut self)
+- populated_workspaces · function · L243-L248 — pub fn populated_workspaces(&self) -> Vec<i32>
+- visible_rows · function · L253-L299 — pub fn visible_rows(&self, max_rows: usize) -> Vec<VisibleWorkspaceRow>
+- VisibleWorkspaceRow · struct · L303-L308 — pub struct VisibleWorkspaceRow
+- tests · module · L311-L411 — mod tests
+- add_session_grows_current_row_to_the_right · function · L315-L325 — fn add_session_grows_current_row_to_the_right()
+- inserting_after_refocusing_places_new_session_to_the_right_of_focus · function · L328-L341 — fn inserting_after_refocusing_places_new_session_to_the_right_of_focus()
+- moving_between_workspaces_remembers_last_focus_per_workspace · function · L344-L377 — fn moving_between_workspaces_remembers_last_focus_per_workspace()
+- visible_rows_only_include_populated_rows_and_current_workspace · function · L380-L399 — fn visible_rows_only_include_populated_rows_and_current_workspace()
+- session_tiles_preserve_visual_state · function · L402-L410 — fn session_tiles_preserve_visual_state()

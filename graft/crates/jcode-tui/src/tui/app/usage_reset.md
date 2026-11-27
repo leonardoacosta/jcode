@@ -1,0 +1,47 @@
+# crates/jcode-tui/src/tui/app/usage_reset.rs
+
+- USAGE · constant · L11-L11 — const USAGE: &str = "Usage: /reset usage limits <openai|claude> [confirm|cancel]";
+- Provider · enum · L14-L17 — pub(super) enum Provider
+- name · function · L20-L25 — fn name(self) -> &'static str
+- command · function · L27-L32 — fn command(self) -> &'static str
+- reset_noun · function · L34-L39 — fn reset_noun(self) -> &'static str
+- Action · enum · L43-L49 — enum Action
+- parse · function · L51-L79 — fn parse(input: &str) -> Option<Action>
+- Pending · enum · L84-L87 — pub(super) enum Pending
+- account_label · function · L90-L95 — fn account_label(&self) -> Option<&str>
+- confirmation_message · function · L97-L102 — fn confirmation_message(&self) -> String
+- claude_confirmation_message · function · L105-L116 — fn claude_confirmation_message(pending: &PendingAnthropicLimitReset) -> String
+- Reply · enum · L119-L123 — enum Reply<P>
+- ResetState · struct · L126-L141 — pub(super) struct ResetState<P = Pending>
+- default · function · L144-L158 — fn default() -> Self
+- is_running · function · L162-L164 — pub(super) fn is_running(&self) -> bool
+- finish · function · L166-L205 — fn finish(&mut self, reply: Reply<P>) -> String
+- is_hard_openai_quota_error · function · L208-L221 — fn is_hard_openai_quota_error(error: &str) -> bool
+- prepare · function · L223-L236 — async fn prepare(provider: Provider) -> anyhow::Result<Result<Pending, String>>
+- redeem · function · L238-L247 — async fn redeem(pending: &Pending) -> anyhow::Result<String>
+- refresh_openai_usage_after_quota_error · function · L250-L286 — pub(super) fn refresh_openai_usage_after_quota_error(&mut self, error: &str)
+- default_reset_provider · function · L290-L295 — fn default_reset_provider(&self) -> Provider
+- handle_usage_reset_command · function · L297-L406 — pub(super) fn handle_usage_reset_command(&mut self, input: &str) -> bool
+- poll_usage_reset · function · L408-L463 — pub(super) fn poll_usage_reset(&mut self) -> bool
+- tests · module · L467-L883 — mod tests
+- usage_reset_parser_claims_malformed_commands · function · L471-L506 — fn usage_reset_parser_claims_malformed_commands()
+- claude_confirm_requires_a_claude_review_not_an_openai_one · function · L509-L516 — fn claude_confirm_requires_a_claude_review_not_an_openai_one()
+- unavailable_claude_reset_is_reported_without_pending_state · function · L519-L530 — fn unavailable_claude_reset_is_reported_without_pending_state()
+- claude_uncertain_result_points_at_the_claude_retry_command · function · L533-L545 — fn claude_uncertain_result_points_at_the_claude_retry_command()
+- usage_reset_uncertain_result_preserves_exact_pending_request · function · L548-L560 — fn usage_reset_uncertain_result_preserves_exact_pending_request()
+- usage_reset_cancelled_prepare_cannot_restore_pending · function · L563-L571 — fn usage_reset_cancelled_prepare_cannot_restore_pending()
+- usage_reset_confirm_requires_pending_and_malformed_never_dispatches · function · L574-L591 — fn usage_reset_confirm_requires_pending_and_malformed_never_dispatches()
+- usage_reset_in_flight_cancel_keeps_single_worker_and_preserves_input · function · L594-L623 — fn usage_reset_in_flight_cancel_keeps_single_worker_and_preserves_input()
+- usage_reset_refresh_ack_does_not_complete_active_turn · function · L626-L655 — fn usage_reset_refresh_ack_does_not_complete_active_turn()
+- usage_reset_registered_with_subcommand_completions · function · L658-L672 — fn usage_reset_registered_with_subcommand_completions()
+- usage_reset_palette_command_opens_read_only_review · function · L675-L695 — fn usage_reset_palette_command_opens_read_only_review()
+- usage_reset_enter_preserves_review_with_trailing_whitespace · function · L698-L708 — fn usage_reset_enter_preserves_review_with_trailing_whitespace()
+- usage_reset_quota_refresh_excludes_transient_rate_limits · function · L711-L724 — fn usage_reset_quota_refresh_excludes_transient_rate_limits()
+- openai_oauth_app · function · L726-L733 — fn openai_oauth_app() -> App
+- quota_rejection_overrides_widget_even_without_runtime_or_usage_snapshot · function · L736-L745 — fn quota_rejection_overrides_widget_even_without_runtime_or_usage_snapshot()
+- transient_rate_limit_and_api_key_quota_do_not_block_subscription_widget · function · L748-L756 — fn transient_rate_limit_and_api_key_quota_do_not_block_subscription_widget()
+- successful_answer_clears_observed_quota_rejection · function · L759-L775 — fn successful_answer_clears_observed_quota_rejection()
+- remote_widget_without_selected_identity_does_not_borrow_global_quota · function · L778-L785 — fn remote_widget_without_selected_identity_does_not_borrow_global_quota()
+- quota_rejection_survives_route_replay_and_failed_switch_but_not_new_route · function · L788-L815 — fn quota_rejection_survives_route_replay_and_failed_switch_but_not_new_route()
+- redeemed_claude_reset_invalidates_daemon_claude_state_for_pinned_account · function · L818-L864 — fn redeemed_claude_reset_invalidates_daemon_claude_state_for_pinned_account()
+- usage_reset_cannot_cancel_already_submitted_redemption · function · L867-L882 — fn usage_reset_cannot_cancel_already_submitted_redemption()

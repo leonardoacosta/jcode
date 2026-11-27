@@ -1,0 +1,41 @@
+# crates/jcode-provider-gemini-runtime/src/gemini_tests.rs
+
+- EnvVarGuard · struct · L4-L7 — pub(super) struct EnvVarGuard
+- set_path · function · L10-L14 — pub(super) fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- set_value · function · L16-L20 — pub(super) fn set_value(key: &'static str, value: &str) -> Self
+- unset · function · L22-L26 — pub(super) fn unset(key: &'static str) -> Self
+- drop · function · L30-L36 — fn drop(&mut self)
+- build_contents_replays_thought_signature_on_function_call · function · L40-L85 — fn build_contents_replays_thought_signature_on_function_call()
+- build_contents_replays_every_signature_across_multi_tool_history · function · L88-L136 — fn build_contents_replays_every_signature_across_multi_tool_history()
+- build_contents_carries_first_signature_onto_unsigned_same_turn_siblings · function · L139-L186 — fn build_contents_carries_first_signature_onto_unsigned_same_turn_siblings()
+- build_contents_carries_signature_forward_across_turns_for_unsigned_calls · function · L189-L245 — fn build_contents_carries_signature_forward_across_turns_for_unsigned_calls()
+- build_contents_leaves_unsigned_calls_unsigned_when_no_prior_signature_exists · function · L248-L269 — fn build_contents_leaves_unsigned_calls_unsigned_when_no_prior_signature_exists()
+- build_contents_preserves_tool_calls_and_results · function · L272-L315 — fn build_contents_preserves_tool_calls_and_results()
+- build_contents_normalizes_non_object_tool_call_args_for_gemini_struct · function · L318-L337 — fn build_contents_normalizes_non_object_tool_call_args_for_gemini_struct()
+- build_tools_uses_function_declarations · function · L340-L351 — fn build_tools_uses_function_declarations()
+- schema_contains_key · function · L353-L361 — fn schema_contains_key(schema: &Value, key: &str) -> bool
+- build_tools_rewrites_const_for_gemini_schema_compatibility · function · L364-L403 — fn build_tools_rewrites_const_for_gemini_schema_compatibility()
+- build_tools_strips_additional_properties_for_gemini_schema_compatibility · function · L406-L445 — fn build_tools_strips_additional_properties_for_gemini_schema_compatibility()
+- parses_prompt_feedback_block_reason · function · L448-L463 — fn parses_prompt_feedback_block_reason()
+- parses_candidate_finish_message · function · L466-L488 — fn parses_candidate_finish_message()
+- auth_mode_prefers_api_key_when_present · function · L491-L504 — fn auth_mode_prefers_api_key_when_present()
+- auth_mode_force_oauth_overrides_api_key · function · L507-L517 — fn auth_mode_force_oauth_overrides_api_key()
+- auth_mode_defaults_to_oauth_without_api_key · function · L520-L530 — fn auth_mode_defaults_to_oauth_without_api_key()
+- developer_api_base_url_defaults_to_generativelanguage · function · L533-L542 — fn developer_api_base_url_defaults_to_generativelanguage()
+- developer_api_base_url_honors_env_overrides · function · L545-L554 — fn developer_api_base_url_honors_env_overrides()
+- developer_api_response_parses_without_code_assist_envelope · function · L557-L593 — fn developer_api_response_parses_without_code_assist_envelope()
+- system_instruction_tool_guard_only_applies_with_tools · function · L596-L612 — fn system_instruction_tool_guard_only_applies_with_tools()
+- system_instruction_tool_guard_with_empty_system_still_emits_guidance · function · L615-L625 — fn system_instruction_tool_guard_with_empty_system_still_emits_guidance()
+- fully_unsigned_history_has_no_signature_to_replay · function · L632-L645 — fn fully_unsigned_history_has_no_signature_to_replay()
+- downgrade_policy_removes_every_function_call_part · function · L648-L678 — fn downgrade_policy_removes_every_function_call_part()
+- missing_thought_signature_errors_are_recognized_from_backend_bodies · function · L681-L700 — fn missing_thought_signature_errors_are_recognized_from_backend_bodies()
+- unsigned_tool_history · function · L703-L729 — fn unsigned_tool_history() -> Vec<Message>
+- build_tools_prunes_required_names_not_defined_in_the_same_object · function · L732-L774 — fn build_tools_prunes_required_names_not_defined_in_the_same_object()
+- build_tools_drops_a_required_array_left_empty_after_pruning · function · L777-L795 — fn build_tools_drops_a_required_array_left_empty_after_pruning()
+- build_tools_prunes_required_when_the_object_declares_no_properties · function · L798-L820 — fn build_tools_prunes_required_when_the_object_declares_no_properties()
+- gemini_uses_jcode_compaction_so_long_sessions_have_a_safety_net · function · L823-L839 — fn gemini_uses_jcode_compaction_so_long_sessions_have_a_safety_net()
+- http_retry_policy_honors_server_delay_and_stops_at_the_attempt_limit · function · L842-L888 — fn http_retry_policy_honors_server_delay_and_stops_at_the_attempt_limit()
+- http_retry_policy_does_not_replay_onboarding_or_persistent_quota_errors · function · L891-L922 — fn http_retry_policy_does_not_replay_onboarding_or_persistent_quota_errors()
+- runtime_state_key_changes_when_configured_project_or_auth_route_changes · function · L925-L948 — fn runtime_state_key_changes_when_configured_project_or_auth_route_changes()
+- post_json_retries_transient_http_responses_against_local_server · function · L951-L1033 — fn post_json_retries_transient_http_responses_against_local_server()
+- ensure_state_replaces_oauth_cache_when_switching_to_api_key · function · L1036-L1067 — fn ensure_state_replaces_oauth_cache_when_switching_to_api_key()

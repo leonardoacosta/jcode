@@ -1,0 +1,23 @@
+# crates/jcode-base/src/mcp/budget.rs
+
+- MCP_RESULT_TOKEN_BUDGET · constant · L22-L22 — pub const MCP_RESULT_TOKEN_BUDGET: usize = 8_000;
+- TRIMMED_NOTE_PREFIX · constant · L26-L26 — pub const TRIMMED_NOTE_PREFIX: &str = "[MCP result trimmed from ";
+- MIN_STRING_CHARS · constant · L29-L29 — const MIN_STRING_CHARS: usize = 48;
+- MIN_ARRAY_ITEMS · constant · L31-L31 — const MIN_ARRAY_ITEMS: usize = 2;
+- fit_to_budget · function · L34-L50 — pub fn fit_to_budget(text: &str, budget_tokens: usize) -> String
+- parse_trimmed_note · function · L53-L58 — pub fn parse_trimmed_note(output: &str) -> Option<(usize, usize)>
+- fit_json · function · L64-L82 — fn fit_json(value: &Value, budget_tokens: usize) -> Option<String>
+- max_fitting · function · L86-L96 — fn max_fitting(lo: usize, hi: usize, ok: impl Fn(usize) -> bool) -> usize
+- render · function · L98-L100 — fn render(value: &Value, string_cap: usize, item_cap: usize) -> String
+- squeeze · function · L102-L133 — fn squeeze(value: &Value, string_cap: usize, item_cap: usize) -> Value
+- longest_string · function · L135-L142 — fn longest_string(value: &Value) -> usize
+- widest_array · function · L144-L155 — fn widest_array(value: &Value) -> usize
+- fit_text · function · L159-L185 — fn fit_text(text: &str, budget_tokens: usize) -> String
+- floor_char_boundary · function · L187-L193 — fn floor_char_boundary(text: &str, index: usize) -> usize
+- ceil_char_boundary · function · L195-L201 — fn ceil_char_boundary(text: &str, index: usize) -> usize
+- tests · module · L204-L275 — mod tests
+- results_under_budget_pass_through_untouched · function · L209-L213 — fn results_under_budget_pass_through_untouched()
+- slightly_large_json_only_shortens_long_strings · function · L216-L233 — fn slightly_large_json_only_shortens_long_strings()
+- very_large_json_also_samples_arrays · function · L236-L256 — fn very_large_json_also_samples_arrays()
+- text_keeps_its_start_and_end · function · L259-L267 — fn text_keeps_its_start_and_end()
+- multibyte_text_is_cut_on_char_boundaries · function · L270-L274 — fn multibyte_text_is_cut_on_char_boundaries()

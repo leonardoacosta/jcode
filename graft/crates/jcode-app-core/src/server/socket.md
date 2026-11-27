@@ -1,0 +1,34 @@
+# crates/jcode-app-core/src/server/socket.rs
+
+- socket_path · function · L7-L12 — pub fn socket_path() -> PathBuf
+- default_socket_path · function · L16-L18 — pub fn default_socket_path() -> PathBuf
+- resolved_socket_identity · function · L39-L55 — fn resolved_socket_identity(path: &std::path::Path) -> PathBuf
+- is_shared_socket · function · L59-L61 — pub fn is_shared_socket(path: &std::path::Path) -> bool
+- socket_path_is_custom · function · L69-L71 — pub fn socket_path_is_custom() -> bool
+- debug_socket_path · function · L75-L83 — pub fn debug_socket_path() -> PathBuf
+- sibling_socket_path · function · L85-L97 — pub(super) fn sibling_socket_path(path: &std::path::Path) -> Option<PathBuf>
+- cleanup_socket_pair · function · L100-L105 — pub fn cleanup_socket_pair(path: &std::path::Path)
+- connect_socket · function · L113-L129 — pub async fn connect_socket(path: &std::path::Path) -> Result<Stream>
+- socket_has_live_listener · function · L131-L146 — pub(super) async fn socket_has_live_listener(path: &std::path::Path) -> bool
+- reap_stale_socket_if_dead · function · L165-L200 — pub async fn reap_stale_socket_if_dead(path: &std::path::Path) -> bool
+- reap_stale_socket_if_dead · function · L203-L208 — pub async fn reap_stale_socket_if_dead(_path: &std::path::Path) -> bool
+- has_live_listener · function · L216-L218 — pub async fn has_live_listener(path: &std::path::Path) -> bool
+- daemon_lock_path_for · function · L231-L245 — pub(super) fn daemon_lock_path_for(socket: &std::path::Path) -> PathBuf
+- HELD_DAEMON_LOCK · constant · L254-L254 — static HELD_DAEMON_LOCK: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+- cleanup_held_daemon_lock · function · L264-L268 — pub(super) fn cleanup_held_daemon_lock()
+- DaemonLockGuard · struct · L271-L274 — pub(super) struct DaemonLockGuard
+- drop · function · L278-L280 — fn drop(&mut self)
+- try_acquire_daemon_lock · function · L284-L307 — pub(super) fn try_acquire_daemon_lock(path: &std::path::Path) -> Result<Option<DaemonLockGuard>>
+- acquire_daemon_lock_for · function · L310-L320 — pub(super) fn acquire_daemon_lock_for(socket: &std::path::Path) -> Result<DaemonLockGuard>
+- mark_close_on_exec · function · L323-L329 — pub(super) fn mark_close_on_exec<T: std::os::fd::AsRawFd>(io: &T)
+- set_socket_path · function · L331-L333 — pub fn set_socket_path(path: &str)
+- spawn_server_notify · function · L345-L432 — pub async fn spawn_server_notify(cmd: &mut std::process::Command) -> Result<std::process::Child>
+- wait_for_server_ready · function · L435-L454 — pub async fn wait_for_server_ready(path: &std::path::Path, timeout: Duration) -> Result<()>
+- probe_server_ready · function · L456-L467 — async fn probe_server_ready(path: &std::path::Path, ping_timeout: Duration) -> bool
+- is_server_ready · function · L469-L471 — pub async fn is_server_ready(path: &std::path::Path) -> bool
+- take_server_start_stderr · function · L474-L486 — pub(super) fn take_server_start_stderr(child: &mut std::process::Child) -> String
+- server_start_matches_existing_server · function · L489-L492 — pub(super) fn server_start_matches_existing_server(stderr_output: &str) -> bool
+- wait_for_existing_server · function · L495-L504 — pub(super) async fn wait_for_existing_server(path: &std::path::Path, timeout: Duration) -> bool
+- format_server_start_error · function · L507-L523 — pub(super) fn format_server_start_error(
+- handle_server_start_exit · function · L526-L542 — pub(super) async fn handle_server_start_exit(
+- signal_ready_fd · function · L548-L562 — pub(super) fn signal_ready_fd()

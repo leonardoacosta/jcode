@@ -1,0 +1,34 @@
+# crates/jcode-base/src/usage/openai_reset.rs
+
+- RESET_CREDITS_URL · constant · L8-L8 — const RESET_CREDITS_URL: &str = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits";
+- auto_reset_weekly_usage · function · L12-L61 — pub(crate) async fn auto_reset_weekly_usage(account_label: Option<String>) -> Result<bool>
+- recent_auto_reset · function · L63-L73 — fn recent_auto_reset(path: &std::path::Path, now: i64) -> Result<Option<bool>>
+- write_auto_reset_receipt · function · L75-L88 — fn write_auto_reset_receipt(path: &std::path::Path, now: i64, restored: bool) -> Result<()>
+- auto_reset_eligible · function · L90-L101 — fn auto_reset_eligible(usage: &OpenAIUsageData, label: Option<&str>) -> bool
+- ResetCredits · struct · L104-L107 — struct ResetCredits
+- ResetCredit · struct · L110-L117 — struct ResetCredit
+- fetch_available_expirations · function · L120-L125 — pub(super) async fn fetch_available_expirations(
+- fetch_available_expirations_at · function · L127-L138 — async fn fetch_available_expirations_at(
+- available_expirations · function · L140-L162 — fn available_expirations(
+- PendingOpenAiUsageReset · struct · L167-L178 — pub struct PendingOpenAiUsageReset
+- fmt · function · L182-L187 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- account_label · function · L191-L193 — pub fn account_label(&self) -> Option<&str>
+- account_display · function · L196-L198 — pub fn account_display(&self) -> &str
+- confirmation_details · function · L202-L214 — pub fn confirmation_details(&self) -> Vec<String>
+- confirmation_message · function · L216-L244 — pub fn confirmation_message(&self) -> String
+- display_text · function · L247-L253 — fn display_text(value: &str) -> String
+- ResetCode · enum · L257-L262 — enum ResetCode
+- OpenAiUsageResetOutcome · struct · L265-L269 — pub struct OpenAiUsageResetOutcome
+- message · function · L272-L285 — pub fn message(&self) -> String
+- ConsumeRequest · struct · L289-L292 — struct ConsumeRequest<'a>
+- reset_client · function · L294-L301 — fn reset_client() -> Result<reqwest::Client>
+- authorize · function · L303-L315 — fn authorize(
+- decode_response · function · L317-L338 — async fn decode_response<T: serde::de::DeserializeOwned>(response: reqwest::Response) -> Result<T>
+- prepare_openai_usage_reset · function · L341-L343 — pub async fn prepare_openai_usage_reset() -> Result<Option<PendingOpenAiUsageReset>>
+- prepare_openai_usage_reset_for_account · function · L348-L408 — pub async fn prepare_openai_usage_reset_for_account(
+- prepare_with_credentials · function · L410-L462 — async fn prepare_with_credentials(
+- consume_openai_usage_reset · function · L466-L477 — pub async fn consume_openai_usage_reset(
+- invalidate_openai_usage_reset_state · function · L482-L485 — pub async fn invalidate_openai_usage_reset_state(account_label: Option<&str>)
+- invalidate_openai_usage_cache · function · L489-L494 — pub async fn invalidate_openai_usage_cache(account_label: Option<&str>)
+- consume_with_client · function · L496-L518 — async fn consume_with_client(
+- tests · module · L521-L521 — mod tests;

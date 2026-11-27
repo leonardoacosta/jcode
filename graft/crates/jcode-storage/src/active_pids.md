@@ -1,0 +1,33 @@
+# crates/jcode-storage/src/active_pids.rs
+
+- active_pids_dir · function · L20-L22 — pub fn active_pids_dir() -> Option<PathBuf>
+- streaming_pids_dir · function · L28-L30 — pub fn streaming_pids_dir() -> Option<std::path::PathBuf>
+- internal_pids_dir · function · L37-L39 — pub fn internal_pids_dir() -> Option<std::path::PathBuf>
+- set_session_internal · function · L42-L52 — pub fn set_session_internal(session_id: &str, internal: bool)
+- session_is_internal · function · L55-L57 — pub fn session_is_internal(session_id: &str) -> bool
+- register_active_pid · function · L60-L65 — pub fn register_active_pid(session_id: &str, pid: u32)
+- unregister_active_pid · function · L68-L75 — pub fn unregister_active_pid(session_id: &str)
+- prune_active_pids_owned_by · function · L89-L122 — pub fn prune_active_pids_owned_by(pid: u32) -> (usize, usize)
+- mark_streaming · function · L125-L130 — pub fn mark_streaming(session_id: &str)
+- unmark_streaming · function · L133-L137 — pub fn unmark_streaming(session_id: &str)
+- streaming_session_ids · function · L145-L162 — pub fn streaming_session_ids() -> Vec<String>
+- StreamingGuard · struct · L168-L170 — pub struct StreamingGuard
+- new · function · L173-L177 — pub fn new(session_id: impl Into<String>) -> Self
+- drop · function · L181-L183 — fn drop(&mut self)
+- find_active_session_id_by_pid · function · L189-L200 — pub fn find_active_session_id_by_pid(pid: u32) -> Option<String>
+- active_session_ids · function · L204-L216 — pub fn active_session_ids() -> Vec<String>
+- process_is_running · function · L219-L225 — fn process_is_running(pid: u32) -> bool
+- process_is_running · function · L228-L233 — fn process_is_running(pid: u32) -> bool
+- SessionCounts · struct · L240-L245 — pub struct SessionCounts
+- SessionPresence · struct · L250-L263 — pub struct SessionPresence
+- session_presence · function · L270-L323 — pub fn session_presence() -> Vec<SessionPresence>
+- session_counts · function · L326-L332 — pub fn session_counts() -> SessionCounts
+- user_session_presence · function · L337-L342 — pub fn user_session_presence() -> Vec<SessionPresence>
+- user_session_counts · function · L345-L351 — pub fn user_session_counts() -> SessionCounts
+- tests · module · L354-L550 — mod tests
+- lock_env · function · L358-L360 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- session_counts_counts_live_and_streaming_only · function · L363-L423 — fn session_counts_counts_live_and_streaming_only()
+- streaming_guard_marks_and_clears_on_drop · function · L426-L440 — fn streaming_guard_marks_and_clears_on_drop()
+- user_session_counts_exclude_internal_sessions · function · L445-L479 — fn user_session_counts_exclude_internal_sessions()
+- prune_active_pids_owned_by_removes_only_that_pid_and_companions · function · L485-L516 — fn prune_active_pids_owned_by_removes_only_that_pid_and_companions()
+- prune_counts_only_successful_deletions · function · L522-L549 — fn prune_counts_only_successful_deletions()

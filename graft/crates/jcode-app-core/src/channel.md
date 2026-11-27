@@ -1,0 +1,56 @@
+# crates/jcode-app-core/src/channel.rs
+
+- MessageChannel · interface · L8-L18 — pub trait MessageChannel: Send + Sync
+- name · function · L9-L9 — fn name(&self) -> &str;
+- is_send_enabled · function · L11-L11 — fn is_send_enabled(&self) -> bool;
+- is_reply_enabled · function · L13-L13 — fn is_reply_enabled(&self) -> bool;
+- send · function · L15-L15 — async fn send(&self, text: &str) -> anyhow::Result<()>;
+- reply_loop · function · L17-L17 — async fn reply_loop(&self, runner: AmbientRunnerHandle);
+- ChannelRegistry · struct · L21-L23 — pub struct ChannelRegistry
+- from_config · function · L26-L103 — pub fn from_config(config: &SafetyConfig) -> Self
+- send_all · function · L105-L120 — pub fn send_all(&self, text: &str)
+- spawn_reply_loops · function · L122-L131 — pub fn spawn_reply_loops(&self, runner: &AmbientRunnerHandle)
+- channel_names · function · L133-L135 — pub fn channel_names(&self) -> Vec<String>
+- find_by_name · function · L137-L143 — pub fn find_by_name(&self, name: &str) -> Option<Arc<dyn MessageChannel>>
+- send_enabled · function · L145-L151 — pub fn send_enabled(&self) -> Vec<Arc<dyn MessageChannel>>
+- TelegramChannel · struct · L158-L163 — pub struct TelegramChannel
+- new · function · L166-L173 — pub fn new(token: String, chat_id: String, reply_enabled: bool) -> Self
+- name · function · L178-L180 — fn name(&self) -> &str
+- is_send_enabled · function · L182-L184 — fn is_send_enabled(&self) -> bool
+- is_reply_enabled · function · L186-L188 — fn is_reply_enabled(&self) -> bool
+- send · function · L190-L196 — async fn send(&self, text: &str) -> anyhow::Result<()>
+- reply_loop · function · L198-L280 — async fn reply_loop(&self, runner: AmbientRunnerHandle)
+- DiscordChannel · struct · L287-L293 — pub struct DiscordChannel
+- new · function · L296-L309 — pub fn new(
+- poll_messages · function · L311-L344 — async fn poll_messages(&self, after: Option<&str>) -> anyhow::Result<Vec<DiscordMessage>>
+- DiscordMessage · struct · L348-L352 — pub struct DiscordMessage
+- DiscordAuthor · struct · L355-L358 — pub struct DiscordAuthor
+- name · function · L362-L364 — fn name(&self) -> &str
+- is_send_enabled · function · L366-L368 — fn is_send_enabled(&self) -> bool
+- is_reply_enabled · function · L370-L372 — fn is_reply_enabled(&self) -> bool
+- send · function · L374-L395 — async fn send(&self, text: &str) -> anyhow::Result<()>
+- reply_loop · function · L397-L489 — async fn reply_loop(&self, runner: AmbientRunnerHandle)
+- JadeRelayChannel · struct · L502-L511 — pub struct JadeRelayChannel
+- new · function · L514-L536 — pub fn new(
+- url · function · L538-L540 — fn url(&self, path: &str) -> String
+- auth · function · L542-L548 — fn auth(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder
+- heartbeat · function · L551-L562 — async fn heartbeat(&self, device_id: &str)
+- poll_prompts · function · L566-L583 — async fn poll_prompts(&self, after: i64, wait: u32) -> anyhow::Result<(Vec<RelayEvent>, i64)>
+- post_response · function · L586-L609 — async fn post_response(&self, text: &str, request_seq: i64) -> anyhow::Result<()>
+- RelayEventsResponse · struct · L613-L618 — struct RelayEventsResponse
+- RelayEvent · struct · L621-L626 — struct RelayEvent
+- urlencoding_encode · function · L629-L640 — fn urlencoding_encode(s: &str) -> String
+- name · function · L644-L646 — fn name(&self) -> &str
+- is_send_enabled · function · L648-L650 — fn is_send_enabled(&self) -> bool
+- is_reply_enabled · function · L652-L659 — fn is_reply_enabled(&self) -> bool
+- send · function · L661-L665 — async fn send(&self, text: &str) -> anyhow::Result<()>
+- reply_loop · function · L667-L750 — async fn reply_loop(&self, runner: AmbientRunnerHandle)
+- tests · module · L754-L953 — mod tests
+- test_discord_message_parse · function · L758-L768 — fn test_discord_message_parse()
+- test_discord_bot_message_parse · function · L771-L779 — fn test_discord_bot_message_parse()
+- test_relay_events_parse · function · L782-L795 — fn test_relay_events_parse()
+- test_relay_events_empty · function · L798-L803 — fn test_relay_events_empty()
+- test_relay_url_encoding · function · L806-L810 — fn test_relay_url_encoding()
+- test_relay_url_join · function · L813-L824 — fn test_relay_url_join()
+- test_relay_registry_wiring · function · L827-L847 — fn test_relay_registry_wiring()
+- test_relay_live_roundtrip · function · L856-L952 — async fn test_relay_live_roundtrip()

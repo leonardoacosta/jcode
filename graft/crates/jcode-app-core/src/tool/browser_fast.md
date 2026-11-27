@@ -1,0 +1,35 @@
+# crates/jcode-app-core/src/tool/browser_fast.rs
+
+- browser_jev · module · L11-L11 — mod browser_jev;
+- MAX_OPTIONS · constant · L13-L13 — const MAX_OPTIONS: usize = 240; // Includes four terminal/help options, below Jev's 255 limit.
+- MAX_OBSERVATION · constant · L14-L14 — const MAX_OBSERVATION: usize = 48_000;
+- MAX_REQUEST · constant · L17-L17 — const MAX_REQUEST: usize = 160_000;
+- null_vec · function · L19-L25 — pub(super) fn null_vec<'de, D, T>(deserializer: D) -> std::result::Result<Vec<T>, D::Error>
+- ExactCandidate · struct · L29-L32 — pub(super) struct ExactCandidate
+- DecisionOption · struct · L35-L38 — pub(super) struct DecisionOption
+- DecisionRequest · struct · L40-L44 — pub(super) struct DecisionRequest
+- Decision · struct · L46-L50 — pub(super) struct Decision
+- DecisionTransport · interface · L52-L55 — pub(super) trait DecisionTransport: Send + Sync
+- model · function · L53-L53 — fn model(&self) -> &str;
+- decide · function · L54-L54 — async fn decide(&self, request: &DecisionRequest) -> Result<Decision>;
+- browser_fast_actions · module · L58-L58 — mod browser_fast_actions;
+- handoff · function · L61-L86 — pub(super) async fn handoff(
+- redact_credentials · function · L90-L147 — fn redact_credentials(value: &mut Value) -> bool
+- TOKENS · constant · L91-L93 — static TOKENS: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(||
+- outcome · function · L149-L162 — fn outcome(
+- HandoffCancelled · struct · L165-L165 — struct HandoffCancelled;
+- fmt · function · L167-L169 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- bounded · function · L173-L189 — async fn bounded<T>(
+- Candidate · struct · L335-L339 — struct Candidate
+- retain_result · function · L341-L367 — fn retain_result(result: Value, trace: &mut [Value]) -> Value
+- action_failed · function · L369-L380 — fn action_failed(value: &Value) -> bool
+- transition_disconnect · function · L382-L388 — fn transition_disconnect(error: &anyhow::Error) -> bool
+- parse_observation · function · L390-L409 — fn parse_observation(output: ToolOutput) -> Result<Value>
+- observe_page · function · L411-L451 — async fn observe_page(
+- task_history · function · L456-L476 — fn task_history(trace: &[Value]) -> Vec<Value>
+- page_evidence · function · L478-L480 — fn page_evidence(page: &Value) -> Value
+- action_still_valid · function · L485-L513 — fn action_still_valid(chosen: &Candidate, before: &Value, fresh: &Value) -> bool
+- settle_after_action · function · L517-L583 — async fn settle_after_action(
+- run · function · L585-L810 — pub(super) async fn run(
+- tests · module · L814-L814 — mod tests;
+- size_tests · module · L818-L818 — mod size_tests;

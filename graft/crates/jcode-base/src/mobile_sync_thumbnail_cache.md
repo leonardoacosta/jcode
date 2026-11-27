@@ -1,0 +1,35 @@
+# crates/jcode-base/src/mobile_sync_thumbnail_cache.rs
+
+- MAX_ENTRIES · constant · L9-L9 — const MAX_ENTRIES: usize = 32;
+- MAX_BYTES · constant · L10-L10 — const MAX_BYTES: usize = 4 * 1024 * 1024;
+- CACHE · constant · L11-L11 — static CACHE: Mutex<ThumbnailCache> = Mutex::new(ThumbnailCache::new());
+- ThumbnailCache · struct · L13-L21 — struct ThumbnailCache
+- new · function · L24-L32 — const fn new() -> Self
+- observe · function · L34-L50 — fn observe(&mut self, key: &[u8; 32])
+- frequency · function · L52-L57 — fn frequency(&self, key: &[u8; 32]) -> u8
+- touch · function · L60-L67 — fn touch(&mut self, key: &[u8; 32]) -> Option<usize>
+- get · function · L69-L72 — fn get(&mut self, key: &[u8; 32]) -> Option<Option<WireImage>>
+- insert · function · L75-L77 — fn insert(&mut self, key: [u8; 32], image: Option<WireImage>)
+- insert_borrowed · function · L79-L122 — fn insert_borrowed(&mut self, key: [u8; 32], image: &Option<WireImage>)
+- retained_bytes · function · L125-L129 — fn retained_bytes(image: &Option<WireImage>) -> usize
+- attachment_thumbnail · function · L131-L144 — pub(super) fn attachment_thumbnail(data: &str) -> Option<WireImage>
+- decode_thumbnail · function · L146-L159 — fn decode_thumbnail(data: &str) -> Option<WireImage>
+- clone_tests · module · L163-L163 — mod clone_tests;
+- tests · module · L166-L463 — mod tests
+- image · function · L169-L174 — pub(super) fn image(bytes: usize) -> Option<WireImage>
+- caches_successes_and_invalid_images · function · L177-L188 — fn caches_successes_and_invalid_images()
+- admission_evicts_lru_only_after_beating_its_frequency · function · L191-L206 — fn admission_evicts_lru_only_after_beating_its_frequency()
+- byte_limit_and_oversized_values_are_bounded · function · L209-L222 — fn byte_limit_and_oversized_values_are_bounded()
+- rejected_candidate_does_not_partially_evict_for_byte_limit · function · L225-L240 — fn rejected_candidate_does_not_partially_evict_for_byte_limit()
+- frequency_history_saturates_and_ages_without_retaining_keys · function · L243-L255 — fn frequency_history_saturates_and_ages_without_retaining_keys()
+- stable_hit_run_resets_stale_history_once_on_new_content · function · L258-L274 — fn stable_hit_run_resets_stale_history_once_on_new_content()
+- Lru · struct · L277-L277 — struct Lru(ThumbnailCache);
+- access · function · L280-L298 — fn access(&mut self, key: [u8; 32], value: impl FnOnce() -> Option<WireImage>) -> bool
+- workloads · function · L301-L318 — fn workloads() -> Vec<(&'static str, Vec<usize>)>
+- compare_workload · function · L320-L354 — fn compare_workload(trace: &[usize], data: Option<&[String]>) -> (usize, usize)
+- deterministic_working_sets · function · L357-L369 — fn deterministic_working_sets()
+- benchmark_admission_working_sets · function · L373-L390 — fn benchmark_admission_working_sets()
+- png_data · function · L392-L394 — fn png_data() -> String
+- png_data_for · function · L396-L408 — fn png_data_for(seed: u32) -> String
+- cached_thumbnail_matches_uncached_and_content_changes_miss · function · L411-L437 — fn cached_thumbnail_matches_uncached_and_content_changes_miss()
+- benchmark_repeated_attachment_thumbnails · function · L441-L462 — fn benchmark_repeated_attachment_thumbnails()

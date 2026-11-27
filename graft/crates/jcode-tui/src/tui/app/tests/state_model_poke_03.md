@@ -1,0 +1,105 @@
+# crates/jcode-tui/src/tui/app/tests/state_model_poke_03.rs
+
+- test_cloud_handoff_defers_turn_end_auto_poke_without_disarming_it · function · L4-L55 — fn test_cloud_handoff_defers_turn_end_auto_poke_without_disarming_it()
+- test_remote_model_command_opens_picker_without_catalog_request · function · L58-L77 — fn test_remote_model_command_opens_picker_without_catalog_request()
+- CountingModelRoutesProvider · struct · L80-L84 — struct CountingModelRoutesProvider
+- MixedModelRoutesProvider · struct · L87-L89 — struct MixedModelRoutesProvider
+- AuthUxStateSpaceProvider · struct · L92-L102 — struct AuthUxStateSpaceProvider
+- EmptyPostLoginCatalogProvider · struct · L105-L108 — struct EmptyPostLoginCatalogProvider
+- FailingPostLoginCatalogProvider · struct · L111-L114 — struct FailingPostLoginCatalogProvider
+- routes · function · L117-L166 — fn routes(&self) -> Vec<crate::provider::ModelRoute>
+- routes · function · L170-L209 — fn routes() -> Vec<crate::provider::ModelRoute>
+- complete · function · L214-L222 — async fn complete(
+- name · function · L224-L226 — fn name(&self) -> &str
+- model · function · L228-L230 — fn model(&self) -> String
+- available_models_display · function · L232-L238 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L240-L242 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L244-L261 — fn set_model(&self, model: &str) -> Result<()>
+- on_auth_changed · function · L263-L265 — fn on_auth_changed(&self)
+- refresh_model_catalog · function · L267-L282 — async fn refresh_model_catalog(&self) -> Result<crate::provider::ModelCatalogRefreshSummary>
+- fork · function · L284-L286 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L291-L299 — async fn complete(
+- name · function · L301-L303 — fn name(&self) -> &str
+- model · function · L305-L307 — fn model(&self) -> String
+- available_models_display · function · L309-L314 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L316-L318 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L320-L327 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L329-L331 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L336-L344 — async fn complete(
+- name · function · L346-L348 — fn name(&self) -> &str
+- model · function · L350-L352 — fn model(&self) -> String
+- model_routes · function · L354-L356 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L358-L361 — fn set_model(&self, model: &str) -> Result<()>
+- refresh_model_catalog · function · L363-L378 — async fn refresh_model_catalog(&self) -> Result<crate::provider::ModelCatalogRefreshSummary>
+- fork · function · L380-L382 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L387-L395 — async fn complete(
+- name · function · L397-L399 — fn name(&self) -> &str
+- model · function · L401-L403 — fn model(&self) -> String
+- model_routes · function · L405-L407 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- set_model · function · L409-L412 — fn set_model(&self, model: &str) -> Result<()>
+- refresh_model_catalog · function · L414-L417 — async fn refresh_model_catalog(&self) -> Result<crate::provider::ModelCatalogRefreshSummary>
+- fork · function · L419-L421 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L426-L434 — async fn complete(
+- name · function · L436-L438 — fn name(&self) -> &str
+- model · function · L440-L442 — fn model(&self) -> String
+- model_routes · function · L444-L464 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- fork · function · L466-L468 — fn fork(&self) -> Arc<dyn Provider>
+- test_subagent_model_large_catalog_uses_cached_searchable_picker · function · L472-L532 — fn test_subagent_model_large_catalog_uses_cached_searchable_picker()
+- test_model_picker_reuses_cached_entries_until_invalidated · function · L535-L576 — fn test_model_picker_reuses_cached_entries_until_invalidated()
+- test_shift_tab_model_favorite_hotkey_preserves_input_line · function · L579-L605 — fn test_shift_tab_model_favorite_hotkey_preserves_input_line()
+- test_new_local_session_does_not_run_post_login_model_refresh · function · L608-L653 — fn test_new_local_session_does_not_run_post_login_model_refresh()
+- test_tui_api_key_auth_refreshes_catalog_shows_diff_without_opening_picker · function · L656-L734 — fn test_tui_api_key_auth_refreshes_catalog_shows_diff_without_opening_picker()
+- test_tui_cerebras_paste_key_lifecycle_has_no_degraded_success_messages · function · L737-L1074 — fn test_tui_cerebras_paste_key_lifecycle_has_no_degraded_success_messages()
+- test_tui_openai_compatible_empty_catalog_does_not_switch_to_profile_default · function · L1077-L1134 — fn test_tui_openai_compatible_empty_catalog_does_not_switch_to_profile_default()
+- test_tui_openai_compatible_local_refresh_failure_is_pending_not_final_failure · function · L1137-L1201 — fn test_tui_openai_compatible_local_refresh_failure_is_pending_not_final_failure()
+- test_model_picker_opens_simplified_state_before_async_routes_complete · function · L1204-L1243 — fn test_model_picker_opens_simplified_state_before_async_routes_complete()
+- test_model_picker_state_space_preserves_provider_labels_after_route_hydration · function · L1246-L1313 — fn test_model_picker_state_space_preserves_provider_labels_after_route_hydration()
+- test_local_model_picker_selection_failure_keeps_picker_open_and_shows_next_steps · function · L1317-L1339 — fn test_local_model_picker_selection_failure_keeps_picker_open_and_shows_next_steps()
+- test_login_completed_spawns_auth_refresh_when_runtime_is_available · function · L1342-L1383 — fn test_login_completed_spawns_auth_refresh_when_runtime_is_available()
+- test_model_picker_waits_for_async_post_login_catalog_activation · function · L1386-L1468 — fn test_model_picker_waits_for_async_post_login_catalog_activation()
+- test_login_completed_surfaces_new_provider_models_in_local_model_picker · function · L1471-L1513 — fn test_login_completed_surfaces_new_provider_models_in_local_model_picker()
+- AzureLoginMockProvider · struct · L1516-L1520 — struct AzureLoginMockProvider
+- complete · function · L1524-L1534 — async fn complete(
+- name · function · L1536-L1538 — fn name(&self) -> &str
+- model · function · L1540-L1542 — fn model(&self) -> String
+- set_model · function · L1544-L1555 — fn set_model(&self, model: &str) -> Result<()>
+- available_models_display · function · L1557-L1559 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L1561-L1571 — fn model_routes(&self) -> Vec<crate::provider::ModelRoute>
+- on_auth_changed · function · L1573-L1575 — fn on_auth_changed(&self)
+- fork · function · L1577-L1579 — fn fork(&self) -> Arc<dyn Provider>
+- AzureLoginEnvGuard · struct · L1582-L1584 — struct AzureLoginEnvGuard
+- save · function · L1587-L1596 — fn save(keys: &[&'static str]) -> Self
+- drop · function · L1600-L1608 — fn drop(&mut self)
+- test_azure_login_completion_switches_local_model_without_completion · function · L1612-L1686 — fn test_azure_login_completion_switches_local_model_without_completion()
+- test_local_model_picker_surfaces_antigravity_models_from_multiprovider · function · L1689-L1708 — fn test_local_model_picker_surfaces_antigravity_models_from_multiprovider()
+- test_local_antigravity_model_picker_selection_preserves_antigravity_provider · function · L1711-L1739 — fn test_local_antigravity_model_picker_selection_preserves_antigravity_provider()
+- test_local_model_picker_openrouter_bare_openai_route_uses_openai_catalog_prefix · function · L1742-L1770 — fn test_local_model_picker_openrouter_bare_openai_route_uses_openai_catalog_prefix()
+- test_agent_model_picker_openrouter_bare_openai_route_saves_openai_catalog_prefix · function · L1773-L1804 — fn test_agent_model_picker_openrouter_bare_openai_route_saves_openai_catalog_prefix()
+- test_local_model_picker_render_shows_antigravity_models_exactly_as_user_sees_them · function · L1807-L1867 — fn test_local_model_picker_render_shows_antigravity_models_exactly_as_user_sees_them()
+- test_login_smoke_model_picker_renders_unstacked_provider_rows · function · L1870-L1998 — fn test_login_smoke_model_picker_renders_unstacked_provider_rows()
+- test_model_picker_filter_text_includes_provider_and_method · function · L2001-L2028 — fn test_model_picker_filter_text_includes_provider_and_method()
+- test_login_picker_preview_stays_open_and_updates_filter · function · L2031-L2053 — fn test_login_picker_preview_stays_open_and_updates_filter()
+- test_login_picker_preview_enter_starts_login_flow · function · L2056-L2078 — fn test_login_picker_preview_enter_starts_login_flow()
+- test_typing_login_auto_inserts_filter_space · function · L2081-L2115 — fn test_typing_login_auto_inserts_filter_space()
+- test_login_preview_enter_without_selection_focuses_picker_instead_of_logging_in · function · L2118-L2138 — fn test_login_preview_enter_without_selection_focuses_picker_instead_of_logging_in()
+- test_login_preview_enter_after_navigation_starts_selected_login · function · L2141-L2174 — fn test_login_preview_enter_after_navigation_starts_selected_login()
+- test_subagent_model_command_sets_and_resets_session_preference · function · L2177-L2191 — fn test_subagent_model_command_sets_and_resets_session_preference()
+- test_autoreview_command_toggles_session_preference · function · L2194-L2210 — fn test_autoreview_command_toggles_session_preference()
+- test_autojudge_command_toggles_session_preference · function · L2213-L2229 — fn test_autojudge_command_toggles_session_preference()
+- test_transcript_path_command_reports_current_session_file · function · L2232-L2247 — fn test_transcript_path_command_reports_current_session_file()
+- test_poke_arms_auto_poke_until_todos_are_done · function · L2250-L2287 — fn test_poke_arms_auto_poke_until_todos_are_done()
+- test_poke_status_reports_current_state · function · L2290-L2348 — fn test_poke_status_reports_current_state()
+- test_poke_off_disarms_and_clears_queued_followup · function · L2351-L2404 — fn test_poke_off_disarms_and_clears_queued_followup()
+- test_poke_queues_when_turn_is_in_progress · function · L2407-L2505 — fn test_poke_queues_when_turn_is_in_progress()
+- test_btw_forks_even_when_turn_is_in_progress · function · L2508-L2526 — fn test_btw_forks_even_when_turn_is_in_progress()
+- test_finish_turn_auto_pokes_again_when_todos_remain · function · L2529-L2564 — fn test_finish_turn_auto_pokes_again_when_todos_remain()
+- test_finish_turn_auto_poke_queues_confidence_summary_when_todos_done · function · L2567-L2719 — fn test_finish_turn_auto_poke_queues_confidence_summary_when_todos_done()
+- test_todo_completion_gate_detects_abrupt_confidence_increase · function · L2722-L2742 — fn test_todo_completion_gate_detects_abrupt_confidence_increase()
+- test_todo_completion_gate_allows_evidence_backed_confidence_steps · function · L2745-L2767 — fn test_todo_completion_gate_allows_evidence_backed_confidence_steps()
+- test_finish_turn_challenges_confidence_spike_once · function · L2770-L2859 — fn test_finish_turn_challenges_confidence_spike_once()
+- test_todo_confidence_summary_hidden_queue_is_not_user_prompt · function · L2862-L2873 — fn test_todo_confidence_summary_hidden_queue_is_not_user_prompt()
+- test_finish_turn_without_auto_poke_does_not_queue_confidence_summary · function · L2876-L2915 — fn test_finish_turn_without_auto_poke_does_not_queue_confidence_summary()
+- test_finish_turn_auto_poke_preserves_visible_turn_started · function · L2918-L2955 — fn test_finish_turn_auto_poke_preserves_visible_turn_started()
+- test_finish_turn_does_not_challenge_moderate_or_unrecorded_confidence_jumps · function · L2960-L3040 — fn test_finish_turn_does_not_challenge_moderate_or_unrecorded_confidence_jumps()
+- prompt_history_keys · module · L3043-L3043 — mod prompt_history_keys;
+- additional_test_open_work_rearms_auto_poke_after_completion_gate_breaker · module · L3046-L3046 — mod additional_test_open_work_rearms_auto_poke_after_completion_gate_breaker;

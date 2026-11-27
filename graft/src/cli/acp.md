@@ -1,0 +1,92 @@
+# src/cli/acp.rs
+
+- ACP_PROTOCOL_VERSION · constant · L14-L14 — const ACP_PROTOCOL_VERSION: u64 = 1;
+- JSONRPC_PARSE_ERROR · constant · L16-L16 — const JSONRPC_PARSE_ERROR: i64 = -32700;
+- JSONRPC_INVALID_REQUEST · constant · L17-L17 — const JSONRPC_INVALID_REQUEST: i64 = -32600;
+- JSONRPC_METHOD_NOT_FOUND · constant · L18-L18 — const JSONRPC_METHOD_NOT_FOUND: i64 = -32601;
+- JSONRPC_INVALID_PARAMS · constant · L19-L19 — const JSONRPC_INVALID_PARAMS: i64 = -32602;
+- JSONRPC_INTERNAL_ERROR · constant · L20-L20 — const JSONRPC_INTERNAL_ERROR: i64 = -32603;
+- JSONRPC_SERVER_ERROR · constant · L21-L21 — const JSONRPC_SERVER_ERROR: i64 = -32000;
+- AcpProfile · enum · L24-L28 — pub(crate) enum AcpProfile
+- parse · function · L31-L37 — fn parse(value: &str) -> Self
+- is_extended · function · L39-L41 — fn is_extended(self) -> bool
+- as_str · function · L43-L49 — fn as_str(self) -> &'static str
+- JsonRpcMessage · struct · L53-L57 — struct JsonRpcMessage
+- parse · function · L60-L83 — fn parse(line: &str) -> std::result::Result<Self, (i64, String)>
+- DaemonSession · struct · L86-L102 — struct DaemonSession
+- SessionUiState · struct · L107-L112 — struct SessionUiState
+- TurnUsage · struct · L115-L122 — struct TurnUsage
+- begin_call · function · L125-L127 — fn begin_call(&mut self)
+- observe_snapshot · function · L129-L153 — fn observe_snapshot(
+- add · function · L154-L166 — fn add(
+- to_acp · function · L168-L191 — fn to_acp(&self) -> Option<Value>
+- add_optional_tokens · function · L194-L198 — fn add_optional_tokens(total: &mut Option<u64>, tokens: Option<u64>)
+- TurnOutcome · struct · L205-L209 — struct TurnOutcome
+- observe · function · L212-L255 — fn observe(&mut self, event: &ServerEvent, prompt_id: u64)
+- stop_reason · function · L257-L263 — fn stop_reason(&self, cancel_requested: bool) -> &'static str
+- is_refusal_stop_reason · function · L266-L278 — fn is_refusal_stop_reason(reason: &str) -> bool
+- prompt_response · function · L280-L289 — fn prompt_response(stop_reason: &str, usage: &TurnUsage) -> Value
+- from_history_fields · function · L292-L304 — fn from_history_fields(
+- context_limit · function · L306-L316 — fn context_limit(&self) -> u64
+- new · function · L320-L333 — fn new(session_id: String, reader: ReadHalf, writer: WriteHalf, next_request_id: u64) -> Self
+- with_working_dir · function · L335-L340 — fn with_working_dir(self, working_dir: PathBuf) -> Self
+- skills · function · L344-L347 — fn skills(&self) -> crate::skill::SkillRegistry
+- with_ui_state · function · L349-L354 — fn with_ui_state(self, state: SessionUiState) -> Self
+- next_id · function · L356-L358 — fn next_id(&self) -> u64
+- send · function · L360-L367 — async fn send(&self, request: &Request) -> Result<()>
+- read_event · function · L369-L379 — async fn read_event(&self) -> Result<ServerEvent>
+- AcpRuntime · struct · L383-L390 — struct AcpRuntime
+- new · function · L393-L407 — fn new(
+- run · function · L409-L439 — async fn run(self) -> Result<()>
+- handle_message · function · L441-L509 — async fn handle_message(&self, message: JsonRpcMessage) -> Result<()>
+- handle_session_new · function · L511-L552 — async fn handle_session_new(&self, message: JsonRpcMessage) -> Result<()>
+- handle_session_load · function · L554-L609 — async fn handle_session_load(
+- handle_session_prompt · function · L611-L678 — async fn handle_session_prompt(&self, message: JsonRpcMessage) -> Result<()>
+- handle_session_cancel · function · L680-L709 — async fn handle_session_cancel(&self, message: JsonRpcMessage) -> Result<()>
+- handle_session_close · function · L711-L729 — async fn handle_session_close(&self, message: JsonRpcMessage) -> Result<()>
+- handle_set_config_option · function · L731-L838 — async fn handle_set_config_option(&self, message: JsonRpcMessage) -> Result<()>
+- handle_compat_config_option · function · L843-L874 — async fn handle_compat_config_option(
+- write_available_commands · function · L876-L895 — async fn write_available_commands(&self, session_id: &str) -> Result<()>
+- ensure_daemon · function · L897-L907 — async fn ensure_daemon(&self) -> Result<()>
+- connect_daemon · function · L909-L913 — async fn connect_daemon(&self) -> Result<(ReadHalf, WriteHalf)>
+- create_new_session · function · L915-L918 — async fn create_new_session(&self, cwd: PathBuf) -> Result<DaemonSession>
+- create_new_session_connected · function · L920-L978 — async fn create_new_session_connected(
+- attach_existing_session · function · L980-L995 — async fn attach_existing_session(
+- attach_existing_session_connected · function · L997-L1076 — async fn attach_existing_session_connected(
+- replay_history · function · L1078-L1105 — async fn replay_history(
+- run_prompt · function · L1107-L1335 — async fn run_prompt(
+- run_session_command · function · L1337-L1429 — async fn run_session_command(
+- write_config_option_update · function · L1431-L1444 — async fn write_config_option_update(&self, session: &DaemonSession) -> Result<()>
+- write_result · function · L1446-L1453 — async fn write_result(&self, id: Value, result: Value) -> Result<()>
+- write_error_value · function · L1455-L1465 — async fn write_error_value(&self, id: Value, code: i64, message: String) -> Result<()>
+- write_notification · function · L1467-L1474 — async fn write_notification(&self, method: &str, params: Value) -> Result<()>
+- write_jcode_extension_event · function · L1476-L1489 — async fn write_jcode_extension_event(
+- write_value · function · L1491-L1498 — async fn write_value(&self, value: Value) -> Result<()>
+- cleanup_prompt_state · function · L1501-L1508 — async fn cleanup_prompt_state(session: &DaemonSession)
+- wait_for_done · function · L1510-L1519 — async fn wait_for_done(session: &DaemonSession, request_id: u64) -> Result<()>
+- request_history · function · L1521-L1538 — async fn request_history(session: &DaemonSession) -> Result<ServerEvent>
+- request_model_catalog · function · L1540-L1562 — async fn request_model_catalog(session: &DaemonSession) -> Result<ServerEvent>
+- session_configuration · module · L1564-L1564 — mod session_configuration;
+- wait_for_model_changed · function · L1567-L1594 — async fn wait_for_model_changed(session: &DaemonSession, request_id: u64) -> Result<()>
+- wait_for_effort_changed · function · L1596-L1614 — async fn wait_for_effort_changed(session: &DaemonSession, request_id: u64) -> Result<()>
+- EventMapper · struct · L1616-L1621 — struct EventMapper
+- new · function · L1624-L1631 — fn new(session_id: String, profile: AcpProfile) -> Self
+- map_event · function · L1633-L1754 — fn map_event(&mut self, event: ServerEvent) -> Vec<Value>
+- parse_json_object · function · L1757-L1761 — fn parse_json_object(input: &str) -> Option<Value>
+- compatibility_option_value · function · L1763-L1787 — fn compatibility_option_value(
+- initialize_result · function · L1789-L1835 — fn initialize_result(params: &Value, profile: AcpProfile) -> Value
+- parameter_validation · module · L1838-L1838 — mod parameter_validation;
+- resolve_acp_skill_invocation · function · L1842-L1861 — fn resolve_acp_skill_invocation(
+- acp_skill_commands · function · L1866-L1884 — fn acp_skill_commands(skills: &crate::skill::SkillRegistry) -> Vec<Value>
+- BUILTIN · constant · L1867-L1867 — const BUILTIN: [&str; 3] = ["model", "models", "effort"];
+- AcpSlashCommand · enum · L1887-L1891 — enum AcpSlashCommand
+- parse_acp_slash_command · function · L1893-L1912 — fn parse_acp_slash_command(text: &str) -> Option<Result<AcpSlashCommand>>
+- prompt_content · module · L1915-L1915 — mod prompt_content;
+- tool_title · function · L1917-L1932 — fn tool_title(name: &str) -> String
+- tool_kind · function · L1934-L1945 — pub(crate) fn tool_kind(name: &str) -> &'static str
+- run_acp_command · function · L1947-L1963 — pub(crate) async fn run_acp_command(
+- turn_envelope_tests · module · L1966-L2018 — mod turn_envelope_tests
+- envelope · function · L1970-L1978 — fn envelope(event: ServerEvent) -> ServerEvent
+- mapper_preserves_explicit_wrapped_text_and_tool_events · function · L1981-L1998 — fn mapper_preserves_explicit_wrapped_text_and_tool_events()
+- reader_unwraps_terminal_events_before_request_waiters · function · L2001-L2017 — async fn reader_unwraps_terminal_events_before_request_waiters()
+- tests · module · L2021-L2021 — mod tests;

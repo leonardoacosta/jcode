@@ -1,0 +1,123 @@
+# crates/jcode-sdk/src/client.rs
+
+- ConnectOptions · struct · L31-L45 — pub struct ConnectOptions
+- default · function · L48-L56 — fn default() -> Self
+- CreateSessionOptions · struct · L61-L71 — pub struct CreateSessionOptions
+- Transport · interface · L74-L82 — pub trait Transport: Send
+- shutdown_handle · function · L77-L79 — fn shutdown_handle(&self) -> Option<Arc<dyn Fn() + Send + Sync>>
+- split · function · L81-L81 — fn split(self: Box<Self>) -> Result<(Box<dyn BufRead + Send>, Box<dyn Write + Send>)>;
+- PlatformUnixStream · type · L85-L85 — type PlatformUnixStream = jcode_transport::SyncStream;
+- UnixTransport · struct · L87-L87 — pub struct UnixTransport(PlatformUnixStream);
+- connect · function · L90-L118 — pub fn connect(path: &std::path::Path) -> Result<Self>
+- shutdown_handle · function · L122-L137 — fn shutdown_handle(&self) -> Option<Arc<dyn Fn() + Send + Sync>>
+- split · function · L139-L145 — fn split(self: Box<Self>) -> Result<(Box<dyn BufRead + Send>, Box<dyn Write + Send>)>
+- EventStream · struct · L153-L157 — pub struct EventStream
+- next · function · L161-L163 — pub fn next(&self) -> Option<ApiEvent>
+- next_timeout · function · L166-L171 — pub fn next_timeout(&self, timeout: Duration) -> Option<ApiEvent>
+- Item · type · L175-L175 — type Item = ApiEvent;
+- next · function · L176-L178 — fn next(&mut self) -> Option<ApiEvent>
+- drop · function · L182-L186 — fn drop(&mut self)
+- GlobalEventsOptions · struct · L191-L196 — pub struct GlobalEventsOptions
+- default · function · L199-L204 — fn default() -> Self
+- GlobalEventControl · struct · L207-L215 — struct GlobalEventControl
+- GlobalEventStream · struct · L222-L226 — pub struct GlobalEventStream
+- next · function · L230-L259 — pub fn next(&self) -> Result<Option<ApiEvent>>
+- next_timeout · function · L262-L287 — pub fn next_timeout(&self, timeout: Duration) -> Result<Option<ApiEvent>>
+- Item · type · L291-L291 — type Item = Result<ApiEvent>;
+- next · function · L293-L295 — fn next(&mut self) -> Option<Self::Item>
+- drop · function · L299-L304 — fn drop(&mut self)
+- take_global_error · function · L307-L309 — fn take_global_error(control: &GlobalEventControl) -> Option<Error>
+- stop_global_stream · function · L311-L326 — fn stop_global_stream(control: &GlobalEventControl, error: Option<Error>)
+- Subscriber · type · L329-L329 — type Subscriber = (u64, Option<String>, Sender<ApiEvent>);
+- Inner · struct · L331-L348 — struct Inner
+- JcodeClient · struct · L354-L364 — pub struct JcodeClient
+- clone · function · L367-L377 — fn clone(&self) -> Self
+- drop · function · L381-L387 — fn drop(&mut self)
+- shared_ssh_transport · function · L394-L399 — pub fn shared_ssh_transport(&self) -> Option<crate::SharedSshTransport>
+- connect_ssh · function · L406-L409 — pub fn connect_ssh(options: SshConnectOptions) -> Result<Self>
+- over_ssh · function · L411-L457 — pub(crate) fn over_ssh(transport: SshTransport, options: SshConnectOptions) -> Result<Self>
+- launch · function · L463-L476 — pub fn launch(options: LaunchOptions) -> Result<Self>
+- connect · function · L482-L494 — pub fn connect(options: ConnectOptions) -> Result<Self>
+- connect_with · function · L497-L500 — pub fn connect_with(transport: Box<dyn Transport>, options: ConnectOptions) -> Result<Self>
+- over · function · L502-L570 — fn over(
+- socket_path · function · L573-L575 — pub fn socket_path(&self) -> &std::path::Path
+- supports · function · L583-L585 — pub fn supports(&self, capability: &str) -> bool
+- request · function · L588-L590 — pub fn request(&self, request: ApiRequest) -> Result<ServerFrame>
+- request_with_timeout · function · L592-L618 — fn request_with_timeout(
+- notify · function · L621-L624 — pub fn notify(&self, request: ApiRequest) -> Result<()>
+- write · function · L626-L642 — fn write(&self, frame: ClientFrame) -> Result<()>
+- disconnect_reason · function · L647-L654 — pub fn disconnect_reason(&self) -> Option<Error>
+- disconnect_error · function · L656-L667 — fn disconnect_error(&self) -> Error
+- request_ok · function · L670-L676 — fn request_ok(&self, request: ApiRequest) -> Result<ServerFrame>
+- events · function · L682-L693 — pub fn events(&self, session_id: Option<&str>) -> EventStream
+- global_events · function · L701-L738 — pub fn global_events(&self, options: GlobalEventsOptions) -> Result<GlobalEventStream>
+- list_sessions · function · L742-L753 — pub fn list_sessions(&self) -> Result<Vec<SessionInfo>>
+- list_sessions_limited · function · L756-L767 — pub fn list_sessions_limited(&self, limit: u32) -> Result<Vec<SessionInfo>>
+- archive_session · function · L771-L776 — pub fn archive_session(&self, session_id: &str) -> Result<()>
+- restore_session · function · L779-L784 — pub fn restore_session(&self, session_id: &str) -> Result<()>
+- set_retention_policy · function · L788-L791 — pub fn set_retention_policy(&self, archive_after_days: Option<u32>) -> Result<()>
+- create_session · function · L794-L799 — pub fn create_session(&self, working_dir: Option<String>) -> Result<SessionInfo>
+- create_session_with_options · function · L803-L817 — pub fn create_session_with_options(
+- attach_session · function · L819-L829 — pub fn attach_session(&self, session_id: &str) -> Result<SessionInfo>
+- transfer_session · function · L832-L842 — pub fn transfer_session(&self, session_id: &str) -> Result<SessionInfo>
+- fork_session · function · L844-L854 — pub fn fork_session(&self, session_id: &str) -> Result<SessionInfo>
+- detach_session · function · L856-L861 — pub fn detach_session(&self, session_id: &str) -> Result<()>
+- send_system_reminder · function · L865-L873 — pub fn send_system_reminder(&self, session_id: &str, reminder: &str) -> Result<()>
+- send_message · function · L882-L890 — pub fn send_message(
+- send_message_with_reminder · function · L895-L930 — pub fn send_message_with_reminder(
+- cancel · function · L932-L937 — pub fn cancel(&self, session_id: &str) -> Result<()>
+- soft_interrupt · function · L939-L941 — pub fn soft_interrupt(&self, session_id: &str, content: &str, urgent: bool) -> Result<()>
+- soft_interrupt_with_images · function · L944-L952 — pub fn soft_interrupt_with_images(
+- soft_interrupt_with_id · function · L960-L976 — pub fn soft_interrupt_with_id(
+- get_history · function · L978-L981 — pub fn get_history(&self, session_id: &str) -> Result<Vec<HistoryMessage>>
+- get_history_with_images · function · L983-L998 — pub fn get_history_with_images(
+- peek_session · function · L1000-L1015 — pub fn peek_session(
+- clear · function · L1017-L1022 — pub fn clear(&self, session_id: &str) -> Result<()>
+- rewind · function · L1024-L1030 — pub fn rewind(&self, session_id: &str, message_index: usize) -> Result<()>
+- respond_to_permission · function · L1032-L1044 — pub fn respond_to_permission(
+- list_models · function · L1047-L1059 — pub fn list_models(&self, session_id: &str) -> Result<(Vec<String>, Option<String>)>
+- runtime_command · function · L1063-L1094 — pub fn runtime_command(
+- get_runtime_info · function · L1096-L1139 — pub fn get_runtime_info(&self, session_id: &str) -> Result<RuntimeInfo>
+- set_api_key · function · L1143-L1154 — pub fn set_api_key(&self, provider: &str, api_key: &str) -> Result<()>
+- notify_auth_changed · function · L1158-L1168 — pub fn notify_auth_changed(&self, provider: &str) -> Result<()>
+- invalidate_usage · function · L1173-L1184 — pub fn invalidate_usage(&self, provider: &str, account_label: Option<&str>) -> Result<()>
+- clear_api_key · function · L1188-L1198 — pub fn clear_api_key(&self, provider: &str) -> Result<()>
+- read_file · function · L1201-L1229 — pub fn read_file(
+- find_files · function · L1232-L1249 — pub fn find_files(
+- search_text · function · L1252-L1270 — pub fn search_text(
+- todo_state · function · L1275-L1285 — pub fn todo_state(&self, session_id: &str) -> Result<jcode_todo_policy::TodoSnapshot>
+- ack_todo_follow_up · function · L1288-L1301 — pub fn ack_todo_follow_up(
+- file_status · function · L1303-L1327 — pub fn file_status(&self, session_id: &str, path: &str) -> Result<FileStatus>
+- configure_tools · function · L1334-L1345 — pub fn configure_tools(&self, session_id: &str, tools: ToolConfiguration) -> Result<()>
+- list_tools · function · L1348-L1358 — pub fn list_tools(&self, session_id: &str) -> Result<Vec<SessionToolDefinition>>
+- submit_tool_result · function · L1364-L1383 — pub fn submit_tool_result(
+- set_model · function · L1387-L1393 — pub fn set_model(&self, session_id: &str, model: &str) -> Result<()>
+- set_context_cap · function · L1397-L1414 — pub fn set_context_cap(
+- set_reasoning_effort · function · L1419-L1425 — pub fn set_reasoning_effort(&self, session_id: &str, effort: &str) -> Result<()>
+- compact · function · L1429-L1439 — pub fn compact(&self, session_id: &str) -> Result<String>
+- rename_session · function · L1442-L1448 — pub fn rename_session(&self, session_id: &str, title: Option<String>) -> Result<()>
+- set_session_env · function · L1451-L1461 — pub fn set_session_env(
+- set_session_saved · function · L1464-L1476 — pub fn set_session_saved(
+- applet_action · function · L1479-L1495 — pub fn applet_action(
+- close_applet · function · L1498-L1504 — pub fn close_applet(&self, session_id: &str, instance: &str) -> Result<()>
+- rewind_undo · function · L1507-L1512 — pub fn rewind_undo(&self, session_id: &str) -> Result<()>
+- cancel_soft_interrupts · function · L1515-L1521 — pub fn cancel_soft_interrupts(&self, session_id: &str) -> Result<()>
+- cancel_soft_interrupts_by_id · function · L1528-L1544 — pub fn cancel_soft_interrupts_by_id(
+- cancel_soft_interrupt · function · L1548-L1551 — pub fn cancel_soft_interrupt(&self, session_id: &str, client_id: &str) -> Result<bool>
+- background_tool · function · L1554-L1556 — pub fn background_tool(&self, session_id: &str) -> Result<()>
+- background_tool_result · function · L1563-L1577 — pub fn background_tool_result(&self, session_id: &str) -> Result<(bool, Option<String>)>
+- ping · function · L1579-L1581 — pub fn ping(&self) -> Result<()>
+- run · function · L1587-L1666 — pub fn run(&self, session_id: &str, content: &str, options: RunOptions) -> Result<TurnResult>
+- is_closed · function · L1669-L1671 — pub fn is_closed(&self) -> bool
+- types · module · L1674-L1674 — mod types;
+- TextCollector · struct · L1678-L1680 — struct TextCollector
+- index · function · L1683-L1687 — fn index(&self, id: &Option<String>) -> Option<usize>
+- message · function · L1689-L1701 — fn message(&mut self, id: Option<String>) -> &mut (AssistantTextMessage, bool)
+- finish · function · L1703-L1719 — fn finish(self, result: &mut TurnResult)
+- global_session_workers · module · L1723-L1723 — mod global_session_workers;
+- reader · module · L1727-L1727 — mod reader;
+- event_session · function · L1730-L1766 — fn event_session(event: &ApiEvent) -> Option<&str>
+- closed_error · function · L1768-L1770 — fn closed_error() -> Error
+- poisoned · function · L1772-L1774 — fn poisoned<T>(_: std::sync::PoisonError<T>) -> Error
+- unexpected · function · L1776-L1781 — fn unexpected(want: &str, got: &ApiEvent) -> Error
+- request_name · function · L1784-L1793 — fn request_name(request: &ApiRequest) -> String

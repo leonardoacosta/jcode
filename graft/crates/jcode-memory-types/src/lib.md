@@ -1,0 +1,94 @@
+# crates/jcode-memory-types/src/lib.rs
+
+- graph · module · L1-L1 — pub mod graph;
+- MemoryActivity · struct · L10-L19 — pub struct MemoryActivity
+- is_processing · function · L22-L29 — pub fn is_processing(&self) -> bool
+- StepStatus · enum · L34-L40 — pub enum StepStatus
+- StepResult · struct · L44-L47 — pub struct StepResult
+- PipelineState · struct · L51-L62 — pub struct PipelineState
+- new · function · L65-L78 — pub fn new() -> Self
+- is_complete · function · L80-L90 — pub fn is_complete(&self) -> bool
+- has_running_step · function · L92-L97 — pub fn has_running_step(&self) -> bool
+- default · function · L101-L103 — fn default() -> Self
+- MemoryState · enum · L108-L124 — pub enum MemoryState
+- MemoryEvent · struct · L128-L135 — pub struct MemoryEvent
+- InjectedMemoryItem · struct · L140-L152 — pub struct InjectedMemoryItem
+- MemoryEventKind · enum · L155-L216 — pub enum MemoryEventKind
+- TrustLevel · enum · L226-L234 — pub enum TrustLevel
+- Reinforcement · struct · L238-L242 — pub struct Reinforcement
+- MemoryEntry · struct · L246-L287 — pub struct MemoryEntry
+- LEGACY_EMBEDDING_MODEL · constant · L291-L291 — pub const LEGACY_EMBEDDING_MODEL: &str = "minilm-l6-v2";
+- effective_embedding_model · function · L296-L300 — pub fn effective_embedding_model(&self) -> &str
+- embedding_matches_model · function · L303-L305 — pub fn embedding_matches_model(&self, model: &str) -> bool
+- default_confidence · function · L308-L310 — fn default_confidence() -> f32
+- default_active · function · L312-L314 — fn default_active() -> bool
+- new_memory_id · function · L316-L320 — fn new_memory_id() -> String
+- new · function · L323-L345 — pub fn new(category: MemoryCategory, content: impl Into<String>) -> Self
+- refresh_search_text · function · L347-L349 — pub fn refresh_search_text(&mut self)
+- searchable_text · function · L351-L357 — pub fn searchable_text(&self) -> std::borrow::Cow<'_, str>
+- effective_confidence · function · L365-L381 — pub fn effective_confidence(&self) -> f32
+- boost_confidence · function · L384-L388 — pub fn boost_confidence(&mut self, amount: f32)
+- decay_confidence · function · L391-L393 — pub fn decay_confidence(&mut self, amount: f32)
+- with_tags · function · L395-L399 — pub fn with_tags(mut self, tags: Vec<String>) -> Self
+- with_source · function · L401-L404 — pub fn with_source(mut self, source: impl Into<String>) -> Self
+- with_trust · function · L406-L409 — pub fn with_trust(mut self, trust: TrustLevel) -> Self
+- with_id · function · L412-L415 — pub fn with_id(mut self, id: impl Into<String>) -> Self
+- with_timestamps · function · L418-L422 — pub fn with_timestamps(mut self, created_at: DateTime<Utc>, updated_at: DateTime<Utc>) -> Self
+- touch · function · L424-L427 — pub fn touch(&mut self)
+- reinforce · function · L430-L438 — pub fn reinforce(&mut self, session_id: &str, message_index: usize)
+- supersede · function · L441-L444 — pub fn supersede(&mut self, new_id: &str)
+- with_embedding · function · L447-L450 — pub fn with_embedding(mut self, embedding: Vec<f32>) -> Self
+- with_embedding_for_model · function · L453-L461 — pub fn with_embedding_for_model(
+- set_embedding · function · L465-L468 — pub fn set_embedding(&mut self, embedding: Option<Vec<f32>>, model: Option<String>)
+- has_embedding · function · L471-L473 — pub fn has_embedding(&self) -> bool
+- MemoryCategory · enum · L478-L484 — pub enum MemoryCategory
+- fmt · function · L487-L495 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- Err · type · L499-L499 — type Err = std::convert::Infallible;
+- from_str · function · L501-L509 — fn from_str(s: &str) -> Result<Self, Self::Err>
+- from_extracted · function · L516-L525 — pub fn from_extracted(s: &str) -> Self
+- MemoryScope · enum · L531-L535 — pub enum MemoryScope
+- includes_project · function · L538-L540 — pub fn includes_project(self) -> bool
+- includes_global · function · L542-L544 — pub fn includes_global(self) -> bool
+- MemoryStore · struct · L548-L552 — pub struct MemoryStore
+- new · function · L555-L557 — pub fn new() -> Self
+- add · function · L559-L563 — pub fn add(&mut self, entry: MemoryEntry) -> String
+- by_category · function · L565-L570 — pub fn by_category(&self, category: &MemoryCategory) -> Vec<&MemoryEntry>
+- search · function · L572-L582 — pub fn search(&self, query: &str) -> Vec<&MemoryEntry>
+- get · function · L584-L586 — pub fn get(&self, id: &str) -> Option<&MemoryEntry>
+- remove · function · L588-L594 — pub fn remove(&mut self, id: &str) -> Option<MemoryEntry>
+- get_relevant · function · L596-L607 — pub fn get_relevant(&self, limit: usize) -> Vec<&MemoryEntry>
+- format_for_prompt · function · L609-L612 — pub fn format_for_prompt(&self, limit: usize) -> Option<String>
+- memory_score · function · L615-L638 — pub fn memory_score(entry: &MemoryEntry) -> f64
+- MAX_INJECTED_ITEMS · constant · L641-L641 — pub const MAX_INJECTED_ITEMS: usize = 8;
+- MAX_INJECTED_CHARS · constant · L643-L643 — pub const MAX_INJECTED_CHARS: usize = 4_000;
+- short_memory_id · function · L648-L656 — pub fn short_memory_id(id: &str) -> &str
+- selected_entries_for_prompt · function · L661-L710 — fn selected_entries_for_prompt(
+- format_entries_for_prompt · function · L714-L716 — pub fn format_entries_for_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String>
+- format_relevant_prompt · function · L720-L722 — pub fn format_relevant_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String>
+- format_relevant_display_prompt · function · L724-L726 — pub fn format_relevant_display_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String>
+- FormattedInjection · struct · L730-L736 — pub struct FormattedInjection
+- format_relevant_prompt_with_items · function · L740-L745 — pub fn format_relevant_prompt_with_items(
+- format_entries_for_prompt_with_header · function · L747-L854 — fn format_entries_for_prompt_with_header(
+- normalize_search_text · function · L856-L860 — pub fn normalize_search_text(text: &str) -> String
+- append_normalized_search_text · function · L864-L895 — fn append_normalized_search_text(normalized: &mut String, text: &str)
+- is_skill_memory · function · L897-L904 — pub fn is_skill_memory(entry: &MemoryEntry) -> bool
+- collect_skill_query_terms · function · L906-L920 — pub fn collect_skill_query_terms(query_text: &str) -> HashSet<String>
+- STOPWORDS · constant · L907-L911 — const STOPWORDS: &[&str] = &[
+- skill_retrieval_bonus · function · L922-L939 — pub fn skill_retrieval_bonus(entry: &MemoryEntry, query_terms: &HashSet<String>) -> f32
+- normalize_memory_search_text · function · L941-L951 — pub fn normalize_memory_search_text(content: &str, tags: &[String]) -> String
+- memory_matches_search · function · L953-L955 — pub fn memory_matches_search(memory: &MemoryEntry, normalized_query: &str) -> bool
+- ranking · module · L957-L1127 — pub mod ranking
+- TopKItem · struct · L961-L965 — struct TopKItem<T>
+- eq · function · L968-L970 — fn eq(&self, other: &Self) -> bool
+- partial_cmp · function · L976-L978 — fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering>
+- cmp · function · L982-L986 — fn cmp(&self, other: &Self) -> std::cmp::Ordering
+- top_k_by_score · function · L989-L1030 — pub fn top_k_by_score<T, I>(items: I, limit: usize) -> Vec<(T, f32)>
+- TopKOrdItem · struct · L1033-L1037 — struct TopKOrdItem<T, K>
+- eq · function · L1040-L1042 — fn eq(&self, other: &Self) -> bool
+- partial_cmp · function · L1048-L1050 — fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering>
+- cmp · function · L1054-L1058 — fn cmp(&self, other: &Self) -> std::cmp::Ordering
+- top_k_by_ord · function · L1061-L1103 — pub fn top_k_by_ord<T, K, I>(items: I, limit: usize) -> Vec<(T, K)>
+- tests · module · L1106-L1126 — mod tests
+- top_k_by_score_keeps_highest_scores_in_order · function · L1110-L1113 — fn top_k_by_score_keeps_highest_scores_in_order()
+- top_k_by_ord_keeps_highest_keys_in_order · function · L1116-L1119 — fn top_k_by_ord_keeps_highest_keys_in_order()
+- top_k_zero_limit_is_empty · function · L1122-L1125 — fn top_k_zero_limit_is_empty()

@@ -1,0 +1,64 @@
+# crates/jcode-base/src/auth/antigravity.rs
+
+- GOOGLE_AUTHORIZE_URL · constant · L5-L5 — const GOOGLE_AUTHORIZE_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+- GOOGLE_TOKEN_URL · constant · L6-L6 — const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
+- GOOGLE_USERINFO_URL · constant · L7-L7 — const GOOGLE_USERINFO_URL: &str = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json";
+- DEFAULT_PORT · constant · L8-L8 — pub const DEFAULT_PORT: u16 = 51121;
+- LOOPBACK_HOST · constant · L9-L9 — const LOOPBACK_HOST: &str = "127.0.0.1";
+- REDIRECT_PATH · constant · L10-L10 — const REDIRECT_PATH: &str = "/oauth-callback";
+- ANTIGRAVITY_CLIENT_ID · constant · L15-L16 — const ANTIGRAVITY_CLIENT_ID: &str =
+- ANTIGRAVITY_CLIENT_SECRET · constant · L17-L17 — const ANTIGRAVITY_CLIENT_SECRET: &str = "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"; // gitleaks:allow
+- CLIENT_ID_ENV · constant · L18-L18 — const CLIENT_ID_ENV: &str = "JCODE_ANTIGRAVITY_CLIENT_ID";
+- CLIENT_SECRET_ENV · constant · L19-L19 — const CLIENT_SECRET_ENV: &str = "JCODE_ANTIGRAVITY_CLIENT_SECRET";
+- VERSION_ENV · constant · L20-L20 — const VERSION_ENV: &str = "JCODE_ANTIGRAVITY_VERSION";
+- ANTIGRAVITY_VERSION · constant · L21-L21 — const ANTIGRAVITY_VERSION: &str = "1.18.3";
+- ANTIGRAVITY_SCOPES · constant · L22-L28 — const ANTIGRAVITY_SCOPES: &[&str] = &[
+- LOAD_ENDPOINTS · constant · L29-L34 — const LOAD_ENDPOINTS: &[&str] = &[
+- GOOGLE_OAUTH_USER_AGENT · constant · L35-L35 — const GOOGLE_OAUTH_USER_AGENT: &str = "google-api-nodejs-client/9.15.1";
+- antigravity_client_id · function · L37-L43 — fn antigravity_client_id() -> String
+- antigravity_client_secret · function · L45-L51 — fn antigravity_client_secret() -> String
+- antigravity_version · function · L53-L59 — fn antigravity_version() -> String
+- metadata_platform · function · L61-L66 — fn metadata_platform() -> &'static str
+- user_agent · function · L68-L76 — fn user_agent() -> String
+- client_metadata_header · function · L78-L83 — fn client_metadata_header() -> String
+- AntigravityTokens · struct · L86-L94 — pub struct AntigravityTokens
+- is_expired · function · L97-L100 — pub fn is_expired(&self) -> bool
+- GoogleTokenResponse · struct · L104-L109 — struct GoogleTokenResponse
+- GoogleUserInfo · struct · L112-L114 — struct GoogleUserInfo
+- LoadCodeAssistResponse · struct · L118-L121 — struct LoadCodeAssistResponse
+- tokens_path · function · L123-L125 — pub fn tokens_path() -> Result<std::path::PathBuf>
+- load_tokens · function · L127-L149 — pub fn load_tokens() -> Result<AntigravityTokens>
+- save_tokens · function · L151-L154 — pub fn save_tokens(tokens: &AntigravityTokens) -> Result<()>
+- has_cached_auth · function · L156-L158 — pub fn has_cached_auth() -> bool
+- load_or_refresh_tokens · function · L160-L167 — pub async fn load_or_refresh_tokens() -> Result<AntigravityTokens>
+- refresh_tokens · function · L171-L185 — pub async fn refresh_tokens(tokens: &AntigravityTokens) -> Result<AntigravityTokens>
+- refresh_tokens_uncoordinated · function · L187-L227 — async fn refresh_tokens_uncoordinated(tokens: &AntigravityTokens) -> Result<AntigravityTokens>
+- login · function · L229-L286 — pub async fn login(no_browser: bool) -> Result<AntigravityTokens>
+- manual_login · function · L288-L328 — async fn manual_login(
+- exchange_callback_input · function · L330-L351 — pub async fn exchange_callback_input(
+- exchange_callback_code · function · L353-L361 — pub async fn exchange_callback_code(
+- exchange_authorization_code · function · L363-L412 — async fn exchange_authorization_code(
+- fetch_email · function · L414-L440 — pub async fn fetch_email(access_token: &str) -> Result<String>
+- project_lookup_endpoints · function · L449-L458 — fn project_lookup_endpoints(configured_endpoint: &str) -> Vec<String>
+- fetch_project_id · function · L460-L469 — pub async fn fetch_project_id(access_token: &str) -> Result<String>
+- ProjectLookupRequest · struct · L472-L474 — struct ProjectLookupRequest<'a>
+- ProjectLookupMetadata · struct · L479-L483 — struct ProjectLookupMetadata<'a>
+- project_lookup_request · function · L485-L493 — fn project_lookup_request(platform: &str) -> ProjectLookupRequest<'_>
+- fetch_project_id_from_endpoints · function · L505-L555 — async fn fetch_project_id_from_endpoints(
+- build_auth_url · function · L557-L569 — pub fn build_auth_url(redirect_uri: &str, challenge: &str, state: &str) -> Result<String>
+- redirect_uri · function · L571-L573 — pub fn redirect_uri(port: u16) -> String
+- antigravity_headers · function · L575-L599 — fn antigravity_headers(access_token: &str) -> Result<reqwest::header::HeaderMap>
+- extract_project_id · function · L601-L619 — fn extract_project_id(value: Option<serde_json::Value>) -> Option<String>
+- tests · module · L622-L831 — mod tests
+- build_auth_url_includes_antigravity_scope_and_redirect · function · L627-L646 — fn build_auth_url_includes_antigravity_scope_and_redirect()
+- build_auth_url_uses_default_client_id_when_env_missing · function · L649-L662 — fn build_auth_url_uses_default_client_id_when_env_missing()
+- blank_env_vars_fall_back_to_built_in_credentials · function · L665-L675 — fn blank_env_vars_fall_back_to_built_in_credentials()
+- redirect_uri_uses_ipv4_loopback · function · L678-L683 — fn redirect_uri_uses_ipv4_loopback()
+- client_metadata_uses_backend_accepted_platform · function · L686-L689 — fn client_metadata_uses_backend_accepted_platform()
+- project_lookup_request_matches_legacy_bytes_and_builder_owns_body · function · L692-L720 — fn project_lookup_request_matches_legacy_bytes_and_builder_owns_body()
+- project_lookup_tries_configured_endpoint_first · function · L723-L731 — fn project_lookup_tries_configured_endpoint_first()
+- project_lookup_deduplicates_when_configured_endpoint_is_already_a_fallback · function · L734-L746 — fn project_lookup_deduplicates_when_configured_endpoint_is_already_a_fallback()
+- spawn_one_shot_http_server · function · L754-L771 — async fn spawn_one_shot_http_server(body: &'static str) -> String
+- fetch_project_id_falls_back_past_a_response_that_is_not_valid_json · function · L774-L797 — async fn fetch_project_id_falls_back_past_a_response_that_is_not_valid_json()
+- fetch_project_id_fails_with_all_errors_when_every_endpoint_is_bad · function · L800-L814 — async fn fetch_project_id_fails_with_all_errors_when_every_endpoint_is_bad()
+- extract_project_id_supports_string_or_object · function · L817-L830 — fn extract_project_id_supports_string_or_object()

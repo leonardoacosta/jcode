@@ -1,0 +1,24 @@
+# crates/jcode-terminal-prompt/src/qr.rs
+
+- QUIET_ZONE_WIDTH · constant · L5-L5 — const QUIET_ZONE_WIDTH: usize = 2;
+- env_truthy · function · L7-L19 — fn env_truthy(key: &str) -> bool
+- qr_rendering_enabled · function · L21-L23 — fn qr_rendering_enabled() -> bool
+- tui_qr_rendering_enabled · function · L25-L27 — fn tui_qr_rendering_enabled() -> bool
+- render_unicode_qr · function · L29-L58 — pub fn render_unicode_qr(data: &str) -> Result<String, QrError>
+- qr_color_at · function · L60-L69 — fn qr_color_at(code: &QrCode, code_size: usize, col: usize, row: usize) -> Color
+- render_login_qr · function · L71-L79 — fn render_login_qr(data: &str) -> Option<String>
+- markdown_section · function · L81-L87 — pub fn markdown_section(data: &str, heading: &str) -> Option<String>
+- markdown_section_for_tui · function · L89-L95 — pub fn markdown_section_for_tui(data: &str, heading: &str) -> Option<String>
+- indented_section · function · L99-L118 — pub fn indented_section(
+- tests · module · L121-L219 — mod tests
+- ENV_LOCK · constant · L125-L125 — static ENV_LOCK: Mutex<()> = Mutex::new(());
+- lock_test_env · function · L127-L131 — fn lock_test_env() -> MutexGuard<'static, ()>
+- set_var · function · L133-L136 — fn set_var(key: &str, value: &str)
+- remove_var · function · L138-L141 — fn remove_var(key: &str)
+- render_unicode_qr_uses_block_glyphs_without_ansi · function · L144-L149 — fn render_unicode_qr_uses_block_glyphs_without_ansi()
+- markdown_section_wraps_qr_in_code_block · function · L152-L160 — fn markdown_section_wraps_qr_in_code_block()
+- tui_markdown_section_is_opt_in_even_when_general_qr_is_enabled · function · L163-L170 — fn tui_markdown_section_is_opt_in_even_when_general_qr_is_enabled()
+- tui_markdown_section_uses_dedicated_env_flag · function · L173-L181 — fn tui_markdown_section_uses_dedicated_env_flag()
+- indented_section_prefixes_each_line · function · L184-L197 — fn indented_section_prefixes_each_line()
+- browserless_cli_qr_is_enabled_without_env_opt_in · function · L200-L209 — fn browserless_cli_qr_is_enabled_without_env_opt_in()
+- qr_sections_are_disabled_by_default · function · L212-L218 — fn qr_sections_are_disabled_by_default()

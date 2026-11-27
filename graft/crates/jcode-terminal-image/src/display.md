@@ -1,0 +1,39 @@
+# crates/jcode-terminal-image/src/display.rs
+
+- HAS_IMAGEMAGICK · constant · L14-L20 — static HAS_IMAGEMAGICK: LazyLock<bool> = LazyLock::new(||
+- ImageProtocol · enum · L24-L33 — pub enum ImageProtocol
+- images_disabled · function · L36-L43 — pub fn images_disabled() -> bool
+- detect · function · L47-L90 — pub fn detect() -> Self
+- detect_sixel · function · L93-L121 — fn detect_sixel() -> bool
+- is_supported · function · L124-L126 — pub fn is_supported(&self) -> bool
+- escape_tmux · function · L133-L139 — fn escape_tmux(is_tmux: bool) -> (&'static str, &'static str, &'static str)
+- in_tmux · function · L141-L144 — fn in_tmux() -> bool
+- iterm2_images_enabled · function · L149-L158 — fn iterm2_images_enabled() -> bool
+- iterm2_protocol · function · L160-L166 — fn iterm2_protocol() -> ImageProtocol
+- is_kitty_terminal_name · function · L168-L174 — fn is_kitty_terminal_name(value: &str) -> bool
+- ImageDisplayParams · struct · L178-L183 — pub struct ImageDisplayParams
+- default · function · L186-L191 — fn default() -> Self
+- from_terminal · function · L196-L205 — pub fn from_terminal() -> Self
+- display_image · function · L212-L235 — pub fn display_image(path: &Path, params: &ImageDisplayParams) -> io::Result<bool>
+- can_display_to_stdout · function · L237-L239 — fn can_display_to_stdout(protocol: ImageProtocol, stdout_is_terminal: bool) -> bool
+- get_image_dimensions · function · L242-L303 — fn get_image_dimensions(data: &[u8]) -> Option<(u32, u32)>
+- calculate_display_size · function · L306-L336 — fn calculate_display_size(
+- display_kitty · function · L339-L395 — fn display_kitty(
+- CHUNK_SIZE · constant · L365-L365 — const CHUNK_SIZE: usize = 4096;
+- display_iterm2 · function · L398-L426 — fn display_iterm2(
+- iterm2_payload · function · L438-L451 — fn iterm2_payload(
+- display_sixel · function · L457-L498 — fn display_sixel(
+- tests · module · L501-L651 — mod tests
+- explicit_image_off_overrides_detected_protocols · function · L505-L533 — fn explicit_image_off_overrides_detected_protocols()
+- CHILD · constant · L506-L506 — const CHILD: &str = "JCODE_TEST_IMAGE_OFF_CHILD";
+- test_protocol_detection · function · L536-L540 — fn test_protocol_detection()
+- redirected_stdout_disables_every_image_protocol · function · L543-L552 — fn redirected_stdout_disables_every_image_protocol()
+- terminal_stdout_still_allows_supported_image_protocols · function · L555-L560 — fn terminal_stdout_still_allows_supported_image_protocols()
+- iterm2_payload_sets_both_cell_dimensions · function · L563-L571 — fn iterm2_payload_sets_both_cell_dimensions()
+- iterm2_payload_uses_tmux_passthrough_inside_tmux · function · L574-L578 — fn iterm2_payload_uses_tmux_passthrough_inside_tmux()
+- iterm2_images_are_disabled_unless_opted_in · function · L581-L586 — fn iterm2_images_are_disabled_unless_opted_in()
+- handterm_uses_kitty_graphics_protocol · function · L589-L592 — fn handterm_uses_kitty_graphics_protocol()
+- jcode_desktop_uses_kitty_graphics_protocol · function · L595-L600 — fn jcode_desktop_uses_kitty_graphics_protocol()
+- jcode_desktop_environment_uses_kitty_graphics · function · L603-L632 — fn jcode_desktop_environment_uses_kitty_graphics()
+- CHILD · constant · L605-L605 — const CHILD: &str = "JCODE_TEST_DESKTOP_IMAGE_CHILD";
+- test_calculate_display_size · function · L635-L650 — fn test_calculate_display_size()

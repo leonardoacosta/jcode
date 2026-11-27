@@ -1,0 +1,55 @@
+# crates/jcode-base/src/auth/codex.rs
+
+- ALLOW_LEGACY_AUTH_ENV · constant · L7-L7 — const ALLOW_LEGACY_AUTH_ENV: &str = "JCODE_ALLOW_CODEX_LEGACY_AUTH";
+- LEGACY_CODEX_AUTH_SOURCE_ID · constant · L8-L8 — pub const LEGACY_CODEX_AUTH_SOURCE_ID: &str = "openai_codex_auth_json";
+- CodexCredentials · struct · L11-L17 — pub struct CodexCredentials
+- OpenAiAccount · struct · L20-L32 — pub struct OpenAiAccount
+- JcodeOpenAiAuthFile · struct · L35-L40 — pub struct JcodeOpenAiAuthFile
+- LegacyAuthFile · struct · L43-L47 — struct LegacyAuthFile
+- LegacyTokens · struct · L50-L56 — struct LegacyTokens
+- ACCOUNT_LABEL_PREFIX · constant · L58-L58 — const ACCOUNT_LABEL_PREFIX: &str = "openai";
+- set_active_account_override · function · L62-L64 — pub fn set_active_account_override(label: Option<String>)
+- get_active_account_override · function · L66-L68 — pub fn get_active_account_override() -> Option<String>
+- primary_account_label · function · L70-L72 — pub fn primary_account_label() -> String
+- next_account_label · function · L74-L82 — pub fn next_account_label() -> Result<String>
+- login_target_label · function · L84-L93 — pub fn login_target_label(requested: Option<&str>) -> Result<String>
+- relabel_accounts · function · L95-L108 — fn relabel_accounts(auth: &mut JcodeOpenAiAuthFile) -> bool
+- jcode_auth_path · function · L110-L112 — fn jcode_auth_path() -> Result<PathBuf>
+- legacy_auth_path · function · L114-L116 — fn legacy_auth_path() -> Result<PathBuf>
+- legacy_auth_file_path · function · L118-L120 — pub fn legacy_auth_file_path() -> Result<PathBuf>
+- trust_legacy_auth_for_future_use · function · L122-L129 — pub fn trust_legacy_auth_for_future_use() -> Result<()>
+- legacy_auth_allowed · function · L131-L150 — pub fn legacy_auth_allowed() -> bool
+- legacy_auth_source_exists · function · L152-L156 — pub fn legacy_auth_source_exists() -> bool
+- has_unconsented_legacy_credentials · function · L158-L160 — pub fn has_unconsented_legacy_credentials() -> bool
+- load_auth_file · function · L162-L182 — pub fn load_auth_file() -> Result<JcodeOpenAiAuthFile>
+- save_auth_file · function · L184-L195 — pub fn save_auth_file(auth: &JcodeOpenAiAuthFile) -> Result<()>
+- list_accounts · function · L197-L200 — pub fn list_accounts() -> Result<Vec<OpenAiAccount>>
+- account_label_for_credentials · function · L205-L227 — pub fn account_label_for_credentials(
+- active_account_label · function · L229-L237 — pub fn active_account_label() -> Option<String>
+- set_active_account · function · L239-L253 — pub fn set_active_account(label: &str) -> Result<()>
+- upsert_account · function · L255-L269 — pub fn upsert_account(account: OpenAiAccount) -> Result<String>
+- remove_account · function · L271-L293 — pub fn remove_account(label: &str) -> Result<()>
+- clear_accounts · function · L295-L305 — pub fn clear_accounts() -> Result<usize>
+- update_account_tokens · function · L307-L347 — pub fn update_account_tokens(
+- update_account_profile · function · L349-L367 — pub fn update_account_profile(label: &str, email: Option<String>) -> Result<()>
+- load_credentials · function · L369-L383 — pub fn load_credentials() -> Result<CodexCredentials>
+- load_oauth_credentials · function · L385-L387 — pub fn load_oauth_credentials() -> Result<CodexCredentials>
+- load_oauth_credentials_internal · function · L389-L439 — fn load_oauth_credentials_internal(return_expired: bool) -> Result<CodexCredentials>
+- load_api_key_credentials · function · L441-L459 — pub fn load_api_key_credentials() -> Result<CodexCredentials>
+- load_credentials_for_account · function · L461-L469 — pub fn load_credentials_for_account(label: &str) -> Result<CodexCredentials>
+- upsert_account_from_tokens · function · L471-L487 — pub fn upsert_account_from_tokens(
+- load_jcode_credentials · function · L489-L507 — fn load_jcode_credentials() -> Result<CodexCredentials>
+- load_legacy_oauth_credentials · function · L509-L515 — fn load_legacy_oauth_credentials() -> Result<CodexCredentials>
+- load_legacy_api_key_credentials · function · L517-L531 — fn load_legacy_api_key_credentials() -> Result<CodexCredentials>
+- load_legacy_auth_file · function · L533-L538 — fn load_legacy_auth_file() -> Result<LegacyAuthFile>
+- credentials_from_account · function · L540-L551 — fn credentials_from_account(account: &OpenAiAccount) -> CodexCredentials
+- credentials_from_legacy_tokens · function · L553-L564 — fn credentials_from_legacy_tokens(tokens: &LegacyTokens) -> CodexCredentials
+- account_from_credentials · function · L566-L583 — fn account_from_credentials(
+- load_env_api_key · function · L585-L593 — fn load_env_api_key() -> Option<String>
+- extract_account_id · function · L595-L601 — pub fn extract_account_id(id_token: &str) -> Option<String>
+- extract_email · function · L603-L609 — pub fn extract_email(id_token: &str) -> Option<String>
+- extract_subscription_type · function · L612-L621 — pub fn extract_subscription_type(token: &str) -> Option<String>
+- decode_jwt_payload · function · L623-L627 — fn decode_jwt_payload(token: &str) -> Option<Value>
+- expires_at_from_access_token · function · L638-L643 — pub(crate) fn expires_at_from_access_token(access_token: &str) -> Option<i64>
+- resolve_expires_at · function · L647-L649 — fn resolve_expires_at(explicit: Option<i64>, access_token: &str) -> Option<i64>
+- tests · module · L653-L653 — mod tests;

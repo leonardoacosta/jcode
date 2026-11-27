@@ -1,0 +1,39 @@
+# crates/jcode-provider-core/src/request_compression.rs
+
+- CompressionMode · enum · L38-L45 — pub enum CompressionMode
+- parse · function · L48-L55 — pub fn parse(raw: &str) -> Option<Self>
+- MIN_COMPRESS_BYTES · constant · L59-L59 — pub const MIN_COMPRESS_BYTES: usize = 32 * 1024;
+- DEFAULT_UPLINK_BPS · constant · L62-L62 — const DEFAULT_UPLINK_BPS: f64 = 50e6;
+- CODEC_BYTES_PER_SEC · constant · L66-L66 — const CODEC_BYTES_PER_SEC: f64 = 100e6;
+- MIN_SAVING · constant · L68-L68 — const MIN_SAVING: Duration = Duration::from_millis(15);
+- MIN_SAMPLE_BYTES · constant · L70-L70 — const MIN_SAMPLE_BYTES: usize = 192 * 1024;
+- SAMPLE_SKIP_BYTES · constant · L73-L73 — const SAMPLE_SKIP_BYTES: usize = 96 * 1024;
+- SAMPLE_CHUNK_BYTES · constant · L74-L74 — const SAMPLE_CHUNK_BYTES: usize = 32 * 1024;
+- EWMA_ALPHA · constant · L75-L75 — const EWMA_ALPHA: f64 = 0.35;
+- UplinkEstimate · struct · L78-L81 — struct UplinkEstimate
+- UPLINK · constant · L83-L83 — static UPLINK: Mutex<Option<UplinkEstimate>> = Mutex::new(None);
+- uplink_estimate_bps · function · L86-L88 — pub fn uplink_estimate_bps() -> Option<f64>
+- record_uplink_sample · function · L90-L106 — fn record_uplink_sample(bps: f64)
+- reset_uplink_for_tests · function · L108-L112 — fn reset_uplink_for_tests(value: Option<f64>)
+- BodyEncoding · enum · L116-L119 — pub enum BodyEncoding
+- header_value · function · L122-L127 — fn header_value(self) -> &'static str
+- MAX_ZSTD_EXPANSION · constant · L134-L134 — const MAX_ZSTD_EXPANSION: usize = 50;
+- endpoint_encoding · function · L144-L154 — pub fn endpoint_encoding(url: &str) -> Option<BodyEncoding>
+- endpoint_accepts_gzip · function · L157-L159 — pub fn endpoint_accepts_gzip(url: &str) -> bool
+- predicted_saving_secs · function · L163-L168 — pub fn predicted_saving_secs(raw: usize, compressed: usize, uplink_bps: f64) -> f64
+- Decision · enum · L171-L175 — pub enum Decision
+- decide · function · L179-L226 — fn decide(
+- zstd_fast · function · L228-L231 — fn zstd_fast(raw: &[u8]) -> Option<Vec<u8>>
+- gzip_fast · function · L233-L240 — fn gzip_fast(raw: &[u8]) -> Option<Vec<u8>>
+- ASSUMED_STREAM_RATIO · constant · L246-L246 — const ASSUMED_STREAM_RATIO: f64 = 1.5;
+- should_compress_stream_message · function · L252-L262 — pub fn should_compress_stream_message(raw_len: usize, mode: CompressionMode) -> bool
+- record_external_uplink_sample · function · L266-L270 — pub fn record_external_uplink_sample(bytes: usize, elapsed: Duration)
+- STREAM_SAMPLE_SKIP_BYTES · constant · L274-L274 — pub const STREAM_SAMPLE_SKIP_BYTES: usize = SAMPLE_SKIP_BYTES;
+- STREAM_MIN_SAMPLE_BYTES · constant · L276-L276 — pub const STREAM_MIN_SAMPLE_BYTES: usize = MIN_SAMPLE_BYTES;
+- set_uplink_estimate_for_tests · function · L280-L282 — pub fn set_uplink_estimate_for_tests(value: Option<f64>)
+- json_body · function · L287-L333 — pub fn json_body<T: serde::Serialize + ?Sized>(
+- sampling_body · function · L338-L350 — fn sampling_body(builder: reqwest::RequestBuilder, wire: Vec<u8>) -> reqwest::RequestBuilder
+- UploadSampler · struct · L352-L355 — struct UploadSampler
+- new · function · L358-L363 — fn new(total: usize) -> Self
+- on_pull · function · L368-L393 — fn on_pull(&mut self, start: usize, end: usize)
+- tests · module · L398-L398 — mod tests;

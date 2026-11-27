@@ -1,0 +1,35 @@
+# src/cli/login/scriptable.rs
+
+- auto_scriptable_flow_reason · function · L3-L36 — pub(super) fn auto_scriptable_flow_reason(
+- run_scriptable_login_provider · function · L38-L68 — pub(super) async fn run_scriptable_login_provider(
+- run_automatic_google_login · function · L74-L109 — pub(super) async fn run_automatic_google_login(
+- start_scriptable_login · function · L111-L350 — pub(super) async fn start_scriptable_login(
+- complete_scriptable_login · function · L352-L420 — pub(super) async fn complete_scriptable_login(
+- complete_scriptable_claude_login · function · L422-L473 — pub(super) async fn complete_scriptable_claude_login(
+- complete_scriptable_openai_device_login · function · L475-L508 — pub(super) async fn complete_scriptable_openai_device_login(
+- complete_scriptable_openai_login · function · L510-L563 — pub(super) async fn complete_scriptable_openai_login(
+- complete_scriptable_gemini_login · function · L565-L606 — pub(super) async fn complete_scriptable_gemini_login(
+- complete_scriptable_antigravity_login · function · L608-L662 — pub(super) async fn complete_scriptable_antigravity_login(
+- complete_scriptable_google_login · function · L664-L724 — pub(super) async fn complete_scriptable_google_login(
+- complete_scriptable_muse_subscription_login · function · L726-L771 — pub(super) async fn complete_scriptable_muse_subscription_login(
+- complete_scriptable_copilot_login · function · L773-L810 — pub(super) async fn complete_scriptable_copilot_login(
+- pending_login_path · function · L812-L814 — pub(super) fn pending_login_path(key: &str, flow_id: Option<&str>) -> Result<PathBuf>
+- pending_login_path_in · function · L816-L842 — pub(super) fn pending_login_path_in(
+- cancel_scriptable_login · function · L844-L879 — pub(super) fn cancel_scriptable_login(
+- cancel_pending_login · function · L881-L888 — pub(super) fn cancel_pending_login(path: &Path) -> Result<()>
+- CANCELLED_FLOW_TTL_MS · constant · L890-L890 — const CANCELLED_FLOW_TTL_MS: i64 = 30 * 60 * 1000;
+- lock_pending_login · function · L892-L910 — pub(super) fn lock_pending_login(path: &Path) -> Result<std::fs::File>
+- check_cancellation_marker · function · L912-L927 — pub(super) fn check_cancellation_marker(path: &Path) -> Result<()>
+- confirm_live_muse_subscription_flow · function · L929-L947 — pub(super) fn confirm_live_muse_subscription_flow(
+- persist_pending_login · function · L949-L964 — pub(super) fn persist_pending_login(
+- cancel_scoped_pending_login · function · L966-L975 — pub(super) fn cancel_scoped_pending_login(path: &Path) -> Result<()>
+- pending_login_dir · function · L977-L979 — pub(super) fn pending_login_dir() -> Result<PathBuf>
+- require_scriptable_input · function · L981-L985 — pub(super) fn require_scriptable_input(
+- load_pending_login · function · L987-L1025 — pub(super) fn load_pending_login(path: &Path, provider: &str) -> Result<PendingScriptableLogin>
+- clear_pending_login · function · L1027-L1029 — pub(super) fn clear_pending_login(path: &Path)
+- cleanup_stale_pending_login_files · function · L1031-L1056 — pub(super) fn cleanup_stale_pending_login_files() -> Result<()>
+- current_time_ms · function · L1058-L1060 — pub(super) fn current_time_ms() -> i64
+- resolve_auth_input · function · L1062-L1076 — pub(super) fn resolve_auth_input(value: &str) -> Result<String>
+- emit_scriptable_auth_prompt · function · L1080-L1117 — pub(super) fn emit_scriptable_auth_prompt(
+- scriptable_resume_command · function · L1119-L1142 — pub(super) fn scriptable_resume_command(
+- emit_scriptable_auth_success · function · L1144-L1152 — pub(super) fn emit_scriptable_auth_success(

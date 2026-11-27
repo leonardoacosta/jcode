@@ -1,0 +1,32 @@
+# tests/test_native_ssh_cli.py
+
+- require · function · L59-L61 — def require(condition, message)
+- visible · function · L64-L65 — def visible(data)
+- configured · function · L68-L84 — def configured()
+- remote_command · function · L87-L92 — def remote_command(config)
+- local_command · function · L95-L100 — def local_command(config, *, cwd=None, tail=())
+- Bridge · class · L103-L212 — class Bridge
+- __init__ · method · L104-L116 — def __init__(self, config)
+- __enter__ · method · L118-L119 — def __enter__(self)
+- __exit__ · method · L121-L140 — def __exit__(self, kind, value, traceback)
+- send · method · L142-L147 — def send(self, frame): # This harness must never accidentally start provider inference.
+- frame · method · L149-L177 — def frame(self, timeout=TIMEOUT)
+- until · method · L179-L188 — def until(self, predicate, timeout=TIMEOUT)
+- handshake · method · L190-L199 — def handshake(self)
+- subscribe · method · L201-L212 — def subscribe(self, cwd, instance, session_id=None)
+- history_contains · function · L215-L216 — def history_contains(history, sentinel)
+- assert_no_local_transcript · function · L219-L226 — def assert_no_local_transcript(home, session_id, sentinel)
+- process_info · function · L229-L236 — def process_info(pid)
+- owned_ssh · function · L239-L253 — def owned_ssh(cli_pid)
+- owned_sockets · function · L256-L259 — def owned_sockets(directory): # Jcode hardening can deny /proc/<pid>/fd even for our own child. A unique # TMPDIR passed only to this CLI makes filesystem observation unambiguous.
+- child_terminal · function · L262-L264 — def child_terminal()
+- tui_acceptance · function · L267-L362 — def tui_acceptance(config, env, local_cwd, session_id, sentinel, *, exit_mode="quit")
+- pump · function · L286-L309 — def pump(duration)
+- run_acceptance · function · L365-L446 — def run_acceptance(config)
+- HarnessSelfTests · class · L449-L488 — class HarnessSelfTests(unittest.TestCase)
+- test_unknown_exit_mode_refused_before_starting_process · method · L450-L452 — def test_unknown_exit_mode_refused_before_starting_process(self)
+- test_owned_socket_observation_uses_only_private_temp_root · method · L454-L465 — def test_owned_socket_observation_uses_only_private_temp_root(self)
+- test_visible_strips_terminal_controls_not_payload · method · L467-L468 — def test_visible_strips_terminal_controls_not_payload(self)
+- test_remote_command_quotes_paths_and_preserves_target · method · L470-L475 — def test_remote_command_quotes_paths_and_preserves_target(self)
+- test_history_requires_message_content · method · L477-L479 — def test_history_requires_message_content(self)
+- test_no_local_transcript_detects_leak · method · L481-L488 — def test_no_local_transcript_detects_leak(self)

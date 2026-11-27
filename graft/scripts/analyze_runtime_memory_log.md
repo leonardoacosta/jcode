@@ -1,0 +1,51 @@
+# scripts/analyze_runtime_memory_log.py
+
+- Sample · class · L19-L78 — class Sample
+- pss_bytes · method · L34-L37 — def pss_bytes(self) -> int | None
+- rss_bytes · method · L40-L42 — def rss_bytes(self) -> int | None
+- allocator_allocated_bytes · method · L45-L49 — def allocator_allocated_bytes(self) -> int | None
+- allocator_resident_bytes · method · L52-L56 — def allocator_resident_bytes(self) -> int | None
+- allocator_retained_bytes · method · L59-L63 — def allocator_retained_bytes(self) -> int | None
+- os_info · method · L66-L68 — def os_info(self) -> dict[str, Any]
+- process_info · method · L71-L73 — def process_info(self) -> dict[str, Any]
+- process_diagnostics · method · L76-L78 — def process_diagnostics(self) -> dict[str, Any]
+- first_int · function · L81-L87 — def first_int(mapping: dict[str, Any], *keys: str) -> int | None
+- Spike · class · L91-L94 — class Spike
+- AttributionDelta · class · L98-L117 — class AttributionDelta
+- magnitude_bytes · method · L110-L117 — def magnitude_bytes(self) -> int
+- parse_args · function · L120-L153 — def parse_args() -> argparse.Namespace
+- default_log_dir · function · L156-L160 — def default_log_dir() -> Path
+- resolve_paths · function · L163-L188 — def resolve_paths(args: argparse.Namespace) -> list[Path]
+- extract_log_date · function · L191-L198 — def extract_log_date(path: Path) -> str | None
+- load_samples · function · L201-L239 — def load_samples(paths: Iterable[Path]) -> list[Sample]
+- infer_instance_id · function · L242-L249 — def infer_instance_id(raw: dict[str, Any], target: str) -> str
+- select_latest_instances · function · L252-L271 — def select_latest_instances(samples: list[Sample]) -> list[Sample]
+- select_instance · function · L274-L277 — def select_instance(samples: list[Sample], instance_id: str) -> list[Sample]
+- instance_inventory · function · L280-L300 — def instance_inventory(samples: list[Sample]) -> list[dict[str, Any]]
+- infer_kind · function · L303-L313 — def infer_kind(raw: dict[str, Any], source: str) -> str
+- infer_target · function · L316-L324 — def infer_target(raw: dict[str, Any], path: Path) -> str
+- infer_trigger · function · L327-L346 — def infer_trigger( raw: dict[str, Any], kind: str, source: str, trigger: dict[str, Any] ) -> tuple[str, str]
+- bytes_to_mb · function · L349-L352 — def bytes_to_mb(value: int | None) -> float | None
+- fmt_mb · function · L355-L358 — def fmt_mb(value: int | None) -> str
+- fmt_signed_mb · function · L361-L365 — def fmt_signed_mb(value: int | None) -> str
+- fmt_duration_ms · function · L368-L376 — def fmt_duration_ms(ms: int) -> str
+- fmt_ts · function · L379-L381 — def fmt_ts(timestamp_ms: int) -> str
+- attributed_total_bytes · function · L384-L391 — def attributed_total_bytes(sample: Sample) -> int | None
+- compute_spikes · function · L394-L404 — def compute_spikes(samples: list[Sample], min_spike_bytes: int) -> list[Spike]
+- compute_attribution_deltas · function · L407-L434 — def compute_attribution_deltas(samples: list[Sample]) -> list[AttributionDelta]
+- collect_session_peaks · function · L437-L466 — def collect_session_peaks(samples: list[Sample]) -> list[dict[str, Any]]
+- last_attribution_sample · function · L469-L473 — def last_attribution_sample(samples: list[Sample]) -> Sample | None
+- build_coverage_report · function · L476-L567 — def build_coverage_report(sample: Sample) -> dict[str, Any]
+- count_event_categories · function · L570-L575 — def count_event_categories(samples: list[Sample]) -> Counter[str]
+- process_summary · function · L578-L604 — def process_summary(samples: list[Sample]) -> dict[str, Any]
+- session_population_summary · function · L607-L650 — def session_population_summary(samples: list[Sample]) -> dict[str, Any]
+- build_incident_assessment · function · L653-L824 — def build_incident_assessment( samples: list[Sample], process: dict[str, Any], coverage: dict[str, Any] | None, population: dict[str, Any], ) -> dict[str, Any]
+- build_server_hints · function · L827-L891 — def build_server_hints(samples: list[Sample], session_peaks: list[dict[str, Any]]) -> list[str]
+- collect_client_peaks · function · L894-L919 — def collect_client_peaks(samples: list[Sample]) -> list[dict[str, Any]]
+- build_client_hints · function · L922-L979 — def build_client_hints(samples: list[Sample], client_peaks: list[dict[str, Any]]) -> list[str]
+- summarize_target · function · L982-L1054 — def summarize_target(samples: list[Sample], top_n: int, min_spike_bytes: int) -> dict[str, Any]
+- summarize · function · L1057-L1070 — def summarize(samples: list[Sample], top_n: int, min_spike_bytes: int) -> dict[str, Any]
+- print_human · function · L1073-L1238 — def print_human(summary: dict[str, Any], paths: list[Path]) -> None
+- to_jsonable · function · L1241-L1248 — def to_jsonable(value: Any) -> Any
+- print_instance_inventory · function · L1251-L1260 — def print_instance_inventory(inventory: list[dict[str, Any]], paths: list[Path]) -> None
+- main · function · L1263-L1302 — def main() -> int

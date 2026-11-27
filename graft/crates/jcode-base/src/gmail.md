@@ -1,0 +1,109 @@
+# crates/jcode-base/src/gmail.rs
+
+- GMAIL_API_BASE · constant · L7-L7 — const GMAIL_API_BASE: &str = "https://gmail.googleapis.com/gmail/v1/users/me";
+- COMPOSIO_DEFAULT_BASE · constant · L8-L8 — const COMPOSIO_DEFAULT_BASE: &str = "https://backend.composio.dev/api/v3.1";
+- GmailBackend · enum · L18-L21 — pub enum GmailBackend
+- ComposioConfig · struct · L24-L33 — pub struct ComposioConfig
+- from_env · function · L40-L54 — pub fn from_env() -> Self
+- label · function · L56-L61 — pub fn label(&self) -> &'static str
+- from_env · function · L65-L96 — fn from_env() -> Option<Self>
+- effective_user_id · function · L100-L104 — pub fn effective_user_id(&self) -> String
+- ComposioConnection · struct · L110-L116 — pub struct ComposioConnection
+- path · function · L119-L121 — pub fn path() -> Result<std::path::PathBuf>
+- load · function · L123-L130 — pub fn load() -> Result<Option<Self>>
+- save · function · L132-L135 — pub fn save(&self) -> Result<()>
+- ComposioLink · struct · L139-L142 — pub struct ComposioLink
+- GmailClient · struct · L144-L147 — pub struct GmailClient
+- default · function · L150-L152 — fn default() -> Self
+- new · function · L156-L158 — pub fn new() -> Self
+- with_backend · function · L160-L165 — pub fn with_backend(backend: GmailBackend) -> Self
+- backend_label · function · L167-L169 — pub fn backend_label(&self) -> &'static str
+- is_configured · function · L172-L177 — pub fn is_configured(&self) -> bool
+- can_send · function · L184-L191 — pub fn can_send(&self) -> bool
+- can_delete · function · L194-L201 — pub fn can_delete(&self) -> bool
+- not_configured_message · function · L203-L215 — pub fn not_configured_message(&self) -> &'static str
+- needs_connection · function · L220-L222 — pub fn needs_connection(&self) -> bool
+- supports_connect · function · L225-L227 — pub fn supports_connect(&self) -> bool
+- connect · function · L235-L280 — pub async fn connect(&self, open_browser: bool) -> Result<ComposioConnection>
+- create_link · function · L283-L329 — async fn create_link(
+- wait_for_connection · function · L332-L377 — async fn wait_for_connection(
+- MAX_ATTEMPTS · constant · L338-L338 — const MAX_ATTEMPTS: u32 = 150;
+- POLL_INTERVAL · constant · L339-L339 — const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(2);
+- request · function · L382-L392 — async fn request(
+- request_direct · function · L394-L420 — async fn request_direct(
+- request_composio · function · L422-L474 — async fn request_composio(
+- list_messages · function · L476-L495 — pub async fn list_messages(
+- get_message · function · L497-L506 — pub async fn get_message(&self, id: &str, format: MessageFormat) -> Result<Message>
+- list_threads · function · L508-L517 — pub async fn list_threads(&self, query: Option<&str>, max_results: u32) -> Result<ThreadList>
+- get_thread · function · L519-L525 — pub async fn get_thread(&self, id: &str) -> Result<Thread>
+- list_labels · function · L527-L537 — pub async fn list_labels(&self) -> Result<Vec<Label>>
+- LabelList · struct · L530-L532 — struct LabelList
+- create_draft · function · L539-L556 — pub async fn create_draft(
+- create_draft_with_attachments · function · L562-L587 — pub async fn create_draft_with_attachments(
+- send_draft · function · L589-L597 — pub async fn send_draft(&self, draft_id: &str) -> Result<Message>
+- list_drafts · function · L600-L609 — pub async fn list_drafts(&self, max_results: u32) -> Result<Vec<Draft>>
+- DraftList · struct · L603-L605 — struct DraftList
+- get_draft · function · L612-L616 — pub async fn get_draft(&self, draft_id: &str) -> Result<DraftFull>
+- update_draft · function · L622-L644 — pub async fn update_draft(
+- delete_draft · function · L647-L651 — pub async fn delete_draft(&self, draft_id: &str) -> Result<()>
+- send_message · function · L653-L670 — pub async fn send_message(
+- send_message_with_attachments · function · L676-L699 — pub async fn send_message_with_attachments(
+- trash_message · function · L701-L705 — pub async fn trash_message(&self, id: &str) -> Result<()>
+- modify_labels · function · L707-L721 — pub async fn modify_labels(
+- Recipients · struct · L732-L736 — pub struct Recipients<'a>
+- to · function · L739-L745 — pub fn to(to: &'a str) -> Self
+- header_lines · function · L748-L761 — fn header_lines(&self) -> Result<String>
+- mime_helpers · module · L764-L764 — mod mime_helpers;
+- build_composio_proxy_payload · function · L770-L790 — fn build_composio_proxy_payload(
+- truncate_error · function · L792-L800 — fn truncate_error(text: &str) -> String
+- MAX · constant · L793-L793 — const MAX: usize = 400;
+- MessageFormat · enum · L805-L808 — pub enum MessageFormat
+- as_str · function · L811-L816 — fn as_str(&self) -> &'static str
+- MessageList · struct · L820-L826 — pub struct MessageList
+- MessageRef · struct · L829-L833 — pub struct MessageRef
+- Message · struct · L836-L848 — pub struct Message
+- header · function · L851-L860 — pub fn header(&self, name: &str) -> Option<&str>
+- subject · function · L862-L864 — pub fn subject(&self) -> Option<&str>
+- from · function · L866-L868 — pub fn from(&self) -> Option<&str>
+- date · function · L870-L872 — pub fn date(&self) -> Option<&str>
+- body_text · function · L874-L876 — pub fn body_text(&self) -> Option<String>
+- attachments · function · L880-L886 — pub fn attachments(&self) -> Vec<AttachmentInfo>
+- AttachmentInfo · struct · L891-L896 — pub struct AttachmentInfo
+- MessagePayload · struct · L899-L906 — pub struct MessagePayload
+- collect_attachments · function · L909-L925 — fn collect_attachments(&self, out: &mut Vec<AttachmentInfo>)
+- extract_text · function · L931-L958 — fn extract_text(&self) -> Option<String>
+- MessageBody · struct · L962-L967 — pub struct MessageBody
+- Header · struct · L970-L973 — pub struct Header
+- ThreadList · struct · L976-L982 — pub struct ThreadList
+- ThreadRef · struct · L985-L990 — pub struct ThreadRef
+- Thread · struct · L993-L996 — pub struct Thread
+- Label · struct · L999-L1008 — pub struct Label
+- Draft · struct · L1011-L1014 — pub struct Draft
+- DraftFull · struct · L1018-L1021 — pub struct DraftFull
+- message_formatting · module · L1024-L1024 — mod message_formatting;
+- tests · module · L1030-L1364 — mod tests
+- cfg · function · L1033-L1041 — fn cfg() -> ComposioConfig
+- loopback_composio · function · L1044-L1109 — async fn loopback_composio(
+- composio_loopback_proxy_data_variants_and_exact_requests · function · L1112-L1158 — async fn composio_loopback_proxy_data_variants_and_exact_requests()
+- composio_loopback_proxy_errors_preserve_precedence · function · L1161-L1201 — async fn composio_loopback_proxy_errors_preserve_precedence()
+- composio_loopback_create_link_exact_request · function · L1204-L1216 — async fn composio_loopback_create_link_exact_request()
+- message_attachments_flatten_nested_parts · function · L1219-L1261 — fn message_attachments_flatten_nested_parts()
+- message_without_attachments_formats_clean · function · L1264-L1273 — fn message_without_attachments_formats_clean()
+- composio_proxy_payload_get_has_no_body · function · L1276-L1284 — fn composio_proxy_payload_get_has_no_body()
+- composio_proxy_payload_post_includes_body · function · L1287-L1293 — fn composio_proxy_payload_post_includes_body()
+- composio_proxy_payload_omits_optional_account_fields · function · L1296-L1307 — fn composio_proxy_payload_omits_optional_account_fields()
+- direct_backend_label_and_default · function · L1310-L1315 — fn direct_backend_label_and_default()
+- composio_backend_is_configured_and_can_send · function · L1318-L1325 — fn composio_backend_is_configured_and_can_send()
+- truncate_error_caps_length · function · L1328-L1335 — fn truncate_error_caps_length()
+- needs_connection_reflects_connected_account_presence · function · L1338-L1354 — fn needs_connection_reflects_connected_account_presence()
+- effective_user_id_defaults_to_default · function · L1357-L1363 — fn effective_user_id_defaults_to_default()
+- mime_tests · module · L1367-L1503 — mod mime_tests
+- ascii_subject_is_unchanged · function · L1371-L1373 — fn ascii_subject_is_unchanged()
+- non_ascii_subject_is_rfc2047_encoded · function · L1376-L1391 — fn non_ascii_subject_is_rfc2047_encoded()
+- long_non_ascii_subject_folds_into_multiple_encoded_words · function · L1394-L1402 — fn long_non_ascii_subject_folds_into_multiple_encoded_words()
+- reply_headers_use_angle_bracketed_message_id · function · L1405-L1427 — fn reply_headers_use_angle_bracketed_message_id()
+- utf8_subject_in_raw_mime_is_ascii_only · function · L1430-L1441 — fn utf8_subject_in_raw_mime_is_ascii_only()
+- cc_and_bcc_headers_are_written_when_present · function · L1444-L1463 — fn cc_and_bcc_headers_are_written_when_present()
+- empty_cc_and_bcc_are_omitted · function · L1466-L1475 — fn empty_cc_and_bcc_are_omitted()
+- recipient_header_injection_is_rejected · function · L1478-L1485 — fn recipient_header_injection_is_rejected()
+- summary_lists_recipient_headers · function · L1488-L1502 — fn summary_lists_recipient_headers()

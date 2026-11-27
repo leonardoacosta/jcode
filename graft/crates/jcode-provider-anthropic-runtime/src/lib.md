@@ -1,0 +1,134 @@
+# crates/jcode-provider-anthropic-runtime/src/lib.rs
+
+- reasoning_request · module · L18-L18 — mod reasoning_request;
+- usage_recording · module · L19-L19 — mod usage_recording;
+- catalog · module · L21-L21 — mod catalog;
+- oauth_beta_headers · function · L26-L28 — fn oauth_beta_headers(model: &str) -> &'static str
+- API_URL · constant · L63-L63 — const API_URL: &str = "https://api.anthropic.com/v1/messages";
+- API_URL_OAUTH · constant · L66-L66 — const API_URL_OAUTH: &str = "https://api.anthropic.com/v1/messages?beta=true";
+- direct_api_url · function · L68-L79 — fn direct_api_url() -> String
+- configured_direct_headers · function · L81-L99 — fn configured_direct_headers() -> Result<HeaderMap>
+- direct_auth_mode · function · L101-L117 — fn direct_auth_mode() -> String
+- DirectTransportConfig · struct · L120-L127 — struct DirectTransportConfig
+- from_env · function · L130-L140 — fn from_env() -> Self
+- active_anthropic_profile_models · function · L143-L165 — fn active_anthropic_profile_models() -> Option<Vec<String>>
+- OAUTH_BETA_HEADERS_1M · constant · L168-L168 — pub(crate) const OAUTH_BETA_HEADERS_1M: &str = jcode_provider_core::ANTHROPIC_OAUTH_BETA_HEADERS_1M;
+- OAuthClientMetadata · struct · L171-L176 — struct OAuthClientMetadata
+- load_official_claude_client_metadata · function · L178-L210 — fn load_official_claude_client_metadata() -> OAuthClientMetadata
+- oauth_request_metadata · function · L212-L229 — fn oauth_request_metadata(session_id: &str) -> ApiMetadata
+- OAuthEvalRequest · struct · L232-L239 — struct OAuthEvalRequest
+- OAuthEvalAttributes · struct · L242-L264 — struct OAuthEvalAttributes
+- oauth_preflight_get · function · L266-L286 — async fn oauth_preflight_get(
+- oauth_preflight_post_json · function · L288-L310 — async fn oauth_preflight_post_json<T: Serialize + ?Sized>(
+- record_oauth_preflight_result · function · L312-L323 — fn record_oauth_preflight_result(label: &str, result: Result<()>) -> bool
+- ensure_oauth_preflight · function · L325-L449 — async fn ensure_oauth_preflight(
+- DEFAULT_MODEL · constant · L452-L452 — const DEFAULT_MODEL: &str = jcode_provider_core::DEFAULT_CLAUDE_MODEL;
+- API_VERSION · constant · L455-L455 — const API_VERSION: &str = "2023-06-01";
+- MAX_RETRIES · constant · L458-L458 — const MAX_RETRIES: u32 = 3;
+- TRANSPORT_MAX_RETRIES · constant · L464-L464 — const TRANSPORT_MAX_RETRIES: u32 = 6;
+- TRANSPORT_RETRY_WINDOW · constant · L468-L468 — const TRANSPORT_RETRY_WINDOW: std::time::Duration = std::time::Duration::from_secs(60);
+- RETRY_BASE_DELAY_MS · constant · L471-L471 — const RETRY_BASE_DELAY_MS: u64 = 1000;
+- CachedCredentials · struct · L475-L479 — struct CachedCredentials
+- AnthropicProvider · struct · L482-L505 — pub struct AnthropicProvider
+- is_usage_exhausted · function · L508-L511 — fn is_usage_exhausted() -> bool
+- best_available_opus_model · function · L513-L524 — fn best_available_opus_model(exclude: &str) -> Option<String>
+- fallback_for_model_scoped_usage · function · L526-L534 — fn fallback_for_model_scoped_usage(
+- model_after_oauth_quota_check · function · L536-L560 — async fn model_after_oauth_quota_check(
+- resolve_access_token_for_doctor · function · L568-L570 — pub async fn resolve_access_token_for_doctor(&self) -> Result<(String, bool)>
+- pin_credential_mode_for_doctor · function · L582-L589 — pub fn pin_credential_mode_for_doctor(&self, oauth: bool) -> Result<()>
+- new · function · L591-L645 — pub fn new() -> Self
+- direct_api_key · function · L647-L653 — fn direct_api_key(&self) -> Result<String>
+- normalized_model_key · function · L655-L657 — fn normalized_model_key(model: &str) -> String
+- model_supports_output_effort · function · L659-L664 — fn model_supports_output_effort(model: &str) -> bool
+- model_supports_adaptive_thinking · function · L666-L668 — fn model_supports_adaptive_thinking(model: &str) -> bool
+- model_supports_manual_thinking · function · L670-L672 — fn model_supports_manual_thinking(model: &str) -> bool
+- model_supports_xhigh_effort · function · L674-L676 — fn model_supports_xhigh_effort(model: &str) -> bool
+- model_supports_max_effort · function · L682-L684 — fn model_supports_max_effort(model: &str) -> bool
+- model_supports_reasoning_effort · function · L686-L688 — fn model_supports_reasoning_effort(model: &str) -> bool
+- normalize_reasoning_effort · function · L690-L708 — fn normalize_reasoning_effort(raw: &str) -> Option<String>
+- actual_effort_for_model · function · L710-L713 — fn actual_effort_for_model(model: &str, effort: &str) -> String
+- resolved_effort_for_model · function · L715-L729 — fn resolved_effort_for_model(model: &str, effort: &str) -> String
+- store_effort_for_model · function · L735-L741 — fn store_effort_for_model(model: &str, effort: &str) -> String
+- default_reasoning_effort_for_model · function · L756-L773 — fn default_reasoning_effort_for_model(model: &str) -> Option<String>
+- stored_reasoning_effort · function · L778-L783 — fn stored_reasoning_effort(&self) -> Option<String>
+- effort_for_model · function · L787-L796 — fn effort_for_model(&self, model: &str) -> Option<String>
+- model_supports_priority_service_tier · function · L798-L800 — fn model_supports_priority_service_tier(model: &str) -> bool
+- normalize_service_tier · function · L802-L815 — fn normalize_service_tier(raw: &str) -> Result<Option<String>>
+- current_service_tier_for_model · function · L817-L824 — fn current_service_tier_for_model(&self, model: &str) -> Option<String>
+- max_tokens_for · function · L829-L832 — fn max_tokens_for(&self, model: &str) -> u32
+- manual_thinking_budget · function · L834-L845 — fn manual_thinking_budget(effort: &str, max_tokens: u32) -> Option<u32>
+- build_reasoning_request_parts · function · L847-L857 — fn build_reasoning_request_parts(
+- build_reasoning_request_parts_inner · function · L859-L872 — fn build_reasoning_request_parts_inner(
+- build_reasoning_request_parts_with_effort · function · L874-L888 — fn build_reasoning_request_parts_with_effort(
+- build_reasoning_request_parts_for_budget · function · L890-L941 — fn build_reasoning_request_parts_for_budget(
+- get_access_token · function · L946-L964 — async fn get_access_token(&self) -> Result<(String, bool)>
+- resolve_access_token · function · L966-L1008 — async fn resolve_access_token(&self) -> Result<(String, bool)>
+- load_oauth_credentials · function · L1010-L1015 — fn load_oauth_credentials(&self) -> Result<auth::claude::ClaudeCredentials>
+- oauth_refresh_label · function · L1017-L1020 — fn oauth_refresh_label(&self) -> Option<String>
+- catalog_scope_for_route · function · L1022-L1028 — fn catalog_scope_for_route(&self, oauth: bool) -> String
+- get_oauth_access_token · function · L1030-L1147 — async fn get_oauth_access_token(&self) -> Result<(String, bool)>
+- set_credential_mode · function · L1149-L1184 — pub(crate) fn set_credential_mode(&self, mode: AnthropicCredentialMode) -> Result<()>
+- credential_mode_snapshot · function · L1186-L1191 — pub(crate) fn credential_mode_snapshot(&self) -> AnthropicCredentialMode
+- format_messages · function · L1196-L1203 — fn format_messages(
+- format_messages_native · function · L1207-L1220 — fn format_messages_native(
+- first_party_api · function · L1224-L1226 — fn first_party_api(&self) -> bool
+- format_content_blocks · function · L1230-L1236 — fn format_content_blocks(
+- format_tools · function · L1240-L1242 — fn format_tools(&self, tools: &[ToolDefinition], is_oauth: bool) -> Vec<ApiTool>
+- default · function · L1246-L1248 — fn default() -> Self
+- log_anthropic_canonical_input · function · L1251-L1280 — fn log_anthropic_canonical_input(
+- anthropic_canonical_payload · function · L1282-L1307 — fn anthropic_canonical_payload(request: &ApiRequest) -> Value
+- canonical_input_tests · module · L1310-L1365 — mod canonical_input_tests
+- canonical_payload_preserves_schema_hash_and_nulls · function · L1314-L1364 — fn canonical_payload_preserves_schema_hash_and_nulls()
+- complete · function · L1369-L1477 — async fn complete(
+- model · function · L1479-L1484 — fn model(&self) -> String
+- credential_mode · function · L1486-L1488 — fn credential_mode(&self) -> jcode_provider_core::CredentialMode
+- active_resolved_credential · function · L1490-L1503 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- set_oauth_account · function · L1505-L1520 — fn set_oauth_account(&self, label: Option<&str>) -> Result<()>
+- oauth_account_label · function · L1522-L1527 — fn oauth_account_label(&self) -> Option<String>
+- active_oauth_account_email · function · L1529-L1569 — fn active_oauth_account_email(&self) -> Option<String>
+- set_credential_mode · function · L1571-L1573 — fn set_credential_mode(&self, mode: jcode_provider_core::CredentialMode) -> Result<()>
+- set_model · function · L1575-L1617 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L1619-L1621 — fn available_models(&self) -> Vec<&'static str>
+- available_models_for_switching · function · L1623-L1627 — fn available_models_for_switching(&self) -> Vec<String>
+- available_models_display · function · L1629-L1631 — fn available_models_display(&self) -> Vec<String>
+- reasoning_effort · function · L1633-L1641 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L1643-L1689 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L1691-L1705 — fn available_efforts(&self) -> Vec<&'static str>
+- service_tier · function · L1707-L1715 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L1717-L1729 — fn set_service_tier(&self, service_tier: &str) -> Result<()>
+- available_service_tiers · function · L1731-L1737 — fn available_service_tiers(&self) -> Vec<&'static str>
+- prefetch_models · function · L1739-L1741 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L1743-L1755 — async fn refresh_model_catalog(
+- name · function · L1757-L1759 — fn name(&self) -> &'static str
+- context_window · function · L1761-L1763 — fn context_window(&self) -> usize
+- supports_image_input · function · L1765-L1767 — fn supports_image_input(&self) -> bool
+- supports_deferred_tools · function · L1769-L1774 — fn supports_deferred_tools(&self) -> bool
+- fork · function · L1776-L1800 — fn fork(&self) -> Arc<dyn Provider>
+- invalidate_credentials · function · L1802-L1806 — async fn invalidate_credentials(&self)
+- native_result_sender · function · L1808-L1810 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- complete_split · function · L1814-L1922 — async fn complete_split(
+- stream_retries · module · L1926-L1926 — mod stream_retries;
+- refresh_and_commit_claude_tokens · function · L1928-L1946 — async fn refresh_and_commit_claude_tokens(
+- force_refresh_oauth_token · function · L1948-L1990 — async fn force_refresh_oauth_token(
+- stream_response · function · L1997-L2213 — async fn stream_response(
+- error_classification · module · L2215-L2215 — mod error_classification;
+- anthropic_beta_header_with_thinking · function · L2218-L2224 — fn anthropic_beta_header_with_thinking(base: &str, thinking_enabled: bool) -> String
+- ToolUseAccumulator · struct · L2227-L2229 — struct ToolUseAccumulator
+- parse_sse_event · function · L2232-L2254 — fn parse_sse_event(buffer: &mut String) -> Option<SseEvent>
+- SseEvent · struct · L2257-L2260 — struct SseEvent
+- SseStreamState · struct · L2265-L2286 — struct SseStreamState
+- process_sse_event · function · L2289-L2484 — fn process_sse_event(
+- build_system_param · function · L2490-L2492 — fn build_system_param(system: &str, is_oauth: bool) -> Option<ApiSystem>
+- build_system_param_split · function · L2494-L2505 — fn build_system_param_split(
+- format_messages_with_identity · function · L2507-L2509 — fn format_messages_with_identity(messages: Vec<ApiMessage>, is_oauth: bool) -> Vec<ApiMessage>
+- add_message_cache_breakpoint · function · L2512-L2514 — fn add_message_cache_breakpoint(messages: &mut [ApiMessage])
+- sse_types · module · L2516-L2516 — mod sse_types;
+- context_window · module · L2522-L2522 — mod context_window;
+- native_web_search · module · L2523-L2523 — mod native_web_search;
+- native_web_search_sse_tests · module · L2525-L2525 — mod native_web_search_sse_tests;
+- tests · module · L2530-L2530 — mod tests;
+- late_tool_result_tests · module · L2534-L2534 — mod late_tool_result_tests;
+- account_failover_tests · module · L2537-L2537 — mod account_failover_tests;
+- account_binding_tests · module · L2540-L2540 — mod account_binding_tests;
+- sse_utf8_chunk_tests · module · L2543-L2566 — mod sse_utf8_chunk_tests
+- multibyte_char_split_across_chunks_decodes_cleanly · function · L2549-L2565 — fn multibyte_char_split_across_chunks_decodes_cleanly()

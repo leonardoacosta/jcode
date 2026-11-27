@@ -1,0 +1,52 @@
+# crates/jcode-storage/src/lib.rs
+
+- SECRET_HARDEN_CACHE_TTL · constant · L15-L15 — const SECRET_HARDEN_CACHE_TTL: Duration = Duration::from_secs(60);
+- SECRET_HARDEN_FAILURE_BACKOFF · constant · L17-L17 — const SECRET_HARDEN_FAILURE_BACKOFF: Duration = Duration::from_secs(5);
+- SECRET_HARDEN_DEFER_DELAY · constant · L19-L19 — const SECRET_HARDEN_DEFER_DELAY: Duration = Duration::from_secs(30);
+- SecretHardenAttempt · enum · L23-L27 — enum SecretHardenAttempt
+- SecretHardenState · struct · L31-L37 — struct SecretHardenState
+- enqueue · function · L43-L74 — fn enqueue(&mut self, path: &Path, directory: bool, now: Instant) -> bool
+- SECRET_HARDEN_STATE · constant · L78-L79 — static SECRET_HARDEN_STATE: LazyLock<Mutex<SecretHardenState>> =
+- active_pids · module · L81-L81 — mod active_pids;
+- session_lease · module · L90-L90 — mod session_lease;
+- test_jcode_home_lock · function · L98-L101 — pub(crate) fn test_jcode_home_lock() -> std::sync::MutexGuard<'static, ()>
+- LOCK · constant · L99-L99 — static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+- runtime_dir · function · L110-L127 — pub fn runtime_dir() -> PathBuf
+- fallback_runtime_dir · function · L129-L131 — fn fallback_runtime_dir() -> PathBuf
+- runtime_user_discriminator · function · L134-L136 — fn runtime_user_discriminator() -> String
+- runtime_user_discriminator · function · L139-L153 — fn runtime_user_discriminator() -> String
+- ensure_private_runtime_dir · function · L155-L161 — fn ensure_private_runtime_dir(path: &Path)
+- jcode_dir · function · L163-L170 — pub fn jcode_dir() -> Result<PathBuf>
+- running_with_sandboxed_home · function · L177-L189 — pub fn running_with_sandboxed_home() -> bool
+- logs_dir · function · L191-L193 — pub fn logs_dir() -> Result<PathBuf>
+- durable_state_dir · function · L205-L213 — pub fn durable_state_dir() -> PathBuf
+- app_config_dir · function · L221-L229 — pub fn app_config_dir() -> Result<PathBuf>
+- user_home_path · function · L236-L251 — pub fn user_home_path(relative: impl AsRef<Path>) -> Result<PathBuf>
+- harden_user_config_permissions · function · L257-L290 — pub fn harden_user_config_permissions()
+- harden_secret_file_permissions · function · L296-L312 — pub fn harden_secret_file_permissions(path: &Path)
+- harden_secret_file_permissions_windows · function · L315-L329 — fn harden_secret_file_permissions_windows(path: &Path)
+- schedule_windows_path_hardening · function · L332-L355 — fn schedule_windows_path_hardening(path: &Path, directory: bool)
+- run_windows_hardening_worker · function · L358-L430 — fn run_windows_hardening_worker()
+- validate_external_auth_file · function · L437-L464 — pub fn validate_external_auth_file(path: &Path) -> Result<PathBuf>
+- ensure_dir · function · L466-L472 — pub fn ensure_dir(path: &Path) -> Result<()>
+- write_text_secret · function · L474-L476 — pub fn write_text_secret(path: &Path, content: &str) -> Result<()>
+- upsert_env_file_value · function · L478-L516 — pub fn upsert_env_file_value(path: &Path, env_key: &str, value: Option<&str>) -> Result<()>
+- write_json · function · L518-L520 — pub fn write_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()>
+- write_json_secret · function · L522-L524 — pub fn write_json_secret<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()>
+- write_json_fast · function · L529-L531 — pub fn write_json_fast<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()>
+- write_bytes · function · L536-L538 — pub fn write_bytes(path: &Path, bytes: &[u8]) -> Result<()>
+- write_json_inner · function · L540-L553 — fn write_json_inner<T: Serialize + ?Sized>(
+- write_bytes_inner · function · L555-L560 — fn write_bytes_inner(path: &Path, bytes: &[u8], durable: bool, secret: bool) -> Result<()>
+- write_atomic_inner · function · L562-L650 — fn write_atomic_inner(
+- atomic_write_tests · module · L653-L653 — mod atomic_write_tests;
+- StorageRecoveryEvent · enum · L655-L663 — pub enum StorageRecoveryEvent<'a>
+- read_json · function · L665-L678 — pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T>
+- read_json_with_recovery_handler · function · L680-L713 — pub fn read_json_with_recovery_handler<T, F>(path: &Path, mut on_recovery: F) -> Result<T>
+- append_json_line_fast · function · L724-L737 — pub fn append_json_line_fast<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()>
+- windows_hardening_tests · module · L740-L798 — mod windows_hardening_tests
+- first_path_starts_one_worker_and_repeated_paths_are_coalesced · function · L744-L756 — fn first_path_starts_one_worker_and_repeated_paths_are_coalesced()
+- recently_attempted_paths_are_not_requeued · function · L759-L770 — fn recently_attempted_paths_are_not_requeued()
+- failed_paths_retry_after_shorter_backoff · function · L773-L784 — fn failed_paths_retry_after_shorter_backoff()
+- in_flight_paths_are_not_requeued · function · L787-L797 — fn in_flight_paths_are_not_requeued()
+- env_file_tests · module · L801-L822 — mod env_file_tests
+- env_upsert_rejects_key_and_value_injection · function · L805-L821 — fn env_upsert_rejects_key_and_value_injection()

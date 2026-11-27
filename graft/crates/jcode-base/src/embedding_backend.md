@@ -1,0 +1,42 @@
+# crates/jcode-base/src/embedding_backend.rs
+
+- EmbeddingBackend · interface · L33-L74 — pub trait EmbeddingBackend: Send + Sync
+- model_id · function · L37-L37 — fn model_id(&self) -> &str;
+- dim · function · L40-L40 — fn dim(&self) -> usize;
+- embed_raw · function · L44-L44 — fn embed_raw(&self, text: &str) -> Result<Vec<f32>>;
+- format_query · function · L48-L50 — fn format_query(&self, text: &str) -> String
+- format_passage · function · L54-L56 — fn format_passage(&self, text: &str) -> String
+- embed_query · function · L59-L61 — fn embed_query(&self, text: &str) -> Result<Vec<f32>>
+- embed_passage · function · L64-L66 — fn embed_passage(&self, text: &str) -> Result<Vec<f32>>
+- embed_passages · function · L71-L73 — fn embed_passages(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>>
+- LocalOnnxBackend · struct · L81-L81 — pub struct LocalOnnxBackend;
+- model_id · function · L84-L88 — fn model_id(&self) -> &str
+- dim · function · L90-L92 — fn dim(&self) -> usize
+- embed_raw · function · L94-L96 — fn embed_raw(&self, text: &str) -> Result<Vec<f32>>
+- OpenAiEmbeddingBackend · struct · L110-L121 — pub struct OpenAiEmbeddingBackend
+- DEFAULT_OPENAI_EMBEDDING_MODEL · constant · L125-L125 — pub const DEFAULT_OPENAI_EMBEDDING_MODEL: &str = "text-embedding-3-small";
+- OPENAI_EMBEDDINGS_BASE · constant · L126-L126 — const OPENAI_EMBEDDINGS_BASE: &str = "https://api.openai.com/v1";
+- default_openai_dim · function · L129-L136 — fn default_openai_dim(model: &str) -> usize
+- new · function · L141-L160 — pub fn new(
+- embed_inputs · function · L168-L238 — fn embed_inputs(&self, inputs: Vec<String>) -> Result<Vec<Vec<f32>>>
+- EmbeddingsRequest · struct · L243-L246 — struct EmbeddingsRequest<'a>
+- EmbeddingsResponse · struct · L249-L251 — struct EmbeddingsResponse
+- EmbeddingsDatum · struct · L254-L257 — struct EmbeddingsDatum
+- model_id · function · L260-L262 — fn model_id(&self) -> &str
+- dim · function · L264-L266 — fn dim(&self) -> usize
+- embed_raw · function · L268-L272 — fn embed_raw(&self, text: &str) -> Result<Vec<f32>>
+- embed_passages · function · L274-L277 — fn embed_passages(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>>
+- active_backend · function · L290-L295 — pub fn active_backend() -> Box<dyn EmbeddingBackend>
+- openai_backend_from_config · function · L299-L316 — pub fn openai_backend_from_config() -> Option<OpenAiEmbeddingBackend>
+- active_model_id · function · L323-L325 — pub fn active_model_id() -> String
+- model_matches_active · function · L329-L331 — pub fn model_matches_active(entry_model: &str) -> bool
+- embed_query_active · function · L336-L340 — pub fn embed_query_active(text: &str) -> anyhow::Result<(Vec<f32>, String)>
+- embed_passage_active · function · L344-L348 — pub fn embed_passage_active(text: &str) -> anyhow::Result<(Vec<f32>, String)>
+- tests · module · L351-L523 — mod tests
+- loopback_backend · function · L357-L418 — fn loopback_backend(
+- openai_loopback_preserves_legacy_bytes_headers_and_index_order · function · L421-L451 — fn openai_loopback_preserves_legacy_bytes_headers_and_index_order()
+- openai_loopback_errors_and_empty_response · function · L454-L473 — fn openai_loopback_errors_and_empty_response()
+- openai_empty_inputs_do_not_connect · function · L476-L490 — fn openai_empty_inputs_do_not_connect()
+- local_backend_model_id_matches_legacy_tag · function · L493-L497 — fn local_backend_model_id_matches_legacy_tag()
+- default_formatting_is_identity · function · L500-L504 — fn default_formatting_is_identity()
+- openai_backend_namespaces_model_id_and_infers_dim · function · L507-L522 — fn openai_backend_namespaces_model_id_and_infers_dim()

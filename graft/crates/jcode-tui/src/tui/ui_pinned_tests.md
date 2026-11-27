@@ -1,0 +1,48 @@
+# crates/jcode-tui/src/tui/ui_pinned_tests.rs
+
+- clear_side_panel_render_caches · function · L4-L6 — fn clear_side_panel_render_caches()
+- mermaid_test_lock · function · L8-L11 — fn mermaid_test_lock() -> &'static Mutex<()>
+- LOCK · constant · L9-L9 — static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- with_mermaid_placeholder_mode · function · L13-L28 — fn with_mermaid_placeholder_mode<T>(f: impl FnOnce() -> T) -> T
+- ResetVideoExportMode · struct · L14-L14 — struct ResetVideoExportMode;
+- drop · function · L16-L18 — fn drop(&mut self)
+- with_serialized_mermaid_state · function · L30-L33 — fn with_serialized_mermaid_state<T>(f: impl FnOnce() -> T) -> T
+- sample_mermaid_page · function · L35-L53 — fn sample_mermaid_page(content: impl Into<String>) -> crate::side_panel::SidePanelPage
+- side_panel_mermaid_measurement_reserves_scrollbar_in_render_profile · function · L56-L66 — fn side_panel_mermaid_measurement_reserves_scrollbar_in_render_profile()
+- clamp_side_panel_image_rows_leaves_room_for_following_content · function · L69-L72 — fn clamp_side_panel_image_rows_leaves_room_for_following_content()
+- clamp_side_panel_image_rows_preserves_estimate_without_following_content · function · L75-L78 — fn clamp_side_panel_image_rows_preserves_estimate_without_following_content()
+- clamp_side_panel_image_rows_keeps_minimum_image_presence · function · L81-L84 — fn clamp_side_panel_image_rows_keeps_minimum_image_presence()
+- clamp_side_panel_image_rows_ignores_preceding_document_length · function · L87-L92 — fn clamp_side_panel_image_rows_ignores_preceding_document_length()
+- estimate_side_panel_image_rows_uses_actual_inner_width · function · L95-L98 — fn estimate_side_panel_image_rows_uses_actual_inner_width()
+- side_panel_mermaid_switches_to_scrollable_viewport_when_fit_would_be_too_small · function · L101-L113 — fn side_panel_mermaid_switches_to_scrollable_viewport_when_fit_would_be_too_small()
+- side_panel_mermaid_fit_fill_allows_wide_short_diagrams_above_200_percent · function · L116-L136 — fn side_panel_mermaid_fit_fill_allows_wide_short_diagrams_above_200_percent()
+- side_panel_mermaid_keeps_fit_mode_when_zoom_stays_readable · function · L139-L146 — fn side_panel_mermaid_keeps_fit_mode_when_zoom_stays_readable()
+- side_panel_generated_image_marker_renders_as_image_placement · function · L149-L156 — fn side_panel_generated_image_marker_renders_as_image_placement()
+- side_panel_markdown_image_path_renders_as_image_placement · function · L159-L188 — fn side_panel_markdown_image_path_renders_as_image_placement()
+- side_panel_svg_graph_renders_as_raster_image_placement · function · L191-L215 — fn side_panel_svg_graph_renders_as_raster_image_placement()
+- side_panel_image_zoom_uses_scrollable_viewport_layout · function · L218-L251 — fn side_panel_image_zoom_uses_scrollable_viewport_layout()
+- side_panel_mermaid_prefers_viewport_when_downscaled_fit_wastes_space · function · L254-L264 — fn side_panel_mermaid_prefers_viewport_when_downscaled_fit_wastes_space()
+- side_panel_mermaid_scales_up_to_fill_nearly_matching_pane · function · L267-L283 — fn side_panel_mermaid_scales_up_to_fill_nearly_matching_pane()
+- fit_side_panel_image_area_scales_up_small_image_to_use_available_width · function · L286-L293 — fn fit_side_panel_image_area_scales_up_small_image_to_use_available_width()
+- side_panel_mermaid_probe_reports_full_utilization_for_nearly_matching_diagram · function · L296-L328 — fn side_panel_mermaid_probe_reports_full_utilization_for_nearly_matching_diagram()
+- side_panel_mermaid_probe_reports_viewport_fill_for_underutilized_fit · function · L331-L359 — fn side_panel_mermaid_probe_reports_viewport_fill_for_underutilized_fit()
+- side_panel_viewport_scroll_x_applies_horizontal_pan_around_center · function · L362-L376 — fn side_panel_viewport_scroll_x_applies_horizontal_pan_around_center()
+- side_panel_viewport_scroll_x_handles_high_auto_fill_zoom · function · L379-L388 — fn side_panel_viewport_scroll_x_handles_high_auto_fill_zoom()
+- fit_side_panel_image_area_centers_constrained_image_horizontally · function · L391-L407 — fn fit_side_panel_image_area_centers_constrained_image_horizontally()
+- fit_side_panel_image_area_preserves_full_width_when_width_constrained · function · L410-L417 — fn fit_side_panel_image_area_preserves_full_width_when_width_constrained()
+- plan_fit_image_render_uses_clipped_viewport_for_partial_visibility · function · L420-L439 — fn plan_fit_image_render_uses_clipped_viewport_for_partial_visibility()
+- plan_fit_image_render_uses_full_fit_when_fully_visible · function · L442-L453 — fn plan_fit_image_render_uses_full_fit_when_fully_visible()
+- render_side_panel_markdown_keeps_text_after_mermaid_block · function · L456-L493 — fn render_side_panel_markdown_keeps_text_after_mermaid_block()
+- render_side_panel_markdown_late_mermaid_keeps_reasonable_rows · function · L496-L521 — fn render_side_panel_markdown_late_mermaid_keeps_reasonable_rows()
+- render_side_panel_markdown_reserves_blank_rows_for_mermaid_placement · function · L524-L547 — fn render_side_panel_markdown_reserves_blank_rows_for_mermaid_placement()
+- render_side_panel_markdown_multiple_mermaids_create_ordered_placements · function · L550-L573 — fn render_side_panel_markdown_multiple_mermaids_create_ordered_placements()
+- render_side_panel_markdown_without_native_protocol_shows_mermaid_source · function · L576-L615 — fn render_side_panel_markdown_without_native_protocol_shows_mermaid_source()
+- render_side_panel_markdown_trailing_text_reduces_mermaid_rows · function · L618-L652 — fn render_side_panel_markdown_trailing_text_reduces_mermaid_rows()
+- render_side_panel_markdown_wraps_long_text_lines · function · L655-L685 — fn render_side_panel_markdown_wraps_long_text_lines()
+- render_side_panel_markdown_keeps_table_rows_intact · function · L688-L720 — fn render_side_panel_markdown_keeps_table_rows_intact()
+- render_side_panel_markdown_live_syncs_file_content · function · L723-L781 — fn render_side_panel_markdown_live_syncs_file_content()
+- render_side_panel_height_change_reuses_markdown_render_cache · function · L784-L815 — fn render_side_panel_height_change_reuses_markdown_render_cache()
+- render_side_panel_content_change_with_same_revision_invalidates_cache · function · L818-L864 — fn render_side_panel_content_change_with_same_revision_invalidates_cache()
+- prewarm_focused_side_panel_reuses_markdown_cache_on_first_draw · function · L867-L904 — fn prewarm_focused_side_panel_reuses_markdown_cache_on_first_draw()
+- render_side_panel_managed_pages_ignore_disk_file_content · function · L907-L940 — fn render_side_panel_managed_pages_ignore_disk_file_content()
+- render_side_panel_linked_file_missing_file_falls_back_to_snapshot_content · function · L943-L970 — fn render_side_panel_linked_file_missing_file_falls_back_to_snapshot_content()

@@ -1,0 +1,118 @@
+# crates/jcode-tui/src/tui/ui_frame_metrics.rs
+
+- flicker_events · module · L3-L3 — mod flicker_events;
+- SLOW_DRAW_ATTRIBUTION_THRESHOLD_MS · constant · L12-L12 — const SLOW_DRAW_ATTRIBUTION_THRESHOLD_MS: f64 = 40.0;
+- FramePerfStats · struct · L15-L81 — pub(crate) struct FramePerfStats
+- FrameResourceAttribution · struct · L84-L95 — pub(crate) struct FrameResourceAttribution
+- SlowFrameSample · struct · L98-L122 — pub(crate) struct SlowFrameSample
+- FrameInputAttribution · struct · L125-L129 — pub(crate) struct FrameInputAttribution
+- KEY_TO_PAINT_MS · constant · L138-L138 — static KEY_TO_PAINT_MS: Mutex<Vec<f64>> = Mutex::new(Vec::new());
+- PENDING_KEY_AT · constant · L143-L143 — static PENDING_KEY_AT: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+- note_key_event_read · function · L146-L153 — pub(crate) fn note_key_event_read()
+- note_frame_painted · function · L156-L174 — pub(crate) fn note_frame_painted()
+- MAX_SAMPLES · constant · L168-L168 — const MAX_SAMPLES: usize = 64;
+- key_to_paint_debug_json · function · L177-L194 — pub(crate) fn key_to_paint_debug_json() -> serde_json::Value
+- DrawCallAttribution · struct · L197-L206 — pub(crate) struct DrawCallAttribution
+- FrameResourceStart · struct · L209-L212 — struct FrameResourceStart
+- frame_input_attribution_slot · function · L214-L217 — fn frame_input_attribution_slot() -> &'static Mutex<FrameInputAttribution>
+- SLOT · constant · L215-L215 — static SLOT: OnceLock<Mutex<FrameInputAttribution>> = OnceLock::new();
+- set_frame_input_attribution · function · L219-L224 — pub(crate) fn set_frame_input_attribution(attribution: FrameInputAttribution)
+- frame_input_attribution_snapshot · function · L226-L231 — pub(crate) fn frame_input_attribution_snapshot() -> FrameInputAttribution
+- record_draw_call_attribution · function · L233-L249 — pub(crate) fn record_draw_call_attribution(sample: DrawCallAttribution)
+- DRAW_CALL_HISTORY_MAX_SAMPLES · constant · L251-L251 — const DRAW_CALL_HISTORY_MAX_SAMPLES: usize = 240;
+- DRAW_CALL_HISTORY · constant · L253-L253 — static DRAW_CALL_HISTORY: OnceLock<Mutex<VecDeque<DrawCallAttribution>>> = OnceLock::new();
+- draw_call_history · function · L255-L257 — fn draw_call_history() -> &'static Mutex<VecDeque<DrawCallAttribution>>
+- percentile · function · L259-L265 — fn percentile(sorted: &[f64], pct: f64) -> f64
+- CHANGED_CELLS_WANTED · constant · L272-L273 — static CHANGED_CELLS_WANTED: std::sync::atomic::AtomicBool =
+- changed_cells_wanted · function · L278-L280 — pub(crate) fn changed_cells_wanted() -> bool
+- debug_draw_call_history · function · L282-L353 — pub(crate) fn debug_draw_call_history(limit: usize) -> serde_json::Value
+- FullPrepPhaseMetrics · struct · L356-L362 — pub(super) struct FullPrepPhaseMetrics
+- FlickerFrameSample · struct · L365-L389 — pub(crate) struct FlickerFrameSample
+- FlickerEvent · struct · L392-L399 — struct FlickerEvent
+- FlickerUiNotice · struct · L402-L405 — pub(crate) struct FlickerUiNotice
+- FLICKER_NOTICE_COPY_KEY · constant · L408-L408 — pub(super) const FLICKER_NOTICE_COPY_KEY: char = 'z';
+- SlowFrameHistory · struct · L411-L414 — struct SlowFrameHistory
+- FlickerFrameHistory · struct · L417-L421 — struct FlickerFrameHistory
+- SLOW_FRAME_HISTORY_MAX_SAMPLES · constant · L423-L423 — const SLOW_FRAME_HISTORY_MAX_SAMPLES: usize = 128;
+- SLOW_FRAME_LOG_INTERVAL_MS · constant · L424-L424 — const SLOW_FRAME_LOG_INTERVAL_MS: u64 = 1_000;
+- FLICKER_HISTORY_MAX_SAMPLES · constant · L425-L425 — const FLICKER_HISTORY_MAX_SAMPLES: usize = 256;
+- FLICKER_HISTORY_MAX_EVENTS · constant · L426-L426 — const FLICKER_HISTORY_MAX_EVENTS: usize = 128;
+- FLICKER_LOG_INTERVAL_MS · constant · L427-L427 — const FLICKER_LOG_INTERVAL_MS: u64 = 500;
+- FLICKER_UI_NOTICE_MAX_AGE_MS · constant · L429-L429 — const FLICKER_UI_NOTICE_MAX_AGE_MS: u64 = 30_000;
+- FRAME_PERF_STATS · constant · L431-L431 — static FRAME_PERF_STATS: OnceLock<Mutex<FramePerfStats>> = OnceLock::new();
+- SLOW_FRAME_HISTORY · constant · L432-L432 — static SLOW_FRAME_HISTORY: OnceLock<Mutex<SlowFrameHistory>> = OnceLock::new();
+- FLICKER_FRAME_HISTORY · constant · L433-L433 — static FLICKER_FRAME_HISTORY: OnceLock<Mutex<FlickerFrameHistory>> = OnceLock::new();
+- FRAME_RESOURCE_START · constant · L434-L434 — static FRAME_RESOURCE_START: OnceLock<Mutex<Option<FrameResourceStart>>> = OnceLock::new();
+- frame_perf_stats · function · L436-L438 — fn frame_perf_stats() -> &'static Mutex<FramePerfStats>
+- slow_frame_history · function · L440-L442 — fn slow_frame_history() -> &'static Mutex<SlowFrameHistory>
+- flicker_frame_history · function · L444-L446 — fn flicker_frame_history() -> &'static Mutex<FlickerFrameHistory>
+- frame_resource_start · function · L448-L450 — fn frame_resource_start() -> &'static Mutex<Option<FrameResourceStart>>
+- wall_clock_ms · function · L452-L457 — pub(crate) fn wall_clock_ms() -> u64
+- slow_frame_threshold_ms · function · L459-L468 — fn slow_frame_threshold_ms() -> f64
+- THRESHOLD_MS · constant · L460-L460 — static THRESHOLD_MS: OnceLock<f64> = OnceLock::new();
+- flicker_detection_enabled · function · L470-L491 — fn flicker_detection_enabled() -> bool
+- ENABLED · constant · L478-L478 — static ENABLED: OnceLock<bool> = OnceLock::new();
+- with_frame_perf_stats_mut · function · L493-L498 — fn with_frame_perf_stats_mut(f: impl FnOnce(&mut FramePerfStats))
+- reset_frame_perf_stats · function · L500-L502 — pub(super) fn reset_frame_perf_stats()
+- begin_frame_resource_sample · function · L504-L512 — pub(super) fn begin_frame_resource_sample()
+- frame_perf_stats_snapshot · function · L514-L519 — pub(super) fn frame_perf_stats_snapshot() -> FramePerfStats
+- note_full_prep_request · function · L521-L523 — pub(super) fn note_full_prep_request()
+- note_full_prep_cache_lookup · function · L525-L527 — pub(super) fn note_full_prep_cache_lookup(elapsed: Duration)
+- note_prep_restage · function · L529-L531 — pub(super) fn note_prep_restage(elapsed: Duration)
+- note_prep_aspect · function · L533-L535 — pub(super) fn note_prep_aspect(elapsed: Duration)
+- note_prep_prepare_at · function · L537-L542 — pub(super) fn note_prep_prepare_at(elapsed: Duration)
+- note_prep_overflow · function · L544-L546 — pub(super) fn note_prep_overflow(elapsed: Duration)
+- note_full_prep_cache_hit · function · L548-L563 — pub(super) fn note_full_prep_cache_hit(
+- note_full_prep_cache_miss · function · L565-L570 — pub(super) fn note_full_prep_cache_miss()
+- note_full_prep_built · function · L572-L584 — pub(super) fn note_full_prep_built(
+- note_full_prep_phase_metrics · function · L586-L594 — pub(super) fn note_full_prep_phase_metrics(metrics: FullPrepPhaseMetrics)
+- note_body_request · function · L596-L598 — pub(super) fn note_body_request()
+- note_body_cache_lookup · function · L600-L602 — pub(super) fn note_body_cache_lookup(elapsed: Duration)
+- note_body_cache_hit · function · L604-L620 — pub(super) fn note_body_cache_hit(
+- note_body_cache_miss · function · L622-L627 — pub(super) fn note_body_cache_miss()
+- note_body_incremental_reuse · function · L629-L635 — pub(super) fn note_body_incremental_reuse(base_messages: usize)
+- note_body_built · function · L637-L656 — pub(super) fn note_body_built(
+- ChatLayoutMetrics · struct · L658-L667 — pub(super) struct ChatLayoutMetrics
+- note_chat_layout · function · L669-L692 — pub(super) fn note_chat_layout(metrics: ChatLayoutMetrics)
+- ViewportMetrics · struct · L694-L706 — pub(super) struct ViewportMetrics
+- note_viewport_metrics · function · L708-L735 — pub(super) fn note_viewport_metrics(metrics: ViewportMetrics)
+- viewport_stability_hash · function · L737-L760 — pub(super) fn viewport_stability_hash(
+- same_flicker_state_key · function · L762-L778 — fn same_flicker_state_key(a: &FlickerFrameSample, b: &FlickerFrameSample) -> bool
+- same_flicker_context_key · function · L780-L789 — fn same_flicker_context_key(a: &FlickerFrameSample, b: &FlickerFrameSample) -> bool
+- sample_has_visible_transient_content · function · L791-L793 — fn sample_has_visible_transient_content(sample: &FlickerFrameSample) -> bool
+- push_flicker_event · function · L795-L818 — fn push_flicker_event(history: &mut FlickerFrameHistory, event: FlickerEvent)
+- duration_ms · function · L820-L822 — fn duration_ms(elapsed: Duration) -> f64
+- cache_kind_label · function · L824-L829 — fn cache_kind_label(kind: CacheEntryKind) -> &'static str
+- frame_resource_attribution · function · L831-L880 — fn frame_resource_attribution(total_elapsed: Duration) -> FrameResourceAttribution
+- classify_host_pressure · function · L882-L908 — fn classify_host_pressure(
+- host_load_and_cpu_count · function · L910-L914 — fn host_load_and_cpu_count() -> (Option<f64>, Option<usize>)
+- read_loadavg_1m · function · L917-L924 — fn read_loadavg_1m() -> Option<f64>
+- read_loadavg_1m · function · L927-L929 — fn read_loadavg_1m() -> Option<f64>
+- host_memory_mb · function · L932-L952 — fn host_memory_mb() -> (Option<u64>, Option<u64>)
+- host_memory_mb · function · L955-L957 — fn host_memory_mb() -> (Option<u64>, Option<u64>)
+- parse_meminfo_kb · function · L960-L962 — fn parse_meminfo_kb(rest: &str) -> Option<u64>
+- process_rss_mb · function · L965-L972 — fn process_rss_mb() -> Option<u64>
+- process_rss_mb · function · L975-L977 — fn process_rss_mb() -> Option<u64>
+- process_cpu_ticks · function · L982-L991 — fn process_cpu_ticks() -> Option<u64>
+- process_cpu_ticks · function · L994-L996 — fn process_cpu_ticks() -> Option<u64>
+- clock_ticks_per_second · function · L999-L1002 — fn clock_ticks_per_second() -> Option<f64>
+- clock_ticks_per_second · function · L1005-L1007 — fn clock_ticks_per_second() -> Option<f64>
+- record_flicker_frame_sample · function · L1009-L1022 — pub(crate) fn record_flicker_frame_sample(sample: FlickerFrameSample)
+- finalize_frame_metrics · function · L1024-L1096 — pub(super) fn finalize_frame_metrics(
+- debug_flicker_frame_history · function · L1098-L1139 — pub(crate) fn debug_flicker_frame_history(limit: usize) -> serde_json::Value
+- flicker_event_label · function · L1141-L1149 — fn flicker_event_label(kind: &str) -> &str
+- abbreviate_flicker_log_path · function · L1151-L1163 — fn abbreviate_flicker_log_path(path: &std::path::Path) -> String
+- recent_flicker_ui_notice · function · L1165-L1190 — pub(crate) fn recent_flicker_ui_notice() -> Option<FlickerUiNotice>
+- recent_flicker_copy_target_for_key · function · L1192-L1205 — pub(crate) fn recent_flicker_copy_target_for_key(key: char) -> Option<VisibleCopyTarget>
+- record_slow_frame_sample · function · L1207-L1233 — pub(crate) fn record_slow_frame_sample(sample: SlowFrameSample)
+- debug_slow_frame_history · function · L1235-L1275 — pub(crate) fn debug_slow_frame_history(limit: usize) -> serde_json::Value
+- clear_slow_frame_history_for_tests · function · L1278-L1286 — pub(crate) fn clear_slow_frame_history_for_tests()
+- clear_flicker_frame_history_for_tests · function · L1289-L1297 — pub(crate) fn clear_flicker_frame_history_for_tests()
+- draw_call_tests · module · L1300-L1377 — mod draw_call_tests
+- sample · function · L1303-L1314 — fn sample(timestamp_ms: u64, render_ms: f64, changed: Option<usize>) -> DrawCallAttribution
+- clear_draw_call_history · function · L1316-L1321 — fn clear_draw_call_history()
+- draw_call_history_records_all_draws_and_summarizes · function · L1324-L1355 — fn draw_call_history_records_all_draws_and_summarizes()
+- stability_hash_span_iteration_matches_plain_text_hash · function · L1358-L1376 — fn stability_hash_span_iteration_matches_plain_text_hash()
+- body_last_path_for_tests · function · L1389-L1391 — pub(crate) fn body_last_path_for_tests() -> (String, Option<usize>)
+- note_test_body_last · function · L1394-L1404 — fn note_test_body_last(path: Option<&str>, base: Option<usize>)
+- note_test_body_last · function · L1407-L1407 — fn note_test_body_last(_path: Option<&str>, _base: Option<usize>) {}

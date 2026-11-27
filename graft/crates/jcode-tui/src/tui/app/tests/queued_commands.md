@@ -1,0 +1,15 @@
+# crates/jcode-tui/src/tui/app/tests/queued_commands.rs
+
+- type_text · function · L5-L10 — fn type_text(app: &mut App, text: &str)
+- test_ctrl_enter_queues_slash_command_while_processing · function · L13-L26 — fn test_ctrl_enter_queues_slash_command_while_processing()
+- test_ctrl_enter_queues_shell_command_while_processing · function · L29-L39 — fn test_ctrl_enter_queues_shell_command_while_processing()
+- test_plain_enter_still_runs_slash_command_immediately_while_processing · function · L42-L52 — fn test_plain_enter_still_runs_slash_command_immediately_while_processing()
+- test_ctrl_enter_on_idle_slash_command_runs_it_now · function · L55-L64 — fn test_ctrl_enter_on_idle_slash_command_runs_it_now()
+- test_local_queued_command_runs_on_idle_tick_and_restores_draft · function · L67-L82 — fn test_local_queued_command_runs_on_idle_tick_and_restores_draft()
+- test_ctrl_up_recalls_queued_command_for_editing · function · L85-L96 — fn test_ctrl_up_recalls_queued_command_for_editing()
+- test_reload_round_trip_preserves_queued_commands · function · L99-L108 — fn test_reload_round_trip_preserves_queued_commands()
+- test_remote_ctrl_enter_queues_command_and_runs_it_after_turn · function · L111-L149 — fn test_remote_ctrl_enter_queues_command_and_runs_it_after_turn()
+- test_remote_queued_command_still_runs_after_interrupt · function · L152-L171 — fn test_remote_queued_command_still_runs_after_interrupt()
+- test_remote_tick_arms_dispatch_for_idle_queued_command · function · L174-L184 — fn test_remote_tick_arms_dispatch_for_idle_queued_command()
+- test_remote_clear_drops_queued_commands · function · L187-L200 — fn test_remote_clear_drops_queued_commands()
+- test_remote_queued_commands_run_before_queued_prompts · function · L203-L217 — fn test_remote_queued_commands_run_before_queued_prompts()

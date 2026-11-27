@@ -1,0 +1,129 @@
+# crates/jcode-tui/src/tui/backend.rs
+
+- screen · module · L9-L9 — mod screen;
+- ssh_sessions · module · L10-L10 — mod ssh_sessions;
+- protocol_io · module · L14-L14 — mod protocol_io;
+- subscribe_history_base · function · L27-L33 — fn subscribe_history_base(base: Option<HistoryBase>, ssh_remote: bool) -> Option<HistoryBase>
+- DebugEvent · enum · L39-L128 — pub enum DebugEvent
+- DebugMessage · struct · L132-L139 — pub struct DebugMessage
+- BackendEvent · enum · L143-L212 — pub enum BackendEvent
+- RemoteDisconnectReason · enum · L215-L219 — pub enum RemoteDisconnectReason
+- RemoteRead · enum · L226-L229 — pub enum RemoteRead
+- LineOutcome · enum · L234-L238 — enum LineOutcome
+- BackendInfo · struct · L242-L247 — pub struct BackendInfo
+- RemoteConnection · struct · L250-L297 — pub struct RemoteConnection
+- DETACHED_REQUEST_TIMEOUT · constant · L299-L299 — const DETACHED_REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
+- OUTBOUND_RESULT_WAIT · constant · L301-L301 — const OUTBOUND_RESULT_WAIT: Duration = Duration::from_millis(250);
+- OutboundWrite · type · L302-L305 — type OutboundWrite = (
+- MAX_STRAY_REMOTE_PROTOCOL_LINES · constant · L306-L306 — const MAX_STRAY_REMOTE_PROTOCOL_LINES: usize = 32;
+- MAX_REMOTE_PROTOCOL_FRAME_BYTES · constant · L310-L310 — const MAX_REMOTE_PROTOCOL_FRAME_BYTES: usize = 256 * 1024 * 1024;
+- READ_BUFFER_SHRINK_THRESHOLD · constant · L315-L315 — const READ_BUFFER_SHRINK_THRESHOLD: usize = 256 * 1024;
+- READ_BUFFER_RETAIN_CAPACITY · constant · L319-L319 — const READ_BUFFER_RETAIN_CAPACITY: usize = 64 * 1024;
+- soft_interrupt_client_id · function · L322-L324 — pub(crate) fn soft_interrupt_client_id(request_id: u64) -> String
+- ACCOUNT_USAGE_POLL · constant · L327-L327 — const ACCOUNT_USAGE_POLL: Duration = Duration::from_secs(30);
+- ACCOUNT_USAGE_POLL_UNFOCUSED · constant · L331-L331 — const ACCOUNT_USAGE_POLL_UNFOCUSED: Duration = Duration::from_secs(300);
+- account_usage_poll_interval · function · L333-L339 — fn account_usage_poll_interval(focused: bool) -> Duration
+- account_usage_poll_due · function · L341-L343 — fn account_usage_poll_due(last_poll: Option<Instant>, now: Instant, interval: Duration) -> bool
+- remote_protocol_frame_exceeds_limit · function · L345-L349 — fn remote_protocol_frame_exceeds_limit(buffered: usize, incoming: usize) -> bool
+- RemoteEventState · interface · L351-L375 — pub(crate) trait RemoteEventState
+- finish_local_tools_request · function · L352-L354 — fn finish_local_tools_request(&mut self, _id: u64, _accepted: bool) -> bool
+- finish_runtime_command · function · L356-L358 — fn finish_runtime_command(&mut self, _id: u64) -> bool
+- handle_tool_start · function · L360-L360 — fn handle_tool_start(&mut self, id: &str, name: &str);
+- handle_tool_input · function · L361-L361 — fn handle_tool_input(&mut self, id: Option<&str>, delta: &str);
+- get_tool_input · function · L362-L362 — fn get_tool_input(&self, id: &str) -> serde_json::Value;
+- handle_tool_exec · function · L363-L363 — fn handle_tool_exec(&mut self, id: &str, name: &str);
+- handle_tool_done · function · L364-L364 — fn handle_tool_done(&mut self, id: &str, name: &str, output: &str) -> String;
+- take_tool_duration · function · L366-L368 — fn take_tool_duration(&mut self, _id: &str) -> Option<f32>
+- clear_pending · function · L369-L369 — fn clear_pending(&mut self);
+- call_output_tokens_seen · function · L370-L370 — fn call_output_tokens_seen(&mut self) -> &mut u64;
+- reset_call_output_tokens_seen · function · L371-L371 — fn reset_call_output_tokens_seen(&mut self);
+- set_session_id · function · L372-L372 — fn set_session_id(&mut self, id: String);
+- has_loaded_history · function · L373-L373 — fn has_loaded_history(&self) -> bool;
+- mark_history_loaded · function · L374-L374 — fn mark_history_loaded(&mut self);
+- ReplayRemoteState · struct · L378-L381 — pub(crate) struct ReplayRemoteState
+- auth · module · L384-L384 — mod auth;
+- cloud · module · L386-L386 — mod cloud;
+- verify_ssh_ready · function · L389-L424 — async fn verify_ssh_ready(&mut self, deadline: Duration) -> Result<()>
+- connect · function · L427-L429 — pub async fn connect() -> Result<Self>
+- connect_with_session · function · L435-L591 — pub async fn connect_with_session(
+- spawn_usage_hydration · function · L596-L600 — fn spawn_usage_hydration(
+- interrupt_request_log_fields · function · L602-L633 — fn interrupt_request_log_fields(
+- enqueue_outbound · function · L638-L683 — fn enqueue_outbound(
+- send_request · function · L685-L688 — async fn send_request(&self, request: Request) -> Result<()>
+- send_request_detached · function · L690-L725 — fn send_request_detached(&self, request: Request, label: &'static str)
+- send_message · function · L729-L732 — pub async fn send_message(&mut self, content: String) -> Result<u64>
+- runtime_command · function · L735-L746 — pub async fn runtime_command(&mut self, command: &str, args: Vec<String>) -> Result<u64>
+- finish_runtime_command · function · L750-L752 — pub fn finish_runtime_command(&mut self, id: u64) -> bool
+- clear · function · L755-L767 — pub async fn clear(&mut self) -> Result<u64>
+- send_message_with_images · function · L770-L777 — pub async fn send_message_with_images(
+- send_message_with_images_and_reminder · function · L779-L787 — pub async fn send_message_with_images_and_reminder(
+- send_message_with_images_reminder_and_skill · function · L789-L805 — pub async fn send_message_with_images_reminder_and_skill(
+- send_message_with_plan_policy · function · L807-L834 — pub async fn send_message_with_plan_policy(
+- reload · function · L837-L844 — pub async fn reload(&mut self) -> Result<()>
+- resume_all_sessions · function · L849-L854 — pub async fn resume_all_sessions(&mut self) -> Result<u64>
+- invalidate_openai_usage · function · L857-L863 — pub async fn invalidate_openai_usage(&mut self, account_label: Option<String>) -> Result<u64>
+- invalidate_anthropic_usage · function · L866-L875 — pub async fn invalidate_anthropic_usage(
+- request_history · function · L885-L890 — pub async fn request_history(&mut self) -> Result<u64>
+- request_todos · function · L893-L898 — pub async fn request_todos(&mut self) -> Result<u64>
+- request_capabilities · function · L901-L906 — pub async fn request_capabilities(&mut self) -> Result<u64>
+- note_server_capabilities · function · L910-L917 — pub fn note_server_capabilities(&mut self, capabilities: &[String])
+- sync_focus · function · L923-L941 — pub async fn sync_focus(&mut self, focused: bool, hidden: bool)
+- request_model_catalog · function · L950-L959 — pub async fn request_model_catalog(&mut self) -> Result<u64>
+- discover_tools · function · L961-L967 — pub async fn discover_tools(&mut self, query: String) -> Result<u64>
+- poll_account_usage · function · L971-L973 — pub async fn poll_account_usage(&mut self) -> Result<()>
+- poll_account_usage_for_focus · function · L976-L987 — pub async fn poll_account_usage_for_focus(&mut self, focused: bool) -> Result<()>
+- resume_session · function · L990-L1020 — pub async fn resume_session(&mut self, session_id: &str) -> Result<()>
+- get_compacted_history · function · L1023-L1037 — pub async fn get_compacted_history(
+- rewind · function · L1040-L1051 — pub async fn rewind(&mut self, message_index: usize) -> Result<u64>
+- rewind_undo · function · L1054-L1063 — pub async fn rewind_undo(&mut self) -> Result<u64>
+- cycle_model · function · L1066-L1073 — pub async fn cycle_model(&mut self, direction: i8) -> Result<()>
+- refresh_models · function · L1076-L1082 — pub async fn refresh_models(&mut self) -> Result<()>
+- set_model · function · L1085-L1094 — pub async fn set_model(&mut self, model: &str) -> Result<u64>
+- set_route_selection · function · L1096-L1109 — pub async fn set_route_selection(
+- set_route_selection_for_failover · function · L1112-L1125 — pub async fn set_route_selection_for_failover(
+- set_subagent_model · function · L1128-L1135 — pub async fn set_subagent_model(&mut self, model: Option<String>) -> Result<()>
+- set_agent_model · function · L1139-L1155 — pub async fn set_agent_model(
+- run_subagent · function · L1158-L1174 — pub async fn run_subagent(
+- set_premium_mode · function · L1177-L1184 — pub async fn set_premium_mode(&mut self, mode: u8) -> Result<()>
+- set_reasoning_effort · function · L1187-L1195 — pub async fn set_reasoning_effort(&mut self, effort: &str) -> Result<()>
+- set_service_tier · function · L1198-L1205 — pub async fn set_service_tier(&mut self, service_tier: &str) -> Result<()>
+- set_transport · function · L1208-L1215 — pub async fn set_transport(&mut self, transport: &str) -> Result<()>
+- set_feature · function · L1218-L1226 — pub async fn set_feature(&mut self, feature: FeatureToggle, enabled: bool) -> Result<()>
+- set_compaction_mode · function · L1229-L1236 — pub async fn set_compaction_mode(&mut self, mode: crate::config::CompactionMode) -> Result<()>
+- set_session_saved · function · L1239-L1247 — pub async fn set_session_saved(&mut self, saved: bool, label: Option<String>) -> Result<()>
+- persist_session · function · L1250-L1255 — pub async fn persist_session(&mut self) -> Result<u64>
+- rename_session · function · L1257-L1264 — pub async fn rename_session(&mut self, title: Option<String>) -> Result<()>
+- send_transcript · function · L1267-L1280 — pub async fn send_transcript(
+- send_input_shell · function · L1283-L1289 — pub async fn send_input_shell(&mut self, command: String) -> Result<u64>
+- send_stdin_response · function · L1292-L1300 — pub async fn send_stdin_response(&mut self, request_id: &str, input: &str) -> Result<()>
+- cancel · function · L1303-L1305 — pub async fn cancel(&mut self) -> Result<()>
+- cancel_with_reason · function · L1308-L1315 — pub async fn cancel_with_reason(&mut self, reason: &'static str) -> Result<()>
+- background_tool · function · L1318-L1325 — pub async fn background_tool(&mut self) -> Result<()>
+- soft_interrupt · function · L1329-L1349 — pub async fn soft_interrupt(
+- cancel_soft_interrupts_by_id · function · L1354-L1364 — pub async fn cancel_soft_interrupts_by_id(&mut self, client_ids: Vec<String>) -> Result<u64>
+- cancel_soft_interrupts · function · L1366-L1374 — pub async fn cancel_soft_interrupts(&mut self) -> Result<()>
+- split · function · L1377-L1383 — pub async fn split(&mut self) -> Result<u64>
+- transfer · function · L1386-L1392 — pub async fn transfer(&mut self) -> Result<u64>
+- compact · function · L1395-L1401 — pub async fn compact(&mut self) -> Result<u64>
+- trigger_memory_extraction · function · L1404-L1409 — pub async fn trigger_memory_extraction(&mut self) -> Result<()>
+- send_client_debug_response · function · L1413-L1416 — pub async fn send_client_debug_response(&mut self, id: u64, output: String) -> Result<()>
+- take_buffered_line · function · L1421-L1454 — fn take_buffered_line(&mut self) -> Option<Vec<u8>>
+- writer · function · L1457-L1459 — pub fn writer(&self) -> Arc<Mutex<WriteHalf>>
+- session_id · function · L1462-L1464 — pub fn session_id(&self) -> Option<&str>
+- dummy · function · L1468-L1500 — pub fn dummy() -> Self
+- take_dummy_peer · function · L1503-L1505 — pub(crate) fn take_dummy_peer(&mut self) -> Option<Stream>
+- next_request_id_for_test · function · L1508-L1510 — pub(crate) fn next_request_id_for_test(&self) -> u64
+- set_session_id · function · L1513-L1520 — pub fn set_session_id(&mut self, id: String)
+- has_loaded_history · function · L1523-L1525 — pub fn has_loaded_history(&self) -> bool
+- has_buffered_inbound_frame · function · L1531-L1533 — pub fn has_buffered_inbound_frame(&self) -> bool
+- mark_history_loaded · function · L1536-L1538 — pub fn mark_history_loaded(&mut self)
+- handle_tool_start · function · L1541-L1543 — pub fn handle_tool_start(&mut self, id: &str, name: &str)
+- handle_tool_input · function · L1546-L1548 — pub fn handle_tool_input(&mut self, id: Option<&str>, delta: &str)
+- get_tool_input · function · L1551-L1553 — pub fn get_tool_input(&self, id: &str) -> serde_json::Value
+- handle_tool_exec · function · L1556-L1558 — pub fn handle_tool_exec(&mut self, id: &str, name: &str)
+- handle_tool_done · function · L1561-L1563 — pub fn handle_tool_done(&mut self, id: &str, name: &str, output: &str) -> String
+- clear_pending · function · L1566-L1568 — pub fn clear_pending(&mut self)
+- call_output_tokens_seen · function · L1571-L1573 — pub fn call_output_tokens_seen(&mut self) -> &mut u64
+- reset_call_output_tokens_seen · function · L1576-L1578 — pub fn reset_call_output_tokens_seen(&mut self)
+- event_state · module · L1582-L1582 — mod event_state;
+- tests · module · L1586-L1586 — mod tests;

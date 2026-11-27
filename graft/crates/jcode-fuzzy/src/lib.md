@@ -1,0 +1,68 @@
+# crates/jcode-fuzzy/src/lib.rs
+
+- search_scores · module · L8-L8 — mod search_scores;
+- is_boundary · function · L11-L13 — fn is_boundary(c: char) -> bool
+- MATCH · constant · L15-L15 — const MATCH: i32 = 16;
+- CONSECUTIVE · constant · L16-L16 — const CONSECUTIVE: i32 = 8;
+- BOUNDARY · constant · L17-L17 — const BOUNDARY: i32 = 9;
+- FIRST · constant · L18-L18 — const FIRST: i32 = 12;
+- GAP · constant · L19-L19 — const GAP: i32 = -3;
+- LEADING_GAP · constant · L20-L20 — const LEADING_GAP: i32 = -3;
+- SUBSTITUTION · constant · L21-L21 — const SUBSTITUTION: i32 = -10;
+- DELETION · constant · L22-L22 — const DELETION: i32 = -12;
+- TRANSPOSITION · constant · L23-L23 — const TRANSPOSITION: i32 = 2 * MATCH - 22;
+- EXACT · constant · L24-L24 — const EXACT: i32 = 32;
+- FuzzyMatch · struct · L28-L34 — pub struct FuzzyMatch
+- PositionTracker · interface · L43-L47 — trait PositionTracker: Clone + Default
+- push_pos · function · L44-L44 — fn push_pos(&mut self, pos: usize);
+- pos_count · function · L45-L45 — fn pos_count(&self) -> usize;
+- first_pos · function · L46-L46 — fn first_pos(&self) -> Option<usize>;
+- push_pos · function · L50-L52 — fn push_pos(&mut self, pos: usize)
+- pos_count · function · L53-L55 — fn pos_count(&self) -> usize
+- first_pos · function · L56-L58 — fn first_pos(&self) -> Option<usize>
+- PositionSummary · struct · L64-L67 — struct PositionSummary
+- push_pos · function · L70-L75 — fn push_pos(&mut self, pos: usize)
+- pos_count · function · L76-L78 — fn pos_count(&self) -> usize
+- first_pos · function · L79-L81 — fn first_pos(&self) -> Option<usize>
+- Cell · struct · L85-L91 — struct Cell<P: PositionTracker>
+- keep_best · function · L93-L107 — fn keep_best<P: PositionTracker>(slot: &mut Option<Cell<P>>, candidate: Cell<P>)
+- error_budget · function · L109-L115 — fn error_budget(meaningful_len: usize) -> u8
+- score_floor · function · L120-L127 — fn score_floor(meaningful_len: usize) -> i32
+- floor_score · function · L135-L138 — fn floor_score(score: i32, first_pos: Option<usize>) -> i32
+- prefilter · function · L143-L217 — fn prefilter(pat: &[char], hay: &[char], max_err: u8) -> bool
+- run_dp · function · L223-L386 — fn run_dp<P: PositionTracker>(
+- fuzzy_match_impl · function · L388-L462 — fn fuzzy_match_impl<P: PositionTracker>(
+- fuzzy_match_full · function · L464-L482 — fn fuzzy_match_full(
+- fuzzy_score_only · function · L484-L499 — fn fuzzy_score_only(
+- fuzzy_match · function · L503-L505 — pub fn fuzzy_match(needle: &str, haystack: &str) -> Option<FuzzyMatch>
+- fuzzy_score · function · L508-L510 — pub fn fuzzy_score(needle: &str, haystack: &str) -> Option<i32>
+- fuzzy_score_tokens · function · L517-L519 — pub fn fuzzy_score_tokens(needle: &str, haystack: &str) -> Option<i32>
+- search_word_is_close · function · L525-L556 — pub fn search_word_is_close(needle: &str, word: &str) -> bool
+- PreparedTokenQuery · struct · L564-L567 — pub struct PreparedTokenQuery
+- search_text_tolerates_typos_without_dropping_query_words · function · L570-L576 — fn search_text_tolerates_typos_without_dropping_query_words()
+- prose_search_rejects_scattered_letters_but_keeps_near_typos · function · L579-L599 — fn prose_search_rejects_scattered_letters_but_keeps_near_typos()
+- PreparedWord · struct · L601-L606 — struct PreparedWord
+- ScoreScratch · struct · L609-L614 — struct ScoreScratch
+- new · function · L617-L635 — pub fn new(needle: &str) -> Self
+- matches_search_text · function · L639-L653 — pub fn matches_search_text(&self, haystack: &str) -> bool
+- score · function · L656-L670 — pub fn score(&self, haystack: &str) -> Option<i32>
+- score_prepared_word · function · L675-L718 — fn score_prepared_word(
+- fuzzy_match_positions · function · L721-L725 — pub fn fuzzy_match_positions(needle: &str, haystack: &str) -> Vec<usize>
+- fuzzy_match_token_positions · function · L731-L739 — pub fn fuzzy_match_token_positions(needle: &str, haystack: &str) -> Vec<usize>
+- command_fuzzy_match · function · L744-L746 — pub fn command_fuzzy_match(needle: &str, haystack: &str) -> Option<FuzzyMatch>
+- command_fuzzy_score · function · L749-L751 — pub fn command_fuzzy_score(needle: &str, haystack: &str) -> Option<i32>
+- command_fuzzy_match_positions · function · L754-L758 — pub fn command_fuzzy_match_positions(needle: &str, haystack: &str) -> Vec<usize>
+- tests · module · L761-L880 — mod tests
+- search_text_tolerates_typos_without_short_query_noise · function · L765-L778 — fn search_text_tolerates_typos_without_short_query_noise()
+- free_form_matching_tolerates_common_typos · function · L781-L786 — fn free_form_matching_tolerates_common_typos()
+- exact_and_prefix_matches_outrank_typo_matches · function · L789-L795 — fn exact_and_prefix_matches_outrank_typo_matches()
+- exact_token_match_outranks_a_longer_prefix_token · function · L798-L802 — fn exact_token_match_outranks_a_longer_prefix_token()
+- command_matching_preserves_anchor_and_positions · function · L805-L809 — fn command_matching_preserves_anchor_and_positions()
+- rejects_short_or_distant_noise · function · L812-L815 — fn rejects_short_or_distant_noise()
+- token_scoring_does_not_stitch_across_metadata_fields · function · L818-L821 — fn token_scoring_does_not_stitch_across_metadata_fields()
+- multi_word_queries_require_every_word_to_match · function · L824-L829 — fn multi_word_queries_require_every_word_to_match()
+- multi_word_queries_combine_out_of_order_terms_and_typos · function · L832-L835 — fn multi_word_queries_combine_out_of_order_terms_and_typos()
+- token_positions_highlight_out_of_order_terms · function · L838-L844 — fn token_positions_highlight_out_of_order_terms()
+- weak_scattered_matches_are_discarded · function · L847-L855 — fn weak_scattered_matches_are_discarded()
+- short_queries_match_late_in_long_tokens · function · L858-L872 — fn short_queries_match_late_in_long_tokens()
+- earlier_matches_still_outrank_later_ones · function · L875-L879 — fn earlier_matches_still_outrank_later_ones()

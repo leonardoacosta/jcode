@@ -1,0 +1,27 @@
+# tests/e2e/disconnect.rs
+
+- StreamingProvider · struct · L7-L7 — struct StreamingProvider;
+- complete · function · L11-L22 — async fn complete(
+- name · function · L24-L26 — fn name(&self) -> &str
+- fork · function · L28-L30 — fn fork(&self) -> Arc<dyn Provider>
+- Turn · enum · L34-L38 — enum Turn
+- abrupt_disconnect · function · L40-L167 — async fn abrupt_disconnect(turn: Turn, continue_on_disconnect: bool) -> Result<()>
+- desktop_force_quit_while_idle_closes_session · function · L170-L172 — async fn desktop_force_quit_while_idle_closes_session() -> Result<()>
+- desktop_force_quit_after_done_preserves_completed_session · function · L175-L177 — async fn desktop_force_quit_after_done_preserves_completed_session() -> Result<()>
+- desktop_force_quit_while_streaming_marks_session_crashed · function · L180-L182 — async fn desktop_force_quit_while_streaming_marks_session_crashed() -> Result<()>
+- ReconnectProvider · struct · L185-L188 — struct ReconnectProvider
+- complete · function · L192-L217 — async fn complete(
+- name · function · L219-L221 — fn name(&self) -> &str
+- fork · function · L223-L225 — fn fork(&self) -> Arc<dyn Provider>
+- send_native · function · L228-L234 — async fn send_native<W: tokio::io::AsyncWrite + Unpin>(
+- native_until · function · L236-L257 — async fn native_until<R: tokio::io::AsyncRead + Unpin>(
+- RemoteTurnEnd · enum · L260-L264 — enum RemoteTurnEnd
+- assert_retained_and_reconnect · function · L267-L297 — async fn assert_retained_and_reconnect(socket: &std::path::Path, session_id: &str) -> Result<()>
+- remote_disconnect_turn · function · L299-L526 — async fn remote_disconnect_turn(end: RemoteTurnEnd) -> Result<()>
+- remote_disconnect_reattaches_twice_and_finishes_original_turn · function · L529-L531 — async fn remote_disconnect_reattaches_twice_and_finishes_original_turn() -> Result<()>
+- remote_disconnect_finishes_without_reattach_and_retains_session · function · L534-L536 — async fn remote_disconnect_finishes_without_reattach_and_retains_session() -> Result<()>
+- remote_disconnect_reattaches_and_cancels_original_turn · function · L539-L541 — async fn remote_disconnect_reattaches_and_cancels_original_turn() -> Result<()>
+- remote_disconnect_while_idle_retains_session · function · L544-L546 — async fn remote_disconnect_while_idle_retains_session() -> Result<()>
+- remote_disconnect_after_done_retains_session · function · L549-L551 — async fn remote_disconnect_after_done_retains_session() -> Result<()>
+- native_ping_ping_subscribe_history_keeps_one_socket · function · L554-L619 — async fn native_ping_ping_subscribe_history_keeps_one_socket() -> Result<()>
+- desktop_busy_owner_disconnect_with_successor_finishes_original_turn · function · L625-L734 — async fn desktop_busy_owner_disconnect_with_successor_finishes_original_turn() -> Result<()>

@@ -1,0 +1,28 @@
+# crates/jcode-base/src/usage/anthropic_fable_reset.rs
+
+- BASE · constant · L10-L10 — const BASE: &str = "https://api.anthropic.com";
+- STATUS · constant · L11-L11 — const STATUS: &str = "/api/oauth/usage?cedar_ember=1&skip_spend=1";
+- ResetRequest · struct · L15-L19 — struct ResetRequest<'a>
+- InvalidateOnDrop · struct · L21-L21 — struct InvalidateOnDrop<'a>(&'a str);
+- drop · function · L24-L26 — fn drop(&mut self)
+- Status · struct · L30-L35 — struct Status
+- Grant · struct · L38-L48 — struct Grant
+- valid_id · function · L50-L56 — fn valid_id(id: &str) -> bool
+- eligible_grant · function · L58-L83 — fn eligible_grant(status: &Status, now: chrono::DateTime<chrono::Utc>) -> Option<&Grant>
+- profile_identity · function · L85-L97 — fn profile_identity(profile: &serde_json::Value) -> Result<(String, String)>
+- status · function · L99-L114 — async fn status(client: &reqwest::Client, base: &str, token: &str) -> Result<Option<Status>>
+- auto_reset_fable_usage · function · L122-L142 — pub(crate) async fn auto_reset_fable_usage(account_label: Option<String>) -> Result<bool>
+- redeem · function · L144-L252 — async fn redeem(
+- Claim · struct · L226-L229 — struct Claim
+- tests · module · L255-L526 — mod tests
+- reset_request_matches_legacy_bytes_after_sources_drop_without_sending · function · L259-L277 — fn reset_request_matches_legacy_bytes_after_sources_drop_without_sending()
+- fixture · function · L279-L286 — fn fixture() -> Status
+- actual_cli_schema_selects_fable_not_session_grants · function · L288-L296 — fn actual_cli_schema_selects_fable_not_session_grants()
+- refuse_non_exhaustion_blocking_expiry_and_unrelated_limits · function · L298-L320 — fn refuse_non_exhaustion_blocking_expiry_and_unrelated_limits()
+- profile_requires_both_verified_identities · function · L322-L331 — fn profile_requires_both_verified_identities()
+- fable_automatic_reset_is_independently_opt_in · function · L333-L335 — fn fable_automatic_reset_is_independently_opt_in()
+- mock · function · L337-L414 — async fn mock(
+- fixture_json · function · L416-L421 — fn fixture_json() -> serde_json::Value
+- concurrent_agents_spend_one_grant_only_after_verified_clear · function · L424-L460 — async fn concurrent_agents_spend_one_grant_only_after_verified_clear()
+- uncertain_claim_is_suppressed_on_retry_and_restart · function · L463-L499 — async fn uncertain_claim_is_suppressed_on_retry_and_restart()
+- fable_weekly_refund_recovers_without_zeroing_whole_weekly_window · function · L502-L525 — async fn fable_weekly_refund_recovers_without_zeroing_whole_weekly_window()

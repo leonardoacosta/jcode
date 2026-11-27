@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/tool/codemode_tests.rs
+
+- description_is_compact_and_preserves_execution_contract · function · L6-L29 — fn description_is_compact_and_preserves_execution_contract()
+- JsonTool · struct · L31-L31 — struct JsonTool;
+- name · function · L35-L37 — fn name(&self) -> &str
+- description · function · L39-L41 — fn description(&self) -> &str
+- parameters_schema · function · L43-L45 — fn parameters_schema(&self) -> Value
+- execute · function · L47-L52 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- TextTool · struct · L55-L55 — struct TextTool;
+- name · function · L59-L61 — fn name(&self) -> &str
+- description · function · L63-L65 — fn description(&self) -> &str
+- parameters_schema · function · L67-L69 — fn parameters_schema(&self) -> Value
+- execute · function · L71-L75 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- ctx · function · L78-L88 — fn ctx(session: &str) -> ToolContext
+- registry · function · L90-L101 — async fn registry() -> Registry
+- codemode_exposes_only_unified_mcp_and_can_search · function · L104-L149 — async fn codemode_exposes_only_unified_mcp_and_can_search()
+- script_composes_registry_tools · function · L152-L173 — async fn script_composes_registry_tools()
+- script_cannot_call_itself_or_batch · function · L176-L201 — async fn script_cannot_call_itself_or_batch()
+- session_policy_applies_inside_scripts · function · L204-L219 — async fn session_policy_applies_inside_scripts()
+- uncaught_errors_without_side_effects_are_tool_errors · function · L222-L233 — async fn uncaught_errors_without_side_effects_are_tool_errors()
+- report_renders_strings_raw_and_lists_store_keys · function · L236-L249 — fn report_renders_strings_raw_and_lists_store_keys()
+- RuntimeDirRestore · struct · L251-L251 — struct RuntimeDirRestore(Option<std::ffi::OsString>);
+- drop · function · L254-L259 — fn drop(&mut self)
+- controlled_session_subcalls_keep_generation_across_spawn · function · L266-L305 — async fn controlled_session_subcalls_keep_generation_across_spawn()

@@ -1,0 +1,40 @@
+# crates/jcode-tui/src/tui/session_picker/loading_tests.rs
+
+- fork_intent_message · function · L3-L5 — fn fork_intent_message(text: &str) -> serde_json::Value
+- FORK_INTENT_MARKER · constant · L7-L7 — const FORK_INTENT_MARKER: &str = "<system-reminder>\nThis session was forked (split) from session flamingo (session_flamingo) by the user.\n</system-reminder>";
+- fork_intent_real_penguin_render_search_outranks_desktop_bug · function · L11-L60 — fn fork_intent_real_penguin_render_search_outranks_desktop_bug()
+- EnvVarGuard · struct · L69-L72 — struct EnvVarGuard
+- set_path · function · L75-L79 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- set_str · function · L81-L85 — fn set_str(key: &'static str, value: &str) -> Self
+- drop · function · L89-L95 — fn drop(&mut self)
+- write_picker_snapshot · function · L98-L105 — fn write_picker_snapshot(path: &Path, has_messages: bool)
+- global_recency_budget_merges_sources_without_counting_test_sessions · function · L108-L169 — fn global_recency_budget_merges_sources_without_counting_test_sessions()
+- grouped_refresh_bypasses_fresh_in_process_session_cache · function · L172-L196 — fn grouped_refresh_bypasses_fresh_in_process_session_cache()
+- recently_closed_session_is_sent_before_cache_and_not_rolled_back · function · L199-L263 — fn recently_closed_session_is_sent_before_cache_and_not_rolled_back()
+- failed_cloud_refresh_warns_without_discarding_local_or_last_good_cloud_rows · function · L266-L325 — fn failed_cloud_refresh_warns_without_discarding_local_or_last_good_cloud_rows()
+- load_sessions_includes_claude_code_sessions_from_external_home · function · L328-L383 — fn load_sessions_includes_claude_code_sessions_from_external_home()
+- load_sessions_hides_external_sessions_when_opted_out · function · L389-L444 — fn load_sessions_hides_external_sessions_when_opted_out()
+- load_claude_code_preview_reads_transcript_messages · function · L447-L489 — fn load_claude_code_preview_reads_transcript_messages()
+- load_sessions_includes_modern_codex_sessions · function · L492-L525 — fn load_sessions_includes_modern_codex_sessions()
+- load_codex_preview_preserves_blank_line_between_tool_transcript_and_followup_prose · function · L528-L553 — fn load_codex_preview_preserves_blank_line_between_tool_transcript_and_followup_prose()
+- load_codex_preview_reads_only_tail_of_large_transcript · function · L556-L615 — fn load_codex_preview_reads_only_tail_of_large_transcript()
+- load_claude_code_preview_reads_only_tail_of_large_transcript · function · L618-L663 — fn load_claude_code_preview_reads_only_tail_of_large_transcript()
+- load_sessions_prefers_custom_title_over_generated_title · function · L666-L701 — fn load_sessions_prefers_custom_title_over_generated_title()
+- load_sessions_prefers_todo_group_over_generated_title · function · L704-L799 — fn load_sessions_prefers_todo_group_over_generated_title()
+- load_sessions_keeps_custom_title_over_todo_group · function · L802-L859 — fn load_sessions_keeps_custom_title_over_todo_group()
+- load_sessions_caps_saved_sessions_within_global_scan_limit · function · L862-L919 — fn load_sessions_caps_saved_sessions_within_global_scan_limit()
+- load_sessions_preserves_snapshot_saved_when_journal_meta_omits_saved · function · L922-L970 — fn load_sessions_preserves_snapshot_saved_when_journal_meta_omits_saved()
+- saved_metadata_detection_scans_tail_without_full_json_parse · function · L973-L986 — fn saved_metadata_detection_scans_tail_without_full_json_parse()
+- raw_content_system_reminder_detection_handles_arrays_strings_and_unicode · function · L989-L1008 — fn raw_content_system_reminder_detection_handles_arrays_strings_and_unicode()
+- session_matches_query_searches_jcode_transcript_contents · function · L1011-L1047 — fn session_matches_query_searches_jcode_transcript_contents()
+- jcode_search_index_keeps_late_turns_after_reaching_its_budget · function · L1050-L1091 — fn jcode_search_index_keeps_late_turns_after_reaching_its_budget()
+- raw_search_excerpt_samples_suffix_of_one_long_message_without_splitting_utf8 · function · L1094-L1109 — fn raw_search_excerpt_samples_suffix_of_one_long_message_without_splitting_utf8()
+- session_matches_query_searches_external_codex_transcript_contents · function · L1112-L1140 — fn session_matches_query_searches_external_codex_transcript_contents()
+- load_sessions_surfaces_external_cursor_transcript · function · L1143-L1183 — fn load_sessions_surfaces_external_cursor_transcript()
+- benchmark_real_resume_loading_phases · function · L1187-L1305 — fn benchmark_real_resume_loading_phases()
+- benchmark_real_resume_loading_reports_timings · function · L1309-L1336 — fn benchmark_real_resume_loading_reports_timings()
+- benchmark_resume_loading_reports_timings · function · L1339-L1408 — fn benchmark_resume_loading_reports_timings()
+- loading_scope · module · L1411-L1411 — mod loading_scope;
+- summary_tracks_newest_message_timestamp_across_roles · function · L1414-L1442 — fn summary_tracks_newest_message_timestamp_across_roles()
+- external_previews_index_tool_blocks_at_their_own_weight · function · L1445-L1499 — fn external_previews_index_tool_blocks_at_their_own_weight()
+- additional_fork_intent_snapshot_uses_first_genuine_request_and_keeps_inherited_search · module · L1502-L1502 — mod additional_fork_intent_snapshot_uses_first_genuine_request_and_keeps_inherited_search;

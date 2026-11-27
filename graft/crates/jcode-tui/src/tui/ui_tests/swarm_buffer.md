@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/ui_tests/swarm_buffer.rs
+
+- strip_member · function · L10-L27 — fn strip_member(id: &str, name: &str, status: &str) -> SwarmMemberStatus
+- buffer_rows · function · L30-L41 — fn buffer_rows(terminal: &Terminal<TestBackend>) -> Vec<String>
+- fact_test_state · function · L43-L80 — fn fact_test_state(input: String, scheduled: bool) -> TestState
+- swarm_full_draw_has_no_bottom_worker_strip_even_when_focused_without_todos · function · L83-L114 — fn swarm_full_draw_has_no_bottom_worker_strip_even_when_focused_without_todos()
+- swarm_chat_full_draw_survives_narrow_width_sweep · function · L117-L143 — fn swarm_chat_full_draw_survives_narrow_width_sweep()
+- swarm_chat_full_draw_handles_wide_glyph_member_names · function · L146-L180 — fn swarm_chat_full_draw_handles_wide_glyph_member_names()
+- swarm_full_page_still_renders_worker_status · function · L183-L201 — fn swarm_full_page_still_renders_worker_status()
+- notification_full_draw_survives_overwide_swarm_plan_notice · function · L204-L235 — fn notification_full_draw_survives_overwide_swarm_plan_notice()
+- retired_swarm_dock_never_stands_down_strip_through_margin_changes · function · L240-L267 — fn retired_swarm_dock_never_stands_down_strip_through_margin_changes()
+- retired_swarm_dock_full_render_keeps_margin_empty · function · L272-L308 — fn retired_swarm_dock_full_render_keeps_margin_empty()
+- draw_notification_clips_overwide_notice_at_area_width · function · L311-L344 — fn draw_notification_clips_overwide_notice_at_area_width()
+- overscroll_line_state · function · L346-L360 — fn overscroll_line_state() -> TestState
+- overscroll_line_row · function · L362-L378 — fn overscroll_line_row(state: &TestState, width: u16) -> String
+- overscroll_line_orders_dir_git_context_then_model_on_the_right · function · L381-L403 — fn overscroll_line_orders_dir_git_context_then_model_on_the_right()
+- overscroll_line_compacts_before_dropping_and_always_keeps_dir_model_context · function · L406-L428 — fn overscroll_line_compacts_before_dropping_and_always_keeps_dir_model_context()
+- overscroll_line_compact_steps_at_medium_width · function · L431-L437 — fn overscroll_line_compact_steps_at_medium_width()
+- overscroll_line_shows_remaining_account_allowance_after_provider · function · L440-L466 — fn overscroll_line_shows_remaining_account_allowance_after_provider()
+- overscroll_model_is_pink · function · L469-L497 — fn overscroll_model_is_pink()
+- widgets_render_detail_layer_without_repeating_status_line_facts · function · L503-L575 — fn widgets_render_detail_layer_without_repeating_status_line_facts()

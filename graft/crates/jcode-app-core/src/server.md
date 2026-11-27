@@ -1,0 +1,137 @@
+# crates/jcode-app-core/src/server.rs
+
+- account_usage · module · L1-L1 — mod account_usage;
+- available_models_cache · module · L2-L2 — mod available_models_cache;
+- available_models_dedup · module · L3-L3 — mod available_models_dedup;
+- await_members_state · module · L4-L4 — mod await_members_state;
+- background_tasks · module · L7-L7 — mod background_tasks;
+- client_actions · module · L8-L8 — mod client_actions;
+- client_api · module · L9-L9 — mod client_api;
+- client_comm · module · L10-L10 — mod client_comm;
+- client_comm_channels · module · L11-L11 — mod client_comm_channels;
+- client_comm_context · module · L12-L12 — mod client_comm_context;
+- client_comm_message · module · L13-L13 — mod client_comm_message;
+- client_comm_swarms · module · L14-L14 — mod client_comm_swarms;
+- client_disconnect_cleanup · module · L15-L15 — mod client_disconnect_cleanup;
+- client_lifecycle · module · L16-L16 — mod client_lifecycle;
+- client_lifecycle_logging · module · L17-L17 — mod client_lifecycle_logging;
+- client_lightweight_control · module · L18-L18 — mod client_lightweight_control;
+- client_session · module · L19-L19 — mod client_session;
+- client_state · module · L20-L20 — mod client_state;
+- model_refresh · module · L21-L21 — mod model_refresh;
+- session_connections · module · L22-L22 — mod session_connections;
+- session_control · module · L23-L23 — pub(crate) mod session_control;
+- client_writer · module · L25-L25 — mod client_writer;
+- comm_await · module · L26-L26 — mod comm_await;
+- comm_control · module · L27-L27 — mod comm_control;
+- comm_plan · module · L28-L28 — mod comm_plan;
+- comm_session · module · L29-L29 — mod comm_session;
+- comm_sync · module · L30-L30 — mod comm_sync;
+- configured_name · module · L31-L31 — mod configured_name;
+- debug · module · L33-L33 — mod debug;
+- debug_ambient · module · L34-L34 — mod debug_ambient;
+- debug_command_exec · module · L35-L35 — mod debug_command_exec;
+- debug_events · module · L36-L36 — mod debug_events;
+- debug_help · module · L37-L37 — mod debug_help;
+- debug_jobs · module · L38-L38 — mod debug_jobs;
+- debug_server_state · module · L39-L39 — mod debug_server_state;
+- debug_session_admin · module · L40-L40 — mod debug_session_admin;
+- debug_swarm_read · module · L41-L41 — mod debug_swarm_read;
+- debug_swarm_write · module · L42-L42 — mod debug_swarm_write;
+- debug_testers · module · L43-L43 — mod debug_testers;
+- durable_state · module · L44-L44 — mod durable_state;
+- group_transfer · module · L45-L45 — mod group_transfer;
+- headless · module · L46-L46 — mod headless;
+- idle_hibernation · module · L49-L49 — mod idle_hibernation;
+- jade_relay · module · L50-L50 — mod jade_relay;
+- lane_dispatch · module · L51-L51 — mod lane_dispatch;
+- lifecycle · module · L52-L52 — mod lifecycle;
+- live_status · module · L53-L53 — mod live_status;
+- live_turn · module · L54-L54 — mod live_turn;
+- mobile_local · module · L55-L55 — mod mobile_local;
+- provider_control · module · L56-L56 — mod provider_control;
+- reload · module · L57-L57 — mod reload;
+- reload_recovery · module · L58-L58 — mod reload_recovery;
+- reload_state · module · L59-L59 — mod reload_state;
+- reload_trace · module · L60-L60 — mod reload_trace;
+- runtime · module · L61-L61 — mod runtime;
+- runtime_commands · module · L62-L62 — mod runtime_commands;
+- runtime_special_commands · module · L63-L63 — mod runtime_special_commands;
+- runtime_ssh_accounts · module · L64-L64 — mod runtime_ssh_accounts;
+- runtime_ssh_host · module · L65-L65 — mod runtime_ssh_host;
+- runtime_ssh_loops · module · L66-L66 — mod runtime_ssh_loops;
+- runtime_ssh_sessions · module · L67-L67 — mod runtime_ssh_sessions;
+- runtime_upgrade · module · L68-L68 — mod runtime_upgrade;
+- socket · module · L69-L69 — mod socket;
+- swarm · module · L70-L70 — mod swarm;
+- swarm_channels · module · L71-L71 — mod swarm_channels;
+- swarm_labels · module · L72-L72 — mod swarm_labels;
+- swarm_mutation_state · module · L73-L73 — mod swarm_mutation_state;
+- swarm_persistence · module · L74-L74 — pub(crate) mod swarm_persistence;
+- swarm_todo_link · module · L75-L75 — pub(crate) mod swarm_todo_link;
+- swarm_watchdog · module · L76-L76 — mod swarm_watchdog;
+- turn_failover · module · L77-L77 — mod turn_failover;
+- util · module · L78-L78 — mod util;
+- worker_revive · module · L79-L79 — mod worker_revive;
+- session_manager · module · L135-L135 — mod session_manager;
+- SessionAgents · type · L137-L137 — pub(super) type SessionAgents = Arc<SessionManager>;
+- ChannelSubscriptions · type · L138-L139 — pub(super) type ChannelSubscriptions =
+- idle_monitor_should_start · function · L141-L143 — fn idle_monitor_should_start(client_count: usize, has_live_headless_worker: bool) -> bool
+- reload_marker_policy · function · L168-L174 — fn reload_marker_policy(socket_path: &std::path::Path) -> reload_state::ForeignMarkerPolicy
+- has_live_headless_worker · function · L176-L184 — async fn has_live_headless_worker(sessions: &SessionAgents, swarm_state: &SwarmState) -> bool
+- remove_session_entry · function · L190-L200 — pub(super) async fn remove_session_entry(
+- set_live_session_env · function · L204-L214 — pub(super) async fn set_live_session_env(
+- SERVER_NAME_ENV · constant · L216-L216 — const SERVER_NAME_ENV: &str = "JCODE_SERVER_NAME";
+- SERVER_DISPLAY_NAME_ENV · constant · L217-L217 — const SERVER_DISPLAY_NAME_ENV: &str = "JCODE_SERVER_DISPLAY_NAME";
+- MAX_CONFIGURED_SERVER_NAME_LEN · constant · L218-L218 — const MAX_CONFIGURED_SERVER_NAME_LEN: usize = 64;
+- SWARM_TERMINAL_MEMBER_GC_BATCH_SIZE · constant · L219-L219 — const SWARM_TERMINAL_MEMBER_GC_BATCH_SIZE: usize = 64;
+- prune_expired_terminal_swarm_members · function · L221-L287 — async fn prune_expired_terminal_swarm_members(
+- reap_idle_spawned_workers · function · L299-L386 — async fn reap_idle_spawned_workers(
+- persist_swarm_state_for · function · L388-L409 — pub(super) async fn persist_swarm_state_for(swarm_id: &str, swarm_state: &SwarmState)
+- remove_persisted_swarm_state_for · function · L411-L443 — pub(super) async fn remove_persisted_swarm_state_for(swarm_id: &str, swarm_state: &SwarmState)
+- headless_member_should_restore · function · L445-L451 — fn headless_member_should_restore(status: &str, is_headless: bool) -> bool
+- headless_reload_continuation_message · function · L453-L456 — fn headless_reload_continuation_message(reload_ctx: Option<ReloadContext>) -> Option<String>
+- configured_server_name · function · L458-L463 — fn configured_server_name(cli_name: Option<String>) -> Option<String>
+- configured_server_name_from_env · function · L465-L473 — fn configured_server_name_from_env() -> Option<String>
+- HeadlessRecoveryStats · struct · L476-L481 — struct HeadlessRecoveryStats
+- runtime_memory_sampling · module · L484-L484 — mod runtime_memory_sampling;
+- state · module · L489-L489 — mod state;
+- subscribe_working_dir · module · L490-L490 — mod subscribe_working_dir;
+- control_reader_version · function · L540-L542 — pub fn control_reader_version() -> u32
+- file_activity · module · L549-L549 — mod file_activity;
+- file_touch_service · module · L556-L556 — mod file_touch_service;
+- socket_tests · module · L560-L560 — mod socket_tests;
+- startup_tests · module · L563-L563 — mod startup_tests;
+- queue_tests · module · L566-L566 — mod queue_tests;
+- file_activity_tests · module · L569-L569 — mod file_activity_tests;
+- IDLE_TIMEOUT_SECS · constant · L572-L572 — const IDLE_TIMEOUT_SECS: u64 = 300;
+- EMBEDDING_IDLE_CHECK_SECS · constant · L577-L577 — const EMBEDDING_IDLE_CHECK_SECS: u64 = 10;
+- reload_marker_scope_tests · module · L581-L581 — mod reload_marker_scope_tests;
+- idle_monitor_tests · module · L585-L585 — mod idle_monitor_tests;
+- HEAP_RETENTION_CHECK_SECS · constant · L588-L588 — const HEAP_RETENTION_CHECK_SECS: u64 = 120;
+- EXIT_IDLE_TIMEOUT · constant · L591-L591 — pub const EXIT_IDLE_TIMEOUT: i32 = 44;
+- Server · struct · L594-L649 — pub struct Server
+- server_headless_recovery · module · L652-L652 — mod server_headless_recovery;
+- new · function · L655-L657 — pub fn new(provider: Arc<dyn Provider>) -> Self
+- new_with_name · function · L659-L739 — pub fn new_with_name(provider: Arc<dyn Provider>, server_name: Option<String>) -> Self
+- new_with_paths · function · L741-L750 — pub fn new_with_paths(
+- with_gateway_config · function · L752-L755 — pub fn with_gateway_config(mut self, gateway_config: crate::gateway::GatewayConfig) -> Self
+- identity · function · L758-L760 — pub fn identity(&self) -> &ServerIdentity
+- runtime · function · L762-L764 — fn runtime(&self) -> ServerRuntime
+- build_registry_info · function · L766-L779 — fn build_registry_info(&self) -> crate::registry::ServerInfo
+- spawn_registry_prewarm · function · L781-L792 — fn spawn_registry_prewarm(&self)
+- finish_startup_after_bind · function · L794-L872 — async fn finish_startup_after_bind(
+- spawn_background_tasks · function · L874-L1537 — fn spawn_background_tasks(
+- spawn_registry_metadata_publisher · function · L1539-L1564 — fn spawn_registry_metadata_publisher(&self, registry_info: crate::registry::ServerInfo)
+- spawn_power_inhibitor · function · L1577-L1641 — fn spawn_power_inhibitor(swarm_members: Arc<RwLock<HashMap<String, SwarmMember>>>)
+- RECONCILE_INTERVAL · constant · L1581-L1581 — const RECONCILE_INTERVAL: Duration = Duration::from_secs(5);
+- spawn_cloud_activity_keepalive · function · L1646-L1660 — fn spawn_cloud_activity_keepalive(swarm_members: Arc<RwLock<HashMap<String, SwarmMember>>>)
+- any_session_streaming · function · L1665-L1670 — async fn any_session_streaming(
+- monitor_bus · function · L1677-L2082 — async fn monitor_bus(
+- TOUCH_EXPIRY · constant · L1695-L1695 — const TOUCH_EXPIRY: Duration = Duration::from_secs(30 * 60); // 30 min
+- CLEANUP_INTERVAL · constant · L1696-L1696 — const CLEANUP_INTERVAL: Duration = Duration::from_secs(5 * 60); // 5 min
+- run · function · L2085-L2234 — pub async fn run(&self) -> Result<()>
+- spawn_gateway · function · L2239-L2269 — async fn spawn_gateway(&self, runtime: ServerRuntime)
+- tests · module · L2275-L2275 — mod tests;
+- run_blocking_io · function · L2282-L2289 — pub(crate) fn run_blocking_io<R>(f: impl FnOnce() -> R) -> R
+- thread_cpu_ms · function · L2293-L2307 — pub(crate) fn thread_cpu_ms() -> f64

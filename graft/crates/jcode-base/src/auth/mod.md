@@ -1,0 +1,107 @@
+# crates/jcode-base/src/auth/mod.rs
+
+- account_pool · module · L1-L1 — pub mod account_pool;
+- account_store · module · L2-L2 — pub mod account_store;
+- active_method · module · L3-L3 — pub mod active_method;
+- antigravity · module · L4-L4 — pub mod antigravity;
+- azure · module · L5-L5 — pub mod azure;
+- claude · module · L6-L6 — pub mod claude;
+- codex · module · L7-L7 — pub mod codex;
+- commands · module · L8-L8 — mod commands;
+- copilot · module · L9-L9 — pub mod copilot;
+- cursor · module · L10-L10 — pub mod cursor;
+- doctor · module · L11-L11 — pub mod doctor;
+- env_facts · module · L12-L12 — pub mod env_facts;
+- external · module · L13-L13 — pub mod external;
+- gemini · module · L14-L14 — pub mod gemini;
+- google · module · L15-L15 — pub mod google;
+- google_oauth · module · L16-L16 — pub(crate) mod google_oauth;
+- grok_build · module · L17-L17 — pub mod grok_build;
+- integration · module · L18-L18 — pub mod integration;
+- lifecycle · module · L19-L19 — pub mod lifecycle;
+- login_diagnostics · module · L20-L20 — pub mod login_diagnostics;
+- login_ui · module · L21-L21 — pub mod login_ui;
+- muse · module · L22-L22 — pub mod muse;
+- oauth · module · L23-L23 — pub mod oauth;
+- refresh_coordinator · module · L24-L24 — pub(crate) mod refresh_coordinator;
+- refresh_state · module · L25-L25 — pub mod refresh_state;
+- router_transfer · module · L26-L26 — pub mod router_transfer;
+- status_detail · module · L27-L27 — mod status_detail;
+- status_types · module · L28-L28 — mod status_types;
+- test_sandbox · module · L30-L30 — pub mod test_sandbox;
+- transfer · module · L31-L31 — pub mod transfer;
+- validation · module · L32-L32 — pub mod validation;
+- CachedAuthStatus · type · L62-L62 — type CachedAuthStatus = (AuthStatus, Instant, Option<std::ffi::OsString>);
+- AUTH_STATUS_CACHE · constant · L64-L65 — static AUTH_STATUS_CACHE: std::sync::LazyLock<RwLock<Option<CachedAuthStatus>>> =
+- AUTH_STATUS_FAST_CACHE · constant · L66-L67 — static AUTH_STATUS_FAST_CACHE: std::sync::LazyLock<RwLock<Option<CachedAuthStatus>>> =
+- auth_cache_home_key · function · L69-L71 — fn auth_cache_home_key() -> Option<std::ffi::OsString>
+- AUTH_STATUS_CACHE_TTL_SECS · constant · L73-L73 — const AUTH_STATUS_CACHE_TTL_SECS: u64 = 30;
+- AUTH_STATUS_FAST_CACHE_TTL_SECS · constant · L74-L74 — const AUTH_STATUS_FAST_CACHE_TTL_SECS: u64 = 60;
+- AUTH_STATUS_GENERATION · constant · L82-L82 — static AUTH_STATUS_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- auth_status_generation · function · L85-L87 — pub fn auth_status_generation() -> u64
+- bump_auth_status_generation_for_tests · function · L94-L96 — pub fn bump_auth_status_generation_for_tests()
+- AUTH_REFRESH_IN_FLIGHT · constant · L101-L102 — static AUTH_REFRESH_IN_FLIGHT: std::sync::atomic::AtomicBool =
+- COMMAND_EXISTS_CACHE · constant · L107-L108 — static COMMAND_EXISTS_CACHE: std::sync::LazyLock<Mutex<HashMap<String, bool>>> =
+- AuthProbeMode · enum · L111-L114 — enum AuthProbeMode
+- browser_suppressed · function · L116-L122 — pub fn browser_suppressed(cli_no_browser: bool) -> bool
+- browser_unusable_here · function · L133-L140 — fn browser_unusable_here() -> bool
+- CHOICE · constant · L135-L135 — static CHOICE: std::sync::OnceLock<AuthMethodChoice> = std::sync::OnceLock::new();
+- running_in_test_harness · function · L151-L166 — pub fn running_in_test_harness() -> bool
+- IN_TEST_HARNESS · constant · L152-L152 — static IN_TEST_HARNESS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+- test_harness · module · L168-L168 — mod test_harness;
+- env_truthy · function · L171-L179 — fn env_truthy(key: &str) -> bool
+- auth_timing_logging_enabled · function · L181-L183 — fn auth_timing_logging_enabled() -> bool
+- openai_api_key_configured · function · L185-L189 — fn openai_api_key_configured() -> bool
+- auth_state_label · function · L191-L197 — fn auth_state_label(state: AuthState) -> &'static str
+- bool_label · function · L199-L201 — fn bool_label(value: bool) -> &'static str
+- log_auth_status_snapshot · function · L203-L223 — fn log_auth_status_snapshot(event: &str, status: &AuthStatus)
+- auth_readiness_for_provider · function · L225-L241 — fn auth_readiness_for_provider(
+- available_provider_base_readiness · function · L243-L253 — fn available_provider_base_readiness(provider: LoginProviderDescriptor) -> AuthReadinessLevel
+- model_smoke_readiness_for_provider · function · L255-L262 — fn model_smoke_readiness_for_provider(provider: LoginProviderDescriptor) -> AuthReadinessLevel
+- copilot_auth_state_from_credentials · function · L264-L274 — fn copilot_auth_state_from_credentials() -> (AuthState, bool)
+- check · function · L279-L299 — pub fn check() -> Self
+- check_fast · function · L308-L347 — pub fn check_fast() -> Self
+- PROBE_LOCK · constant · L329-L329 — static PROBE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+- prewarm_fast_in_background · function · L354-L363 — pub fn prewarm_fast_in_background()
+- check_fast_nonblocking · function · L380-L429 — pub fn check_fast_nonblocking() -> Self
+- has_any_available · function · L432-L445 — pub fn has_any_available(&self) -> bool
+- log_snapshot · function · L457-L483 — pub fn log_snapshot(&self, surface: &str)
+- has_any_untrusted_external_auth · function · L485-L492 — pub fn has_any_untrusted_external_auth() -> bool
+- state_for_key · function · L494-L516 — pub fn state_for_key(&self, key: LoginProviderAuthStateKey) -> AuthState
+- state_for_provider · function · L518-L588 — pub fn state_for_provider(&self, provider: LoginProviderDescriptor) -> AuthState
+- assessment_for_provider · function · L590-L813 — pub fn assessment_for_provider(
+- invalidate_cached_status · function · L821-L829 — pub fn invalidate_cached_status()
+- invalidate_cache · function · L832-L838 — pub fn invalidate_cache()
+- check_uncached · function · L840-L844 — fn check_uncached() -> Self
+- check_uncached_fast · function · L846-L865 — fn check_uncached_fast() -> Self
+- build_auth_status_uncached · function · L868-L932 — fn build_auth_status_uncached(mode: AuthProbeMode) -> (AuthStatus, Vec<(&'static str, u128)>)
+- record_auth_probe_step · function · L934-L942 — fn record_auth_probe_step(
+- refreshable_token_state · function · L955-L959 — fn refreshable_token_state(provider_id: &str, result: anyhow::Result<(bool, String)>) -> AuthState
+- refreshable_token_state_with · function · L964-L982 — fn refreshable_token_state_with(
+- probe_jcode_status · function · L984-L988 — fn probe_jcode_status(status: &mut AuthStatus)
+- probe_anthropic_status · function · L990-L1015 — fn probe_anthropic_status(status: &mut AuthStatus)
+- probe_openrouter_status · function · L1017-L1021 — fn probe_openrouter_status(status: &mut AuthStatus)
+- probe_azure_status · function · L1023-L1029 — fn probe_azure_status(status: &mut AuthStatus)
+- probe_bedrock_status · function · L1031-L1035 — fn probe_bedrock_status(status: &mut AuthStatus)
+- probe_openai_status · function · L1037-L1066 — fn probe_openai_status(status: &mut AuthStatus)
+- probe_copilot_status · function · L1068-L1075 — fn probe_copilot_status(status: &mut AuthStatus)
+- probe_cursor_status · function · L1077-L1101 — fn probe_cursor_status(status: &mut AuthStatus, mode: AuthProbeMode)
+- probe_google_status · function · L1103-L1117 — fn probe_google_status(status: &mut AuthStatus)
+- assessment_for_key · function · L1119-L1277 — fn assessment_for_key(
+- summarize_sources · function · L1279-L1307 — fn summarize_sources(
+- env_source · function · L1309-L1316 — fn env_source(env_key: &str) -> Option<(AuthCredentialSource, String)>
+- config_source · function · L1318-L1329 — fn config_source(
+- external_api_key_source · function · L1331-L1338 — fn external_api_key_source(env_key: &str) -> Option<(AuthCredentialSource, String)>
+- azure_entra_source · function · L1340-L1347 — fn azure_entra_source() -> Option<(AuthCredentialSource, String)>
+- anthropic_oauth_source · function · L1349-L1378 — fn anthropic_oauth_source(status: &AuthStatus) -> Option<(AuthCredentialSource, String)>
+- openai_oauth_source · function · L1380-L1407 — fn openai_oauth_source(status: &AuthStatus) -> Option<(AuthCredentialSource, String)>
+- gemini_source · function · L1409-L1436 — fn gemini_source() -> Option<(AuthCredentialSource, String)>
+- antigravity_source · function · L1438-L1453 — fn antigravity_source() -> Option<(AuthCredentialSource, String)>
+- google_source · function · L1455-L1468 — fn google_source() -> Option<(AuthCredentialSource, String)>
+- cursor_source · function · L1470-L1505 — fn cursor_source() -> Option<(AuthCredentialSource, String)>
+- copilot_source · function · L1507-L1550 — fn copilot_source() -> Option<(AuthCredentialSource, String)>
+- env_var_nonempty · function · L1552-L1557 — fn env_var_nonempty(key: &str) -> bool
+- config_file_has_key · function · L1559-L1565 — fn config_file_has_key(file_name: &str, env_key: &str) -> bool
+- config_file_contains_assignment · function · L1567-L1577 — fn config_file_contains_assignment(path: &Path, env_key: &str) -> bool
+- api_key_available · function · L1579-L1581 — fn api_key_available(env_key: &str, file_name: &str) -> bool
+- tests · module · L1585-L1585 — mod tests;

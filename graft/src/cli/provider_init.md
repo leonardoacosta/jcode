@@ -1,0 +1,60 @@
+# src/cli/provider_init.rs
+
+- ProviderChoice · enum · L24-L152 — pub enum ProviderChoice
+- as_arg_value · function · L156-L216 — pub fn as_arg_value(&self) -> &'static str
+- PROVIDER_CHOICE_LOGIN_PROVIDERS · constant · L220-L445 — const PROVIDER_CHOICE_LOGIN_PROVIDERS: &[(ProviderChoice, LoginProviderDescriptor)] = &[
+- login_provider_choice_mappings · function · L447-L449 — pub fn login_provider_choice_mappings() -> &'static [(ProviderChoice, LoginProviderDescriptor)]
+- USER_OPENROUTER_MODEL · constant · L456-L456 — static USER_OPENROUTER_MODEL: OnceLock<Option<String>> = OnceLock::new();
+- capture_user_openrouter_model_env · function · L460-L467 — pub fn capture_user_openrouter_model_env()
+- user_openrouter_model_env · function · L469-L471 — fn user_openrouter_model_env() -> Option<&'static str>
+- env_model_for_choice · function · L476-L478 — fn env_model_for_choice(choice: &ProviderChoice) -> Option<&'static str>
+- env_model_for_choice_from · function · L480-L489 — fn env_model_for_choice_from<'a>(
+- profile_for_choice · function · L491-L496 — pub fn profile_for_choice(choice: &ProviderChoice) -> Option<OpenAiCompatibleProfile>
+- login_provider_for_choice · function · L499-L504 — pub fn login_provider_for_choice(choice: &ProviderChoice) -> Option<LoginProviderDescriptor>
+- choice_for_login_provider · function · L507-L512 — pub fn choice_for_login_provider(provider: LoginProviderDescriptor) -> Option<ProviderChoice>
+- prompt_login_provider_selection · function · L514-L521 — pub fn prompt_login_provider_selection(
+- prompt_login_provider_selection_optional · function · L523-L541 — pub fn prompt_login_provider_selection_optional(
+- parse_login_provider_selection_input · function · L543-L569 — pub fn parse_login_provider_selection_input(
+- render_login_provider_selection_menu · function · L571-L636 — pub fn render_login_provider_selection_menu(
+- login_provider_state_badge · function · L638-L653 — fn login_provider_state_badge(
+- login_provider_detection_detail · function · L655-L671 — fn login_provider_detection_detail(
+- AutoProviderAvailability · struct · L673-L682 — struct AutoProviderAvailability
+- has_any_provider · function · L685-L693 — fn has_any_provider(&self) -> bool
+- maybe_enable_compat_provider_for_auto · function · L696-L734 — fn maybe_enable_compat_provider_for_auto() -> Result<bool>
+- detect_auto_provider_flags · function · L736-L757 — async fn detect_auto_provider_flags() -> AutoProviderAvailability
+- provider_label_for_api_key_env · function · L759-L771 — fn provider_label_for_api_key_env(env_key: &str) -> String
+- provider_login_hint_for_api_key_env · function · L773-L786 — fn provider_login_hint_for_api_key_env(env_key: &str) -> String
+- ensure_external_api_key_auth_allowed_for_explicit_choice · function · L788-L817 — pub(super) fn ensure_external_api_key_auth_allowed_for_explicit_choice(
+- direct_api_key_configured_for_env · function · L819-L839 — fn direct_api_key_configured_for_env(env_key: &str) -> bool
+- direct_env_file_contains_key · function · L841-L858 — fn direct_env_file_contains_key(env_key: &str, env_file: &str) -> bool
+- maybe_enable_external_api_key_auth_for_auto · function · L860-L893 — fn maybe_enable_external_api_key_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- maybe_prompt_for_generic_oauth_source · function · L895-L928 — fn maybe_prompt_for_generic_oauth_source(
+- ensure_openai_auth_allowed_for_explicit_choice · function · L930-L968 — fn ensure_openai_auth_allowed_for_explicit_choice() -> Result<()>
+- maybe_enable_legacy_codex_auth_for_auto · function · L970-L1014 — fn maybe_enable_legacy_codex_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- ensure_claude_auth_allowed_for_explicit_choice · function · L1016-L1050 — fn ensure_claude_auth_allowed_for_explicit_choice() -> Result<()>
+- maybe_enable_claude_auth_for_auto · function · L1052-L1091 — fn maybe_enable_claude_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- ensure_gemini_auth_allowed_for_explicit_choice · function · L1093-L1133 — fn ensure_gemini_auth_allowed_for_explicit_choice() -> Result<()>
+- maybe_enable_gemini_auth_for_auto · function · L1135-L1178 — fn maybe_enable_gemini_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- ensure_antigravity_auth_allowed_for_explicit_choice · function · L1180-L1196 — fn ensure_antigravity_auth_allowed_for_explicit_choice() -> Result<()>
+- ensure_copilot_auth_allowed_for_explicit_choice · function · L1198-L1221 — fn ensure_copilot_auth_allowed_for_explicit_choice() -> Result<()>
+- maybe_enable_copilot_auth_for_auto · function · L1223-L1248 — fn maybe_enable_copilot_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- ensure_cursor_auth_allowed_for_explicit_choice · function · L1250-L1273 — fn ensure_cursor_auth_allowed_for_explicit_choice() -> Result<()>
+- maybe_enable_cursor_auth_for_auto · function · L1275-L1300 — fn maybe_enable_cursor_auth_for_auto(has_other_provider: bool) -> Result<bool>
+- select_initial_model_provider · function · L1302-L1304 — pub fn select_initial_model_provider(provider_key: &str)
+- clear_initial_model_provider · function · L1306-L1308 — pub fn clear_initial_model_provider()
+- explicit_credential_mode · function · L1314-L1321 — fn explicit_credential_mode(choice: &ProviderChoice) -> Option<provider::CredentialMode>
+- disable_subscription_runtime_mode · function · L1323-L1325 — pub(super) fn disable_subscription_runtime_mode()
+- disable_subscription_runtime_mode_preserving_active_provider_profile · function · L1327-L1335 — fn disable_subscription_runtime_mode_preserving_active_provider_profile()
+- apply_login_provider_profile_env · function · L1337-L1358 — pub fn apply_login_provider_profile_env(provider: LoginProviderDescriptor)
+- resolved_profile_default_model · function · L1360-L1362 — fn resolved_profile_default_model(profile: OpenAiCompatibleProfile) -> Option<String>
+- login_and_bootstrap_provider · function · L1364-L1461 — pub async fn login_and_bootstrap_provider(
+- init_provider · function · L1463-L1468 — pub async fn init_provider(
+- init_provider_for_run · function · L1473-L1479 — pub async fn init_provider_for_run(
+- init_provider_for_serve · function · L1483-L1488 — pub async fn init_provider_for_serve(
+- init_provider_quiet · function · L1490-L1495 — pub async fn init_provider_quiet(
+- init_provider_for_validation · function · L1497-L1502 — pub async fn init_provider_for_validation(
+- init_provider_with_options · function · L1505-L1521 — async fn init_provider_with_options(
+- init_provider_with_model_policy · function · L1525-L1933 — async fn init_provider_with_model_policy(
+- init_provider_and_registry · function · L1935-L1942 — pub async fn init_provider_and_registry(
+- init_provider_and_registry_for_validation · function · L1944-L1951 — pub async fn init_provider_and_registry_for_validation(
+- tests · module · L1955-L1955 — mod tests;

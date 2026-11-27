@@ -1,0 +1,43 @@
+# crates/jcode-import-core/src/repo_ranking.rs
+
+- SessionLocation · struct · L26-L29 — pub struct SessionLocation
+- new · function · L32-L37 — pub fn new(working_dir: impl Into<String>, last_used: Option<DateTime<Utc>>) -> Self
+- RankedRepo · struct · L42-L52 — pub struct RankedRepo
+- RankOptions · struct · L57-L72 — pub struct RankOptions
+- default · function · L75-L82 — fn default() -> Self
+- resolve_git_root · function · L91-L100 — pub fn resolve_git_root(dir: &Path) -> Option<PathBuf>
+- recency_weight · function · L103-L111 — fn recency_weight(last_used: Option<DateTime<Utc>>, now: DateTime<Utc>, opts: &RankOptions) -> f64
+- rank_repositories_with · function · L121-L204 — pub fn rank_repositories_with<F>(
+- Acc · struct · L130-L134 — struct Acc
+- rank_repositories · function · L208-L214 — pub fn rank_repositories(
+- most_recent_repository_with · function · L223-L269 — pub fn most_recent_repository_with<F>(
+- most_recent_repository · function · L272-L277 — pub fn most_recent_repository(
+- normalize_path · function · L283-L292 — fn normalize_path(p: &Path) -> PathBuf
+- half_life_from_duration · function · L295-L297 — pub fn half_life_from_duration(d: Duration) -> f64
+- PlannedHotkey · struct · L303-L310 — pub struct PlannedHotkey
+- DEFAULT_LAUNCH_HOTKEY_CHORDS · constant · L316-L316 — pub const DEFAULT_LAUNCH_HOTKEY_CHORDS: [&str; 5] = ["cmd+;", "cmd+'", "cmd+[", "cmd+]", "cmd+\\"];
+- build_launch_hotkey_plan · function · L328-L360 — pub fn build_launch_hotkey_plan(
+- dir_label · function · L363-L369 — fn dir_label(path: &str) -> String
+- collect_jcode_session_locations · function · L379-L413 — pub fn collect_jcode_session_locations(sessions_dir: &Path) -> Vec<SessionLocation>
+- plan_launch_hotkeys_from_sessions · function · L421-L433 — pub fn plan_launch_hotkeys_from_sessions(
+- tests · module · L436-L776 — mod tests
+- ts · function · L440-L442 — fn ts(y: i32, m: u32, d: u32) -> DateTime<Utc>
+- fake_resolver · function · L446-L455 — fn fake_resolver(roots: &'static [&'static str]) -> impl FnMut(&Path) -> Option<PathBuf>
+- folds_subdirectories_into_repo_root · function · L458-L474 — fn folds_subdirectories_into_repo_root()
+- recency_outranks_raw_frequency · function · L477-L496 — fn recency_outranks_raw_frequency()
+- excluded_paths_are_dropped · function · L499-L517 — fn excluded_paths_are_dropped()
+- non_git_dirs_dropped_when_required · function · L520-L534 — fn non_git_dirs_dropped_when_required()
+- non_git_dirs_kept_when_not_required · function · L537-L547 — fn non_git_dirs_kept_when_not_required()
+- private_prefix_folds_with_plain_path · function · L550-L564 — fn private_prefix_folds_with_plain_path()
+- timestampless_sessions_still_count_with_floor_weight · function · L567-L580 — fn timestampless_sessions_still_count_with_floor_weight()
+- empty_working_dirs_are_ignored · function · L583-L593 — fn empty_working_dirs_are_ignored()
+- most_recent_repository_prefers_newest_activity_over_frequency · function · L596-L611 — fn most_recent_repository_prefers_newest_activity_over_frequency()
+- most_recent_repository_excludes_home_and_breaks_ties_by_path · function · L614-L632 — fn most_recent_repository_excludes_home_and_breaks_ties_by_path()
+- most_recent_repository_resolves_real_git_fixture_roots · function · L635-L654 — fn most_recent_repository_resolves_real_git_fixture_roots()
+- repo · function · L656-L663 — fn repo(path: &str, score: f64) -> RankedRepo
+- plan_assigns_top_repo_home_then_next_repos · function · L666-L692 — fn plan_assigns_top_repo_home_then_next_repos()
+- plan_skips_home_if_it_appears_in_ranking · function · L695-L713 — fn plan_skips_home_if_it_appears_in_ranking()
+- plan_truncates_to_available_repos · function · L716-L727 — fn plan_truncates_to_available_repos()
+- plan_with_no_repos_still_binds_home · function · L730-L737 — fn plan_with_no_repos_still_binds_home()
+- collect_reads_working_dirs_and_skips_junk · function · L740-L769 — fn collect_reads_working_dirs_and_skips_junk()
+- collect_missing_dir_is_empty · function · L772-L775 — fn collect_missing_dir_is_empty()

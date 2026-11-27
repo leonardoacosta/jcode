@@ -1,0 +1,34 @@
+# crates/jcode-sdk/src/collections.rs
+
+- MAX_NAME_CHARS · constant · L22-L22 — pub const MAX_NAME_CHARS: usize = 80;
+- MAX_INSTRUCTIONS_BYTES · constant · L24-L24 — pub const MAX_INSTRUCTIONS_BYTES: usize = 16 * 1024;
+- Collection · struct · L27-L38 — pub struct Collection
+- Collections · struct · L41-L50 — pub struct Collections
+- get · function · L53-L55 — pub fn get(&self, id: &str) -> Option<&Collection>
+- collection_of · function · L58-L60 — pub fn collection_of(&self, session_id: &str) -> Option<&Collection>
+- instructions_for · function · L63-L72 — pub fn instructions_for(&self, session_id: &str) -> Option<String>
+- count · function · L74-L76 — pub fn count(&self, id: &str) -> usize
+- create · function · L79-L88 — pub fn create(
+- new_id · function · L91-L100 — pub fn new_id(&self) -> String
+- create_with_id · function · L105-L126 — pub fn create_with_id(
+- edit · function · L129-L148 — pub fn edit(
+- delete · function · L152-L157 — pub fn delete(&mut self, id: &str) -> bool
+- assign · function · L161-L174 — pub fn assign(&mut self, session_id: &str, collection: Option<&str>) -> Result<()>
+- reorder · function · L177-L185 — pub fn reorder(&mut self, id: &str, delta: isize)
+- ensure_unique · function · L187-L196 — fn ensure_unique(&self, name: &str, except: Option<&str>) -> Result<()>
+- normalize · function · L199-L206 — fn normalize(&mut self)
+- validate_name · function · L209-L218 — fn validate_name(name: &str) -> Result<String>
+- clean_dir · function · L220-L222 — fn clean_dir(dir: Option<String>) -> Option<String>
+- clean_instructions · function · L224-L233 — fn clean_instructions(text: Option<String>) -> Result<Option<String>>
+- now_ms · function · L235-L243 — fn now_ms() -> u64
+- path · function · L246-L248 — pub fn path() -> PathBuf
+- load_from · function · L252-L264 — pub fn load_from(path: &Path) -> Result<Collections>
+- load · function · L266-L268 — pub fn load() -> Result<Collections>
+- update_at · function · L271-L285 — pub fn update_at<T>(
+- update · function · L287-L289 — pub fn update<T>(change: impl FnOnce(&mut Collections) -> Result<T>) -> Result<(Collections, T)>
+- lock · function · L291-L301 — fn lock(path: &Path) -> Result<File>
+- write · function · L303-L320 — fn write(path: &Path, store: &Collections) -> Result<()>
+- tests · module · L323-L440 — mod tests
+- create_assign_move_and_delete_keep_sessions · function · L327-L374 — fn create_assign_move_and_delete_keep_sessions()
+- edit_validates_names_and_reorder_stays_in_bounds · function · L377-L406 — fn edit_validates_names_and_reorder_stays_in_bounds()
+- store_round_trips_atomically_and_refuses_corrupt_files · function · L409-L439 — fn store_round_trips_atomically_and_refuses_corrupt_files()

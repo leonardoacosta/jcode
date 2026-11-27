@@ -1,0 +1,91 @@
+# crates/jcode-harness-api-server/src/translate.rs
+
+- control_replies · module · L4-L4 — mod control_replies;
+- credentials · module · L5-L5 — mod credentials;
+- turn_identity · module · L6-L6 — mod turn_identity;
+- turn_identity_tests · module · L8-L8 — mod turn_identity_tests;
+- jcode_home_test_lock · function · L26-L31 — pub(crate) fn jcode_home_test_lock() -> std::sync::MutexGuard<'static, ()>
+- LOCK · constant · L27-L27 — static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+- PEEK_LIMIT · constant · L36-L36 — const PEEK_LIMIT: u64 = 12;
+- REQUIRES_ATTACH · constant · L42-L72 — const REQUIRES_ATTACH: &[&str] = &[
+- DEFAULT_FILE_BYTES · constant · L74-L74 — const DEFAULT_FILE_BYTES: u64 = 1024 * 1024;
+- MAX_FILE_BYTES · constant · L75-L75 — const MAX_FILE_BYTES: u64 = 8 * 1024 * 1024;
+- DEFAULT_FIND_LIMIT · constant · L76-L76 — const DEFAULT_FIND_LIMIT: usize = 200;
+- MAX_FIND_LIMIT · constant · L77-L77 — const MAX_FIND_LIMIT: usize = 2_000;
+- MAX_WALK_FILES · constant · L78-L78 — const MAX_WALK_FILES: usize = 20_000;
+- MAX_WALK_ENTRIES · constant · L79-L79 — const MAX_WALK_ENTRIES: usize = 50_000;
+- MAX_SEARCH_BYTES · constant · L80-L80 — const MAX_SEARCH_BYTES: u64 = 64 * 1024 * 1024;
+- flatten_content · function · L87-L99 — fn flatten_content(content: &Value) -> String
+- Outbound · enum · L106-L111 — pub enum Outbound
+- SessionFileStatus · type · L113-L113 — type SessionFileStatus = (bool, String, Option<u64>, Option<u64>);
+- SessionFileStatusResult · type · L114-L114 — type SessionFileStatusResult = Result<SessionFileStatus, (ErrorCode, String)>;
+- NEXT_LEGACY_ID · constant · L120-L120 — static NEXT_LEGACY_ID: AtomicU64 = AtomicU64::new(1);
+- NEXT_TEXT_ID · constant · L121-L121 — static NEXT_TEXT_ID: AtomicU64 = AtomicU64::new(1);
+- BridgeState · struct · L125-L223 — pub struct BridgeState
+- with_crash_on_disconnect · function · L226-L231 — pub fn with_crash_on_disconnect(crash_on_disconnect: bool) -> Self
+- ArchiveState · struct · L235-L238 — struct ArchiveState
+- PersistedSessionMetadata · struct · L244-L263 — struct PersistedSessionMetadata
+- display_title · function · L266-L274 — fn display_title(&self) -> Option<String>
+- save_label · function · L276-L280 — fn save_label(&self) -> Option<String>
+- normalized_title · function · L282-L285 — fn normalized_title(title: &str) -> Option<String>
+- RecentSessionIndexEntry · struct · L289-L299 — struct RecentSessionIndexEntry
+- from · function · L302-L313 — fn from(entry: &RecentSessionIndexEntry) -> Self
+- legacy_event_may_block · function · L321-L329 — pub fn legacy_event_may_block(event: &Value) -> bool
+- legacy_id · function · L332-L334 — fn legacy_id(&mut self) -> u64
+- api_request_to_legacy · function · L337-L367 — pub fn api_request_to_legacy(&mut self, request: &Value) -> Vec<Outbound>
+- translate_request · function · L369-L1404 — fn translate_request(&mut self, request: &Value) -> Vec<Outbound>
+- attachment_frames · module · L1408-L1408 — mod attachment_frames;
+- text_message_id · function · L1411-L1419 — fn text_message_id(&mut self) -> String
+- finish_text · function · L1421-L1437 — fn finish_text(&mut self) -> Vec<ServerFrame>
+- replace_text_suffix · function · L1439-L1466 — fn replace_text_suffix(&mut self, old_text: &str, new_text: &str) -> Vec<ServerFrame>
+- replace_text · function · L1468-L1516 — fn replace_text(&mut self, replacement: &str) -> Vec<ServerFrame>
+- legacy_event_to_api · function · L1519-L1628 — pub fn legacy_event_to_api(&mut self, event: &Value) -> Vec<ServerFrame>
+- legacy_event_to_api_inner · function · L1630-L2719 — fn legacy_event_to_api_inner(&mut self, event: &Value) -> Vec<ServerFrame>
+- note_models · function · L2728-L2774 — fn note_models(&mut self, event: &Value)
+- note_provider · function · L2776-L2783 — fn note_provider(&mut self, provider: &str)
+- note_credential · function · L2787-L2798 — fn note_credential(&mut self, event: &Value)
+- runtime_info · function · L2800-L2810 — fn runtime_info(&self) -> ApiEvent
+- model_info · function · L2812-L2824 — fn model_info(&self, session_id: String, event: &Value) -> ApiEvent
+- path_is_inside_jcode_repo · function · L2830-L2839 — fn path_is_inside_jcode_repo(path: &str) -> bool
+- session_record_path · function · L2853-L2869 — fn session_record_path(session_id: &str) -> Option<std::path::PathBuf>
+- resolve_session_metadata · function · L2880-L2914 — fn resolve_session_metadata(session_id: &str) -> Option<PersistedSessionMetadata>
+- WINDOW · constant · L2885-L2885 — const WINDOW: usize = 64 * 1024;
+- metadata_string · function · L2916-L2930 — fn metadata_string(bytes: &[u8], field: &str, last: bool) -> Option<String>
+- metadata_bool · function · L2932-L2944 — fn metadata_bool(bytes: &[u8], field: &str, last: bool) -> Option<bool>
+- resolve_working_dir · function · L2946-L2948 — fn resolve_working_dir(session_id: &str) -> Option<String>
+- transcript_bytes · function · L2957-L2960 — fn transcript_bytes(session_id: &str) -> Option<u64>
+- session_modified_ms · function · L2962-L2971 — fn session_modified_ms(session_id: &str) -> Option<u64>
+- now_ms · function · L2973-L2978 — fn now_ms() -> u64
+- todo_home · function · L2981-L2986 — fn todo_home(session_id: &str) -> Result<std::path::PathBuf, (ErrorCode, String)>
+- jcode_home · function · L2988-L2994 — fn jcode_home() -> Option<std::path::PathBuf>
+- recent_session_index_path · function · L2996-L2998 — fn recent_session_index_path() -> Option<std::path::PathBuf>
+- backfill_prompt_titles · function · L3004-L3041 — fn backfill_prompt_titles(
+- BUDGET · constant · L3009-L3009 — const BUDGET: std::time::Duration = std::time::Duration::from_millis(300);
+- first_prompt_title · function · L3046-L3134 — fn first_prompt_title(session_id: &str) -> Option<String>
+- LiteBlock · struct · L3050-L3055 — struct LiteBlock
+- LiteMessage · struct · L3057-L3063 — struct LiteMessage
+- title · function · L3065-L3081 — fn title(&self) -> Option<String>
+- FirstPrompt · struct · L3084-L3084 — struct FirstPrompt(Option<String>);
+- deserialize · function · L3086-L3109 — fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error>
+- Scan · struct · L3087-L3087 — struct Scan;
+- Value · type · L3089-L3089 — type Value = FirstPrompt;
+- expecting · function · L3090-L3092 — fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
+- visit_seq · function · L3093-L3106 — fn visit_seq<A: SeqAccess<'de>>(
+- Record · struct · L3112-L3115 — struct Record
+- JournalEntry · struct · L3117-L3120 — struct JournalEntry
+- recent_session_index_entries · function · L3136-L3195 — fn recent_session_index_entries() -> Vec<RecentSessionIndexEntry>
+- saved_session_ids · function · L3197-L3213 — fn saved_session_ids() -> Vec<String>
+- write_bootstrap_recent_session_index · function · L3215-L3247 — fn write_bootstrap_recent_session_index(ids: &[(SystemTime, String)])
+- stored_session_ids · function · L3249-L3317 — fn stored_session_ids(limit: Option<usize>) -> Vec<String>
+- archive_state_path · function · L3319-L3321 — fn archive_state_path() -> Option<std::path::PathBuf>
+- state_write_guard · function · L3323-L3329 — fn state_write_guard() -> MutexGuard<'static, ()>
+- STATE_WRITES · constant · L3324-L3324 — static STATE_WRITES: OnceLock<Mutex<()>> = OnceLock::new();
+- load_archive_state · function · L3331-L3354 — fn load_archive_state() -> ArchiveState
+- save_archive_state · function · L3356-L3373 — fn save_archive_state(state: &ArchiveState) -> Result<(), String>
+- error_reply · function · L3375-L3383 — fn error_reply(api_id: u64, code: ErrorCode, message: &str) -> Vec<Outbound>
+- stored_tail · function · L3390-L3427 — fn stored_tail(session_id: &str, limit: usize) -> Vec<HistoryMessage>
+- note_sessions · function · L3432-L3449 — fn note_sessions(&mut self, event: &Value)
+- take_simple · function · L3451-L3457 — fn take_simple(&mut self, legacy_id: u64, kind: SimpleKind) -> Option<u64>
+- tests · module · L3462-L3462 — mod tests;
+- user_response_capability_tests · module · L3466-L3466 — mod user_response_capability_tests;
+- session_files · module · L3469-L3469 — mod session_files;

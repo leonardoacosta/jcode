@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/agent/idle_hibernation.rs
+
+- IdleCacheRelease · struct · L7-L10 — pub(crate) struct IdleCacheRelease
+- hibernate_idle_caches · function · L17-L56 — pub(crate) fn hibernate_idle_caches(&mut self) -> Option<IdleCacheRelease>
+- tests · module · L60-L381 — mod tests
+- TestHome · struct · L63-L63 — struct TestHome(Option<std::ffi::OsString>, tempfile::TempDir);
+- new · function · L65-L70 — fn new() -> Self
+- drop · function · L73-L78 — fn drop(&mut self)
+- TestProvider · struct · L81-L81 — struct TestProvider;
+- complete · function · L84-L92 — async fn complete(
+- name · function · L93-L95 — fn name(&self) -> &str
+- fork · function · L96-L98 — fn fork(&self) -> Arc<dyn Provider>
+- agent · function · L101-L109 — fn agent() -> Agent
+- paired_tool_history · function · L111-L129 — fn paired_tool_history(agent: &mut Agent, tool_id: &str, payload: String)
+- idle_hibernation_releases_cache_and_rebuilds_exact_history_and_indexes · function · L132-L192 — fn idle_hibernation_releases_cache_and_rebuilds_exact_history_and_indexes()
+- idle_hibernation_refuses_queued_alerts_busy_compaction_and_live_tools · function · L195-L237 — fn idle_hibernation_refuses_queued_alerts_busy_compaction_and_live_tools()
+- idle_hibernation_does_not_write_session_and_refuses_migration_lease · function · L240-L288 — fn idle_hibernation_does_not_write_session_and_refuses_migration_lease()
+- idle_hibernation_next_turn_sends_original_tool_pairs_without_duplicates · function · L291-L349 — async fn idle_hibernation_next_turn_sends_original_tool_pairs_without_duplicates()
+- CaptureProvider · struct · L293-L293 — struct CaptureProvider(Arc<std::sync::Mutex<Vec<Vec<Message>>>>);
+- complete · function · L296-L310 — async fn complete(
+- name · function · L311-L313 — fn name(&self) -> &str
+- fork · function · L314-L316 — fn fork(&self) -> Arc<dyn Provider>
+- idle_hibernation_measured_rss_delta · function · L353-L380 — fn idle_hibernation_measured_rss_delta()

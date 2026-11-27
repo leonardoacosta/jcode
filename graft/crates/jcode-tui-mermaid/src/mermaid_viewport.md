@@ -1,0 +1,53 @@
+# crates/jcode-tui-mermaid/src/mermaid_viewport.rs
+
+- load_source_image · function · L4-L16 — pub(super) fn load_source_image(hash: u64, path: &Path) -> Option<Arc<DynamicImage>>
+- release_source_image · function · L22-L26 — fn release_source_image(hash: u64, path: &Path)
+- fitted_source_key · function · L28-L40 — fn fitted_source_key(
+- fitted_source_is_ready · function · L44-L71 — fn fitted_source_is_ready(
+- load_fitted_source · function · L73-L101 — fn load_fitted_source(
+- viewport_crop_should_scale_to_area · function · L103-L110 — pub(super) fn viewport_crop_should_scale_to_area(
+- kitty_viewport_unique_id · function · L112-L123 — pub(super) fn kitty_viewport_unique_id(hash: u64) -> u32
+- kitty_is_tmux · function · L125-L128 — fn kitty_is_tmux() -> bool
+- kitty_transmit_payload · function · L130-L172 — fn kitty_transmit_payload(bytes: &[u8], id: u32, format: &str) -> String
+- kitty_delete_image_payload · function · L174-L186 — fn kitty_delete_image_payload(id: u32) -> String
+- take_kitty_delete_payloads · function · L188-L195 — pub(super) fn take_kitty_delete_payloads() -> String
+- kitty_transmit_virtual · function · L197-L213 — fn kitty_transmit_virtual(img: &DynamicImage, id: u32) -> String
+- kitty_transmit_png_path · function · L218-L231 — fn kitty_transmit_png_path(path: &Path, id: u32) -> Option<String>
+- kitty_scaled_image_for_zoom · function · L233-L248 — fn kitty_scaled_image_for_zoom(source: &DynamicImage, zoom_percent: u8) -> Cow<'_, DynamicImage>
+- div_ceil_u32_local · function · L250-L255 — fn div_ceil_u32_local(value: u32, divisor: u32) -> u32
+- cell_rect_for_image · function · L257-L264 — fn cell_rect_for_image(img: &DynamicImage, font_size: (u16, u16)) -> (u16, u16)
+- ensure_kitty_viewport_state · function · L266-L326 — pub(super) fn ensure_kitty_viewport_state(
+- ensure_kitty_fit_state · function · L333-L417 — pub(super) fn ensure_kitty_fit_state(
+- scale_to_fit_box · function · L421-L438 — fn scale_to_fit_box<'a>(
+- fit_box_tests · module · L441-L452 — mod fit_box_tests
+- expanded_fit_scales_up_to_fill_placeholder_rows · function · L445-L451 — fn expanded_fit_scales_up_to_fill_placeholder_rows()
+- render_kitty_virtual_viewport · function · L454-L544 — pub(super) fn render_kitty_virtual_viewport(
+- can_use_kitty_virtual_viewport · function · L546-L554 — fn can_use_kitty_virtual_viewport(
+- kitty_add_placeholder · function · L556-L561 — fn kitty_add_placeholder(buf: &mut String, x: u16, y: u16, id_extra: u8)
+- kitty_diacritic · function · L564-L569 — fn kitty_diacritic(index: u16) -> char
+- KITTY_DIACRITICS · constant · L572-L870 — static KITTY_DIACRITICS: [char; 297] = [
+- probe_kitty_fit_state · function · L876-L889 — fn probe_kitty_fit_state(
+- InlineFitReadiness · enum · L894-L904 — pub enum InlineFitReadiness
+- inline_fit_readiness · function · L909-L953 — pub fn inline_fit_readiness(
+- prewarm_inline_fit_state · function · L961-L999 — pub fn prewarm_inline_fit_state(
+- draw_fitted_left_border · function · L1005-L1026 — fn draw_fitted_left_border(buf: &mut Buffer, area: Rect, skip_rows: u16, full_rows: u16)
+- fitted_scroll_crop · function · L1031-L1059 — pub(super) fn fitted_scroll_crop(
+- render_non_kitty_fit_stable · function · L1062-L1192 — fn render_non_kitty_fit_stable(
+- render_image_widget_fit_stable · function · L1205-L1330 — pub fn render_image_widget_fit_stable(
+- render_image_widget_viewport · function · L1333-L1351 — pub fn render_image_widget_viewport(
+- render_image_widget_viewport_precise · function · L1358-L1611 — pub fn render_image_widget_viewport_precise(
+- clear_image_area · function · L1616-L1629 — pub(super) fn clear_image_area(area: Rect, buf: &mut Buffer)
+- invalidate_render_state · function · L1632-L1636 — pub fn invalidate_render_state(hash: u64)
+- kitty_viewport_leak_tests · module · L1639-L2037 — mod kitty_viewport_leak_tests
+- PLACEHOLDER · constant · L1654-L1654 — const PLACEHOLDER: char = '\u{10EEEE}';
+- virtual_transmit_uses_compressed_png_payload · function · L1657-L1674 — fn virtual_transmit_uses_compressed_png_payload()
+- kitty_ids_are_process_unique_and_delete_payload_targets_one_image · function · L1677-L1688 — fn kitty_ids_are_process_unique_and_delete_payload_targets_one_image()
+- kitty_cache_eviction_queues_terminal_image_deletion · function · L1691-L1741 — fn kitty_cache_eviction_queues_terminal_image_deletion()
+- kitty_cache_bounds_not_yet_drawn_transmissions_by_bytes · function · L1744-L1782 — fn kitty_cache_bounds_not_yet_drawn_transmissions_by_bytes()
+- pending_terminal_cleanup_renders_without_changing_visible_cell_text · function · L1785-L1799 — fn pending_terminal_cleanup_renders_without_changing_visible_cell_text()
+- unchanged_png_transmit_reuses_exact_file_bytes · function · L1802-L1822 — fn unchanged_png_transmit_reuses_exact_file_bytes()
+- halfblocks_partial_scroll_reuses_fitted_source_and_identical_slice · function · L1825-L1926 — fn halfblocks_partial_scroll_reuses_fitted_source_and_identical_slice()
+- HASH · constant · L1829-L1829 — const HASH: u64 = 0x4841_4C46_424C_4B53;
+- seed_state · function · L1930-L1947 — fn seed_state(hash: u64, full_cols: u16, full_rows: u16)
+- row_has_placeholder · function · L1950-L1956 — fn row_has_placeholder(buf: &Buffer, y: u16) -> bool
+- placeholders_never_leak_above_image_area · function · L1962-L2036 — fn placeholders_never_leak_above_image_area()

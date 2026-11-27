@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/server/client_actions.rs
+
+- ChannelSubscriptions · type · L23-L23 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- INPUT_SHELL_MAX_OUTPUT_LEN · constant · L25-L25 — const INPUT_SHELL_MAX_OUTPUT_LEN: usize = 30_000;
+- derive_subagent_description · function · L27-L34 — fn derive_subagent_description(prompt: &str) -> String
+- input_shell_output · module · L37-L37 — mod input_shell_output;
+- NotifySessionContext · struct · L39-L49 — pub(super) struct NotifySessionContext<'a>
+- handle_notify_session · function · L51-L132 — pub(super) async fn handle_notify_session(
+- handle_applet_action · function · L136-L170 — pub(super) async fn handle_applet_action(
+- handle_close_applet · function · L173-L192 — pub(super) fn handle_close_applet(
+- handle_input_shell · function · L194-L246 — pub(super) fn handle_input_shell(
+- set_session_agent_model · function · L249-L263 — pub(super) async fn set_session_agent_model(
+- set_global_agent_model · function · L267-L280 — pub(super) async fn set_global_agent_model(
+- handle_set_subagent_model · function · L282-L301 — pub(super) async fn handle_set_subagent_model(
+- handle_run_subagent · function · L303-L465 — pub(super) fn handle_run_subagent(
+- handle_set_feature · function · L471-L622 — pub(super) async fn handle_set_feature(
+- handle_set_session_saved · function · L626-L670 — pub(super) async fn handle_set_session_saved(
+- broadcast_session_renamed · function · L672-L691 — async fn broadcast_session_renamed(
+- handle_rename_session · function · L693-L768 — pub(super) async fn handle_rename_session(
+- handle_trigger_memory_extraction · function · L770-L798 — pub(super) async fn handle_trigger_memory_extraction(
+- session_transfer_snapshot · module · L801-L801 — mod session_transfer_snapshot;
+- handle_split · function · L804-L865 — pub(super) async fn handle_split(
+- handle_transfer · function · L867-L978 — pub(super) async fn handle_transfer(
+- tests · module · L982-L982 — mod tests;
+- live_session_owes_continuation · function · L991-L1014 — fn live_session_owes_continuation(agent: &Agent) -> bool
+- handle_resume_all_sessions · function · L1026-L1138 — pub(super) async fn handle_resume_all_sessions(
+- handle_compact · function · L1140-L1171 — pub(super) fn handle_compact(
+- handle_stdin_response · function · L1173-L1184 — pub(super) async fn handle_stdin_response(
+- AgentTaskContext · struct · L1186-L1193 — pub(super) struct AgentTaskContext<'a>
+- handle_agent_task · function · L1195-L1281 — pub(super) async fn handle_agent_task(

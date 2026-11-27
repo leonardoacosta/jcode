@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/server/debug_command_exec.rs
+
+- DebugInterruptContext · struct · L18-L22 — pub(super) struct DebugInterruptContext
+- control_handle · function · L25-L43 — async fn control_handle(&self) -> Option<SessionControlHandle>
+- resolve_debug_session · function · L46-L74 — pub(super) async fn resolve_debug_session(
+- default_debug_session_id · function · L84-L112 — pub(super) async fn default_debug_session_id(
+- describe_live_session_ids · function · L114-L121 — fn describe_live_session_ids(sessions: &HashMap<String, Arc<Mutex<Agent>>>) -> String
+- debug_message_timeout_secs · function · L123-L131 — pub(super) fn debug_message_timeout_secs() -> Option<u64>
+- run_debug_message_with_timeout · function · L133-L160 — pub(super) async fn run_debug_message_with_timeout(
+- execute_debug_command · function · L162-L711 — pub(super) async fn execute_debug_command(
+- tests · module · L714-L980 — mod tests
+- lock_env · function · L737-L739 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- EnvGuard · struct · L741-L744 — struct EnvGuard
+- set · function · L747-L751 — fn set(key: &'static str, value: &str) -> Self
+- drop · function · L755-L761 — fn drop(&mut self)
+- TestProvider · struct · L764-L764 — struct TestProvider;
+- complete · function · L768-L778 — async fn complete(
+- name · function · L780-L782 — fn name(&self) -> &str
+- fork · function · L784-L786 — fn fork(&self) -> Arc<dyn Provider>
+- debug_agent_context_inspects_modes_without_inference_or_locking · function · L790-L859 — async fn debug_agent_context_inspects_modes_without_inference_or_locking()
+- debug_tool_selfdev_reload_returns_promptly_for_direct_execution · function · L862-L935 — async fn debug_tool_selfdev_reload_returns_promptly_for_direct_execution()
+- debug_cancel_does_not_wait_for_busy_agent_lock · function · L938-L979 — async fn debug_cancel_does_not_wait_for_busy_agent_lock()

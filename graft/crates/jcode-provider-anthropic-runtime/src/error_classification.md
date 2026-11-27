@@ -1,0 +1,23 @@
+# crates/jcode-provider-anthropic-runtime/src/error_classification.rs
+
+- is_account_limit_error · function · L7-L22 — pub(super) fn is_account_limit_error(error: &str) -> bool
+- should_retry_recoverable_rate_limit · function · L26-L37 — pub(super) fn should_retry_recoverable_rate_limit(
+- is_retryable_error · function · L40-L46 — pub(super) fn is_retryable_error(error_str: &str) -> bool
+- should_retry_transient · function · L55-L67 — pub(super) fn should_retry_transient(
+- is_fable_scoped_limit_error · function · L69-L85 — pub(super) fn is_fable_scoped_limit_error(model: &str, error: &str) -> bool
+- is_model_not_found_error · function · L93-L102 — pub(super) fn is_model_not_found_error(error_str: &str) -> bool
+- is_reasoning_unsupported_error · function · L117-L126 — pub(super) fn is_reasoning_unsupported_error(error_str: &str) -> bool
+- RETIRED_ANTHROPIC_MODEL_MARKERS · constant · L132-L132 — const RETIRED_ANTHROPIC_MODEL_MARKERS: &[&str] = &["claude-mythos"];
+- anthropic_model_is_retired · function · L134-L139 — pub(super) fn anthropic_model_is_retired(model: &str) -> bool
+- anthropic_model_quality_rank · function · L146-L165 — pub(super) fn anthropic_model_quality_rank(model: &str) -> usize
+- anthropic_recommended_model_from_error · function · L171-L234 — pub(super) fn anthropic_recommended_model_from_error(error_str: &str) -> Option<String>
+- anthropic_fallback_model · function · L246-L268 — pub(super) fn anthropic_fallback_model(tried: &[String], error_str: &str) -> Option<String>
+- is_oauth_auth_error · function · L270-L273 — pub(super) fn is_oauth_auth_error(error_str: &str) -> bool
+- is_oauth_catalog_auth_error · function · L275-L280 — pub(super) fn is_oauth_catalog_auth_error(error_str: &str) -> bool
+- transport_retry_tests · module · L283-L354 — mod transport_retry_tests
+- ROAM_ERROR · constant · L288-L290 — const ROAM_ERROR: &str = "failed to send request to anthropic api: error sending request for url \
+- transport_faults_outlast_the_default_budget · function · L293-L305 — fn transport_faults_outlast_the_default_budget()
+- backoff_covers_a_network_blip · function · L308-L314 — fn backoff_covers_a_network_blip()
+- extended_transport_retries_stop_after_the_window · function · L317-L329 — fn extended_transport_retries_stop_after_the_window()
+- server_errors_keep_the_default_budget · function · L332-L344 — fn server_errors_keep_the_default_budget()
+- deterministic_errors_never_retry · function · L347-L353 — fn deterministic_errors_never_retry()

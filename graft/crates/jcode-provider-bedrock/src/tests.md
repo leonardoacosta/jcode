@@ -1,0 +1,40 @@
+# crates/jcode-provider-bedrock/src/tests.rs
+
+- inference_profile_discovery_reads_all_sdk_pages · function · L5-L91 — fn inference_profile_discovery_reads_all_sdk_pages()
+- opus_low_effort_default_and_explicit_overrides · function · L94-L135 — fn opus_low_effort_default_and_explicit_overrides()
+- opus_default_routes_stay_in_geography · function · L138-L184 — fn opus_default_routes_stay_in_geography()
+- opus_explicit_routes_and_metadata · function · L187-L207 — fn opus_explicit_routes_and_metadata()
+- opus_default_ignores_cached_global_routes_and_preserves_explicit_choice · function · L210-L229 — fn opus_default_ignores_cached_global_routes_and_preserves_explicit_choice()
+- opus_request_omits_sampling_overrides_but_preserves_limits · function · L233-L254 — fn opus_request_omits_sampling_overrides_but_preserves_limits()
+- bedrock_metadata_preserves_disjoint_cache_usage · function · L258-L293 — fn bedrock_metadata_preserves_disjoint_cache_usage()
+- bedrock_tool_schema_removes_top_level_combinators · function · L299-L319 — fn bedrock_tool_schema_removes_top_level_combinators()
+- TestEnvGuard · struct · L322-L326 — struct TestEnvGuard
+- lock_test_env · function · L328-L341 — fn lock_test_env() -> TestEnvGuard
+- ENV_LOCK · constant · L329-L329 — static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- EnvVarGuard · struct · L343-L346 — struct EnvVarGuard
+- set · function · L349-L353 — fn set(key: &'static str, value: impl AsRef<OsStr>) -> Self
+- remove · function · L355-L359 — fn remove(key: &'static str) -> Self
+- drop · function · L363-L369 — fn drop(&mut self)
+- bedrock_env_file_is_isolated_under_jcode_home · function · L373-L400 — fn bedrock_env_file_is_isolated_under_jcode_home()
+- detects_env_credentials_requires_region_and_credential_hint · function · L403-L423 — fn detects_env_credentials_requires_region_and_credential_hint()
+- explicit_enable_marks_configured_for_instance_metadata_credentials · function · L426-L430 — fn explicit_enable_marks_configured_for_instance_metadata_credentials()
+- detects_bedrock_login_env_file_credentials · function · L433-L466 — fn detects_bedrock_login_env_file_credentials()
+- configured_profile_from_bedrock_env_overrides_stale_bearer_token · function · L469-L511 — fn configured_profile_from_bedrock_env_overrides_stale_bearer_token()
+- switches_arbitrary_model_ids · function · L514-L520 — fn switches_arbitrary_model_ids()
+- maps_profile_required_foundation_model_to_inference_profile · function · L523-L538 — fn maps_profile_required_foundation_model_to_inference_profile()
+- maps_foundation_model_from_stale_cached_profile_list · function · L541-L552 — fn maps_foundation_model_from_stale_cached_profile_list()
+- hides_profile_required_foundation_model_when_profile_route_exists · function · L555-L581 — fn hides_profile_required_foundation_model_when_profile_route_exists()
+- hides_foundation_model_when_profile_route_exists · function · L584-L606 — fn hides_foundation_model_when_profile_route_exists()
+- profile_required_foundation_model_without_profile_route_is_disabled · function · L609-L626 — fn profile_required_foundation_model_without_profile_route_is_disabled()
+- global_inference_profiles_use_foundation_capabilities_and_detail · function · L629-L649 — fn global_inference_profiles_use_foundation_capabilities_and_detail()
+- ignores_persisted_bedrock_catalog_from_different_region · function · L652-L669 — fn ignores_persisted_bedrock_catalog_from_different_region()
+- prefers_region_inference_profile_over_global_profile · function · L672-L692 — fn prefers_region_inference_profile_over_global_profile()
+- known_context_and_vision_capabilities · function · L695-L705 — fn known_context_and_vision_capabilities()
+- known_no_tool_models_do_not_advertise_tools · function · L708-L715 — fn known_no_tool_models_do_not_advertise_tools()
+- error_classification_mentions_model_access · function · L718-L724 — fn error_classification_mentions_model_access()
+- error_classification_mentions_legacy_models · function · L727-L734 — fn error_classification_mentions_legacy_models()
+- tool_use_streaming_error_is_not_classified_as_legacy_sdk_type_name · function · L737-L743 — fn tool_use_streaming_error_is_not_classified_as_legacy_sdk_type_name()
+- expired_sso_error_is_concise_and_actionable · function · L746-L754 — fn expired_sso_error_is_concise_and_actionable()
+- missing_credentials_error_omits_sdk_blob · function · L757-L763 — fn missing_credentials_error_omits_sdk_blob()
+- legacy_model_route_is_unavailable_with_reason · function · L766-L783 — fn legacy_model_route_is_unavailable_with_reason()
+- bedrock_live_smoke_test · function · L787-L797 — async fn bedrock_live_smoke_test()

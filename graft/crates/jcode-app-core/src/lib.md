@@ -1,0 +1,39 @@
+# crates/jcode-app-core/src/lib.rs
+
+- agent · module · L27-L27 — pub mod agent;
+- ambient · module · L28-L28 — pub mod ambient;
+- ambient_runner · module · L29-L29 — pub mod ambient_runner;
+- ambient_scheduler · module · L30-L30 — pub mod ambient_scheduler;
+- build · module · L31-L31 — pub mod build;
+- catchup · module · L32-L32 — pub mod catchup;
+- channel · module · L33-L33 — pub mod channel;
+- lifecycle_hooks · module · L34-L34 — pub mod lifecycle_hooks;
+- agents_status · module · L36-L36 — pub mod agents_status;
+- mission · module · L37-L37 — pub mod mission;
+- mobile_push · module · L38-L38 — pub mod mobile_push;
+- network_retry · module · L39-L39 — pub mod network_retry;
+- notifications · module · L40-L40 — pub mod notifications;
+- overnight · module · L41-L41 — pub mod overnight;
+- perf · module · L42-L42 — pub mod perf;
+- replay · module · L43-L43 — pub mod replay;
+- restart_snapshot · module · L44-L44 — pub mod restart_snapshot;
+- running_tool_registry · module · L45-L45 — pub mod running_tool_registry;
+- screen_context · module · L46-L46 — pub mod screen_context;
+- server · module · L47-L47 — pub mod server;
+- server_spawn · module · L48-L48 — pub mod server_spawn;
+- session_effort · module · L49-L49 — pub mod session_effort;
+- session_env · module · L50-L50 — pub mod session_env;
+- session_launch · module · L51-L51 — pub mod session_launch;
+- session_rebuild · module · L52-L52 — pub mod session_rebuild;
+- session_window · module · L53-L53 — pub mod session_window;
+- setup_hints · module · L54-L54 — pub mod setup_hints;
+- ssh_remote · module · L55-L55 — pub mod ssh_remote;
+- startup_profile · module · L56-L56 — pub mod startup_profile;
+- stream_batching · module · L57-L57 — pub(crate) mod stream_batching;
+- tool · module · L58-L58 — pub mod tool;
+- turn_cancel_registry · module · L59-L59 — pub mod turn_cancel_registry;
+- update · module · L60-L60 — pub mod update;
+- wait_registry · module · L61-L61 — pub mod wait_registry;
+- CURRENT_SESSION_ID · constant · L65-L65 — static CURRENT_SESSION_ID: Mutex<Option<String>> = Mutex::new(None);
+- set_current_session · function · L67-L71 — pub fn set_current_session(session_id: &str)
+- get_current_session · function · L73-L75 — pub fn get_current_session() -> Option<String>

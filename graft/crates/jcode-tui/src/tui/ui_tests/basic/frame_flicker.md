@@ -1,0 +1,33 @@
+# crates/jcode-tui/src/tui/ui_tests/basic/frame_flicker.rs
+
+- test_reset_available_hint_renders_and_keeps_redrawing_at_deep_idle · function · L2-L46 — fn test_reset_available_hint_renders_and_keeps_redrawing_at_deep_idle()
+- test_redraw_interval_uses_low_frequency_during_remote_startup_phase · function · L49-L67 — fn test_redraw_interval_uses_low_frequency_during_remote_startup_phase()
+- test_cold_cache_warning_keeps_redrawing_at_deep_idle · function · L70-L168 — fn test_cold_cache_warning_keeps_redrawing_at_deep_idle()
+- test_active_swarm_spinner_keeps_redrawing_at_deep_idle · function · L171-L247 — fn test_active_swarm_spinner_keeps_redrawing_at_deep_idle()
+- swarm_member · function · L176-L193 — fn swarm_member(status: &str) -> crate::protocol::SwarmMemberStatus
+- record_test_chat_snapshot · function · L249-L266 — fn record_test_chat_snapshot(text: &str)
+- make_prepared_messages_with_content_bytes · function · L268-L290 — fn make_prepared_messages_with_content_bytes(bytes: usize, marker: &str) -> Arc<PreparedMessages>
+- make_oversized_prepared_messages · function · L292-L294 — fn make_oversized_prepared_messages(marker: &str) -> Arc<PreparedMessages>
+- make_prepared_chat_frame · function · L296-L298 — fn make_prepared_chat_frame(prepared: Arc<PreparedMessages>) -> Arc<PreparedChatFrame>
+- make_prepared_chat_frame_with_content_bytes · function · L300-L305 — fn make_prepared_chat_frame_with_content_bytes(
+- make_oversized_prepared_chat_frame · function · L307-L309 — fn make_oversized_prepared_chat_frame(marker: &str) -> Arc<PreparedChatFrame>
+- test_calculate_input_lines_empty · function · L312-L314 — fn test_calculate_input_lines_empty()
+- test_inline_ui_gap_height_only_when_inline_ui_visible · function · L317-L345 — fn test_inline_ui_gap_height_only_when_inline_ui_visible()
+- test_slow_frame_history_retains_recent_samples · function · L348-L415 — fn test_slow_frame_history_retains_recent_samples()
+- buffer_to_text · function · L417-L433 — fn buffer_to_text(terminal: &ratatui::Terminal<ratatui::backend::TestBackend>) -> String
+- test_changelog_overlay_repeated_renders_are_stable · function · L436-L476 — fn test_changelog_overlay_repeated_renders_are_stable()
+- test_updates_header_repeated_renders_stay_stable_near_scrollbar_threshold · function · L479-L520 — fn test_updates_header_repeated_renders_stay_stable_near_scrollbar_threshold()
+- test_flicker_sample · function · L522-L548 — fn test_flicker_sample(timestamp_ms: u64, visible_hash: u64) -> FlickerFrameSample
+- test_flicker_frame_history_detects_same_state_hash_change · function · L551-L613 — fn test_flicker_frame_history_detects_same_state_hash_change()
+- test_flicker_frame_history_detects_layout_oscillation · function · L616-L661 — fn test_flicker_frame_history_detects_layout_oscillation()
+- test_flicker_frame_history_detects_layout_feedback_oscillation · function · L664-L759 — fn test_flicker_frame_history_detects_layout_feedback_oscillation()
+- notification_spans_include_recent_flicker_warning_and_log_hint · function · L762-L846 — fn notification_spans_include_recent_flicker_warning_and_log_hint()
+- test_flicker_frame_history_ignores_visible_batch_progress_updates · function · L849-L906 — fn test_flicker_frame_history_ignores_visible_batch_progress_updates()
+- test_flicker_frame_history_ignores_visible_streaming_updates · function · L909-L966 — fn test_flicker_frame_history_ignores_visible_streaming_updates()
+- test_flicker_frame_history_ignores_live_batch_hash_noise · function · L969-L985 — fn test_flicker_frame_history_ignores_live_batch_hash_noise()
+- test_flicker_frame_history_ignores_manual_scroll_feedback · function · L988-L1002 — fn test_flicker_frame_history_ignores_manual_scroll_feedback()
+- test_cache_retention_estimates_never_create_proactive_expiry_ui · function · L1005-L1043 — fn test_cache_retention_estimates_never_create_proactive_expiry_ui()
+- test_cache_explicit_ttls_keep_expiry_notifications · function · L1046-L1069 — fn test_cache_explicit_ttls_keep_expiry_notifications()
+- test_reset_expiry_notification_stays_on_one_row · function · L1072-L1096 — fn test_reset_expiry_notification_stays_on_one_row()
+- test_reset_notice_relative_expiry_render_and_removal · function · L1099-L1158 — fn test_reset_notice_relative_expiry_render_and_removal()
+- test_reset_expiry_notification_full_frame_uses_one_row · function · L1161-L1187 — fn test_reset_expiry_notification_full_frame_uses_one_row()

@@ -1,0 +1,61 @@
+# crates/jcode-base/src/message/tests.rs
+
+- redaction_replacement_matches_legacy_for_borrowed_owned_and_capture_cases · function · L6-L28 — fn redaction_replacement_matches_legacy_for_borrowed_owned_and_capture_cases()
+- redaction_replacement_reuses_large_unmatched_buffer · function · L31-L42 — fn redaction_replacement_reuses_large_unmatched_buffer()
+- redaction_no_match_copy_probe · function · L46-L87 — fn redaction_no_match_copy_probe()
+- sanitize_tool_id_alphanumeric_passthrough · function · L90-L100 — fn sanitize_tool_id_alphanumeric_passthrough()
+- generated_image_visual_context_blocks_attach_safe_image · function · L103-L137 — fn generated_image_visual_context_blocks_attach_safe_image()
+- generated_image_rendered_image_uses_inline_tool_anchor · function · L140-L174 — fn generated_image_rendered_image_uses_inline_tool_anchor()
+- tool_call_intent_from_input_trims_optional_intent · function · L177-L190 — fn tool_call_intent_from_input_trims_optional_intent()
+- tool_call_normalizes_non_object_input_to_empty_object · function · L193-L211 — fn tool_call_normalizes_non_object_input_to_empty_object()
+- tool_call_parses_empty_streamed_input_as_empty_object · function · L214-L227 — fn tool_call_parses_empty_streamed_input_as_empty_object()
+- tool_call_keeps_explicit_non_object_streamed_input_for_validation · function · L233-L256 — fn tool_call_keeps_explicit_non_object_streamed_input_for_validation()
+- tool_call_preserves_invalid_streamed_json_as_validation_error · function · L259-L273 — fn tool_call_preserves_invalid_streamed_json_as_validation_error()
+- tool_call_validation_rejects_empty_name_and_non_object_input · function · L276-L309 — fn tool_call_validation_rejects_empty_name_and_non_object_input()
+- sanitize_tool_id_hyphens_passthrough · function · L312-L318 — fn sanitize_tool_id_hyphens_passthrough()
+- sanitize_tool_id_replaces_dots · function · L321-L327 — fn sanitize_tool_id_replaces_dots()
+- sanitize_tool_id_replaces_colons · function · L330-L332 — fn sanitize_tool_id_replaces_colons()
+- sanitize_tool_id_replaces_special_chars · function · L335-L341 — fn sanitize_tool_id_replaces_special_chars()
+- sanitize_tool_id_empty_returns_unknown · function · L344-L346 — fn sanitize_tool_id_empty_returns_unknown()
+- sanitize_tool_id_copilot_to_anthropic · function · L349-L354 — fn sanitize_tool_id_copilot_to_anthropic()
+- sanitize_tool_id_already_valid_unchanged · function · L357-L373 — fn sanitize_tool_id_already_valid_unchanged()
+- redact_secrets_redacts_known_direct_token_formats · function · L376-L383 — fn redact_secrets_redacts_known_direct_token_formats()
+- redact_secrets_redacts_env_style_assignments · function · L386-L400 — fn redact_secrets_redacts_env_style_assignments()
+- redact_secrets_redacts_runtime_key_assignment · function · L403-L417 — fn redact_secrets_redacts_runtime_key_assignment()
+- redact_secrets_redacts_mixed_case_token_assignments · function · L420-L425 — fn redact_secrets_redacts_mixed_case_token_assignments()
+- redact_secrets_leaves_normal_output_unchanged · function · L428-L431 — fn redact_secrets_leaves_normal_output_unchanged()
+- redact_secrets_redacts_bearer_jwt_aws_and_private_keys · function · L434-L449 — fn redact_secrets_redacts_bearer_jwt_aws_and_private_keys()
+- format_timestamp_is_stable_utc_rfc3339 · function · L452-L456 — fn format_timestamp_is_stable_utc_rfc3339() -> Result<()>
+- with_timestamps_prepends_utc_prefix_to_user_text · function · L459-L479 — fn with_timestamps_prepends_utc_prefix_to_user_text() -> Result<()>
+- with_timestamps_adds_tool_timing_header_with_duration · function · L482-L506 — fn with_timestamps_adds_tool_timing_header_with_duration() -> Result<()>
+- with_timestamps_skips_internal_system_reminders · function · L509-L530 — fn with_timestamps_skips_internal_system_reminders() -> Result<()>
+- ends_with_fresh_user_turn_accepts_plain_user_text · function · L533-L536 — fn ends_with_fresh_user_turn_accepts_plain_user_text()
+- ends_with_fresh_user_turn_rejects_trailing_tool_result · function · L539-L557 — fn ends_with_fresh_user_turn_rejects_trailing_tool_result()
+- ends_with_fresh_user_turn_skips_internal_system_reminders · function · L560-L566 — fn ends_with_fresh_user_turn_skips_internal_system_reminders()
+- ends_with_fresh_user_turn_rejects_assistant_tail · function · L569-L575 — fn ends_with_fresh_user_turn_rejects_assistant_tail()
+- format_background_task_notification_markdown_uses_code_block_preview · function · L578-L598 — fn format_background_task_notification_markdown_uses_code_block_preview()
+- strip_ansi_escape_sequences_removes_terminal_controls · function · L601-L609 — fn strip_ansi_escape_sequences_removes_terminal_controls()
+- format_input_shell_result_markdown_strips_ansi_from_output · function · L612-L626 — fn format_input_shell_result_markdown_strips_ansi_from_output()
+- format_background_task_notification_markdown_strips_ansi_from_preview · function · L629-L647 — fn format_background_task_notification_markdown_strips_ansi_from_preview()
+- format_background_task_notification_markdown_handles_empty_preview · function · L650-L667 — fn format_background_task_notification_markdown_handles_empty_preview()
+- format_background_task_notification_markdown_highlights_failure_reason · function · L670-L693 — fn format_background_task_notification_markdown_highlights_failure_reason() -> Result<()>
+- format_background_task_notification_markdown_renders_superseded_status · function · L696-L714 — fn format_background_task_notification_markdown_renders_superseded_status()
+- lost_background_task_renders_as_unknown_status_never_success · function · L717-L739 — fn lost_background_task_renders_as_unknown_status_never_success()
+- format_background_task_progress_markdown_uses_compact_multiline_layout · function · L742-L764 — fn format_background_task_progress_markdown_uses_compact_multiline_layout()
+- background_task_notifications_include_display_name_when_available · function · L767-L795 — fn background_task_notifications_include_display_name_when_available() -> Result<()>
+- background_task_progress_notifications_include_display_name_when_available · function · L798-L829 — fn background_task_progress_notifications_include_display_name_when_available() -> Result<()>
+- parse_background_task_progress_notification_extracts_card_fields · function · L832-L845 — fn parse_background_task_progress_notification_extracts_card_fields() -> Result<()>
+- parse_background_task_progress_notification_supports_legacy_inline_layout · function · L848-L864 — fn parse_background_task_progress_notification_supports_legacy_inline_layout() -> Result<()>
+- description_token_estimate_uses_chars_per_token_heuristic · function · L867-L876 — fn description_token_estimate_uses_chars_per_token_heuristic()
+- parse_background_task_notification_markdown_extracts_fields · function · L879-L912 — fn parse_background_task_notification_markdown_extracts_fields() -> Result<()>
+- push_reasoning_blocks_always_captures_history · function · L915-L924 — fn push_reasoning_blocks_always_captures_history()
+- push_reasoning_blocks_anthropic_signed_replay · function · L927-L948 — fn push_reasoning_blocks_anthropic_signed_replay()
+- push_reasoning_blocks_anthropic_unsigned_falls_back_to_trace · function · L951-L957 — fn push_reasoning_blocks_anthropic_unsigned_falls_back_to_trace()
+- push_reasoning_blocks_openai_keeps_readable_trace · function · L960-L970 — fn push_reasoning_blocks_openai_keeps_readable_trace()
+- push_reasoning_blocks_openrouter_replay_is_readable · function · L973-L979 — fn push_reasoning_blocks_openrouter_replay_is_readable()
+- push_reasoning_blocks_skips_empty · function · L982-L986 — fn push_reasoning_blocks_skips_empty()
+- reasoning_trace_serde_round_trip · function · L989-L1000 — fn reasoning_trace_serde_round_trip()
+- format_background_task_stalled_markdown_renders_tail_and_guidance · function · L1003-L1025 — fn format_background_task_stalled_markdown_renders_tail_and_guidance()
+- format_background_task_stalled_markdown_handles_empty_tail · function · L1028-L1047 — fn format_background_task_stalled_markdown_handles_empty_tail()
+- redact_preview_secrets_handles_inline_and_truncated_credentials · function · L1050-L1068 — fn redact_preview_secrets_handles_inline_and_truncated_credentials()
+- redact_preview_secrets_leaves_ordinary_prose_alone · function · L1071-L1080 — fn redact_preview_secrets_leaves_ordinary_prose_alone()

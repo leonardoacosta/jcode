@@ -1,0 +1,32 @@
+# crates/jcode-provider-openai/src/request.rs
+
+- REWRITTEN_ORPHAN_TOOL_OUTPUTS · constant · L12-L12 — static REWRITTEN_ORPHAN_TOOL_OUTPUTS: AtomicU64 = AtomicU64::new(0);
+- OpenAiRequestLogLevel · enum · L15-L18 — pub enum OpenAiRequestLogLevel
+- OPENAI_ENCRYPTED_CONTENT_PROVIDER_MAX_CHARS · constant · L21-L21 — pub const OPENAI_ENCRYPTED_CONTENT_PROVIDER_MAX_CHARS: usize = 10_485_760;
+- OPENAI_ENCRYPTED_CONTENT_SAFE_MAX_CHARS · constant · L25-L25 — pub const OPENAI_ENCRYPTED_CONTENT_SAFE_MAX_CHARS: usize = 9_500_000;
+- openai_encrypted_content_is_sendable · function · L27-L29 — pub fn openai_encrypted_content_is_sendable(encrypted_content: &str) -> bool
+- openai_encrypted_content_fallback_summary · function · L31-L38 — pub fn openai_encrypted_content_fallback_summary(encrypted_content_len: usize) -> String
+- is_openai_encrypted_content_too_large_error · function · L40-L48 — pub fn is_openai_encrypted_content_too_large_error(error: &str) -> bool
+- build_tools · function · L50-L56 — pub fn build_tools(tools: &[ToolDefinition]) -> Vec<Value>
+- build_tool · function · L59-L76 — pub fn build_tool(t: &ToolDefinition) -> Value
+- insert_additional_tools · function · L87-L140 — pub fn insert_additional_tools(
+- orphan_tool_output_to_user_message · function · L142-L166 — fn orphan_tool_output_to_user_message(item: &Value, missing_output: &str) -> Option<Value>
+- build_responses_input · function · L168-L170 — pub fn build_responses_input(messages: &[ChatMessage]) -> Vec<Value>
+- downgrade_web_search_calls · function · L177-L193 — pub fn downgrade_web_search_calls(input: &mut [Value])
+- build_responses_input_with_logger · function · L195-L545 — pub fn build_responses_input_with_logger(
+- reorder_outputs · function · L547-L700 — fn reorder_outputs<F: FnMut(OpenAiRequestLogLevel, &str)>(
+- tests · module · L703-L1071 — mod tests
+- tool_call · function · L708-L721 — fn tool_call(id: &str) -> ChatMessage
+- relocated_outputs_are_not_logged_as_duplicates · function · L724-L755 — fn relocated_outputs_are_not_logged_as_duplicates()
+- actual_duplicate_outputs_still_log_and_preserve_selected_output · function · L758-L784 — fn actual_duplicate_outputs_still_log_and_preserve_selected_output()
+- build_tools_flattens_allof_schema_for_openai · function · L787-L824 — fn build_tools_flattens_allof_schema_for_openai()
+- build_responses_input_logs_oversized_native_compaction · function · L827-L852 — fn build_responses_input_logs_oversized_native_compaction()
+- build_responses_input_replays_openai_reasoning_without_output_only_status · function · L855-L880 — fn build_responses_input_replays_openai_reasoning_without_output_only_status()
+- build_responses_input_replays_web_search_calls_and_downgrades_foreign_items · function · L883-L914 — fn build_responses_input_replays_web_search_calls_and_downgrades_foreign_items()
+- build_tools_strips_unique_items_from_the_request_payload · function · L924-L970 — fn build_tools_strips_unique_items_from_the_request_payload()
+- deferred_def · function · L972-L974 — fn deferred_def(name: &str) -> ToolDefinition
+- msg · function · L976-L983 — fn msg(role: Role, content: Vec<ContentBlock>) -> ChatMessage
+- build_tools_omits_deferred_definitions · function · L986-L994 — fn build_tools_omits_deferred_definitions()
+- tool_reference_inserts_additional_tools_after_its_output · function · L997-L1055 — fn tool_reference_inserts_additional_tools_after_its_output()
+- tool_reference_without_deferred_definition_is_ignored · function · L1058-L1070 — fn tool_reference_without_deferred_definition_is_ignored()
+- normalization_tests · module · L1075-L1075 — mod normalization_tests;

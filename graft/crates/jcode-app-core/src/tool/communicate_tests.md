@@ -1,0 +1,51 @@
+# crates/jcode-app-core/src/tool/communicate_tests.rs
+
+- tool_is_named_swarm · function · L29-L31 — fn tool_is_named_swarm()
+- canonical_swarm_action_maps_common_synonyms · function · L34-L45 — fn canonical_swarm_action_maps_common_synonyms()
+- canonical_swarm_action_is_case_insensitive_and_trims · function · L48-L51 — fn canonical_swarm_action_is_case_insensitive_and_trims()
+- canonical_swarm_action_passes_through_known_and_unknown_actions · function · L54-L61 — fn canonical_swarm_action_passes_through_known_and_unknown_actions()
+- communicate_input_aliases_to_session_and_target_session · function · L64-L78 — fn communicate_input_aliases_to_session_and_target_session()
+- format_plan_status_includes_next_ready · function · L81-L102 — fn format_plan_status_includes_next_ready()
+- in_flight_slot_accounting_counts_queued_workers_not_coordinator · function · L105-L169 — fn in_flight_slot_accounting_counts_queued_workers_not_coordinator()
+- in_flight_count_excludes_foreign_queued_session · function · L172-L218 — fn in_flight_count_excludes_foreign_queued_session()
+- latest_assistant_report_uses_last_non_empty_assistant_message · function · L221-L250 — fn latest_assistant_report_uses_last_non_empty_assistant_message()
+- format_awaited_members_includes_recent_outputs · function · L253-L279 — fn format_awaited_members_includes_recent_outputs()
+- resolve_optional_target_session_defaults_to_current · function · L282-L295 — fn resolve_optional_target_session_defaults_to_current()
+- schema · module · L298-L298 — mod schema;
+- EnvGuard · struct · L300-L303 — struct EnvGuard
+- set · function · L306-L310 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- remove · function · L312-L316 — fn remove(key: &'static str) -> Self
+- drop · function · L320-L326 — fn drop(&mut self)
+- DelayedTestProvider · struct · L329-L331 — struct DelayedTestProvider
+- complete · function · L335-L351 — async fn complete(
+- name · function · L353-L355 — fn name(&self) -> &str
+- fork · function · L357-L359 — fn fork(&self) -> Arc<dyn Provider>
+- RawClient · struct · L362-L366 — struct RawClient
+- connect · function · L369-L377 — async fn connect(path: &Path) -> Result<Self>
+- send_request · function · L379-L384 — async fn send_request(&mut self, request: Request) -> Result<u64>
+- read_event · function · L386-L393 — async fn read_event(&mut self) -> Result<ServerEvent>
+- read_until · function · L395-L407 — async fn read_until<F>(&mut self, timeout: Duration, mut predicate: F) -> Result<ServerEvent>
+- subscribe · function · L409-L438 — async fn subscribe(&mut self, working_dir: &Path) -> Result<()>
+- session_id · function · L440-L454 — async fn session_id(&mut self) -> Result<String>
+- send_message · function · L456-L470 — async fn send_message(&mut self, content: &str) -> Result<u64>
+- wait_for_done · function · L472-L479 — async fn wait_for_done(&mut self, request_id: u64) -> Result<()>
+- comm_list · function · L481-L498 — async fn comm_list(&mut self, session_id: &str) -> Result<Vec<AgentInfo>>
+- comm_status · function · L500-L522 — async fn comm_status(
+- next_message_notification · function · L526-L545 — async fn next_message_notification(&mut self, timeout: Duration) -> Result<Option<String>>
+- wait_for_server_socket · function · L548-L574 — async fn wait_for_server_socket(
+- test_ctx · function · L576-L586 — fn test_ctx(session_id: &str, working_dir: &Path) -> ToolContext
+- wait_for_member_status · function · L588-L618 — async fn wait_for_member_status(
+- wait_for_member_presence · function · L620-L639 — async fn wait_for_member_presence(
+- mutating_swarm_requests_get_extended_deadline · function · L646-L665 — fn mutating_swarm_requests_get_extended_deadline()
+- swarm_timeout_errors_are_classified · function · L668-L682 — fn swarm_timeout_errors_are_classified()
+- unknown_action_message_lists_advertised_actions · function · L685-L692 — fn unknown_action_message_lists_advertised_actions()
+- advertised_actions_match_schema_enum_and_dispatch · function · L695-L717 — fn advertised_actions_match_schema_enum_and_dispatch()
+- await_members_blocking_deadline_covers_wait · function · L720-L729 — fn await_members_blocking_deadline_covers_wait()
+- worker_model_source_labels · function · L732-L762 — fn worker_model_source_labels()
+- config_override_warns_only_when_differs · function · L765-L770 — fn config_override_warns_only_when_differs()
+- member_list_shows_recorded_model_source · function · L773-L784 — fn member_list_shows_recorded_model_source()
+- summary_returns_full_report_before_tool_calls · function · L787-L800 — fn summary_returns_full_report_before_tool_calls()
+- oversized_report_is_tail_truncated_with_marker · function · L803-L809 — fn oversized_report_is_tail_truncated_with_marker()
+- ready_without_report_is_incomplete_and_reported_stays_done · function · L812-L839 — fn ready_without_report_is_incomplete_and_reported_stays_done()
+- role_slot_resolution_precedence_and_source · function · L842-L869 — fn role_slot_resolution_precedence_and_source()
+- stop_never_reports_stopped_for_a_nonterminal_outcome · function · L872-L911 — fn stop_never_reports_stopped_for_a_nonterminal_outcome()

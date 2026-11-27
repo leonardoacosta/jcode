@@ -1,0 +1,23 @@
+# crates/jcode-tui/src/tui/app/auth_remote.rs
+
+- command · module · L2-L2 — mod command;
+- onboarding · module · L3-L3 — mod onboarding;
+- picker · module · L4-L4 — mod picker;
+- tests · module · L7-L7 — mod tests;
+- PROVIDERS · constant · L12-L19 — const PROVIDERS: [&str; 6] = [
+- Phase · enum · L22-L31 — enum Phase
+- RemoteLogin · struct · L34-L44 — pub(super) struct RemoteLogin
+- run · function · L46-L55 — fn run(&mut self, operation: Operation, payload: Option<String>)
+- drop · function · L59-L73 — fn drop(&mut self)
+- start_ssh_account_login · function · L77-L94 — pub(super) fn start_ssh_account_login(&mut self, provider: &str, label: &str)
+- handle_ssh_login_command · function · L96-L98 — pub(super) fn handle_ssh_login_command(&mut self, input: &str) -> bool
+- handle_ssh_login_with_label · function · L100-L168 — fn handle_ssh_login_with_label(&mut self, input: &str, label: Option<&str>) -> bool
+- select_ssh_login_action · function · L170-L217 — pub(super) fn select_ssh_login_action(&mut self, provider: &str, importing: bool)
+- start_ssh_login · function · L219-L237 — fn start_ssh_login(&mut self, provider: &str)
+- finish_ssh_login_ui · function · L239-L250 — fn finish_ssh_login_ui(&mut self)
+- cancel_ssh_login · function · L252-L297 — pub(super) fn cancel_ssh_login(&mut self)
+- append_ssh_login_input · function · L300-L334 — pub(super) fn append_ssh_login_input(&mut self, text: &str) -> bool
+- sync_ssh_login_input_mask · function · L336-L353 — fn sync_ssh_login_input_mask(&mut self)
+- handle_ssh_login_key · function · L355-L463 — pub(super) fn handle_ssh_login_key(
+- submit_ssh_login_input · function · L465-L538 — fn submit_ssh_login_input(&mut self)
+- poll_ssh_login · function · L540-L693 — pub(super) async fn poll_ssh_login(

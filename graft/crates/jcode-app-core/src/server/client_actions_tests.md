@@ -1,0 +1,45 @@
+# crates/jcode-app-core/src/server/client_actions_tests.rs
+
+- unwrap_test_turn_event · function · L24-L29 — fn unwrap_test_turn_event(mut event: ServerEvent) -> ServerEvent
+- empty_swarm_status_state · function · L32-L45 — fn empty_swarm_status_state() -> (
+- MockProvider · struct · L47-L47 — struct MockProvider;
+- StreamingMockProvider · struct · L50-L52 — struct StreamingMockProvider
+- queue_response · function · L55-L57 — fn queue_response(&self, events: Vec<StreamEvent>)
+- complete · function · L62-L72 — async fn complete(
+- name · function · L74-L76 — fn name(&self) -> &str
+- fork · function · L78-L80 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L85-L104 — async fn complete(
+- name · function · L106-L108 — fn name(&self) -> &str
+- fork · function · L110-L112 — fn fork(&self) -> Arc<dyn Provider>
+- clone_split_session_uses_persisted_session_state · function · L116-L196 — fn clone_split_session_uses_persisted_session_state()
+- SplitTestHome · struct · L198-L201 — struct SplitTestHome
+- new · function · L204-L212 — fn new() -> Self
+- drop · function · L216-L222 — fn drop(&mut self)
+- new_split_test_agent · function · L225-L233 — async fn new_split_test_agent() -> Arc<Mutex<Agent>>
+- split_response · function · L235-L252 — fn split_response(
+- split_empty_live_session_without_persisted_parent · function · L255-L286 — async fn split_empty_live_session_without_persisted_parent()
+- split_busy_session_uses_persisted_state_without_waiting_for_agent · function · L289-L343 — async fn split_busy_session_uses_persisted_state_without_waiting_for_agent()
+- split_busy_unsaved_session_returns_error_without_waiting · function · L346-L366 — async fn split_busy_unsaved_session_returns_error_without_waiting()
+- split_missing_parent_never_uses_another_live_session · function · L369-L374 — fn split_missing_parent_never_uses_another_live_session()
+- transfer_preserves_system_prompt_including_empty_override · function · L377-L408 — fn transfer_preserves_system_prompt_including_empty_override()
+- split_corrupt_persisted_parent_is_not_hidden_by_live_fallback · function · L411-L420 — fn split_corrupt_persisted_parent_is_not_hidden_by_live_fallback()
+- split_and_transfer_inherit_independent_ephemeral_environment · function · L423-L443 — fn split_and_transfer_inherit_independent_ephemeral_environment()
+- enabling_swarm_does_not_auto_elect_coordinator · function · L446-L546 — async fn enabling_swarm_does_not_auto_elect_coordinator()
+- rename_session_event_uses_agent_session_id_even_when_client_id_is_stale · function · L550-L633 — async fn rename_session_event_uses_agent_session_id_even_when_client_id_is_stale()
+- notify_session_runs_scheduled_task_immediately_for_idle_live_session · function · L636-L752 — async fn notify_session_runs_scheduled_task_immediately_for_idle_live_session()
+- notify_session_queues_soft_interrupt_when_live_session_is_busy · function · L755-L761 — async fn notify_session_queues_soft_interrupt_when_live_session_is_busy()
+- mcp_wake_for_busy_live_session_queues_soft_interrupt · function · L766-L776 — async fn mcp_wake_for_busy_live_session_queues_soft_interrupt()
+- busy_live_session_queues_notification · function · L778-L891 — async fn busy_live_session_queues_notification(message: &str, expected: &str)
+- live_member · function · L896-L921 — fn live_member(session_id: &str) -> (SwarmMember, mpsc::UnboundedReceiver<ServerEvent>)
+- resume_all_continues_interrupted_idle_live_session · function · L924-L1021 — async fn resume_all_continues_interrupted_idle_live_session()
+- resume_all_skips_session_with_completed_turn · function · L1024-L1103 — async fn resume_all_skips_session_with_completed_turn()
+- daemon_saved_flag_survives_later_session_writes · function · L1107-L1148 — async fn daemon_saved_flag_survives_later_session_writes()
+- notify_session_never_runs_scheduled_task_on_stopped_live_session · function · L1151-L1266 — async fn notify_session_never_runs_scheduled_task_on_stopped_live_session()
+- ManualSubagentTool · struct · L1268-L1268 — struct ManualSubagentTool;
+- name · function · L1272-L1274 — fn name(&self) -> &str
+- description · function · L1276-L1278 — fn description(&self) -> &str
+- parameters_schema · function · L1280-L1282 — fn parameters_schema(&self) -> serde_json::Value
+- execute · function · L1284-L1290 — async fn execute(
+- manual_subagent_runs_under_controlled_session_generation · function · L1297-L1355 — async fn manual_subagent_runs_under_controlled_session_generation()
+- Restore · struct · L1300-L1300 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L1302-L1307 — fn drop(&mut self)

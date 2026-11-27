@@ -1,0 +1,33 @@
+# crates/jcode-app-core/src/catchup.rs
+
+- CATCHUP_STATE_FILE · constant · L9-L9 — const CATCHUP_STATE_FILE: &str = "catchup_seen.json";
+- needs_catchup · function · L11-L20 — pub fn needs_catchup(session_id: &str, updated_at: DateTime<Utc>, status: &SessionStatus) -> bool
+- CatchupSeenSnapshot · struct · L26-L28 — pub struct CatchupSeenSnapshot
+- load · function · L32-L36 — pub fn load() -> Self
+- needs_catchup · function · L40-L51 — pub fn needs_catchup(
+- needs_catchup_with_seen · function · L54-L60 — pub(crate) fn needs_catchup_with_seen(
+- mark_seen · function · L62-L68 — pub fn mark_seen(session_id: &str, updated_at: DateTime<Utc>) -> Result<()>
+- build_brief · function · L70-L102 — pub fn build_brief(session: &Session) -> CatchupBrief
+- render_markdown · function · L104-L250 — pub fn render_markdown(
+- state_path · function · L252-L254 — fn state_path() -> Result<std::path::PathBuf>
+- load_seen_state · function · L256-L264 — fn load_seen_state() -> PersistedCatchupState
+- save_seen_state · function · L266-L273 — fn save_seen_state(state: &PersistedCatchupState) -> Result<()>
+- is_attention_status · function · L275-L285 — fn is_attention_status(status: &SessionStatus) -> bool
+- reason_and_tags · function · L287-L323 — fn reason_and_tags(status: &SessionStatus) -> (String, Vec<String>)
+- infer_needs_from_user · function · L325-L356 — fn infer_needs_from_user(status: &SessionStatus, latest_response: Option<&str>) -> String
+- collect_touched_files · function · L358-L381 — fn collect_touched_files(session: &Session) -> Vec<String>
+- collect_tool_counts · function · L383-L395 — fn collect_tool_counts(session: &Session) -> Vec<(String, usize)>
+- collect_activity_steps · function · L397-L416 — fn collect_activity_steps(session: &Session) -> Vec<String>
+- tool_use_step · function · L418-L474 — fn tool_use_step(block: &ContentBlock) -> Option<String>
+- summarize_shell_suffix · function · L476-L483 — fn summarize_shell_suffix(command: &str) -> String
+- collect_validation_notes · function · L485-L527 — fn collect_validation_notes(rendered: &[crate::session::RenderedMessage]) -> Vec<String>
+- looks_like_error · function · L529-L532 — fn looks_like_error(text: &str) -> bool
+- status_icon · function · L534-L543 — fn status_icon(status: &SessionStatus) -> &'static str
+- status_label · function · L545-L554 — fn status_label(status: &SessionStatus) -> &'static str
+- format_time_ago · function · L556-L567 — fn format_time_ago(updated_at: DateTime<Utc>) -> String
+- truncate · function · L569-L580 — fn truncate(text: &str, max_chars: usize) -> String
+- markdown_quote · function · L582-L584 — fn markdown_quote(text: &str) -> String
+- mermaid_escape · function · L586-L590 — fn mermaid_escape(text: &str) -> String
+- tests · module · L593-L653 — mod tests
+- needs_catchup_requires_attention_status_and_newer_than_seen · function · L599-L607 — fn needs_catchup_requires_attention_status_and_newer_than_seen()
+- render_markdown_includes_key_sections · function · L610-L652 — fn render_markdown_includes_key_sections()

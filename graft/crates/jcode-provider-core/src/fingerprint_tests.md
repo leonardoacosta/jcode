@@ -1,0 +1,22 @@
+# crates/jcode-provider-core/src/fingerprint_tests.rs
+
+- legacy_fingerprint · function · L6-L9 — fn legacy_fingerprint<T: Serialize + ?Sized>(value: &T) -> (u64, usize)
+- provider_fixture · function · L11-L25 — fn provider_fixture(turns: usize) -> (Value, Vec<Value>, Value, Value)
+- streaming_fingerprint_matches_exact_legacy_json_bytes · function · L28-L59 — fn streaming_fingerprint_matches_exact_legacy_json_bytes()
+- FailingSerialize · struct · L61-L61 — struct FailingSerialize;
+- serialize · function · L64-L72 — fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- serializer_failure_retains_empty_string_hash_and_zero_length · function · L76-L81 — fn serializer_failure_retains_empty_string_hash_and_zero_length()
+- item_fingerprints_preserve_order_mutations_and_empty_arrays · function · L84-L103 — fn item_fingerprints_preserve_order_mutations_and_empty_arrays()
+- ComputedFingerprints · struct · L106-L115 — struct ComputedFingerprints
+- compute_legacy · function · L117-L137 — fn compute_legacy(
+- compute_optimized · function · L139-L157 — fn compute_optimized(
+- compute_previous · function · L159-L176 — fn compute_previous(
+- complete_fingerprint_computation_matches_legacy_fields · function · L179-L192 — fn complete_fingerprint_computation_matches_legacy_fields()
+- canonical_byte_ranges_preserve_schemas_and_fallbacks · function · L195-L223 — fn canonical_byte_ranges_preserve_schemas_and_fallbacks()
+- canonical_byte_ranges_match_with_borrowed_components · function · L226-L237 — fn canonical_byte_ranges_match_with_borrowed_components()
+- canonical_logger_preserves_legacy_baseline_snapshot · function · L240-L271 — fn canonical_logger_preserves_legacy_baseline_snapshot()
+- benchmark_complete_provider_fingerprint_computation · function · L275-L365 — fn benchmark_complete_provider_fingerprint_computation()
+- fingerprint_matches_legacy_across_buffer_boundaries · function · L368-L374 — fn fingerprint_matches_legacy_across_buffer_boundaries()
+- serialization_failure_after_large_prefix_discards_all_partial_bytes · function · L377-L395 — fn serialization_failure_after_large_prefix_discards_all_partial_bytes()
+- FailsAfterLargePrefix · struct · L378-L378 — struct FailsAfterLargePrefix;
+- serialize · function · L380-L385 — fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>

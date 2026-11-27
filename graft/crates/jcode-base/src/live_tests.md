@@ -1,0 +1,150 @@
+# crates/jcode-base/src/live_tests.rs
+
+- SCHEMA_VERSION · constant · L11-L11 — const SCHEMA_VERSION: u32 = 2;
+- DEFAULT_RETEST_DAYS · constant · L12-L12 — const DEFAULT_RETEST_DAYS: i64 = 14;
+- LEDGER_ENV · constant · L13-L13 — const LEDGER_ENV: &str = "JCODE_LIVE_TEST_LEDGER";
+- COVERAGE_ENV · constant · L14-L14 — const COVERAGE_ENV: &str = "JCODE_LIVE_TEST_COVERAGE";
+- CHECKPOINT_TAXONOMY_VERSION · constant · L16-L16 — pub const CHECKPOINT_TAXONOMY_VERSION: u32 = 3;
+- checkpoints · module · L18-L41 — pub mod checkpoints
+- AUTH_UX_KEY_ENTRY · constant · L19-L19 — pub const AUTH_UX_KEY_ENTRY: &str = "auth_ux_key_entry";
+- AUTH_CREDENTIAL_LOADED · constant · L20-L20 — pub const AUTH_CREDENTIAL_LOADED: &str = "auth_credential_loaded";
+- CREDENTIAL_PERSISTENCE · constant · L21-L21 — pub const CREDENTIAL_PERSISTENCE: &str = "credential_persistence";
+- MODEL_CATALOG_LIVE_ENDPOINT · constant · L22-L22 — pub const MODEL_CATALOG_LIVE_ENDPOINT: &str = "model_catalog_live_endpoint";
+- CATALOG_HOT_RELOAD_CURRENT_SESSION · constant · L23-L23 — pub const CATALOG_HOT_RELOAD_CURRENT_SESSION: &str = "catalog_hot_reload_current_session";
+- PICKER_LIVE_MODELS · constant · L24-L24 — pub const PICKER_LIVE_MODELS: &str = "picker_live_models";
+- PICKER_FALLBACK_LABELING · constant · L25-L25 — pub const PICKER_FALLBACK_LABELING: &str = "picker_fallback_labeling";
+- MODEL_SWITCH_ROUTE · constant · L26-L26 — pub const MODEL_SWITCH_ROUTE: &str = "model_switch_route";
+- NON_STREAMING_CHAT_COMPLETION · constant · L27-L27 — pub const NON_STREAMING_CHAT_COMPLETION: &str = "non_streaming_chat_completion";
+- STREAMING_CHAT_COMPLETION · constant · L28-L28 — pub const STREAMING_CHAT_COMPLETION: &str = "streaming_chat_completion";
+- TOOL_CALL_PARSE · constant · L29-L29 — pub const TOOL_CALL_PARSE: &str = "tool_call_parse";
+- TOOL_EXECUTION_LOOP · constant · L30-L30 — pub const TOOL_EXECUTION_LOOP: &str = "tool_execution_loop";
+- TOOL_RESULT_FOLLOWUP · constant · L31-L31 — pub const TOOL_RESULT_FOLLOWUP: &str = "tool_result_followup";
+- REAL_JCODE_TOOL_SMOKE · constant · L32-L32 — pub const REAL_JCODE_TOOL_SMOKE: &str = "real_jcode_tool_smoke";
+- REASONING_CAPABILITY · constant · L36-L36 — pub const REASONING_CAPABILITY: &str = "reasoning_capability";
+- RESTART_PERSISTENCE · constant · L37-L37 — pub const RESTART_PERSISTENCE: &str = "restart_persistence";
+- NEGATIVE_ERROR_UX · constant · L38-L38 — pub const NEGATIVE_ERROR_UX: &str = "negative_error_ux";
+- MODEL_CAPABILITY_MATRIX · constant · L39-L39 — pub const MODEL_CAPABILITY_MATRIX: &str = "model_capability_matrix";
+- COST_QUOTA_SAFETY · constant · L40-L40 — pub const COST_QUOTA_SAFETY: &str = "cost_quota_safety";
+- LiveVerificationCheckpointDefinition · struct · L44-L51 — pub struct LiveVerificationCheckpointDefinition
+- END_TO_END_CHECKPOINTS · constant · L53-L208 — const END_TO_END_CHECKPOINTS: &[LiveVerificationCheckpointDefinition] = &[
+- end_to_end_checkpoint_definitions · function · L210-L212 — pub fn end_to_end_checkpoint_definitions() -> &'static [LiveVerificationCheckpointDefinition]
+- end_to_end_checkpoint_ids · function · L214-L218 — pub fn end_to_end_checkpoint_ids() -> impl Iterator<Item = &'static str>
+- STRICT_PROVIDER_MODEL_COVERAGE_CHECKPOINTS · constant · L220-L232 — pub const STRICT_PROVIDER_MODEL_COVERAGE_CHECKPOINTS: &[&str] = &[
+- strict_provider_model_coverage_checkpoint_ids · function · L234-L236 — pub fn strict_provider_model_coverage_checkpoint_ids() -> impl Iterator<Item = &'static str>
+- IssueDrivenLiveProviderTarget · struct · L239-L245 — struct IssueDrivenLiveProviderTarget
+- ISSUE_DRIVEN_LIVE_PROVIDER_TARGETS · constant · L247-L318 — const ISSUE_DRIVEN_LIVE_PROVIDER_TARGETS: &[IssueDrivenLiveProviderTarget] = &[
+- checkpoint_catalog_metadata · function · L320-L325 — pub fn checkpoint_catalog_metadata() -> Value
+- LiveVerificationResult · enum · L329-L334 — pub enum LiveVerificationResult
+- LiveVerificationStageStatus · enum · L338-L344 — pub enum LiveVerificationStageStatus
+- LiveVerificationStage · struct · L347-L354 — pub struct LiveVerificationStage
+- new · function · L357-L364 — pub fn new(name: impl Into<String>, status: LiveVerificationStageStatus) -> Self
+- passed · function · L366-L368 — pub fn passed(name: impl Into<String>) -> Self
+- failed · function · L370-L375 — pub fn failed(name: impl Into<String>, error: impl Into<String>) -> Self
+- blocked · function · L377-L382 — pub fn blocked(name: impl Into<String>, reason: impl Into<String>) -> Self
+- skipped · function · L384-L389 — pub fn skipped(name: impl Into<String>, reason: impl Into<String>) -> Self
+- not_run · function · L391-L396 — pub fn not_run(name: impl Into<String>, reason: impl Into<String>) -> Self
+- with_duration_ms · function · L398-L401 — pub fn with_duration_ms(mut self, duration_ms: u64) -> Self
+- with_evidence · function · L403-L406 — pub fn with_evidence(mut self, key: impl Into<String>, value: Value) -> Self
+- LiveVerificationAuth · struct · L410-L416 — pub struct LiveVerificationAuth
+- from_secret · function · L419-L429 — pub fn from_secret(
+- non_secret · function · L431-L437 — pub fn non_secret(source: impl Into<String>, env_key: Option<impl Into<String>>) -> Self
+- LiveVerificationBuild · struct · L441-L450 — pub struct LiveVerificationBuild
+- current · function · L453-L465 — pub fn current() -> Self
+- LiveVerificationEvent · struct · L469-L492 — pub struct LiveVerificationEvent
+- new · function · L495-L525 — pub fn new(
+- with_endpoint · function · L527-L530 — pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self
+- with_model · function · L532-L535 — pub fn with_model(mut self, model: impl Into<String>) -> Self
+- with_capabilities · function · L537-L546 — pub fn with_capabilities<I, S>(mut self, capabilities: I) -> Self
+- with_retest_days · function · L548-L551 — pub fn with_retest_days(mut self, days: i64) -> Self
+- with_expected_checkpoints · function · L553-L560 — pub fn with_expected_checkpoints<I, S>(mut self, checkpoints: I) -> Self
+- with_standard_end_to_end_checkpoints · function · L562-L568 — pub fn with_standard_end_to_end_checkpoints(self) -> Self
+- with_stage · function · L570-L573 — pub fn with_stage(mut self, stage: LiveVerificationStage) -> Self
+- with_stages · function · L575-L581 — pub fn with_stages<I>(mut self, stages: I) -> Self
+- with_metadata · function · L583-L586 — pub fn with_metadata(mut self, key: impl Into<String>, value: Value) -> Self
+- checkpoint_statuses · function · L588-L597 — pub fn checkpoint_statuses(&self) -> BTreeMap<String, LiveVerificationStageStatus>
+- readiness_gaps · function · L599-L614 — pub fn readiness_gaps(&self) -> Vec<String>
+- user_ready · function · L616-L618 — pub fn user_ready(&self) -> bool
+- with_not_run_for_missing_expected_checkpoints · function · L620-L637 — pub fn with_not_run_for_missing_expected_checkpoints(mut self, reason: &str) -> Self
+- coverage_key · function · L639-L647 — pub fn coverage_key(&self) -> String
+- dedup_preserving_order · function · L650-L659 — fn dedup_preserving_order(items: impl IntoIterator<Item = String>) -> Vec<String>
+- append_event · function · L661-L665 — pub fn append_event(event: &LiveVerificationEvent) -> Result<LiveVerificationPaths>
+- append_event_to_paths · function · L667-L684 — fn append_event_to_paths(
+- LiveVerificationPaths · struct · L687-L690 — pub struct LiveVerificationPaths
+- resolve · function · L693-L708 — pub fn resolve() -> Result<Self>
+- LiveVerificationCoverage · struct · L712-L721 — pub struct LiveVerificationCoverage
+- LiveVerificationCoverageEntry · struct · L724-L753 — pub struct LiveVerificationCoverageEntry
+- LiveCoverageCheckpointDefinition · struct · L756-L760 — pub struct LiveCoverageCheckpointDefinition
+- LiveProviderModelCoveragePair · struct · L763-L787 — pub struct LiveProviderModelCoveragePair
+- checkpoint_status · function · L790-L801 — fn checkpoint_status(&self, checkpoint: &str) -> Option<LiveVerificationStageStatus>
+- LiveProviderCoverageSummary · struct · L805-L819 — pub struct LiveProviderCoverageSummary
+- IssueDrivenLiveProviderTargetSummary · struct · L822-L836 — pub struct IssueDrivenLiveProviderTargetSummary
+- LiveProviderModelCoverageSummary · struct · L839-L870 — pub struct LiveProviderModelCoverageSummary
+- ProviderMonitorEntry · struct · L874-L894 — pub struct ProviderMonitorEntry
+- LiveCoverageRecordedSpend · struct · L898-L907 — pub struct LiveCoverageRecordedSpend
+- accumulate · function · L910-L920 — fn accumulate(&mut self, spend: &Value)
+- is_empty · function · L922-L924 — pub fn is_empty(&self) -> bool
+- update_coverage · function · L927-L992 — fn update_coverage(event: &LiveVerificationEvent, path: &Path) -> Result<()>
+- load_coverage · function · L994-L1005 — pub fn load_coverage(coverage_path: Option<&Path>) -> Result<(LiveVerificationCoverage, PathBuf)>
+- format_provider_test_coverage_report · function · L1007-L1159 — pub fn format_provider_test_coverage_report(
+- normalize_provider_test_coverage_key · function · L1161-L1163 — fn normalize_provider_test_coverage_key(value: &str) -> String
+- provider_test_coverage_lookup_aliases · function · L1165-L1173 — fn provider_test_coverage_lookup_aliases(provider_norm: &str) -> Vec<String>
+- provider_test_coverage_icon · function · L1175-L1183 — fn provider_test_coverage_icon(status: &LiveVerificationStageStatus) -> &'static str
+- checkpoint_status_token · function · L1189-L1197 — fn checkpoint_status_token(status: &LiveVerificationStageStatus) -> &'static str
+- provider_test_coverage_checkpoint_label · function · L1199-L1209 — fn provider_test_coverage_checkpoint_label(checkpoint: &str) -> String
+- ProviderModelCoverageBuilder · struct · L1212-L1223 — struct ProviderModelCoverageBuilder
+- record · function · L1226-L1252 — fn record(&mut self, entry: &LiveVerificationCoverageEntry)
+- finish · function · L1254-L1287 — fn finish(self) -> LiveProviderModelCoveragePair
+- merge_checkpoint_status · function · L1290-L1310 — fn merge_checkpoint_status(
+- rank · function · L1296-L1304 — fn rank(status: &LiveVerificationStageStatus) -> u8
+- strict_live_provider_model_coverage_summary · function · L1312-L1463 — pub fn strict_live_provider_model_coverage_summary(
+- ProviderTotals · type · L1345-L1345 — type ProviderTotals = (usize, usize, Vec<String>, usize, usize, usize);
+- latest_coverage_entries_by_provider_model_test · function · L1465-L1517 — fn latest_coverage_entries_by_provider_model_test(
+- LatestByTarget · type · L1470-L1473 — type LatestByTarget<'a> = BTreeMap<
+- percent · function · L1519-L1525 — fn percent(numerator: usize, denominator: usize) -> f64
+- strict_required_checkpoint_definitions · function · L1527-L1542 — fn strict_required_checkpoint_definitions() -> Vec<LiveCoverageCheckpointDefinition>
+- issue_driven_target_summaries · function · L1544-L1552 — fn issue_driven_target_summaries(
+- issue_driven_target_summary · function · L1554-L1623 — fn issue_driven_target_summary(
+- canonical_live_provider_identity · function · L1625-L1642 — fn canonical_live_provider_identity(provider_id: &str, provider_label: &str) -> (String, String)
+- known_live_model_provider_ids · function · L1644-L1656 — fn known_live_model_provider_ids() -> Vec<String>
+- STRICT_PIPELINE_STAGES · constant · L1660-L1675 — const STRICT_PIPELINE_STAGES: &[(&str, &str)] = &[
+- first_blocker · function · L1680-L1693 — fn first_blocker(
+- doctor_tier_for_stage · function · L1697-L1708 — fn doctor_tier_for_stage(stage_id: &str) -> &'static str
+- doctor_supports_provider · function · L1714-L1717 — fn doctor_supports_provider(provider_id: &str) -> bool
+- provider_has_credential · function · L1723-L1750 — fn provider_has_credential(provider_id: &str) -> bool
+- build_provider_roster · function · L1757-L1830 — fn build_provider_roster(providers: &[LiveProviderCoverageSummary]) -> Vec<ProviderMonitorEntry>
+- provider_auth_method_label · function · L1836-L1846 — fn provider_auth_method_label(provider_id: &str) -> String
+- format_strict_live_provider_model_coverage_summary · function · L1848-L2155 — pub fn format_strict_live_provider_model_coverage_summary(
+- status_rank · function · L2035-L2044 — fn status_rank(status: &str) -> u8
+- pair_status_token · function · L2160-L2166 — fn pair_status_token(pair: &LiveProviderModelCoveragePair, stage_count: usize) -> String
+- stages_passed · function · L2170-L2180 — fn stages_passed(pair: &LiveProviderModelCoveragePair) -> usize
+- humanize_time_ago · function · L2185-L2212 — fn humanize_time_ago(when: DateTime<Utc>, now: DateTime<Utc>) -> String
+- coverage_actor_label · function · L2217-L2224 — fn coverage_actor_label(dirty: bool, version: &str) -> &'static str
+- pair_fix_hint · function · L2226-L2235 — fn pair_fix_hint(provider_id: &str, model: &str, stage_id: &str) -> String
+- colorize_provider_test_coverage_output · function · L2237-L2244 — pub fn colorize_provider_test_coverage_output(output: &str) -> String
+- CoverageLineStyle · enum · L2250-L2263 — pub enum CoverageLineStyle
+- is_stage_fraction · function · L2266-L2277 — fn is_stage_fraction(token: &str) -> bool
+- classify_provider_test_coverage_line · function · L2281-L2371 — pub fn classify_provider_test_coverage_line(line: &str) -> CoverageLineStyle
+- colorize_provider_test_coverage_line · function · L2373-L2386 — fn colorize_provider_test_coverage_line(line: &str) -> String
+- fingerprint_secret · function · L2388-L2396 — pub fn fingerprint_secret(secret: &str) -> Option<String>
+- event_id · function · L2398-L2407 — fn event_id(recorded_at: &DateTime<Utc>, test_name: &str, provider_id: &str) -> String
+- sanitize_json_value · function · L2409-L2421 — fn sanitize_json_value(value: Value) -> Value
+- redact_secret_like_text · function · L2423-L2430 — fn redact_secret_like_text(text: &str) -> String
+- looks_secret_like · function · L2432-L2446 — fn looks_secret_like(text: &str) -> bool
+- concise_model_sample · function · L2448-L2454 — pub fn concise_model_sample(models: &[String], limit: usize) -> Value
+- tests · module · L2457-L3087 — mod tests
+- EnvGuard · struct · L2461-L2464 — struct EnvGuard
+- set · function · L2467-L2471 — fn set(key: &'static str, value: &Path) -> Self
+- drop · function · L2475-L2480 — fn drop(&mut self)
+- humanize_time_ago_buckets_and_labels_actor · function · L2484-L2517 — fn humanize_time_ago_buckets_and_labels_actor()
+- live_verification_ledger_writes_events_and_coverage_without_secret · function · L2520-L2570 — fn live_verification_ledger_writes_events_and_coverage_without_secret()
+- end_to_end_checkpoint_taxonomy_covers_user_ready_ladder · function · L2573-L2625 — fn end_to_end_checkpoint_taxonomy_covers_user_ready_ladder()
+- readiness_gaps_track_expected_checkpoints_not_yet_exercised · function · L2628-L2655 — fn readiness_gaps_track_expected_checkpoints_not_yet_exercised()
+- auth_fingerprint_is_stable_and_non_reversible · function · L2658-L2666 — fn auth_fingerprint_is_stable_and_non_reversible()
+- coverage_entry · function · L2668-L2694 — fn coverage_entry(
+- strict_statuses · function · L2696-L2712 — fn strict_statuses(
+- strict_live_provider_model_coverage_counts_only_exact_pairs_with_all_required_passed · function · L2715-L2783 — fn strict_live_provider_model_coverage_counts_only_exact_pairs_with_all_required_passed()
+- strict_coverage_keeps_passing_run_when_newer_run_skips_same_checkpoints · function · L2786-L2876 — fn strict_coverage_keeps_passing_run_when_newer_run_skips_same_checkpoints()
+- strict_live_provider_model_coverage_report_names_required_e2e_checkpoints · function · L2879-L2904 — fn strict_live_provider_model_coverage_report_names_required_e2e_checkpoints()
+- issue_driven_live_provider_targets_report_covered_partial_and_missing_evidence · function · L2907-L2973 — fn issue_driven_live_provider_targets_report_covered_partial_and_missing_evidence()
+- coverage_summary_lists_one_line_per_pair_without_glyph_bars · function · L2976-L3024 — fn coverage_summary_lists_one_line_per_pair_without_glyph_bars()
+- coverage_line_classifier_assigns_expected_styles · function · L3027-L3086 — fn coverage_line_classifier_assigns_expected_styles()

@@ -1,0 +1,49 @@
+# crates/jcode-tui/src/tui/app/commands_cloud.rs
+
+- completion · module · L20-L20 — mod completion;
+- CloudCommand · enum · L24-L51 — pub(super) enum CloudCommand
+- parse_cloud_command · function · L53-L103 — pub(super) fn parse_cloud_command(trimmed: &str) -> Option<CloudCommand>
+- parse_move_options · function · L105-L145 — fn parse_move_options<'a>(first: &'a str, words: impl Iterator<Item = &'a str>) -> CloudCommand
+- check_cloud_handoff_input · function · L148-L162 — pub(super) fn check_cloud_handoff_input(app: &mut App, trimmed: &str) -> bool
+- handle_cloud_command · function · L165-L278 — pub(super) fn handle_cloud_command(app: &mut App, trimmed: &str, session_id: &str) -> bool
+- PendingCloudHandoff · struct · L281-L289 — pub(in crate::tui) struct PendingCloudHandoff
+- next_request_id · function · L291-L294 — fn next_request_id() -> u64
+- NEXT · constant · L292-L292 — static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+- start_cloud_command · function · L296-L512 — fn start_cloud_command(
+- configure_replacement · function · L514-L531 — fn configure_replacement(
+- CloudEvent · enum · L533-L538 — pub(super) enum CloudEvent
+- CloudJob · struct · L540-L551 — pub(in crate::tui) struct CloudJob
+- has_pending_cloud_recovery · function · L554-L556 — pub(super) fn has_pending_cloud_recovery(&self) -> bool
+- cloud_recovery_reminder · function · L558-L563 — pub(super) fn cloud_recovery_reminder(&self) -> Option<String>
+- take_cloud_recovery_reminder · function · L565-L572 — pub(super) fn take_cloud_recovery_reminder(&mut self) -> Option<String>
+- cloud_handoff_blocks_work · function · L575-L582 — pub(super) fn cloud_handoff_blocks_work(&self) -> bool
+- cloud_handoff_draining_reminders · function · L587-L594 — pub(super) fn cloud_handoff_draining_reminders(&self) -> bool
+- has_unsent_handoff_work · function · L596-L598 — fn has_unsent_handoff_work(&self, accepted_command: Option<&str>) -> bool
+- unsent_handoff_work · function · L602-L635 — fn unsent_handoff_work(&self, accepted_command: Option<&str>) -> Vec<&'static str>
+- take_ready_cloud_handoff · function · L638-L669 — fn take_ready_cloud_handoff(&mut self) -> Option<PendingCloudHandoff>
+- interrupt_turn_for_ready_handoff · function · L675-L700 — fn interrupt_turn_for_ready_handoff(&mut self)
+- poll_cloud_job_interrupt_only_for_test · function · L703-L705 — pub(super) fn poll_cloud_job_interrupt_only_for_test(&mut self)
+- take_cloud_remote_interrupt · function · L709-L717 — pub(super) fn take_cloud_remote_interrupt(&mut self) -> bool
+- cloud_handoff_can_dispatch · function · L719-L726 — fn cloud_handoff_can_dispatch(&self) -> bool
+- poll_cloud_job · function · L728-L836 — pub(super) fn poll_cloud_job(&mut self) -> bool
+- push_cloud_step · function · L841-L850 — fn push_cloud_step(steps: &mut Vec<String>, text: String)
+- PLACEHOLDER · constant · L842-L842 — const PLACEHOLDER: &str = "Starting cloud command";
+- render_cloud_steps · function · L852-L867 — fn render_cloud_steps(steps: &[String], frame: usize, finished: Option<bool>) -> String
+- SPINNER · constant · L853-L853 — const SPINNER: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+- cloud_failure_details · function · L870-L887 — fn cloud_failure_details(stderr: &str) -> String
+- cloud_failure_reason · function · L889-L897 — fn cloud_failure_reason(details: &str) -> &str
+- CloudAccountIssue · enum · L900-L904 — pub(super) enum CloudAccountIssue
+- targets_managed_cloud · function · L908-L917 — fn targets_managed_cloud(command: &CloudCommand) -> bool
+- needs_cloud_account · function · L921-L937 — fn needs_cloud_account(
+- managed_cloud_account_missing · function · L946-L962 — fn managed_cloud_account_missing(command: &CloudCommand) -> bool
+- cloud_account_issue · function · L966-L981 — fn cloud_account_issue(details: &str) -> Option<CloudAccountIssue>
+- cloud_account_guidance · function · L983-L1017 — fn cloud_account_guidance(issue: CloudAccountIssue) -> (String, &'static str)
+- OWN_MACHINE · constant · L985-L986 — const OWN_MACHINE: &str =
+- show_cloud_account_guidance · function · L1019-L1023 — fn show_cloud_account_guidance(app: &mut App, issue: CloudAccountIssue)
+- show_cloud_failure · function · L1025-L1057 — fn show_cloud_failure(
+- cloud_recovery_context · function · L1059-L1098 — fn cloud_recovery_context(command: &str, session: &str, details: &str) -> String
+- cloud_output_failure · function · L1100-L1117 — fn cloud_output_failure(job: &CloudJob, output: &std::process::Output) -> String
+- format_cloud_failure · function · L1120-L1141 — fn format_cloud_failure(command: &str, stderr: &str) -> String
+- record_cloud_problem · function · L1145-L1183 — fn record_cloud_problem(command: &str, session_id: &str, exit: Option<i32>, stderr: &str)
+- report_session_ids · function · L1185-L1194 — fn report_session_ids(report: &serde_json::Value, field: &str) -> Vec<String>
+- tests · module · L1198-L1198 — mod tests;

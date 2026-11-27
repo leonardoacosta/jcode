@@ -1,0 +1,32 @@
+# crates/jcode-tui-permissions/src/lib.rs
+
+- PermissionsApp · struct · L18-L25 — struct PermissionsApp
+- new · function · L28-L37 — fn new(requests: Vec<PermissionRequest>) -> Self
+- selected_request · function · L39-L41 — fn selected_request(&self) -> Option<&PermissionRequest>
+- next · function · L43-L47 — fn next(&mut self)
+- previous · function · L49-L51 — fn previous(&mut self)
+- approve_selected · function · L53-L66 — fn approve_selected(&mut self)
+- deny_selected · function · L68-L81 — fn deny_selected(&mut self, reason: Option<String>)
+- approve_all · function · L83-L92 — fn approve_all(&mut self)
+- deny_all · function · L94-L103 — fn deny_all(&mut self)
+- render · function · L105-L147 — fn render(&self, frame: &mut Frame)
+- render_list · function · L149-L232 — fn render_list(&self, frame: &mut Frame, area: Rect)
+- render_separator · function · L234-L238 — fn render_separator(&self, frame: &mut Frame, area: Rect)
+- render_detail · function · L240-L402 — fn render_detail(&self, frame: &mut Frame, area: Rect)
+- render_help · function · L404-L440 — fn render_help(&self, frame: &mut Frame, area: Rect)
+- render_empty · function · L442-L469 — fn render_empty(&self, frame: &mut Frame, area: Rect)
+- render_done · function · L471-L507 — fn render_done(&self, frame: &mut Frame, area: Rect)
+- run · function · L509-L579 — pub fn run(mut self) -> Result<()>
+- detail_height · function · L582-L588 — fn detail_height(total: u16) -> u16
+- PermissionReview · struct · L591-L602 — struct PermissionReview
+- extract_permission_review · function · L604-L661 — fn extract_permission_review(req: &PermissionRequest) -> PermissionReview
+- context_string · function · L663-L677 — fn context_string(map: Option<&Map<String, Value>>, keys: &[&str]) -> Option<String>
+- context_list · function · L679-L704 — fn context_list(map: Option<&Map<String, Value>>, keys: &[&str]) -> Option<Vec<String>>
+- pick_context_string · function · L706-L715 — fn pick_context_string(
+- pick_context_list · function · L717-L727 — fn pick_context_list(
+- summarize_list · function · L729-L739 — fn summarize_list(items: &[String], separator: &str, max_items: usize) -> String
+- wrap_by_chars · function · L741-L754 — fn wrap_by_chars(text: &str, width: usize) -> Vec<String>
+- push_wrapped_field · function · L756-L796 — fn push_wrapped_field(
+- format_age · function · L798-L812 — fn format_age(duration: chrono::Duration) -> String
+- truncate · function · L814-L822 — fn truncate(s: &str, max_len: usize) -> String
+- run_permissions · function · L824-L857 — pub fn run_permissions() -> Result<()>

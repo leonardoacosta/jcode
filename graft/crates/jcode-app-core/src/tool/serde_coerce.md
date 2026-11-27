@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/tool/serde_coerce.rs
+
+- U32OrString · struct · L18-L18 — struct U32OrString;
+- Value · type · L21-L21 — type Value = u32;
+- expecting · function · L23-L25 — fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result
+- visit_u64 · function · L27-L29 — fn visit_u64<E: de::Error>(self, v: u64) -> Result<u32, E>
+- visit_i64 · function · L31-L33 — fn visit_i64<E: de::Error>(self, v: i64) -> Result<u32, E>
+- visit_f64 · function · L35-L41 — fn visit_f64<E: de::Error>(self, v: f64) -> Result<u32, E>
+- visit_str · function · L43-L48 — fn visit_str<E: de::Error>(self, v: &str) -> Result<u32, E>
+- u32_from_string_or_number · function · L52-L57 — pub fn u32_from_string_or_number<'de, D>(deserializer: D) -> Result<u32, D::Error>
+- opt_u32_from_string_or_number · function · L61-L94 — pub fn opt_u32_from_string_or_number<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+- BoolOrString · struct · L96-L96 — struct BoolOrString;
+- Value · type · L99-L99 — type Value = bool;
+- expecting · function · L101-L103 — fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result
+- visit_bool · function · L105-L107 — fn visit_bool<E: de::Error>(self, v: bool) -> Result<bool, E>
+- visit_str · function · L109-L115 — fn visit_str<E: de::Error>(self, v: &str) -> Result<bool, E>
+- visit_u64 · function · L117-L119 — fn visit_u64<E: de::Error>(self, v: u64) -> Result<bool, E>
+- visit_i64 · function · L121-L123 — fn visit_i64<E: de::Error>(self, v: i64) -> Result<bool, E>
+- bool_from_string_or_bool · function · L127-L132 — pub fn bool_from_string_or_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
+- tests · module · L135-L193 — mod tests
+- Demo · struct · L140-L147 — struct Demo
+- accepts_native_number · function · L150-L153 — fn accepts_native_number()
+- accepts_string_number · function · L156-L162 — fn accepts_string_number()
+- rejects_garbage_string · function · L165-L168 — fn rejects_garbage_string()
+- optional_handles_null_empty_string_and_values · function · L171-L182 — fn optional_handles_null_empty_string_and_values()
+- bool_accepts_string_and_native · function · L185-L192 — fn bool_accepts_string_and_native()

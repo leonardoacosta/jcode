@@ -1,0 +1,42 @@
+# crates/jcode-render-core/src/preprocess.rs
+
+- DISPLAY_MATH_ENVIRONMENTS · constant · L9-L35 — const DISPLAY_MATH_ENVIRONMENTS: &[&str] = &[
+- MathDelimiter · enum · L38-L43 — enum MathDelimiter
+- normalize_latex_math · function · L51-L62 — pub fn normalize_latex_math(text: &str) -> String
+- promote_standalone_inline_math · function · L69-L132 — fn promote_standalone_inline_math(text: &str) -> String
+- stabilize_display_math · function · L141-L203 — fn stabilize_display_math(text: &str) -> String
+- DisplayMathLinePrefix · struct · L206-L209 — struct DisplayMathLinePrefix
+- strip_continuation · function · L212-L218 — fn strip_continuation<'a>(&self, line: &'a str) -> Option<&'a str>
+- split_body · function · L220-L225 — fn split_body<'a>(&self, line: &'a str) -> (&'a str, &'a str)
+- math_line_prefix · function · L228-L275 — fn math_line_prefix(line: &str, marker: &str) -> Option<(DisplayMathLinePrefix, usize)>
+- markdown_list_marker_width · function · L277-L286 — fn markdown_list_marker_width(marker: &str) -> Option<usize>
+- markdown_interrupts_math · function · L288-L309 — fn markdown_interrupts_math(line: &str) -> bool
+- normalize_math_fences · function · L311-L364 — fn normalize_math_fences(text: &str) -> String
+- strip_outer_display_delimiters · function · L366-L381 — fn strip_outer_display_delimiters(body: &str) -> &str
+- opening_fence · function · L383-L405 — fn opening_fence(line: &str) -> Option<(&str, char, usize, &str)>
+- closing_fence · function · L407-L411 — fn closing_fence(line: &str, marker: char, minimum_len: usize) -> bool
+- is_math_fence_info · function · L413-L421 — fn is_math_fence_info(info: &str) -> bool
+- normalize_latex_delimiters_and_environments · function · L423-L652 — fn normalize_latex_delimiters_and_environments(text: &str) -> String
+- environment_marker · function · L654-L660 — fn environment_marker<'a>(rest: &'a str, command: &str) -> Option<(&'a str, usize)>
+- has_matching_environment_end · function · L662-L690 — fn has_matching_environment_end(source: &str, name: &str) -> bool
+- is_escaped_at · function · L692-L699 — fn is_escaped_at(text: &str, index: usize) -> bool
+- has_unescaped_delimiter · function · L701-L703 — fn has_unescaped_delimiter(text: &str, delimiter: &str) -> bool
+- find_unescaped_delimiter · function · L705-L715 — fn find_unescaped_delimiter(text: &str, delimiter: &str) -> Option<usize>
+- looks_like_escaped_markdown_link · function · L717-L722 — fn looks_like_escaped_markdown_link(rest: &str) -> bool
+- delimited_content_looks_like_prose · function · L728-L772 — fn delimited_content_looks_like_prose(rest: &str, close_delimiter: &str) -> bool
+- escape_currency_dollars · function · L779-L929 — pub fn escape_currency_dollars(text: &str) -> String
+- tests · module · L932-L1073 — mod tests
+- escapes_currency · function · L936-L939 — fn escapes_currency()
+- text_without_math_markers_is_returned_unchanged · function · L942-L951 — fn text_without_math_markers_is_returned_unchanged()
+- leaves_real_math · function · L954-L956 — fn leaves_real_math()
+- passes_through_display_math · function · L959-L961 — fn passes_through_display_math()
+- skips_inline_code · function · L964-L966 — fn skips_inline_code()
+- skips_fenced_code · function · L969-L976 — fn skips_fenced_code()
+- preserves_already_escaped · function · L979-L981 — fn preserves_already_escaped()
+- normalizes_parenthesized_and_bracketed_math · function · L984-L993 — fn normalizes_parenthesized_and_bracketed_math()
+- normalizes_standalone_display_environments · function · L996-L1007 — fn normalizes_standalone_display_environments()
+- normalizes_explicit_math_fences · function · L1010-L1019 — fn normalizes_explicit_math_fences()
+- preserves_literal_code_and_malformed_delimiters · function · L1022-L1033 — fn preserves_literal_code_and_malformed_delimiters()
+- currency_does_not_hide_later_latex_math · function · L1036-L1041 — fn currency_does_not_hide_later_latex_math()
+- escaped_bracketed_prose_is_not_math · function · L1044-L1055 — fn escaped_bracketed_prose_is_not_math()
+- escaped_single_word_brackets_are_not_math · function · L1058-L1072 — fn escaped_single_word_brackets_are_not_math()

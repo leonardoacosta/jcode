@@ -1,0 +1,28 @@
+# crates/jcode-command-risk/src/lib.rs
+
+- gate · module · L35-L35 — mod gate;
+- paths · module · L36-L36 — mod paths;
+- tokenize · module · L37-L37 — mod tokenize;
+- RiskLevel · enum · L45-L57 — pub enum RiskLevel
+- runs_immediately · function · L61-L63 — pub fn runs_immediately(self) -> bool
+- is_absolute_deny · function · L66-L68 — pub fn is_absolute_deny(self) -> bool
+- RiskFinding · struct · L73-L79 — pub struct RiskFinding
+- RiskAssessment · struct · L83-L86 — pub struct RiskAssessment
+- safe · function · L89-L94 — fn safe() -> Self
+- from_findings · function · L96-L103 — fn from_findings(findings: Vec<RiskFinding>) -> Self
+- explanation · function · L107-L118 — pub fn explanation(&self) -> String
+- RiskContext · struct · L124-L131 — pub struct RiskContext
+- from_env · function · L134-L142 — pub fn from_env(working_dir: Option<std::path::PathBuf>) -> Self
+- dirs_home · function · L145-L149 — fn dirs_home() -> Option<std::path::PathBuf>
+- DESTRUCTIVE_COMMANDS · constant · L155-L157 — const DESTRUCTIVE_COMMANDS: &[&str] = &[
+- WRAPPER_COMMANDS · constant · L162-L165 — const WRAPPER_COMMANDS: &[&str] = &[
+- SHELL_CONTROL_PREFIXES · constant · L168-L170 — const SHELL_CONTROL_PREFIXES: &[&str] = &[
+- wrapper_flag_takes_value · function · L174-L191 — fn wrapper_flag_takes_value(wrapper: &str, flag: &str) -> bool
+- SHELL_COMMANDS · constant · L195-L195 — const SHELL_COMMANDS: &[&str] = &["sh", "bash", "zsh", "dash", "ksh", "fish"];
+- CONDITIONALLY_DESTRUCTIVE · constant · L198-L199 — const CONDITIONALLY_DESTRUCTIVE: &[(&str, &[&str])] =
+- assess · function · L205-L236 — pub fn assess(command: &str, ctx: &RiskContext) -> RiskAssessment
+- assess_segment · function · L238-L442 — fn assess_segment(tokens: &[Token], ctx: &RiskContext, findings: &mut Vec<RiskFinding>)
+- assess_find · function · L446-L537 — fn assess_find(tokens: &[Token], ctx: &RiskContext, findings: &mut Vec<RiskFinding>)
+- read_only_find_payload · function · L539-L563 — fn read_only_find_payload(tokens: &[Token]) -> bool
+- is_safe_redirect_sink · function · L567-L569 — fn is_safe_redirect_sink(raw: &str) -> bool
+- assess_tests · module · L573-L573 — mod assess_tests;

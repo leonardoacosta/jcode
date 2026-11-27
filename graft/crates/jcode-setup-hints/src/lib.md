@@ -1,0 +1,122 @@
+# crates/jcode-setup-hints/src/lib.rs
+
+- keymap · module · L28-L28 — pub mod keymap;
+- cli_launch_hints · module · L30-L30 — mod cli_launch_hints;
+- launch_hotkeys · module · L33-L33 — mod launch_hotkeys;
+- linux_env · module · L35-L35 — mod linux_env;
+- linux_niri · module · L37-L37 — mod linux_niri;
+- macos_launcher · module · L39-L39 — mod macos_launcher;
+- macos_terminal · module · L41-L41 — mod macos_terminal;
+- windows_hotkeys · module · L43-L43 — mod windows_hotkeys;
+- windows_setup · module · L45-L45 — mod windows_setup;
+- SetupHintsState · struct · L66-L128 — pub struct SetupHintsState
+- default_true · function · L131-L133 — fn default_true() -> bool
+- default · function · L136-L159 — fn default() -> Self
+- HOTKEY_LISTENER_VERSION · constant · L188-L188 — pub const HOTKEY_LISTENER_VERSION: u32 = 6;
+- LAUNCH_HOTKEY_TRACKING_VERSION · constant · L191-L191 — const LAUNCH_HOTKEY_TRACKING_VERSION: u32 = 1;
+- MAX_TERMINAL_NUDGES · constant · L196-L196 — pub const MAX_TERMINAL_NUDGES: u64 = 5;
+- LAUNCH_HOTKEY_LEARNED_USES · constant · L197-L197 — const LAUNCH_HOTKEY_LEARNED_USES: u64 = 3;
+- StartupHints · struct · L200-L204 — pub struct StartupHints
+- with_spawn_notice · function · L207-L213 — fn with_spawn_notice(message: String) -> Self
+- with_status_and_display · function · L215-L225 — fn with_status_and_display(
+- path · function · L229-L231 — fn path() -> Result<PathBuf>
+- load · function · L233-L238 — pub fn load() -> Self
+- load_from · function · L246-L252 — fn load_from(path: &std::path::Path) -> Self
+- save · function · L254-L264 — pub fn save(&self) -> Result<()>
+- nudge_budget_remaining · function · L269-L271 — fn nudge_budget_remaining(&self) -> bool
+- record_nudge_shown · function · L281-L284 — fn record_nudge_shown(&mut self)
+- mac_hotkey_support_dir · function · L288-L290 — fn mac_hotkey_support_dir() -> Result<PathBuf>
+- mac_hotkey_last_dir_file · function · L295-L297 — fn mac_hotkey_last_dir_file() -> Result<PathBuf>
+- mac_hotkey_last_repo_file · function · L302-L304 — fn mac_hotkey_last_repo_file() -> Result<PathBuf>
+- mac_hotkey_plan_file · function · L310-L312 — fn mac_hotkey_plan_file() -> Result<PathBuf>
+- load_launch_hotkeys_config · function · L319-L362 — fn load_launch_hotkeys_config() -> jcode_config_types::LaunchHotkeysConfig
+- Wrapper · struct · L321-L324 — struct Wrapper
+- Key · type · L332-L336 — type Key = (
+- MEMO · constant · L337-L338 — static MEMO: std::sync::Mutex<Option<(Key, jcode_config_types::LaunchHotkeysConfig)>> =
+- record_launch_dirs · function · L374-L385 — pub fn record_launch_dirs(dir: &std::path::Path, repo_dir: Option<&std::path::Path>)
+- record_launch_dirs_inner · function · L388-L407 — fn record_launch_dirs_inner(
+- should_record_last_dir · function · L413-L415 — fn should_record_last_dir(dir: &std::path::Path, home: Option<&std::path::Path>) -> bool
+- mac_hotkey_launch_agent_path · function · L418-L424 — fn mac_hotkey_launch_agent_path() -> Result<PathBuf>
+- mac_hotkey_launch_agent_plist · function · L427-L465 — fn mac_hotkey_launch_agent_plist(
+- launch_jcode_in_macos_terminal · function · L478-L520 — pub fn launch_jcode_in_macos_terminal(extra_args: &[String]) -> Result<()>
+- write_hotkey_launch_scripts · function · L528-L553 — fn write_hotkey_launch_scripts(
+- install_macos_hotkey_listener · function · L556-L614 — fn install_macos_hotkey_listener(
+- startup_hints_for_launch · function · L616-L630 — fn startup_hints_for_launch(_state: &SetupHintsState) -> Option<StartupHints>
+- read_choice · function · L634-L638 — fn read_choice() -> String
+- macos_terminal_notice · function · L650-L668 — fn macos_terminal_notice(
+- nudge_macos_ghostty · function · L673-L677 — fn nudge_macos_ghostty(state: &mut SetupHintsState) -> Option<StartupHints>
+- run_setup_hotkey · function · L689-L831 — pub fn run_setup_hotkey(
+- install_cli_launch_hints_notice · function · L838-L858 — pub(crate) fn install_cli_launch_hints_notice()
+- active_primary_launch_hotkey · function · L862-L916 — pub(crate) fn active_primary_launch_hotkey() -> Option<(String, String)>
+- run_macos_hotkey_listener_main_thread · function · L923-L932 — pub fn run_macos_hotkey_listener_main_thread() -> Result<()>
+- macos_run_loop · module · L935-L960 — mod macos_run_loop
+- ProcessSerialNumber · struct · L944-L947 — struct ProcessSerialNumber
+- K_CURRENT_PROCESS · constant · L950-L950 — const K_CURRENT_PROCESS: u32 = 2;
+- K_PROCESS_TRANSFORM_TO_UI_ELEMENT_APPLICATION · constant · L955-L955 — const K_PROCESS_TRANSFORM_TO_UI_ELEMENT_APPLICATION: u32 = 4;
+- TransformProcessType · function · L958-L959 — unsafe extern "C"
+- RunApplicationEventLoop · function · L964-L964 — fn RunApplicationEventLoop();
+- promote_to_ui_element · function · L975-L983 — pub fn promote_to_ui_element() -> i32
+- run_forever · function · L994-L997 — pub fn run_forever()
+- run_macos_hotkey_listener · function · L1001-L1118 — fn run_macos_hotkey_listener() -> Result<()>
+- DirectHotkeyLaunch · struct · L1122-L1129 — struct DirectHotkeyLaunch
+- resolved_cwd · function · L1133-L1135 — fn resolved_cwd(&self) -> PathBuf
+- load_direct_hotkey_launches · function · L1143-L1166 — fn load_direct_hotkey_launches() -> Vec<DirectHotkeyLaunch>
+- record_launch_hotkey_use · function · L1172-L1187 — pub fn record_launch_hotkey_use(chord: &str)
+- macos_hotkey_log · function · L1195-L1198 — fn macos_hotkey_log(message: &str)
+- MacHotkeyAction · enum · L1205-L1215 — pub enum MacHotkeyAction
+- mac_hotkey_action_for_state · function · L1218-L1235 — fn mac_hotkey_action_for_state(
+- maybe_show_setup_hints · function · L1245-L1409 — pub fn maybe_show_setup_hints() -> Option<StartupHints>
+- macos_launch_hotkeys_notice · function · L1412-L1453 — fn macos_launch_hotkeys_notice(state: &SetupHintsState) -> Option<StartupHints>
+- detect_linux_compositor · function · L1465-L1467 — fn detect_linux_compositor() -> Option<linux_env::LinuxCompositor>
+- niri_config_path · function · L1472-L1474 — fn niri_config_path() -> Option<PathBuf>
+- xdg_config_home · function · L1479-L1483 — fn xdg_config_home() -> Option<PathBuf>
+- flat_compositor_config_path · function · L1489-L1515 — fn flat_compositor_config_path(comp: linux_env::LinuxCompositor) -> Option<PathBuf>
+- kde_globalshortcutsrc_path · function · L1519-L1521 — fn kde_globalshortcutsrc_path() -> Option<PathBuf>
+- kde_applications_dir · function · L1525-L1530 — fn kde_applications_dir() -> Option<PathBuf>
+- linux_hotkey_config_path · function · L1534-L1540 — fn linux_hotkey_config_path(comp: linux_env::LinuxCompositor) -> Option<PathBuf>
+- linux_hotkey_sentinel · function · L1544-L1549 — fn linux_hotkey_sentinel(comp: linux_env::LinuxCompositor) -> &'static str
+- linux_hotkeys_installed · function · L1553-L1573 — fn linux_hotkeys_installed(comp: linux_env::LinuxCompositor) -> bool
+- LinuxHotkeySetupAction · enum · L1577-L1581 — enum LinuxHotkeySetupAction
+- linux_hotkey_setup_action · function · L1584-L1598 — fn linux_hotkey_setup_action(
+- linux_launch_terminal · function · L1604-L1624 — fn linux_launch_terminal() -> String
+- CANDIDATES · constant · L1610-L1617 — const CANDIDATES: [&str; 6] = [
+- binary_on_path · function · L1629-L1637 — fn binary_on_path(name: &str) -> bool
+- resolve_linux_hotkeys · function · L1643-L1669 — fn resolve_linux_hotkeys() -> Vec<linux_niri::NiriHotkey>
+- linux_chord_expressible · function · L1674-L1684 — fn linux_chord_expressible(comp: linux_env::LinuxCompositor, chord: &keymap::KeyChord) -> bool
+- install_linux_launch_hotkeys · function · L1689-L1700 — fn install_linux_launch_hotkeys(comp: linux_env::LinuxCompositor) -> Result<bool>
+- uninstall_linux_launch_hotkeys · function · L1706-L1710 — fn uninstall_linux_launch_hotkeys() -> Result<()>
+- install_niri_launch_hotkeys · function · L1717-L1752 — fn install_niri_launch_hotkeys() -> Result<bool>
+- install_flat_launch_hotkeys · function · L1760-L1812 — fn install_flat_launch_hotkeys(comp: linux_env::LinuxCompositor) -> Result<bool>
+- dconf_read · function · L1817-L1825 — fn dconf_read(path: &str) -> String
+- dconf_list · function · L1829-L1837 — fn dconf_list(dir: &str) -> String
+- gnome_keybinding_list · function · L1841-L1843 — fn gnome_keybinding_list() -> String
+- dconf_write · function · L1850-L1859 — fn dconf_write(path: &str, value: &str) -> Result<()>
+- dconf_write_checked · function · L1865-L1871 — fn dconf_write_checked(path: &str, value: &str) -> Result<bool>
+- gvariant_string · function · L1875-L1877 — fn gvariant_string(value: &str) -> String
+- install_gnome_launch_hotkeys · function · L1884-L1916 — fn install_gnome_launch_hotkeys() -> Result<bool>
+- install_cinnamon_launch_hotkeys · function · L1922-L1954 — fn install_cinnamon_launch_hotkeys() -> Result<bool>
+- install_mate_launch_hotkeys · function · L1960-L1981 — fn install_mate_launch_hotkeys() -> Result<bool>
+- xfce_shortcut_commands_text · function · L1986-L1994 — fn xfce_shortcut_commands_text() -> String
+- install_xfce_launch_hotkeys · function · L2000-L2062 — fn install_xfce_launch_hotkeys() -> Result<bool>
+- install_kde_launch_hotkeys · function · L2069-L2110 — fn install_kde_launch_hotkeys() -> Result<bool>
+- write_linux_launch_scripts · function · L2117-L2158 — fn write_linux_launch_scripts() -> Result<Vec<linux_env::ScriptBind>>
+- backup_compositor_config · function · L2163-L2178 — fn backup_compositor_config(config_path: &std::path::Path)
+- reload_compositor_config · function · L2184-L2205 — fn reload_compositor_config(comp: linux_env::LinuxCompositor)
+- linux_launch_hotkeys_notice · function · L2212-L2248 — fn linux_launch_hotkeys_notice(state: &SetupHintsState) -> Option<StartupHints>
+- LaunchHotkeyRow · struct · L2252-L2259 — pub(crate) struct LaunchHotkeyRow
+- compact_launch_hotkey_notice · function · L2263-L2265 — pub(crate) fn compact_launch_hotkey_notice(lines: &[String]) -> String
+- launch_hotkey_notice_lines · function · L2277-L2298 — pub(crate) fn launch_hotkey_notice_lines(
+- ConflictHintDecision · enum · L2307-L2315 — pub(crate) enum ConflictHintDecision
+- conflict_hint_decision · function · L2317-L2325 — pub(crate) fn conflict_hint_decision(signature: &str, previous: &str) -> ConflictHintDecision
+- maybe_show_keymap_conflict_hint · function · L2339-L2353 — pub fn maybe_show_keymap_conflict_hint(
+- keymap_conflict_hint_for · function · L2360-L2383 — pub(crate) fn keymap_conflict_hint_for(
+- glyph_safe_mode_active · function · L2390-L2408 — fn glyph_safe_mode_active() -> bool
+- maybe_show_glyph_safe_notice · function · L2413-L2423 — pub fn maybe_show_glyph_safe_notice() -> Option<StartupHints>
+- glyph_safe_notice_for · function · L2427-L2450 — pub(crate) fn glyph_safe_notice_for(
+- run_setup_launcher · function · L2453-L2510 — pub fn run_setup_launcher() -> Result<()>
+- create_desktop_shortcut · function · L2520-L2541 — fn create_desktop_shortcut(state: &mut SetupHintsState) -> Result<()>
+- uninstall_macos_hotkey_listener · function · L2547-L2558 — fn uninstall_macos_hotkey_listener() -> Result<()>
+- auto_install_macos_hotkey_listener · function · L2561-L2573 — fn auto_install_macos_hotkey_listener(state: &mut SetupHintsState) -> Result<()>
+- migrate_macos_hotkey_listener · function · L2584-L2596 — fn migrate_macos_hotkey_listener(state: &mut SetupHintsState) -> Result<()>
+- reinstall_launch_hotkeys_after_config_change · function · L2604-L2656 — pub fn reinstall_launch_hotkeys_after_config_change()
+- setup_hints_tests · module · L2660-L2660 — mod setup_hints_tests;

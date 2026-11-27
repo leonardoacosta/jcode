@@ -1,0 +1,5 @@
+# crates/jcode-tui/src/tui/app/tests/swarm_plan_reset_tests.rs
+
+- test_history_session_change_clears_swarm_plan_state_and_plan_graph_does_not_reappear · function · L2-L47 — fn test_history_session_change_clears_swarm_plan_state_and_plan_graph_does_not_reappear()
+- test_local_clear_command_clears_active_diagrams_and_swarm_plan_state · function · L55-L76 — fn test_local_clear_command_clears_active_diagrams_and_swarm_plan_state()
+- test_remote_clear_command_clears_active_diagrams_and_swarm_plan_state · function · L82-L109 — fn test_remote_clear_command_clears_active_diagrams_and_swarm_plan_state()

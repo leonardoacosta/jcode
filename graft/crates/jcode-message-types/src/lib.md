@@ -1,0 +1,83 @@
+# crates/jcode-message-types/src/lib.rs
+
+- content_capacity · module · L1-L1 — pub mod content_capacity;
+- provider_native · module · L2-L2 — pub mod provider_native;
+- shared_content · module · L3-L3 — mod shared_content;
+- ToolCall · struct · L7-L20 — pub struct ToolCall
+- tool_prompt_size · module · L22-L22 — mod tool_prompt_size;
+- ToolDefinition · struct · L26-L41 — pub struct ToolDefinition
+- new · function · L45-L56 — pub fn new(
+- deferred · function · L59-L62 — pub fn deferred(mut self) -> Self
+- eager · function · L65-L67 — pub fn eager(defs: &[ToolDefinition]) -> Vec<ToolDefinition>
+- prompt_chars · function · L70-L72 — pub fn prompt_chars(&self) -> usize
+- description_token_estimate · function · L78-L80 — pub fn description_token_estimate(&self) -> usize
+- prompt_token_estimate · function · L83-L85 — pub fn prompt_token_estimate(&self) -> usize
+- aggregate_prompt_chars · function · L87-L89 — pub fn aggregate_prompt_chars(defs: &[ToolDefinition]) -> usize
+- aggregate_prompt_token_estimate · function · L91-L93 — pub fn aggregate_prompt_token_estimate(defs: &[ToolDefinition]) -> usize
+- estimate_tokens · function · L96-L99 — fn estimate_tokens(s: &str) -> usize
+- APPROX_CHARS_PER_TOKEN · constant · L97-L97 — const APPROX_CHARS_PER_TOKEN: usize = 4;
+- Role · enum · L104-L107 — pub enum Role
+- Message · struct · L111-L118 — pub struct Message
+- CacheControl · struct · L122-L127 — pub struct CacheControl
+- ephemeral · function · L130-L135 — pub fn ephemeral(ttl: Option<String>) -> Self
+- ContentBlock · enum · L141-L225 — pub enum ContentBlock
+- user · function · L228-L239 — pub fn user(text: &str) -> Self
+- user_with_images · function · L241-L256 — pub fn user_with_images(text: &str, images: Vec<(String, String)>) -> Self
+- assistant_text · function · L258-L269 — pub fn assistant_text(text: &str) -> Self
+- tool_result · function · L271-L273 — pub fn tool_result(tool_use_id: &str, content: &str, is_error: bool) -> Self
+- tool_result_with_duration · function · L275-L292 — pub fn tool_result_with_duration(
+- format_timestamp · function · L295-L297 — pub fn format_timestamp(ts: &chrono::DateTime<chrono::Utc>) -> String
+- format_duration · function · L299-L315 — pub fn format_duration(duration_ms: u64) -> String
+- is_internal_system_reminder · function · L317-L325 — pub fn is_internal_system_reminder(&self) -> bool
+- should_skip_timestamp_injection · function · L327-L329 — fn should_skip_timestamp_injection(&self) -> bool
+- tool_result_tag · function · L331-L347 — fn tool_result_tag(&self, ts: &chrono::DateTime<chrono::Utc>) -> String
+- with_timestamps · function · L352-L382 — pub fn with_timestamps(messages: &[Message]) -> Vec<Message>
+- TOOL_OUTPUT_MISSING_TEXT · constant · L385-L386 — pub const TOOL_OUTPUT_MISSING_TEXT: &str =
+- STABLE_HASH_SEED · constant · L388-L388 — const STABLE_HASH_SEED: u64 = 0xcbf29ce484222325;
+- STABLE_HASH_PRIME · constant · L389-L389 — const STABLE_HASH_PRIME: u64 = 0x100000001b3;
+- stable_hash_bytes · function · L391-L398 — fn stable_hash_bytes(bytes: &[u8]) -> u64
+- extend_stable_hash · function · L400-L405 — pub fn extend_stable_hash(acc: u64, next: u64) -> u64
+- metadata_only · function · L408-L410 — fn metadata_only(&self) -> impl serde::Serialize + '_
+- serialized_json_bytes · function · L413-L417 — pub fn serialized_json_bytes(&self) -> usize
+- message_metadata · module · L420-L420 — mod message_metadata;
+- MessageHashWriter · struct · L424-L427 — struct MessageHashWriter
+- write · function · L430-L438 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- flush · function · L440-L442 — fn flush(&mut self) -> std::io::Result<()>
+- message_hash_tests · module · L446-L446 — mod message_hash_tests;
+- stable_message_hash · function · L448-L471 — pub fn stable_message_hash(message: &Message) -> u64
+- cache_relevant_message_value · function · L490-L515 — pub fn cache_relevant_message_value(message: &Message) -> serde_json::Value
+- cache_relevant_messages · function · L519-L521 — pub fn cache_relevant_messages(messages: &[Message]) -> Vec<serde_json::Value>
+- cache_relevant_message_hashes · function · L528-L539 — pub fn cache_relevant_message_hashes(messages: &[Message]) -> Vec<u64>
+- ends_with_fresh_user_turn · function · L541-L584 — pub fn ends_with_fresh_user_turn(messages: &[Message]) -> bool
+- is_fresh_user_text_message · function · L586-L606 — fn is_fresh_user_text_message(message: &Message) -> bool
+- dynamic_system_context_message · function · L608-L617 — fn dynamic_system_context_message(system_dynamic: &str) -> Option<Message>
+- messages_with_dynamic_system_context · function · L621-L643 — pub fn messages_with_dynamic_system_context(
+- sanitize_tool_id · function · L652-L671 — pub fn sanitize_tool_id(id: &str) -> String
+- to_tool_use_block · function · L683-L690 — pub fn to_tool_use_block(&self) -> ContentBlock
+- normalize_input_to_object · function · L692-L697 — pub fn normalize_input_to_object(input: serde_json::Value) -> serde_json::Value
+- input_as_object · function · L699-L701 — pub fn input_as_object(input: &serde_json::Value) -> serde_json::Value
+- parse_streamed_input_to_object · function · L703-L716 — pub fn parse_streamed_input_to_object(input: &str) -> serde_json::Value
+- validation_error · function · L718-L732 — pub fn validation_error(&self) -> Option<String>
+- intent_from_input · function · L734-L741 — pub fn intent_from_input(input: &serde_json::Value) -> Option<String>
+- refresh_intent_from_input · function · L743-L745 — pub fn refresh_intent_from_input(&mut self)
+- json_value_kind · function · L748-L757 — fn json_value_kind(value: &serde_json::Value) -> &'static str
+- InputShellResult · struct · L760-L772 — pub struct InputShellResult
+- ConnectionPhase · enum · L776-L789 — pub enum ConnectionPhase
+- fmt · function · L792-L803 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- StreamEvent · enum · L808-L930 — pub enum StreamEvent
+- replace_text_suffix · function · L934-L942 — pub fn replace_text_suffix(text: &mut String, old_text: &str, new_text: &str) -> Option<usize>
+- tests · module · L945-L1138 — mod tests
+- suffix_correction_preserves_unicode_prefix_and_rejects_stale_snapshots · function · L949-L963 — fn suffix_correction_preserves_unicode_prefix_and_rejects_stale_snapshots()
+- text_of · function · L965-L970 — fn text_of(message: &Message) -> &str
+- assert_role_text · function · L972-L975 — fn assert_role_text(message: &Message, role: Role, text: &str)
+- dynamic_context_is_inserted_after_current_user_prompt · function · L978-L993 — fn dynamic_context_is_inserted_after_current_user_prompt()
+- dynamic_context_does_not_move_existing_history_prefix · function · L996-L1013 — fn dynamic_context_does_not_move_existing_history_prefix()
+- empty_dynamic_context_leaves_messages_unchanged · function · L1016-L1021 — fn empty_dynamic_context_leaves_messages_unchanged()
+- dynamic_context_prepends_when_no_turn_boundary_exists · function · L1024-L1040 — fn dynamic_context_prepends_when_no_turn_boundary_exists()
+- dynamic_context_stays_anchored_across_tool_rounds · function · L1043-L1077 — fn dynamic_context_stays_anchored_across_tool_rounds()
+- cache_relevant_hashes_ignore_non_transmitted_metadata · function · L1080-L1122 — fn cache_relevant_hashes_ignore_non_transmitted_metadata()
+- cache_relevant_hashes_detect_real_content_change · function · L1125-L1137 — fn cache_relevant_hashes_detect_real_content_change()
+- tool_use_block_tests · module · L1141-L1226 — mod tool_use_block_tests
+- to_tool_use_block_preserves_thought_signature · function · L1155-L1181 — fn to_tool_use_block_preserves_thought_signature()
+- thought_signature_round_trips_through_session_json · function · L1186-L1205 — fn thought_signature_round_trips_through_session_json()
+- absent_signature_stays_absent · function · L1210-L1225 — fn absent_signature_stays_absent()

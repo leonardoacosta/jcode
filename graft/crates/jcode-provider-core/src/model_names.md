@@ -1,0 +1,34 @@
+# crates/jcode-provider-core/src/model_names.rs
+
+- pretty_model_display_name · function · L29-L65 — pub fn pretty_model_display_name(model: &str) -> String
+- split_bracket_suffix · function · L68-L85 — fn split_bracket_suffix(model: &str) -> (&str, Option<String>)
+- split_snapshot_date · function · L88-L119 — fn split_snapshot_date(model: &str) -> (&str, Option<String>)
+- is_ascii_digits · function · L122-L124 — fn is_ascii_digits(value: &str, len: usize) -> bool
+- prettify_versioned_family · function · L130-L150 — fn prettify_versioned_family(family_label: &str, core: &str) -> String
+- BEDROCK_REGION_PREFIXES · constant · L153-L153 — const BEDROCK_REGION_PREFIXES: [&str; 4] = ["us.", "eu.", "apac.", "global."];
+- BEDROCK_PRETTY_VENDORS · constant · L163-L163 — const BEDROCK_PRETTY_VENDORS: [&str; 2] = ["anthropic.", "amazon."];
+- split_bedrock_model_id · function · L173-L208 — fn split_bedrock_model_id(model: &str) -> Option<(Option<&str>, &str, &str, Option<String>)>
+- split_bedrock_revision · function · L212-L233 — fn split_bedrock_revision(model_part: &str) -> Option<(&str, String)>
+- prettify_bedrock · function · L237-L265 — fn prettify_bedrock(model: &str) -> Option<String>
+- pretty_known_model_family · function · L272-L294 — pub fn pretty_known_model_family(model: &str) -> Option<String>
+- prettify_claude · function · L297-L316 — fn prettify_claude(core: &str) -> String
+- title_case_dashed · function · L319-L324 — fn title_case_dashed(core: &str) -> String
+- UPPERCASE_TOKENS · constant · L327-L327 — const UPPERCASE_TOKENS: [&str; 6] = ["tts", "stt", "api", "vl", "ocr", "id"];
+- title_case_word · function · L331-L347 — fn title_case_word(word: &str) -> String
+- BRAND_TOKENS · constant · L350-L375 — const BRAND_TOKENS: [(&str, &str); 24] = [
+- PICKER_VARIANT_TAGS · constant · L378-L380 — const PICKER_VARIANT_TAGS: [&str; 9] = [
+- HYPHENATED_FAMILIES · constant · L384-L384 — const HYPHENATED_FAMILIES: [&str; 2] = ["GPT", "GLM"];
+- pretty_picker_model_name · function · L401-L498 — pub fn pretty_picker_model_name(model: &str) -> String
+- append_markers · function · L500-L508 — fn append_markers(base: String, markers: Vec<String>) -> String
+- pretty_picker_token · function · L511-L571 — fn pretty_picker_token(token: &str) -> String
+- tests · module · L574-L879 — mod tests
+- picker_names_are_readable_for_every_catalog_shape · function · L578-L608 — fn picker_names_are_readable_for_every_catalog_shape()
+- picker_names_keep_opaque_route_ids_exact · function · L611-L628 — fn picker_names_keep_opaque_route_ids_exact()
+- pretty_model_display_name_formats_common_models · function · L631-L672 — fn pretty_model_display_name_formats_common_models()
+- pretty_known_model_family_gates_to_versioned_known_families · function · L675-L712 — fn pretty_known_model_family_gates_to_versioned_known_families()
+- pretty_model_display_name_collapses_dashed_snapshot_dates · function · L715-L736 — fn pretty_model_display_name_collapses_dashed_snapshot_dates()
+- pretty_model_display_name_uppercases_known_acronyms · function · L739-L748 — fn pretty_model_display_name_uppercases_known_acronyms()
+- pretty_known_model_family_renders_aws_bedrock_ids · function · L751-L799 — fn pretty_known_model_family_renders_aws_bedrock_ids()
+- pretty_known_model_family_keeps_opaque_bedrock_ids_verbatim · function · L802-L836 — fn pretty_known_model_family_keeps_opaque_bedrock_ids_verbatim()
+- pretty_model_display_name_handles_empty_and_unknown · function · L839-L847 — fn pretty_model_display_name_handles_empty_and_unknown()
+- dump_pretty_model_names_for_manual_audit · function · L851-L878 — fn dump_pretty_model_names_for_manual_audit()

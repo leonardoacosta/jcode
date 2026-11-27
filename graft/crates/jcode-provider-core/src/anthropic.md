@@ -1,0 +1,42 @@
+# crates/jcode-provider-core/src/anthropic.rs
+
+- ANTHROPIC_OAUTH_BETA_HEADERS · constant · L7-L7 — pub const ANTHROPIC_OAUTH_BETA_HEADERS: &str = "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24";
+- ANTHROPIC_OAUTH_BETA_HEADERS_1M · constant · L10-L10 — pub const ANTHROPIC_OAUTH_BETA_HEADERS_1M: &str = "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,context-1m-2025-08-07";
+- AnthropicContextMode · enum · L19-L30 — pub enum AnthropicContextMode
+- default_context_window · function · L35-L40 — pub fn default_context_window(self) -> usize
+- long_context_window · function · L45-L52 — pub fn long_context_window(self) -> usize
+- has_1m_window · function · L55-L57 — pub fn has_1m_window(self) -> bool
+- exposes_1m_alias · function · L62-L64 — pub fn exposes_1m_alias(self) -> bool
+- anthropic_context_mode · function · L77-L112 — pub fn anthropic_context_mode(model: &str) -> AnthropicContextMode
+- anthropic_is_1m_model · function · L116-L118 — pub fn anthropic_is_1m_model(model: &str) -> bool
+- claude_id_has_parseable_version · function · L122-L125 — pub fn claude_id_has_parseable_version(model: &str) -> bool
+- anthropic_context_mode_is_verified · function · L136-L150 — pub fn anthropic_context_mode_is_verified(model: &str) -> bool
+- anthropic_thinking_always_on · function · L156-L165 — pub fn anthropic_thinking_always_on(model: &str) -> bool
+- anthropic_max_output_tokens · function · L175-L211 — pub fn anthropic_max_output_tokens(model: &str) -> u32
+- LARGE_OUTPUT_PREFIXES · constant · L180-L196 — const LARGE_OUTPUT_PREFIXES: &[&str] = &[
+- anthropic_effectively_1m · function · L214-L216 — pub fn anthropic_effectively_1m(model: &str) -> bool
+- anthropic_strip_1m_suffix · function · L219-L221 — pub fn anthropic_strip_1m_suffix(model: &str) -> &str
+- anthropic_oauth_beta_headers · function · L224-L230 — pub fn anthropic_oauth_beta_headers(model: &str) -> &'static str
+- AnthropicReasoningCaps · struct · L239-L250 — pub struct AnthropicReasoningCaps
+- FULL · constant · L254-L260 — const FULL: Self = Self
+- EFFORT_NO_XHIGH · constant · L262-L268 — const EFFORT_NO_XHIGH: Self = Self
+- MANUAL_WITH_EFFORT · constant · L270-L276 — const MANUAL_WITH_EFFORT: Self = Self
+- MANUAL_ONLY · constant · L278-L284 — const MANUAL_ONLY: Self = Self
+- NONE · constant · L285-L291 — const NONE: Self = Self
+- supports_reasoning_effort · function · L294-L296 — pub fn supports_reasoning_effort(self) -> bool
+- normalized_claude_caps_key · function · L301-L306 — fn normalized_claude_caps_key(model: &str) -> String
+- parse_claude_family_version · function · L311-L332 — fn parse_claude_family_version(base: &str) -> (Option<&str>, Option<(u32, u32)>)
+- anthropic_reasoning_caps · function · L343-L388 — pub fn anthropic_reasoning_caps(model: &str) -> AnthropicReasoningCaps
+- anthropic_map_tool_name_for_oauth · function · L399-L401 — pub fn anthropic_map_tool_name_for_oauth(name: &str) -> String
+- anthropic_map_tool_name_from_oauth · function · L405-L419 — pub fn anthropic_map_tool_name_from_oauth(name: &str) -> String
+- tests · module · L422-L657 — mod tests
+- opus_55_documented_capabilities_and_mandatory_thinking · function · L427-L462 — fn opus_55_documented_capabilities_and_mandatory_thinking()
+- model_suffix_helpers_require_explicit_1m_suffix · function · L465-L472 — fn model_suffix_helpers_require_explicit_1m_suffix()
+- oauth_beta_headers_follow_1m_suffix · function · L475-L484 — fn oauth_beta_headers_follow_1m_suffix()
+- oauth_tool_names_go_out_unchanged_and_legacy_names_map_back · function · L487-L500 — fn oauth_tool_names_go_out_unchanged_and_legacy_names_map_back()
+- oauth_betas_do_not_claim_claude_code · function · L503-L507 — fn oauth_betas_do_not_claim_claude_code()
+- reasoning_caps_match_live_verified_generations · function · L510-L563 — fn reasoning_caps_match_live_verified_generations()
+- max_output_tokens_match_published_model_limits · function · L566-L606 — fn max_output_tokens_match_published_model_limits()
+- max_output_tokens_never_undercut_the_legacy_default · function · L609-L619 — fn max_output_tokens_never_undercut_the_legacy_default()
+- reasoning_caps_normalize_suffixes_and_dots · function · L622-L631 — fn reasoning_caps_normalize_suffixes_and_dots()
+- reasoning_caps_are_optimistic_for_future_generations · function · L634-L656 — fn reasoning_caps_are_optimistic_for_future_generations()

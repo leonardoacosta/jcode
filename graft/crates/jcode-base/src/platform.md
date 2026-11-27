@@ -1,0 +1,38 @@
+# crates/jcode-base/src/platform.rs
+
+- macos_power · module · L4-L24 — mod macos_power
+- CFStringRef · type · L8-L8 — type CFStringRef = *const c_void;
+- IOPMAssertionID · type · L9-L9 — type IOPMAssertionID = u32;
+- IOReturn · type · L10-L10 — type IOReturn = i32;
+- K_CF_STRING_ENCODING_UTF8 · constant · L12-L12 — const K_CF_STRING_ENCODING_UTF8: u32 = 0x0800_0100;
+- K_IOPM_ASSERTION_LEVEL_ON · constant · L13-L13 — const K_IOPM_ASSERTION_LEVEL_ON: u32 = 255;
+- K_IO_RETURN_SUCCESS · constant · L14-L14 — const K_IO_RETURN_SUCCESS: IOReturn = 0;
+- CFStringCreateWithCString · function · L17-L22 — unsafe extern "C"
+- CFRelease · function · L23-L23 — fn CFRelease(cf: *const c_void);
+- IOPMAssertionCreateWithName · function · L27-L33 — unsafe extern "C"
+- IOPMAssertionRelease · function · L34-L34 — fn IOPMAssertionRelease(assertion_id: IOPMAssertionID) -> IOReturn;
+- cf_string · function · L37-L47 — fn cf_string(value: &str) -> Option<CFStringRef>
+- PowerAssertion · struct · L49-L51 — pub struct PowerAssertion
+- prevent_user_idle_system_sleep · function · L54-L88 — pub fn prevent_user_idle_system_sleep(reason: &str) -> Self
+- is_active · function · L91-L93 — pub fn is_active(&self) -> bool
+- drop · function · L97-L106 — fn drop(&mut self)
+- macos_power · module · L111-L124 — mod macos_power
+- PowerAssertion · struct · L112-L112 — pub struct PowerAssertion;
+- prevent_user_idle_system_sleep · function · L115-L117 — pub fn prevent_user_idle_system_sleep(_reason: &str) -> Self
+- is_active · function · L120-L122 — pub fn is_active(&self) -> bool
+- desired_nofile_soft_limit · function · L129-L132 — fn desired_nofile_soft_limit(current: u64, hard: u64, minimum: u64) -> Option<u64>
+- symlink_or_copy · function · L138-L152 — pub fn symlink_or_copy(src: &Path, dst: &Path) -> std::io::Result<()>
+- copy_dir_recursive · function · L155-L168 — fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()>
+- set_permissions_executable · function · L174-L186 — pub fn set_permissions_executable(path: &Path) -> std::io::Result<()>
+- raise_nofile_limit_best_effort · function · L192-L243 — pub fn raise_nofile_limit_best_effort(minimum_soft_limit: u64)
+- process_start_time · function · L247-L259 — pub fn process_start_time(pid: u32) -> Option<u64>
+- is_process_running · function · L266-L300 — pub fn is_process_running(pid: u32) -> bool
+- signal_detached_process_group · function · L306-L362 — pub fn signal_detached_process_group(pid: u32, signal: i32) -> std::io::Result<()>
+- try_reap_child_process · function · L369-L398 — pub fn try_reap_child_process(pid: u32) -> std::io::Result<Option<i32>>
+- atomic_symlink_swap · function · L404-L418 — pub fn atomic_symlink_swap(src: &Path, dst: &Path, temp: &Path) -> std::io::Result<()>
+- spawn_detached · function · L425-L449 — pub fn spawn_detached(cmd: &mut std::process::Command) -> std::io::Result<std::process::Child>
+- spawn_detached_without_console_window · function · L462-L479 — pub fn spawn_detached_without_console_window(
+- reap_detached · function · L482-L499 — pub fn reap_detached(child: std::process::Child)
+- spawn_replacement_process · function · L502-L506 — fn spawn_replacement_process(
+- replace_process · function · L515-L534 — pub fn replace_process(cmd: &mut std::process::Command) -> std::io::Error
+- platform_tests · module · L538-L538 — mod platform_tests;

@@ -1,0 +1,25 @@
+# crates/jcode-base/src/process_title.rs
+
+- LINUX_PROCESS_TITLE_LIMIT · constant · L1-L1 — const LINUX_PROCESS_TITLE_LIMIT: usize = 15;
+- KILLALL_PROCESS_NAME · constant · L3-L3 — const KILLALL_PROCESS_NAME: &str = "jcode";
+- compact_process_title · function · L5-L14 — pub fn compact_process_title(prefix: &str, name: Option<&str>) -> String
+- session_name · function · L16-L20 — pub fn session_name(session_id: &str) -> String
+- normalized_display_title · function · L22-L25 — fn normalized_display_title(title: &str) -> Option<String>
+- capitalize_ascii_label · function · L27-L33 — fn capitalize_ascii_label(label: &str) -> String
+- truncate_chars · function · L35-L43 — fn truncate_chars(text: &str, max_chars: usize) -> String
+- terminal_session_label · function · L45-L54 — pub fn terminal_session_label(session_name: &str, display_title: Option<&str>) -> String
+- terminal_display_title_for_id · function · L59-L69 — pub fn terminal_display_title_for_id(session_id: &str) -> Option<String>
+- terminal_window_title · function · L74-L92 — pub fn terminal_window_title(
+- terminal_session_label_for_id · function · L94-L101 — pub fn terminal_session_label_for_id(session_id: &str) -> String
+- set_title · function · L103-L106 — pub fn set_title(title: impl AsRef<str>)
+- set_killall_process_name · function · L108-L117 — fn set_killall_process_name()
+- set_server_title · function · L119-L121 — pub fn set_server_title(server_name: &str)
+- set_client_generic_title · function · L123-L130 — pub fn set_client_generic_title(is_selfdev: bool)
+- set_client_session_title · function · L132-L134 — pub fn set_client_session_title(session_id: &str, is_selfdev: bool)
+- set_client_display_title · function · L136-L139 — pub fn set_client_display_title(session_name: &str, is_selfdev: bool)
+- set_client_remote_display_title · function · L141-L148 — pub fn set_client_remote_display_title(server_name: &str, session_name: &str, is_selfdev: bool)
+- tests · module · L151-L267 — mod tests
+- terminal_session_label_includes_custom_title_and_short_name · function · L156-L163 — fn terminal_session_label_includes_custom_title_and_short_name()
+- terminal_window_title_omits_product_and_animal_names · function · L166-L189 — fn terminal_window_title_omits_product_and_animal_names()
+- terminal_session_label_for_id_reads_custom_title_from_session · function · L192-L216 — fn terminal_session_label_for_id_reads_custom_title_from_session()
+- terminal_session_label_for_id_prefers_todo_title_over_generated_title · function · L219-L266 — fn terminal_session_label_for_id_prefers_todo_title_over_generated_title()

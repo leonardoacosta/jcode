@@ -1,0 +1,37 @@
+# crates/jcode-build-meta/src/lib.rs
+
+- build_inputs · module · L13-L13 — mod build_inputs;
+- VERSION · constant · L16-L16 — pub const VERSION: &str = env!("JCODE_VERSION");
+- GIT_HASH · constant · L18-L18 — pub const GIT_HASH: &str = env!("JCODE_GIT_HASH");
+- SOURCE_FINGERPRINT · constant · L21-L21 — pub const SOURCE_FINGERPRINT: &str = env!("JCODE_SOURCE_FINGERPRINT");
+- git_dirty · function · L23-L25 — pub fn git_dirty() -> bool
+- cleanliness_verified · function · L29-L31 — pub fn cleanliness_verified() -> bool
+- GIT_DATE · constant · L33-L33 — pub const GIT_DATE: &str = env!("JCODE_GIT_DATE");
+- GIT_TAG · constant · L35-L35 — pub const GIT_TAG: &str = env!("JCODE_GIT_TAG");
+- SEMVER · constant · L37-L37 — pub const SEMVER: &str = env!("JCODE_SEMVER");
+- BASE_SEMVER · constant · L39-L39 — pub const BASE_SEMVER: &str = env!("JCODE_BASE_SEMVER");
+- UPDATE_SEMVER · constant · L41-L41 — pub const UPDATE_SEMVER: &str = env!("JCODE_UPDATE_SEMVER");
+- CHANGELOG · constant · L43-L43 — pub const CHANGELOG: &str = env!("JCODE_CHANGELOG");
+- PKG_VERSION · constant · L45-L45 — pub const PKG_VERSION: &str = env!("JCODE_PKG_VERSION");
+- RUNTIME_RELEASE_SEMVER · constant · L47-L47 — static RUNTIME_RELEASE_SEMVER: OnceLock<Option<String>> = OnceLock::new();
+- RUNTIME_VERSION · constant · L48-L48 — static RUNTIME_VERSION: OnceLock<Option<String>> = OnceLock::new();
+- RUNTIME_GIT_HASH · constant · L49-L49 — static RUNTIME_GIT_HASH: OnceLock<Option<String>> = OnceLock::new();
+- RUNTIME_GIT_DATE · constant · L50-L50 — static RUNTIME_GIT_DATE: OnceLock<Option<String>> = OnceLock::new();
+- RUNTIME_GIT_TAG · constant · L51-L51 — static RUNTIME_GIT_TAG: OnceLock<Option<String>> = OnceLock::new();
+- parse_release_semver · function · L53-L55 — fn parse_release_semver(value: &str) -> Option<String>
+- runtime_release_semver · function · L58-L66 — pub fn runtime_release_semver() -> Option<&'static str>
+- version · function · L69-L76 — pub fn version() -> &'static str
+- runtime_identity_value · function · L78-L83 — fn runtime_identity_value(name: &str) -> Option<String>
+- git_hash · function · L86-L91 — pub fn git_hash() -> &'static str
+- git_date · function · L94-L99 — pub fn git_date() -> &'static str
+- git_tag · function · L102-L107 — pub fn git_tag() -> &'static str
+- semver · function · L110-L112 — pub fn semver() -> &'static str
+- base_semver · function · L115-L117 — pub fn base_semver() -> &'static str
+- update_semver · function · L120-L122 — pub fn update_semver() -> &'static str
+- pkg_version · function · L125-L127 — pub fn pkg_version() -> &'static str
+- is_release_build · function · L130-L132 — pub fn is_release_build() -> bool
+- tests · module · L135-L185 — mod tests
+- forwarded_tag_distance_matches_compiled_dev_version · function · L139-L151 — fn forwarded_tag_distance_matches_compiled_dev_version()
+- release_build_display_preserves_comparison_identity · function · L154-L163 — fn release_build_display_preserves_comparison_identity()
+- explicit_build_override_preserves_release_identity · function · L166-L171 — fn explicit_build_override_preserves_release_identity()
+- runtime_release_semver_accepts_only_three_numeric_components · function · L174-L184 — fn runtime_release_semver_accepts_only_three_numeric_components()

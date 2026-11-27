@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/server/available_models_cache.rs
+
+- TTL · constant · L11-L11 — const TTL: Duration = Duration::from_secs(60);
+- MAX_ENTRIES · constant · L12-L12 — const MAX_ENTRIES: usize = 128;
+- MAX_LIVE_BYTES · constant · L13-L13 — const MAX_LIVE_BYTES: usize = 64 * 1024;
+- Catalog · struct · L15-L20 — pub(super) struct Catalog
+- new · function · L23-L57 — fn new(snapshot: ModelCatalogSnapshot) -> Self
+- live_event · function · L59-L65 — pub fn live_event(&self) -> Option<&ServerEvent>
+- snapshot · function · L67-L82 — pub fn snapshot(&self) -> ModelCatalogSnapshot
+- Entry · struct · L85-L88 — struct Entry
+- Cache · struct · L90-L94 — struct Cache
+- get · function · L97-L132 — fn get(
+- CACHE · constant · L135-L135 — static CACHE: LazyLock<Mutex<Cache>> = LazyLock::new(|| Mutex::new(Cache::default()));
+- key · function · L137-L143 — fn key(provider: &dyn Provider) -> Option<String>
+- for_agent · function · L145-L147 — pub(super) fn for_agent(agent: &Agent) -> Arc<Catalog>
+- provider_catalog_snapshot · function · L149-L162 — fn provider_catalog_snapshot(provider: &dyn Provider) -> ModelCatalogSnapshot
+- for_provider · function · L164-L180 — fn for_provider(provider: &dyn Provider) -> Arc<Catalog>
+- BuildToken · struct · L185-L191 — struct BuildToken
+- new · function · L194-L202 — fn new(provider: &dyn Provider) -> Self
+- try_for_agent · function · L211-L240 — pub(super) async fn try_for_agent<T>(
+- stats · function · L242-L245 — pub(super) fn stats() -> serde_json::Value
+- invalidate · function · L247-L253 — pub(super) fn invalidate()
+- tests · module · L256-L362 — mod tests
+- snapshot · function · L258-L265 — fn snapshot(model: &str) -> ModelCatalogSnapshot
+- equivalent_clients_share_processing_and_identity_changes_rebuild · function · L267-L284 — fn equivalent_clients_share_processing_and_identity_changes_rebuild()
+- simultaneous_clients_single_flight_the_catalog_build · function · L286-L311 — fn simultaneous_clients_single_flight_the_catalog_build()
+- providers_without_explicit_identity_never_share · function · L314-L320 — fn providers_without_explicit_identity_never_share()
+- expired_and_invalidated_entries_rebuild_and_cache_is_bounded · function · L322-L335 — fn expired_and_invalidated_entries_rebuild_and_cache_is_bounded()
+- oversized_catalog_preserves_names_in_live_payload · function · L337-L361 — fn oversized_catalog_preserves_names_in_live_payload()
+- offload_tests · module · L366-L366 — mod offload_tests;

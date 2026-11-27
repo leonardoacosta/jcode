@@ -1,0 +1,27 @@
+# crates/jcode-plan/src/mermaid.rs
+
+- MAX_GRAPH_NODES · constant · L18-L18 — const MAX_GRAPH_NODES: usize = 30;
+- MAX_LABEL_CHARS · constant · L20-L20 — const MAX_LABEL_CHARS: usize = 42;
+- MAX_ASSIGNEE_CHARS · constant · L22-L22 — const MAX_ASSIGNEE_CHARS: usize = 12;
+- LR_NODE_THRESHOLD · constant · L26-L26 — const LR_NODE_THRESHOLD: usize = 10;
+- LR_FAN_IN_THRESHOLD · constant · L29-L29 — const LR_FAN_IN_THRESHOLD: usize = 4;
+- LR_MAX_DEPTH · constant · L34-L34 — const LR_MAX_DEPTH: usize = 8;
+- swarm_plan_mermaid · function · L40-L202 — pub fn swarm_plan_mermaid(items: &[PlanItem]) -> Option<String>
+- longest_path_len · function · L208-L233 — fn longest_path_len(
+- node_id · function · L236-L247 — fn node_id(raw: &str) -> String
+- node_label · function · L250-L267 — fn node_label(item: &PlanItem, class: &str) -> String
+- short_assignee · function · L273-L282 — fn short_assignee(who: &str) -> String
+- truncate_chars · function · L284-L292 — fn truncate_chars(text: &str, max: usize) -> String
+- sanitize_label · function · L300-L309 — fn sanitize_label(text: &str) -> String
+- tests · module · L312-L558 — mod tests
+- item · function · L315-L326 — fn item(id: &str, content: &str, status: &str, blocked_by: &[&str]) -> PlanItem
+- empty_plan_yields_no_graph · function · L329-L331 — fn empty_plan_yields_no_graph()
+- graph_has_nodes_edges_and_status_classes · function · L334-L357 — fn graph_has_nodes_edges_and_status_classes()
+- labels_are_sanitized_and_truncated · function · L360-L377 — fn labels_are_sanitized_and_truncated()
+- quotes_never_survive_into_labels · function · L380-L396 — fn quotes_never_survive_into_labels()
+- session_id_assignees_shorten_to_friendly_name · function · L399-L408 — fn session_id_assignees_shorten_to_friendly_name()
+- gate_nodes_render_as_hexagons · function · L411-L425 — fn gate_nodes_render_as_hexagons()
+- queued_items_with_unmet_deps_render_blocked · function · L428-L438 — fn queued_items_with_unmet_deps_render_blocked()
+- small_graphs_stay_td_large_or_wide_fan_in_switch_to_lr · function · L441-L505 — fn small_graphs_stay_td_large_or_wide_fan_in_switch_to_lr()
+- duplicate_sanitized_ids_get_suffixed_and_self_edges_drop · function · L508-L524 — fn duplicate_sanitized_ids_get_suffixed_and_self_edges_drop()
+- oversized_plans_truncate_dropping_done_first_with_linked_summary_node · function · L527-L557 — fn oversized_plans_truncate_dropping_done_first_with_linked_summary_node()

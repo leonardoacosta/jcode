@@ -1,0 +1,47 @@
+# crates/jcode-update-core/src/lib.rs
+
+- BACKGROUND_UPDATE_THRESHOLD · constant · L8-L8 — pub const BACKGROUND_UPDATE_THRESHOLD: Duration = Duration::from_secs(15);
+- DOWNLOAD_PROGRESS_BAR_WIDTH · constant · L9-L9 — const DOWNLOAD_PROGRESS_BAR_WIDTH: usize = 24;
+- GIT_PULL_DIVERGED_SUMMARY · constant · L15-L16 — pub const GIT_PULL_DIVERGED_SUMMARY: &str =
+- DownloadProgress · struct · L19-L22 — pub struct DownloadProgress
+- UpdateEstimate · struct · L25-L29 — pub struct UpdateEstimate
+- GitHubRelease · struct · L32-L44 — pub struct GitHubRelease
+- GitHubAsset · struct · L47-L52 — pub struct GitHubAsset
+- PreparedUpdate · enum · L54-L66 — pub enum PreparedUpdate
+- UpdateCheckResult · enum · L68-L80 — pub enum UpdateCheckResult
+- format_duration_estimate · function · L82-L91 — pub fn format_duration_estimate(duration: Duration) -> String
+- estimate_release_update_duration · function · L93-L112 — pub fn estimate_release_update_duration(
+- estimate_source_update_duration · function · L114-L131 — pub fn estimate_source_update_duration(
+- update_estimate · function · L133-L139 — pub fn update_estimate(summary: String, duration: Duration) -> UpdateEstimate
+- get_asset_name · function · L141-L177 — pub fn get_asset_name() -> &'static str
+- summarize_git_pull_failure · function · L179-L205 — pub fn summarize_git_pull_failure(stderr: &[u8]) -> String
+- git_pull_failure_is_divergence · function · L209-L214 — pub fn git_pull_failure_is_divergence(stderr: &str) -> bool
+- summary_is_divergence · function · L217-L219 — pub fn summary_is_divergence(summary: &str) -> bool
+- UPDATE_ERROR_SUMMARY_MAX_CHARS · constant · L222-L222 — const UPDATE_ERROR_SUMMARY_MAX_CHARS: usize = 72;
+- summarize_update_error · function · L232-L283 — pub fn summarize_update_error(error: &str) -> String
+- known_update_error_summary · function · L286-L325 — fn known_update_error_summary(line: &str) -> Option<&'static str>
+- parse_sha256sums · function · L327-L366 — pub fn parse_sha256sums(contents: &str) -> Result<HashMap<String, String>>
+- verify_asset_checksum_text · function · L368-L383 — pub fn verify_asset_checksum_text(contents: &str, asset_name: &str, bytes: &[u8]) -> Result<()>
+- version_is_newer · function · L385-L395 — pub fn version_is_newer(release: &str, current: &str) -> bool
+- format_download_progress_bar · function · L397-L416 — pub fn format_download_progress_bar(progress: DownloadProgress) -> String
+- format_bytes · function · L418-L432 — pub fn format_bytes(bytes: u64) -> String
+- KIB · constant · L419-L419 — const KIB: f64 = 1024.0;
+- MIB · constant · L420-L420 — const MIB: f64 = KIB * 1024.0;
+- GIB · constant · L421-L421 — const GIB: f64 = MIB * 1024.0;
+- tests · module · L435-L653 — mod tests
+- version_comparison_works · function · L439-L442 — fn version_comparison_works()
+- update_versions_follow_semver_precedence_not_build_metadata · function · L445-L476 — fn update_versions_follow_semver_precedence_not_build_metadata()
+- summarize_update_error_is_always_one_short_line · function · L481-L500 — fn summarize_update_error_is_always_one_short_line()
+- summarize_update_error_maps_known_causes · function · L503-L520 — fn summarize_update_error_maps_known_causes()
+- summarize_update_error_strips_stacked_wrappers · function · L523-L528 — fn summarize_update_error_strips_stacked_wrappers()
+- summarize_update_error_preserves_divergence_summary · function · L533-L545 — fn summarize_update_error_preserves_divergence_summary()
+- asset_name_is_supported · function · L548-L550 — fn asset_name_is_supported()
+- progress_bar_known_total · function · L553-L560 — fn progress_bar_known_total()
+- progress_bar_unknown_total · function · L563-L569 — fn progress_bar_unknown_total()
+- sha256sums_accepts_standard_and_binary_lines · function · L572-L586 — fn sha256sums_accepts_standard_and_binary_lines()
+- checksum_verification_accepts_matching_digest · function · L589-L594 — fn checksum_verification_accepts_matching_digest()
+- checksum_verification_rejects_mismatch · function · L597-L603 — fn checksum_verification_rejects_mismatch()
+- checksum_verification_requires_asset_entry · function · L606-L612 — fn checksum_verification_requires_asset_entry()
+- sha256sums_rejects_invalid_digest · function · L615-L620 — fn sha256sums_rejects_invalid_digest()
+- git_pull_failure_summaries_are_stable · function · L623-L640 — fn git_pull_failure_summaries_are_stable()
+- update_duration_estimates_are_stable · function · L643-L652 — fn update_duration_estimates_are_stable()

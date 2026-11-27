@@ -1,0 +1,50 @@
+# crates/jcode-sdk/src/ssh.rs
+
+- SshConnectOptions · struct · L28-L53 — pub struct SshConnectOptions
+- default · function · L56-L71 — fn default() -> Self
+- new · function · L75-L80 — pub fn new(host: impl Into<String>) -> Self
+- validate · function · L82-L158 — fn validate(&self) -> Result<()>
+- command · function · L160-L162 — pub(crate) fn command(&self) -> Result<Command>
+- command_with_control · function · L164-L170 — fn command_with_control(&self, control: Option<(&std::path::Path, bool)>) -> Result<Command>
+- run_script · function · L178-L226 — pub fn run_script(&self, script: &[u8], timeout: Duration) -> Result<std::process::Output>
+- command_for · function · L228-L320 — fn command_for(
+- SharedSshTransport · struct · L344-L346 — pub struct SharedSshTransport
+- WeakSharedSshTransport · struct · L351-L353 — pub struct WeakSharedSshTransport
+- upgrade · function · L357-L361 — pub fn upgrade(&self) -> Option<SharedSshTransport>
+- SharedSshInner · struct · L365-L370 — struct SharedSshInner
+- downgrade · function · L374-L378 — pub fn downgrade(&self) -> WeakSharedSshTransport
+- new · function · L380-L412 — pub fn new(options: SshConnectOptions) -> Result<Self>
+- connect · function · L416-L418 — pub fn connect(&self) -> Result<crate::JcodeClient>
+- connect_with · function · L420-L504 — fn connect_with(&self, configure: impl Fn(Command) -> Command) -> Result<crate::JcodeClient>
+- shell_quote · function · L507-L509 — pub(crate) fn shell_quote(value: &str) -> String
+- STDERR_LIMIT · constant · L511-L511 — const STDERR_LIMIT: usize = 16 * 1024;
+- integration_tests · module · L515-L515 — mod integration_tests;
+- shared_tests · module · L519-L519 — mod shared_tests;
+- SshProcess · struct · L521-L532 — pub(crate) struct SshProcess
+- shared_transport · function · L536-L544 — pub(crate) fn shared_transport(&self) -> Option<SharedSshTransport>
+- startup_deadline · function · L546-L562 — pub(crate) fn startup_deadline(
+- shutdown · function · L564-L593 — pub(crate) fn shutdown(&self)
+- diagnostic · function · L595-L616 — pub(crate) fn diagnostic(&self) -> String
+- drop · function · L620-L622 — fn drop(&mut self)
+- SshTransport · struct · L625-L629 — pub(crate) struct SshTransport
+- spawn · function · L632-L634 — pub(crate) fn spawn(options: &SshConnectOptions) -> Result<Self>
+- spawn_command · function · L636-L695 — pub(crate) fn spawn_command(mut command: Command) -> Result<Self>
+- shutdown_handle · function · L699-L702 — fn shutdown_handle(&self) -> Option<Arc<dyn Fn() + Send + Sync>>
+- split · function · L704-L709 — fn split(mut self: Box<Self>) -> Result<(Box<dyn BufRead + Send>, Box<dyn Write + Send>)>
+- tests · module · L713-L984 — mod tests
+- fake · function · L721-L734 — fn fake(script: &str) -> (SshTransport, u32)
+- options · function · L736-L742 — fn options() -> SshConnectOptions
+- assert_reaped · function · L744-L751 — fn assert_reaped(pid: u32)
+- hello · function · L753-L763 — fn hello() -> String
+- rejects_hosts_that_can_inject_options_or_shell_commands · function · L766-L808 — fn rejects_hosts_that_can_inject_options_or_shell_commands()
+- managed_hosts_use_only_the_supplied_identity_and_pinned_host_keys · function · L811-L841 — fn managed_hosts_use_only_the_supplied_identity_and_pinned_host_keys()
+- preserves_system_ssh_configuration_without_weakening_host_verification · function · L844-L870 — fn preserves_system_ssh_configuration_without_weakening_host_verification()
+- handshake_timeout_is_bounded_even_without_request_timeout_and_reaps_child · function · L873-L881 — fn handshake_timeout_is_bounded_even_without_request_timeout_and_reaps_child()
+- ssh_stderr_is_reported_and_failed_child_is_reaped · function · L884-L893 — fn ssh_stderr_is_reported_and_failed_child_is_reaped()
+- final_clone_drop_kills_and_reaps_but_earlier_clone_drop_does_not · function · L896-L913 — fn final_clone_drop_kills_and_reaps_but_earlier_clone_drop_does_not()
+- malformed_handshake_closes_owned_ssh_process · function · L916-L920 — fn malformed_handshake_closes_owned_ssh_process()
+- dropping_unconnected_transport_reaps_ssh · function · L923-L927 — fn dropping_unconnected_transport_reaps_ssh()
+- startup_watchdog_interrupts_a_blocked_hello_write · function · L930-L941 — fn startup_watchdog_interrupts_a_blocked_hello_write()
+- established_disconnect_fails_requests_with_ssh_stderr_and_reaps · function · L944-L956 — fn established_disconnect_fails_requests_with_ssh_stderr_and_reaps()
+- streaming_disconnect_preserves_ssh_stderr · function · L959-L971 — fn streaming_disconnect_preserves_ssh_stderr()
+- stderr_is_bounded_and_drained_without_backpressure · function · L974-L983 — fn stderr_is_bounded_and_drained_without_backpressure()

@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/app/update_rehearsal.rs
+
+- UPDATE_REHEARSAL_COMMAND · constant · L14-L14 — pub(super) const UPDATE_REHEARSAL_COMMAND: &str = "/update-rehearsal";
+- UPDATE_REHEARSAL_SCRIPT · constant · L15-L15 — const UPDATE_REHEARSAL_SCRIPT: &str = "scripts/update_rehearsal.py";
+- UPDATE_REHEARSAL_KEY_LABEL · constant · L16-L16 — const UPDATE_REHEARSAL_KEY_LABEL: &str = "Alt+Shift+U";
+- USAGE · constant · L18-L26 — const USAGE: &str = "Usage: `/update-rehearsal [options]` (self-dev only, also Alt+Shift+U)\n\n\
+- is_update_rehearsal_key · function · L30-L38 — pub(super) fn is_update_rehearsal_key(code: KeyCode, modifiers: KeyModifiers) -> bool
+- rehearsal_allowed · function · L44-L46 — fn rehearsal_allowed(canary_session: bool, client_selfdev: Option<bool>) -> bool
+- rehearsal_script_path · function · L48-L50 — pub(super) fn rehearsal_script_path(repo_dir: &Path) -> PathBuf
+- parse_rehearsal_args · function · L53-L59 — pub(super) fn parse_rehearsal_args(trimmed: &str) -> Option<Vec<String>>
+- update_rehearsal_allowed · function · L62-L65 — fn update_rehearsal_allowed(&self) -> bool
+- handle_update_rehearsal_shortcut · function · L69-L79 — pub(super) fn handle_update_rehearsal_shortcut(
+- handle_update_rehearsal_command · function · L82-L102 — pub(super) fn handle_update_rehearsal_command(&mut self, trimmed: &str) -> bool
+- launch_update_rehearsal · function · L104-L151 — fn launch_update_rehearsal(&mut self, args: Vec<String>)
+- spawn_rehearsal_terminal · function · L154-L162 — fn spawn_rehearsal_terminal(script: &Path, args: Vec<String>, cwd: &Path) -> anyhow::Result<bool>
+- tests · module · L165-L229 — mod tests
+- rehearsal_key_accepts_both_alt_shift_encodings · function · L169-L191 — fn rehearsal_key_accepts_both_alt_shift_encodings()
+- parses_command_arguments · function · L194-L207 — fn parses_command_arguments()
+- script_lives_in_repo_scripts_dir · function · L210-L213 — fn script_lives_in_repo_scripts_dir()
+- gate_accepts_repo_clients_without_canary_flag · function · L216-L222 — fn gate_accepts_repo_clients_without_canary_flag()
+- checked_in_script_exists · function · L225-L228 — fn checked_in_script_exists()

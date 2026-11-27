@@ -1,0 +1,35 @@
+# crates/jcode-harness-api/src/edit_stats.rs
+
+- SessionEditStats · struct · L16-L21 — pub struct SessionEditStats
+- valid_id · function · L23-L29 — fn valid_id(id: &str) -> bool
+- sessions_dir · function · L31-L40 — fn sessions_dir() -> Option<PathBuf>
+- record_session_edit · function · L47-L81 — pub fn record_session_edit(dir: &Path, id: &str, delta: SessionEditStats) -> std::io::Result<()>
+- MAX_LEGACY_BYTES · constant · L83-L83 — const MAX_LEGACY_BYTES: u64 = 32 * 1024 * 1024;
+- read_bounded · function · L84-L92 — fn read_bounded(path: &Path, limit: u64) -> Option<Vec<u8>>
+- legacy_stats · function · L94-L126 — fn legacy_stats(dir: &Path, id: &str) -> Option<SessionEditStats>
+- count_legacy_messages · function · L128-L248 — fn count_legacy_messages(messages: &[Value]) -> SessionEditStats
+- Stamp · type · L250-L250 — type Stamp = Vec<Option<(u64, SystemTime)>>;
+- stamp · function · L251-L259 — fn stamp(dir: &Path, id: &str) -> Stamp
+- Cache · struct · L261-L266 — struct Cache
+- CACHE · constant · L267-L267 — static CACHE: LazyLock<Mutex<Cache>> = LazyLock::new(|| Mutex::new(Cache::default()));
+- enrich_sessions_from_local_edit_stats · function · L276-L280 — pub fn enrich_sessions_from_local_edit_stats(sessions: &mut [SessionInfo])
+- enrich_sessions_from_edit_stats · function · L283-L315 — pub fn enrich_sessions_from_edit_stats(sessions: &mut [SessionInfo], dir: &Path)
+- scan_queue · function · L317-L343 — fn scan_queue()
+- tests · module · L346-L585 — mod tests
+- Temp · struct · L349-L349 — struct Temp(PathBuf);
+- new · function · L351-L360 — fn new() -> Self
+- NEXT · constant · L352-L352 — static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+- write · function · L361-L363 — fn write(&self, name: &str, value: Value)
+- drop · function · L366-L368 — fn drop(&mut self)
+- pair · function · L370-L375 — fn pair(id: &str, tool: &str, output: &str, error: bool) -> Vec<Value>
+- session · function · L376-L378 — fn session(id: &str) -> SessionInfo
+- schema_is_additive_and_roundtrips · function · L380-L397 — fn schema_is_additive_and_roundtrips()
+- legacy_counts_success_only_deduplicates_and_marks_estimates · function · L399-L430 — fn legacy_counts_success_only_deduplicates_and_marks_estimates()
+- legacy_batch_matches_only_completed_subcalls · function · L432-L445 — fn legacy_batch_matches_only_completed_subcalls()
+- snapshot_and_journal_are_combined_without_duplicate_results · function · L448-L461 — fn snapshot_and_journal_are_combined_without_duplicate_results()
+- durable_counters_isolate_sessions_and_survive_transcript_changes · function · L463-L491 — fn durable_counters_isolate_sessions_and_survive_transcript_changes()
+- migration_baseline_is_counted_once_and_remains_approximate · function · L493-L515 — fn migration_baseline_is_counted_once_and_remains_approximate()
+- concurrent_recorders_do_not_lose_updates · function · L517-L539 — fn concurrent_recorders_do_not_lose_updates()
+- background_cache_invalidates_and_api_values_win · function · L541-L575 — fn background_cache_invalidates_and_api_values_win()
+- wait · function · L547-L564 — fn wait(temp: &Temp, added: u64)
+- malformed_and_oversized_records_stay_unknown · function · L577-L584 — fn malformed_and_oversized_records_stay_unknown()

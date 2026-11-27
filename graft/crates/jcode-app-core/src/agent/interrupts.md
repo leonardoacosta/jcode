@@ -1,0 +1,35 @@
+# crates/jcode-app-core/src/agent/interrupts.rs
+
+- frozen_snapshot_memory_profile · function · L12-L29 — fn frozen_snapshot_memory_profile(
+- soft_interrupt_session_display_role · function · L31-L38 — fn soft_interrupt_session_display_role(source: SoftInterruptSource) -> Option<StoredDisplayRole>
+- soft_interrupt_protocol_display_role · function · L40-L47 — fn soft_interrupt_protocol_display_role(source: SoftInterruptSource) -> Option<String>
+- InjectedSoftInterrupt · struct · L50-L56 — pub(super) struct InjectedSoftInterrupt
+- NoToolCallOutcome · enum · L58-L65 — pub(super) enum NoToolCallOutcome
+- PostToolInterruptOutcome · enum · L67-L73 — pub(super) enum PostToolInterruptOutcome
+- restore_persisted_soft_interrupts · function · L76-L110 — pub fn restore_persisted_soft_interrupts(&self) -> usize
+- persist_soft_interrupt_snapshot · function · L112-L132 — pub fn persist_soft_interrupt_snapshot(&self)
+- push_alert · function · L135-L137 — pub fn push_alert(&mut self, alert: String)
+- take_alerts · function · L140-L142 — pub fn take_alerts(&mut self) -> Vec<String>
+- queue_soft_interrupt · function · L146-L154 — pub fn queue_soft_interrupt(
+- queue_soft_interrupt_with_id · function · L158-L200 — pub fn queue_soft_interrupt_with_id(
+- soft_interrupt_queue · function · L204-L206 — pub fn soft_interrupt_queue(&self) -> SoftInterruptQueue
+- background_tool_signal · function · L210-L212 — pub fn background_tool_signal(&self) -> InterruptSignal
+- graceful_shutdown_signal · function · L214-L216 — pub fn graceful_shutdown_signal(&self) -> InterruptSignal
+- request_graceful_shutdown · function · L218-L220 — pub fn request_graceful_shutdown(&self)
+- is_graceful_shutdown · function · L222-L224 — pub(super) fn is_graceful_shutdown(&self) -> bool
+- has_soft_interrupts · function · L227-L232 — pub fn has_soft_interrupts(&self) -> bool
+- has_urgent_interrupt · function · L235-L240 — pub fn has_urgent_interrupt(&self) -> bool
+- soft_interrupt_count · function · L243-L248 — pub fn soft_interrupt_count(&self) -> usize
+- pending_alert_count · function · L251-L253 — pub fn pending_alert_count(&self) -> usize
+- pending_alerts_preview · function · L256-L268 — pub fn pending_alerts_preview(&self) -> Vec<String>
+- debug_info · function · L271-L309 — pub fn debug_info(&self) -> serde_json::Value
+- debug_memory_profile · function · L311-L349 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- soft_interrupts_preview · function · L352-L369 — pub fn soft_interrupts_preview(&self) -> Vec<(String, bool)>
+- inject_soft_interrupts · function · L373-L507 — pub(super) fn inject_soft_interrupts(&mut self) -> Vec<InjectedSoftInterrupt>
+- handle_streaming_no_tool_calls · function · L509-L529 — pub(super) fn handle_streaming_no_tool_calls(
+- take_post_tool_soft_interrupt · function · L531-L541 — pub(super) fn take_post_tool_soft_interrupt(&mut self) -> PostToolInterruptOutcome
+- build_soft_interrupt_events · function · L543-L569 — pub(super) fn build_soft_interrupt_events(
+- frozen_snapshot_memory_tests · module · L573-L626 — mod frozen_snapshot_memory_tests
+- frozen_snapshot_memory_counts_schema_json_without_disclosing_schema · function · L577-L590 — fn frozen_snapshot_memory_counts_schema_json_without_disclosing_schema()
+- frozen_snapshot_memory_empty_and_absent_values · function · L593-L602 — fn frozen_snapshot_memory_empty_and_absent_values()
+- frozen_snapshot_memory_counts_capacities_without_disclosing_content · function · L605-L625 — fn frozen_snapshot_memory_counts_capacities_without_disclosing_content()

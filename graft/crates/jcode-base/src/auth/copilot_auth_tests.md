@@ -1,0 +1,46 @@
+# crates/jcode-base/src/auth/copilot_auth_tests.rs
+
+- copilot_api_token_not_expired · function · L7-L14 — fn copilot_api_token_not_expired()
+- copilot_api_token_expired · function · L17-L24 — fn copilot_api_token_expired()
+- copilot_api_token_expiring_within_buffer · function · L27-L34 — fn copilot_api_token_expiring_within_buffer()
+- load_token_from_hosts_json · function · L37-L51 — fn load_token_from_hosts_json() -> Result<()>
+- load_token_from_apps_json · function · L54-L67 — fn load_token_from_apps_json() -> Result<()>
+- load_token_missing_oauth_token_field · function · L70-L83 — fn load_token_missing_oauth_token_field() -> Result<()>
+- load_token_empty_oauth_token · function · L86-L100 — fn load_token_empty_oauth_token() -> Result<()>
+- load_token_nonexistent_file · function · L103-L107 — fn load_token_nonexistent_file()
+- load_token_invalid_json · function · L110-L118 — fn load_token_invalid_json() -> Result<()>
+- load_token_from_copilot_config_json · function · L121-L137 — fn load_token_from_copilot_config_json() -> Result<()>
+- normalize_candidate_token_rejects_empty_and_unknown_values · function · L140-L155 — fn normalize_candidate_token_rejects_empty_and_unknown_values()
+- gh_cli_fallback_requires_explicit_opt_in · function · L158-L176 — fn gh_cli_fallback_requires_explicit_opt_in()
+- save_and_load_github_token · function · L179-L198 — fn save_and_load_github_token() -> Result<()>
+- EnvRestore · struct · L202-L205 — struct EnvRestore
+- capture · function · L208-L213 — fn capture(key: &'static str) -> Self
+- drop · function · L217-L222 — fn drop(&mut self)
+- save_github_token_creates_config_dir · function · L226-L261 — fn save_github_token_creates_config_dir() -> Result<()>
+- legacy_copilot_config_dir_uses_jcode_home_external_dir · function · L264-L285 — fn legacy_copilot_config_dir_uses_jcode_home_external_dir() -> Result<()>
+- save_github_token_makes_future_loads_available · function · L288-L320 — fn save_github_token_makes_future_loads_available() -> Result<()>
+- load_token_from_json_does_not_change_external_permissions · function · L324-L344 — fn load_token_from_json_does_not_change_external_permissions() -> Result<()>
+- choose_default_model_with_opus · function · L347-L367 — fn choose_default_model_with_opus()
+- copilot_models · function · L369-L380 — fn copilot_models(ids: &[&str]) -> Vec<CopilotModelInfo>
+- choose_default_model_prefers_newest_claude_flagship · function · L383-L392 — fn choose_default_model_prefers_newest_claude_flagship()
+- choose_default_model_auto_promotes_unlisted_newer_opus · function · L395-L398 — fn choose_default_model_auto_promotes_unlisted_newer_opus()
+- choose_default_model_realistic_catalog_no_longer_pins_opus_4_6 · function · L401-L424 — fn choose_default_model_realistic_catalog_no_longer_pins_opus_4_6()
+- choose_default_model_ignores_fast_and_cheap_variants · function · L427-L434 — fn choose_default_model_ignores_fast_and_cheap_variants()
+- choose_default_model_without_opus · function · L437-L447 — fn choose_default_model_without_opus()
+- choose_default_model_with_sonnet_4_only · function · L450-L460 — fn choose_default_model_with_sonnet_4_only()
+- choose_default_model_empty_list · function · L463-L466 — fn choose_default_model_empty_list()
+- copilot_account_type_display · function · L469-L474 — fn copilot_account_type_display()
+- device_code_response_deserialize · function · L477-L492 — fn device_code_response_deserialize() -> Result<()>
+- access_token_response_success · function · L495-L509 — fn access_token_response_success() -> Result<()>
+- access_token_response_pending · function · L512-L524 — fn access_token_response_pending() -> Result<()>
+- access_token_response_expired · function · L527-L538 — fn access_token_response_expired() -> Result<()>
+- copilot_token_response_roundtrip · function · L541-L551 — fn copilot_token_response_roundtrip() -> Result<()>
+- copilot_model_info_deserialize · function · L554-L571 — fn copilot_model_info_deserialize() -> Result<()>
+- copilot_model_info_minimal · function · L574-L581 — fn copilot_model_info_minimal() -> Result<()>
+- load_token_multiple_hosts · function · L584-L606 — fn load_token_multiple_hosts() -> Result<()>
+- normalize_github_host_key_accepts_common_forms · function · L609-L622 — fn normalize_github_host_key_accepts_common_forms()
+- normalize_github_host_key_rejects_non_github_hosts · function · L625-L628 — fn normalize_github_host_key_rejects_non_github_hosts()
+- normalize_github_host_key_accepts_apps_json_client_id_suffix · function · L635-L646 — fn normalize_github_host_key_accepts_apps_json_client_id_suffix()
+- live_verify_failure_record_blocks_auto_use · function · L649-L710 — fn live_verify_failure_record_blocks_auto_use() -> Result<()>
+- token_exchange_backoff_is_exponential_and_capped · function · L713-L720 — fn token_exchange_backoff_is_exponential_and_capped()
+- token_exchange_retries_only_5xx · function · L723-L734 — fn token_exchange_retries_only_5xx()

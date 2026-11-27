@@ -1,0 +1,29 @@
+# crates/jcode-productivity-core/src/dashboard.rs
+
+- W · constant · L12-L12 — const W: f32 = 1200.0;
+- H · constant · L13-L13 — const H: f32 = 1440.0;
+- BG · constant · L16-L16 — const BG: &str = "#0b0f17";
+- CARD · constant · L17-L17 — const CARD: &str = "#151b27";
+- CARD2 · constant · L18-L18 — const CARD2: &str = "#1b2230";
+- ACCENT · constant · L19-L19 — const ACCENT: &str = "#7c9cff";
+- ACCENT2 · constant · L20-L20 — const ACCENT2: &str = "#5ce1a6";
+- ACCENT3 · constant · L21-L21 — const ACCENT3: &str = "#ffb86b";
+- TEXT · constant · L22-L22 — const TEXT: &str = "#e8edf6";
+- MUTED · constant · L23-L23 — const MUTED: &str = "#8a94a7";
+- TRACK · constant · L24-L24 — const TRACK: &str = "#222a3a";
+- FONT_DB · constant · L26-L30 — static FONT_DB: LazyLock<Arc<usvg::fontdb::Database>> = LazyLock::new(||
+- esc · function · L33-L39 — fn esc(s: &str) -> String
+- clip · function · L42-L51 — fn clip(s: &str, max: usize) -> String
+- ascii_only · function · L55-L65 — fn ascii_only(s: &str) -> String
+- Svg · struct · L67-L69 — struct Svg
+- new · function · L72-L76 — fn new() -> Self
+- rect · function · L78-L82 — fn rect(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, fill: &str)
+- rect_op · function · L85-L89 — fn rect_op(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, fill: &str, opacity: f32)
+- text · function · L92-L97 — fn text(&mut self, x: f32, y: f32, s: &str, size: f32, fill: &str, weight: u32, anchor: &str)
+- bolt · function · L101-L120 — fn bolt(&mut self, x: f32, y: f32, size: f32, fill: &str)
+- render_svg · function · L124-L371 — pub fn render_svg(r: &ProductivityReport) -> String
+- draw_hour_bars · function · L373-L400 — fn draw_hour_bars(svg: &mut Svg, x: f32, y: f32, w: f32, h: f32, hist: &[u32; 24])
+- draw_weekday_bars · function · L402-L427 — fn draw_weekday_bars(svg: &mut Svg, x: f32, y: f32, w: f32, h: f32, hist: &[u32; 7])
+- draw_tool_list · function · L429-L446 — fn draw_tool_list(svg: &mut Svg, x: f32, y: f32, w: f32, tools: &[crate::model::Tally])
+- draw_project_list · function · L448-L471 — fn draw_project_list(svg: &mut Svg, x: f32, y: f32, w: f32, projects: &[crate::model::Tally])
+- render_png · function · L474-L491 — pub fn render_png(r: &ProductivityReport) -> Result<Vec<u8>>

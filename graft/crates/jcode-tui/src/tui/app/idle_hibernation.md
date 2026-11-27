@@ -1,0 +1,34 @@
+# crates/jcode-tui/src/tui/app/idle_hibernation.rs
+
+- MAX_FROZEN_CELLS · constant · L14-L14 — const MAX_FROZEN_CELLS: usize = 128 * 1024;
+- MAX_FROZEN_SYMBOL_BYTES · constant · L15-L15 — const MAX_FROZEN_SYMBOL_BYTES: usize = 8 * 1024 * 1024;
+- IdleHibernation · struct · L17-L32 — pub(super) struct IdleHibernation
+- default · function · L35-L51 — fn default() -> Self
+- hibernation_has_work · function · L56-L108 — fn hibernation_has_work(&self) -> bool
+- poll_idle_hibernation · function · L110-L113 — pub(super) fn poll_idle_hibernation(&mut self) -> bool
+- poll_idle_hibernation_at · function · L115-L146 — fn poll_idle_hibernation_at(&mut self, now: Instant, idle_secs: u64) -> bool
+- enter_idle_hibernation · function · L150-L202 — pub(super) fn enter_idle_hibernation(&mut self, previous_frame: Option<&Buffer>)
+- finish_idle_hibernation_frame · function · L206-L217 — pub(super) fn finish_idle_hibernation_frame(&mut self)
+- wake_idle_hibernation · function · L222-L229 — pub(super) fn wake_idle_hibernation(&mut self)
+- wake_idle_hibernation_for · function · L231-L250 — pub(super) fn wake_idle_hibernation_for(&mut self, reason: &str)
+- request_debug_hibernation · function · L253-L265 — pub(super) fn request_debug_hibernation(&mut self) -> String
+- debug_hibernation_state · function · L267-L292 — pub(super) fn debug_hibernation_state(&self) -> String
+- frame_can_be_frozen · function · L295-L303 — fn frame_can_be_frozen(frame: &Buffer) -> bool
+- private_memory_bytes · function · L308-L315 — fn private_memory_bytes() -> Option<u64>
+- hibernation_notice · function · L317-L334 — fn hibernation_notice(before: Option<u64>, after: Option<u64>) -> String
+- tests · module · L337-L634 — mod tests
+- app · function · L343-L345 — fn app() -> App
+- expire_idle_timer · function · L347-L355 — fn expire_idle_timer(app: &mut App) -> Instant
+- freeze · function · L357-L362 — fn freeze(app: &mut App)
+- idle_hibernation_respects_timeout_typing_streaming_and_disabled_config · function · L365-L378 — fn idle_hibernation_respects_timeout_typing_streaming_and_disabled_config()
+- idle_hibernation_rechecks_every_queued_and_active_work_guard · function · L381-L410 — fn idle_hibernation_rechecks_every_queued_and_active_work_guard()
+- idle_hibernation_keeps_sources_draft_scroll_and_first_typed_character · function · L413-L453 — fn idle_hibernation_keeps_sources_draft_scroll_and_first_typed_character()
+- idle_hibernation_paste_resize_and_display_changes_wake_without_loss · function · L456-L470 — fn idle_hibernation_paste_resize_and_display_changes_wake_without_loss()
+- idle_hibernation_frozen_frames_do_not_repopulate_prepared_caches · function · L473-L518 — fn idle_hibernation_frozen_frames_do_not_repopulate_prepared_caches()
+- idle_hibernation_rejects_unbounded_and_missing_screen_snapshots · function · L521-L531 — fn idle_hibernation_rejects_unbounded_and_missing_screen_snapshots()
+- private_memory_metric_prefers_pss_anon · function · L534-L542 — fn private_memory_metric_prefers_pss_anon()
+- transcript_drop_marks_history_reload_on_wake_only_when_dropped · function · L545-L555 — fn transcript_drop_marks_history_reload_on_wake_only_when_dropped()
+- idle_hibernation_rss_notice_reports_measurement_without_inventing_savings · function · L558-L564 — fn idle_hibernation_rss_notice_reports_measurement_without_inventing_savings()
+- idle_hibernation_ignores_heartbeat_but_wakes_before_remote_stream_event · function · L567-L589 — fn idle_hibernation_ignores_heartbeat_but_wakes_before_remote_stream_event()
+- idle_hibernation_debug_request_survives_recent_input_and_read_only_queries · function · L592-L609 — fn idle_hibernation_debug_request_survives_recent_input_and_read_only_queries()
+- idle_hibernation_notice_shows_measured_rss_on_one_status_row · function · L612-L633 — fn idle_hibernation_notice_shows_measured_rss_on_one_status_row()

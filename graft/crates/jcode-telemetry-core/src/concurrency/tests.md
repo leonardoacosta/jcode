@@ -1,0 +1,21 @@
+# crates/jcode-telemetry-core/src/concurrency/tests.rs
+
+- start · function · L6-L10 — fn start(dir: &Path, child: bool) -> (Lease, Counts)
+- idle_owner_remembers_short_lived_peers_and_independent_role_peaks · function · L13-L51 — fn idle_owner_remembers_short_lived_peers_and_independent_role_peaks()
+- live_leases_never_expire_and_fresh_stale_markers_never_count · function · L54-L85 — fn live_leases_never_expire_and_fresh_stale_markers_never_count()
+- concurrent_same_process_joins_are_serialized_and_update_all_peaks · function · L88-L121 — fn concurrent_same_process_joins_are_serialized_and_update_all_peaks()
+- PARTICIPANTS · constant · L89-L89 — const PARTICIPANTS: usize = 12;
+- failed_atomic_publication_invalidates_idle_peers_even_after_failed_owner_exits · function · L124-L156 — fn failed_atomic_publication_invalidates_idle_peers_even_after_failed_owner_exits()
+- finish_releases_lease_even_when_registry_is_unavailable · function · L159-L170 — fn finish_releases_lease_even_when_registry_is_unavailable()
+- clean_finish_unlocks_even_if_a_fork_inherited_the_file_description · function · L173-L194 — fn clean_finish_unlocks_even_if_a_fork_inherited_the_file_description()
+- lease_subprocess_helper · function · L199-L220 — fn lease_subprocess_helper()
+- Process · struct · L222-L225 — struct Process
+- spawn · function · L228-L246 — fn spawn(dir: &Path, registry_crash: bool) -> Self
+- command · function · L248-L250 — fn command(&mut self)
+- read · function · L252-L264 — fn read(&mut self, marker: &str) -> u32
+- kill · function · L266-L269 — fn kill(&mut self)
+- drop · function · L273-L276 — fn drop(&mut self)
+- cross_process_kill_prunes_owner_but_preserves_survivor_peak · function · L280-L306 — fn cross_process_kill_prunes_owner_but_preserves_survivor_peak()
+- cross_process_start_races_have_unique_counts_and_all_owners_get_peak · function · L309-L333 — fn cross_process_start_races_have_unique_counts_and_all_owners_get_peak()
+- PARTICIPANTS · constant · L310-L310 — const PARTICIPANTS: usize = 6;
+- killed_registry_writer_releases_global_lock_and_pending_write_is_ignored · function · L336-L346 — fn killed_registry_writer_releases_global_lock_and_pending_write_is_ignored()

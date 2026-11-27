@@ -1,0 +1,23 @@
+# sdk/typescript/test/client.test.ts
+
+- waitFor · function · L14-L20 — async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void>
+- onRequest · method · L42-L55 — onRequest(request, send)
+- onRequest · method · L66-L74 — onRequest(request, send)
+- onRequest · method · L88-L120 — onRequest(request, send)
+- onRequest · method · L139-L142 — onRequest(request, send)
+- onRequest · method · L163-L170 — onRequest(request, send)
+- onRequest · method · L185-L201 — onRequest(request, send)
+- onRequest · method · L232-L234 — onRequest(request, send)
+- onRequest · method · L249-L254 — onRequest(request, send)
+- onRequest · method · L270-L275 — onRequest(request, send)
+- onRequest · method · L288-L293 — onRequest(request, send)
+- onRequest · method · L408-L491 — onRequest(request, send)
+- reply · function · L410-L410 — reply = (frame: any)
+- byKind · function · L528-L528 — byKind = (kind: string)
+- onRequest · method · L554-L579 — onRequest(request, send)
+- onRequest · method · L608-L624 — onRequest(request, send)
+- onRequest · method · L644-L665 — onRequest(request, send)
+- onRequest · method · L729-L729 — onRequest(request)
+- onRequest · method · L747-L747 — onRequest(request)
+- onRequest · method · L765-L773 — onRequest(request, send)
+- onRequest · method · L788-L793 — onRequest(request, send)

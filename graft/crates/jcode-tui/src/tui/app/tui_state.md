@@ -1,0 +1,211 @@
+# crates/jcode-tui/src/tui/app/tui_state.rs
+
+- widget_usage · module · L3-L3 — mod widget_usage;
+- CONTEXT_SNAPSHOT_TTL · constant · L10-L10 — const CONTEXT_SNAPSHOT_TTL: Duration = Duration::from_millis(250);
+- reusable_context_snapshot · function · L16-L36 — fn reusable_context_snapshot<'a>(
+- REMOTE_STARTUP_HEADER_DEBOUNCE · constant · L38-L38 — const REMOTE_STARTUP_HEADER_DEBOUNCE: Duration = Duration::from_millis(400);
+- startup_usage_slot_pending · function · L40-L48 — fn startup_usage_slot_pending(
+- REMOTE_LOADING_HEADER_GRACE · constant · L55-L55 — const REMOTE_LOADING_HEADER_GRACE: Duration = Duration::from_secs(3);
+- WidgetProviderKind · enum · L58-L67 — enum WidgetProviderKind
+- from_provider_key · function · L70-L93 — fn from_provider_key(raw: Option<&str>) -> Self
+- WidgetRouteInfo · struct · L97-L100 — struct WidgetRouteInfo
+- remote_oauth_account_label · function · L102-L109 — fn remote_oauth_account_label<'a>(
+- remote_oauth_widget_usage_for_route · function · L111-L121 — fn remote_oauth_widget_usage_for_route(
+- remote_oauth_widget_usage · function · L123-L163 — fn remote_oauth_widget_usage(
+- sanitize_remote_model_hint · function · L166-L170 — fn sanitize_remote_model_hint(model: Option<String>) -> Option<String>
+- configured_remote_provider_hint · function · L172-L181 — pub(super) fn configured_remote_provider_hint(&self) -> Option<String>
+- configured_remote_model_hint · function · L183-L192 — fn configured_remote_model_hint(&self) -> Option<String>
+- effective_remote_provider_model · function · L194-L201 — pub(super) fn effective_remote_provider_model(&self) -> Option<String>
+- remote_effort_identity · function · L208-L219 — pub(super) fn remote_effort_identity(&self) -> (Option<String>, Option<String>)
+- remote_reasoning_effort_hint · function · L225-L248 — pub(super) fn remote_reasoning_effort_hint(&self) -> Option<String>
+- remote_header_provider_model · function · L250-L293 — fn remote_header_provider_model(&self) -> Option<String>
+- remote_header_provider_name · function · L295-L307 — fn remote_header_provider_name(&self) -> Option<String>
+- cache_provider_identity · function · L310-L338 — pub(super) fn cache_provider_identity(&self, provider: &str) -> String
+- widget_route_info · function · L340-L369 — fn widget_route_info(&self, model: Option<&str>) -> WidgetRouteInfo
+- dual_credential_active · function · L390-L440 — fn dual_credential_active(
+- widget_auth_method · function · L442-L498 — fn widget_auth_method(&self, route: WidgetRouteInfo) -> crate::tui::info_widget::AuthMethod
+- openai_widget_account_email · function · L500-L511 — pub(super) fn openai_widget_account_email(&self) -> Option<String>
+- widget_account_hint · function · L515-L532 — fn widget_account_hint(&self, provider: WidgetProviderKind) -> Option<String>
+- widget_usage_info · function · L534-L549 — fn widget_usage_info(
+- hibernation_frame · function · L553-L555 — fn hibernation_frame(&self) -> Option<&ratatui::buffer::Buffer>
+- hibernation_notice · function · L557-L562 — fn hibernation_notice(&self) -> Option<&str>
+- display_messages · function · L564-L566 — fn display_messages(&self) -> &[DisplayMessage]
+- display_user_message_count · function · L568-L570 — fn display_user_message_count(&self) -> usize
+- compacted_hidden_user_prompts · function · L572-L574 — fn compacted_hidden_user_prompts(&self) -> usize
+- has_display_edit_tool_messages · function · L576-L578 — fn has_display_edit_tool_messages(&self) -> bool
+- side_pane_images · function · L580-L598 — fn side_pane_images(&self) -> Vec<crate::session::RenderedImage>
+- side_pane_images_signature · function · L600-L616 — fn side_pane_images_signature(&self) -> (usize, u64)
+- display_messages_version · function · L618-L620 — fn display_messages_version(&self) -> u64
+- streaming_text · function · L622-L624 — fn streaming_text(&self) -> &str
+- streaming_text_hash · function · L626-L628 — fn streaming_text_hash(&self) -> u64
+- pinned_todos_payload · function · L630-L632 — fn pinned_todos_payload(&self) -> Option<&str>
+- pinned_todos_expanded · function · L634-L636 — fn pinned_todos_expanded(&self) -> bool
+- justrust_status · function · L638-L640 — fn justrust_status(&self) -> Option<&crate::tui::justrust_status::StatusRow>
+- background_task_rows · function · L642-L644 — fn background_task_rows(&self) -> &[crate::tui::BackgroundTaskRow]
+- login_input_hint · function · L646-L658 — fn login_input_hint(&self) -> Option<&'static str>
+- input · function · L660-L662 — fn input(&self) -> &str
+- input_image_attached · function · L664-L669 — fn input_image_attached(&self, number: usize) -> bool
+- cursor_pos · function · L671-L673 — fn cursor_pos(&self) -> usize
+- is_processing · function · L675-L677 — fn is_processing(&self) -> bool
+- queued_messages · function · L679-L681 — fn queued_messages(&self) -> &[String]
+- queued_commands · function · L683-L685 — fn queued_commands(&self) -> &[String]
+- interleave_message · function · L687-L689 — fn interleave_message(&self) -> Option<&str>
+- pending_soft_interrupts · function · L691-L693 — fn pending_soft_interrupts(&self) -> &[String]
+- scroll_offset · function · L695-L697 — fn scroll_offset(&self) -> usize
+- auto_scroll_paused · function · L699-L701 — fn auto_scroll_paused(&self) -> bool
+- terminal_clear_collapsed · function · L703-L705 — fn terminal_clear_collapsed(&self) -> bool
+- pending_resize_anchor · function · L707-L709 — fn pending_resize_anchor(&self) -> Option<jcode_tui_messages::ContentPos>
+- pending_history_anchor_lines_from_bottom · function · L711-L714 — fn pending_history_anchor_lines_from_bottom(&self) -> Option<usize>
+- copy_selection_edge_autoscroll_active · function · L716-L718 — fn copy_selection_edge_autoscroll_active(&self) -> bool
+- provider_name · function · L720-L728 — fn provider_name(&self) -> String
+- provider_model · function · L730-L739 — fn provider_model(&self) -> String
+- upstream_provider · function · L741-L743 — fn upstream_provider(&self) -> Option<String>
+- connection_type · function · L745-L747 — fn connection_type(&self) -> Option<String>
+- status_detail · function · L749-L751 — fn status_detail(&self) -> Option<String>
+- mcp_health · function · L753-L755 — fn mcp_health(&self) -> &[crate::protocol::McpServerHealth]
+- mcp_servers · function · L757-L759 — fn mcp_servers(&self) -> Vec<(String, usize)>
+- available_skills · function · L761-L774 — fn available_skills(&self) -> Vec<String>
+- streaming_tokens · function · L776-L781 — fn streaming_tokens(&self) -> (u64, u64)
+- streaming_cache_tokens · function · L783-L788 — fn streaming_cache_tokens(&self) -> (Option<u64>, Option<u64>)
+- output_tps · function · L790-L795 — fn output_tps(&self) -> Option<f32>
+- streaming_tool_calls · function · L797-L799 — fn streaming_tool_calls(&self) -> Vec<ToolCall>
+- update_cost · function · L801-L803 — fn update_cost(&mut self)
+- elapsed · function · L805-L821 — fn elapsed(&self) -> Option<std::time::Duration>
+- status · function · L823-L829 — fn status(&self) -> ProcessingStatus
+- connection_phase_elapsed · function · L831-L837 — fn connection_phase_elapsed(&self) -> Option<std::time::Duration>
+- command_suggestions · function · L839-L841 — fn command_suggestions(&self) -> Vec<crate::tui::CommandCandidate>
+- advance_command_suggestions_epoch · function · L843-L845 — fn advance_command_suggestions_epoch(&self)
+- command_suggestion_selected · function · L847-L849 — fn command_suggestion_selected(&self) -> usize
+- prompt_history_search · function · L851-L853 — fn prompt_history_search(&self) -> Option<crate::tui::PromptHistorySearchView>
+- active_skill · function · L855-L857 — fn active_skill(&self) -> Option<String>
+- subagent_status · function · L859-L861 — fn subagent_status(&self) -> Option<String>
+- batch_progress · function · L863-L865 — fn batch_progress(&self) -> Option<crate::bus::BatchProgress>
+- time_since_activity · function · L867-L880 — fn time_since_activity(&self) -> Option<std::time::Duration>
+- client_focused · function · L882-L884 — fn client_focused(&self) -> bool
+- time_since_user_interaction · function · L886-L888 — fn time_since_user_interaction(&self) -> Option<std::time::Duration>
+- stream_message_ended · function · L890-L892 — fn stream_message_ended(&self) -> bool
+- has_pending_mouse_scroll_animation · function · L894-L896 — fn has_pending_mouse_scroll_animation(&self) -> bool
+- stream_reveal_pending · function · L898-L900 — fn stream_reveal_pending(&self) -> bool
+- total_session_tokens · function · L902-L906 — fn total_session_tokens(&self) -> Option<(u64, u64)>
+- session_compaction_count · function · L908-L918 — fn session_compaction_count(&self) -> usize
+- is_remote_mode · function · L920-L922 — fn is_remote_mode(&self) -> bool
+- is_canary · function · L924-L930 — fn is_canary(&self) -> bool
+- is_replay · function · L932-L934 — fn is_replay(&self) -> bool
+- diff_mode · function · L936-L938 — fn diff_mode(&self) -> crate::config::DiffDisplayMode
+- current_session_id · function · L940-L946 — fn current_session_id(&self) -> Option<String>
+- session_display_name · function · L948-L959 — fn session_display_name(&self) -> Option<String>
+- server_display_name · function · L961-L972 — fn server_display_name(&self) -> Option<String>
+- server_display_icon · function · L974-L982 — fn server_display_icon(&self) -> Option<String>
+- server_display_version · function · L984-L996 — fn server_display_version(&self) -> Option<String>
+- server_sessions · function · L998-L1000 — fn server_sessions(&self) -> Vec<String>
+- connected_clients · function · L1002-L1004 — fn connected_clients(&self) -> Option<usize>
+- voice_input_status · function · L1006-L1008 — fn voice_input_status(&self) -> Option<(bool, String)>
+- voice_composer_preview · function · L1010-L1012 — fn voice_composer_preview(&self) -> Option<crate::tui::VoiceComposerPreview>
+- reset_hint_visible · function · L1014-L1022 — fn reset_hint_visible(&self, key: &str) -> bool
+- status_notice · function · L1024-L1053 — fn status_notice(&self) -> Option<String>
+- learn_hint · function · L1055-L1065 — fn learn_hint(&self) -> Option<String>
+- hotkey_feedback · function · L1067-L1077 — fn hotkey_feedback(&self) -> Option<String>
+- active_experimental_feature_notice · function · L1079-L1081 — fn active_experimental_feature_notice(&self) -> Option<String>
+- remote_startup_phase_active · function · L1083-L1085 — fn remote_startup_phase_active(&self) -> bool
+- dictation_key_label · function · L1087-L1089 — fn dictation_key_label(&self) -> Option<String>
+- animation_elapsed · function · L1091-L1093 — fn animation_elapsed(&self) -> f32
+- rate_limit_remaining · function · L1095-L1104 — fn rate_limit_remaining(&self) -> Option<Duration>
+- queue_mode · function · L1106-L1108 — fn queue_mode(&self) -> bool
+- next_prompt_new_session_armed · function · L1110-L1112 — fn next_prompt_new_session_armed(&self) -> bool
+- has_stashed_input · function · L1114-L1116 — fn has_stashed_input(&self) -> bool
+- context_snapshot · function · L1118-L1371 — fn context_snapshot(&self) -> crate::tui::ContextSnapshot
+- CACHE · constant · L1129-L1129 — static CACHE: Mutex<Option<(Instant, CachedContextSnapshot)>> = Mutex::new(None);
+- context_info · function · L1373-L1375 — fn context_info(&self) -> crate::prompt::ContextInfo
+- context_limit · function · L1377-L1379 — fn context_limit(&self) -> Option<usize>
+- client_update_available · function · L1381-L1386 — fn client_update_available(&self) -> bool
+- server_update_available · function · L1388-L1394 — fn server_update_available(&self) -> Option<bool>
+- info_widget_data · function · L1396-L1786 — fn info_widget_data(&self) -> crate::tui::info_widget::InfoWidgetData
+- workspace_mode_enabled · function · L1788-L1790 — fn workspace_mode_enabled(&self) -> bool
+- workspace_map_rows · function · L1792-L1800 — fn workspace_map_rows(&self) -> Vec<crate::tui::workspace_map::VisibleWorkspaceRow>
+- workspace_animation_tick · function · L1802-L1804 — fn workspace_animation_tick(&self) -> u64
+- render_streaming_markdown · function · L1806-L1810 — fn render_streaming_markdown(&self, width: usize) -> Vec<ratatui::text::Line<'static>>
+- streaming_markdown_stable_prefix · function · L1812-L1814 — fn streaming_markdown_stable_prefix(&self) -> (u64, usize)
+- centered_mode · function · L1816-L1818 — fn centered_mode(&self) -> bool
+- auth_status · function · L1820-L1833 — fn auth_status(&self) -> crate::auth::AuthStatus
+- active_dual_credential · function · L1835-L1846 — fn active_dual_credential(
+- startup_oauth_account_label · function · L1848-L1864 — fn startup_oauth_account_label(&self) -> Option<String>
+- diagram_mode · function · L1866-L1868 — fn diagram_mode(&self) -> crate::config::DiagramDisplayMode
+- inline_swarm_gallery_active · function · L1870-L1875 — fn inline_swarm_gallery_active(&self) -> bool
+- has_inline_swarm_members · function · L1877-L1890 — fn has_inline_swarm_members(&self) -> bool
+- inline_swarm_members · function · L1892-L1907 — fn inline_swarm_members(&self) -> Vec<crate::protocol::SwarmMemberStatus>
+- swarm_members_for_transcript · function · L1909-L1943 — fn swarm_members_for_transcript(&self) -> Vec<crate::protocol::SwarmMemberStatus>
+- swarm_panel_selected · function · L1945-L1952 — fn swarm_panel_selected(&self) -> usize
+- swarm_panel_focused · function · L1954-L1956 — fn swarm_panel_focused(&self) -> bool
+- swarm_panel_full_page · function · L1958-L1960 — fn swarm_panel_full_page(&self) -> bool
+- diagram_focus · function · L1962-L1964 — fn diagram_focus(&self) -> bool
+- diagram_index · function · L1966-L1968 — fn diagram_index(&self) -> usize
+- diagram_scroll · function · L1970-L1972 — fn diagram_scroll(&self) -> (i32, i32)
+- diagram_pane_ratio · function · L1974-L1976 — fn diagram_pane_ratio(&self) -> u8
+- diagram_pane_ratio_user_adjusted · function · L1978-L1980 — fn diagram_pane_ratio_user_adjusted(&self) -> bool
+- diagram_pane_animating · function · L1982-L1986 — fn diagram_pane_animating(&self) -> bool
+- diagram_pane_enabled · function · L1988-L1990 — fn diagram_pane_enabled(&self) -> bool
+- diagram_pane_position · function · L1992-L1994 — fn diagram_pane_position(&self) -> crate::config::DiagramPanePosition
+- diagram_zoom · function · L1996-L1998 — fn diagram_zoom(&self) -> u8
+- diff_pane_scroll · function · L1999-L2001 — fn diff_pane_scroll(&self) -> usize
+- diff_pane_scroll_x · function · L2002-L2004 — fn diff_pane_scroll_x(&self) -> i32
+- side_panel_image_zoom_percent · function · L2005-L2007 — fn side_panel_image_zoom_percent(&self) -> u8
+- panel_image_preview · function · L2008-L2010 — fn panel_image_preview(&self) -> Option<u64>
+- diff_pane_focus · function · L2011-L2013 — fn diff_pane_focus(&self) -> bool
+- side_panel · function · L2014-L2016 — fn side_panel(&self) -> &crate::side_panel::SidePanelSnapshot
+- side_panel_fullscreen · function · L2017-L2019 — fn side_panel_fullscreen(&self) -> bool
+- pin_images · function · L2020-L2022 — fn pin_images(&self) -> bool
+- inline_images_visible · function · L2024-L2026 — fn inline_images_visible(&self) -> bool
+- image_expand_level · function · L2027-L2035 — fn image_expand_level(
+- expanded_images_version · function · L2036-L2038 — fn expanded_images_version(&self) -> u64
+- pinned_images_auto_hide_remaining_secs · function · L2039-L2052 — fn pinned_images_auto_hide_remaining_secs(&self) -> Option<u64>
+- chat_native_scrollbar · function · L2053-L2055 — fn chat_native_scrollbar(&self) -> bool
+- side_panel_native_scrollbar · function · L2056-L2058 — fn side_panel_native_scrollbar(&self) -> bool
+- inline_interactive_state · function · L2059-L2061 — fn inline_interactive_state(&self) -> Option<&crate::tui::InlineInteractiveState>
+- inline_view_state · function · L2063-L2065 — fn inline_view_state(&self) -> Option<&crate::tui::InlineViewState>
+- changelog_scroll · function · L2067-L2069 — fn changelog_scroll(&self) -> Option<usize>
+- help_scroll · function · L2071-L2073 — fn help_scroll(&self) -> Option<usize>
+- model_status_overlay · function · L2075-L2078 — fn model_status_overlay(&self) -> Option<(usize, &str)>
+- commit_log_overlay · function · L2080-L2082 — fn commit_log_overlay(&self) -> Option<&crate::tui::app::CommitLogOverlay>
+- session_picker_overlay · function · L2084-L2088 — fn session_picker_overlay(
+- login_picker_overlay · function · L2090-L2092 — fn login_picker_overlay(&self) -> Option<&RefCell<crate::tui::login_picker::LoginPicker>>
+- account_picker_overlay · function · L2094-L2098 — fn account_picker_overlay(
+- usage_overlay · function · L2100-L2102 — fn usage_overlay(&self) -> Option<&RefCell<crate::tui::usage_overlay::UsageOverlay>>
+- working_dir · function · L2104-L2106 — fn working_dir(&self) -> Option<String>
+- git_branch · function · L2108-L2113 — fn git_branch(&self) -> Option<String>
+- now_millis · function · L2115-L2117 — fn now_millis(&self) -> u64
+- copy_badge_ui · function · L2119-L2121 — fn copy_badge_ui(&self) -> crate::tui::CopyBadgeUiState
+- copy_selection_mode · function · L2123-L2125 — fn copy_selection_mode(&self) -> bool
+- copy_selection_range · function · L2127-L2129 — fn copy_selection_range(&self) -> Option<crate::tui::CopySelectionRange>
+- input_drag_scroll_offset · function · L2131-L2135 — fn input_drag_scroll_offset(&self) -> Option<usize>
+- copy_selection_status · function · L2137-L2164 — fn copy_selection_status(&self) -> Option<crate::tui::CopySelectionStatus>
+- onboarding_preview_mode · function · L2166-L2168 — fn onboarding_preview_mode(&self) -> bool
+- onboarding_welcome_active · function · L2170-L2172 — fn onboarding_welcome_active(&self) -> bool
+- onboarding_welcome_kind · function · L2174-L2176 — fn onboarding_welcome_kind(&self) -> crate::tui::OnboardingWelcomeKind
+- suggestion_prompts · function · L2178-L2183 — fn suggestion_prompts(&self) -> Vec<(String, String)>
+- cache_ttl_status · function · L2185-L2205 — fn cache_ttl_status(&self) -> Option<crate::tui::CacheTtlInfo>
+- SwarmPanelView · enum · L2210-L2213 — pub(crate) enum SwarmPanelView
+- cycle_swarm_panel_view · function · L2217-L2244 — pub(crate) fn cycle_swarm_panel_view(&mut self) -> SwarmPanelView
+- set_swarm_panel_focus · function · L2247-L2250 — pub(crate) fn set_swarm_panel_focus(&mut self, focused: bool)
+- move_swarm_panel_selection · function · L2254-L2262 — pub(crate) fn move_swarm_panel_selection(&mut self, delta: isize)
+- handle_swarm_panel_key · function · L2270-L2302 — pub(crate) fn handle_swarm_panel_key(
+- handle_swarm_agent_shortcut · function · L2304-L2324 — pub(crate) fn handle_swarm_agent_shortcut(
+- pop_out_all_swarm_agents · function · L2327-L2352 — pub(crate) fn pop_out_all_swarm_agents(&mut self)
+- swarm_agent_shortcut_digit · function · L2354-L2359 — pub(super) fn swarm_agent_shortcut_digit(&self, session_id: &str) -> Option<u8>
+- pop_out_selected_swarm_agent · function · L2363-L2367 — pub(crate) fn pop_out_selected_swarm_agent(&mut self)
+- pop_out_selected_swarm_agent_with_launcher · function · L2369-L2406 — fn pop_out_selected_swarm_agent_with_launcher(
+- open_swarm_agent_window · function · L2409-L2417 — fn open_swarm_agent_window(session_id: &str, is_ssh_remote: bool) -> anyhow::Result<bool>
+- open_swarm_agent_window_with_launcher · function · L2419-L2438 — fn open_swarm_agent_window_with_launcher(
+- spawn_swarm_agent_window · function · L2440-L2459 — fn spawn_swarm_agent_window(
+- swarm_agent_terminal_command · function · L2461-L2491 — fn swarm_agent_terminal_command(
+- spawn_swarm_agent_window_with_launchers · function · L2493-L2511 — fn spawn_swarm_agent_window_with_launchers(
+- swarm_agent_shortcut_index · function · L2514-L2527 — pub(crate) fn swarm_agent_shortcut_index(
+- swarm_popout_launch_context · function · L2532-L2545 — fn swarm_popout_launch_context(
+- SwarmPanelAction · enum · L2549-L2555 — pub(crate) enum SwarmPanelAction
+- swarm_panel_action_for_key · function · L2566-L2598 — pub(crate) fn swarm_panel_action_for_key(
+- filter_inline_swarm_subtree · function · L2611-L2651 — pub(crate) fn filter_inline_swarm_subtree(
+- has_inline_swarm_descendants · function · L2656-L2663 — fn has_inline_swarm_descendants(
+- inline_swarm_members_unticked · function · L2666-L2692 — fn inline_swarm_members_unticked(&self) -> Vec<crate::protocol::SwarmMemberStatus>
+- context_cache_tests · module · L2697-L2697 — mod context_cache_tests;
+- sidebar_usage_tests · module · L2701-L2701 — mod sidebar_usage_tests;
+- swarm_panel_key_tests · module · L2705-L2705 — mod swarm_panel_key_tests;
+- inline_swarm_subtree_tests · module · L2709-L2709 — mod inline_swarm_subtree_tests;

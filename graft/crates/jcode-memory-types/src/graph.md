@@ -1,0 +1,48 @@
+# crates/jcode-memory-types/src/graph.rs
+
+- GRAPH_VERSION · constant · L16-L16 — pub const GRAPH_VERSION: u32 = 2;
+- TopKItem · struct · L19-L23 — struct TopKItem<T>
+- eq · function · L26-L28 — fn eq(&self, other: &Self) -> bool
+- partial_cmp · function · L34-L36 — fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering>
+- cmp · function · L40-L44 — fn cmp(&self, other: &Self) -> std::cmp::Ordering
+- top_k_scored · function · L47-L87 — fn top_k_scored<T, I>(items: I, limit: usize) -> Vec<(T, f32)>
+- EdgeKind · enum · L92-L108 — pub enum EdgeKind
+- default_weight · function · L110-L112 — fn default_weight() -> f32
+- traversal_weight · function · L116-L125 — pub fn traversal_weight(&self) -> f32
+- Edge · struct · L130-L136 — pub struct Edge
+- new · function · L139-L144 — pub fn new(target: impl Into<String>, kind: EdgeKind) -> Self
+- TagEntry · struct · L149-L161 — pub struct TagEntry
+- new · function · L164-L173 — pub fn new(name: impl Into<String>) -> Self
+- with_description · function · L175-L178 — pub fn with_description(mut self, desc: impl Into<String>) -> Self
+- ClusterEntry · struct · L183-L198 — pub struct ClusterEntry
+- new · function · L201-L212 — pub fn new(id: impl Into<String>) -> Self
+- GraphMetadata · struct · L217-L227 — pub struct GraphMetadata
+- MemoryGraph · struct · L231-L256 — pub struct MemoryGraph
+- default · function · L259-L261 — fn default() -> Self
+- new · function · L266-L276 — pub fn new() -> Self
+- memory_count · function · L279-L281 — pub fn memory_count(&self) -> usize
+- add_memory · function · L287-L311 — pub fn add_memory(&mut self, mut entry: MemoryEntry) -> String
+- get_memory · function · L314-L316 — pub fn get_memory(&self, id: &str) -> Option<&MemoryEntry>
+- get_memory_mut · function · L319-L321 — pub fn get_memory_mut(&mut self, id: &str) -> Option<&mut MemoryEntry>
+- remove_memory · function · L324-L351 — pub fn remove_memory(&mut self, id: &str) -> Option<MemoryEntry>
+- all_memories · function · L354-L356 — pub fn all_memories(&self) -> impl Iterator<Item = &MemoryEntry>
+- active_memories · function · L359-L361 — pub fn active_memories(&self) -> impl Iterator<Item = &MemoryEntry>
+- ensure_tag · function · L366-L371 — pub fn ensure_tag(&mut self, name: &str) -> &TagEntry
+- tag_memory · function · L374-L403 — pub fn tag_memory(&mut self, memory_id: &str, tag_name: &str)
+- untag_memory · function · L406-L429 — pub fn untag_memory(&mut self, memory_id: &str, tag_name: &str)
+- get_memories_by_tag · function · L432-L445 — pub fn get_memories_by_tag(&self, tag_name: &str) -> Vec<&MemoryEntry>
+- all_tags · function · L448-L450 — pub fn all_tags(&self) -> impl Iterator<Item = &TagEntry>
+- add_edge_internal · function · L455-L467 — fn add_edge_internal(&mut self, from: &str, to: &str, kind: EdgeKind)
+- add_edge · function · L470-L479 — pub fn add_edge(&mut self, from: &str, to: &str, kind: EdgeKind)
+- remove_edge · function · L482-L489 — pub fn remove_edge(&mut self, from: &str, to: &str, kind: &EdgeKind)
+- get_edges · function · L492-L494 — pub fn get_edges(&self, node_id: &str) -> &[Edge]
+- get_incoming · function · L497-L502 — pub fn get_incoming(&self, node_id: &str) -> Vec<&str>
+- link_memories · function · L505-L508 — pub fn link_memories(&mut self, from: &str, to: &str, weight: f32)
+- supersede · function · L511-L518 — pub fn supersede(&mut self, newer_id: &str, older_id: &str)
+- mark_contradiction · function · L521-L524 — pub fn mark_contradiction(&mut self, id_a: &str, id_b: &str)
+- node_count · function · L529-L531 — pub fn node_count(&self) -> usize
+- edge_count · function · L534-L536 — pub fn edge_count(&self) -> usize
+- cascade_retrieve · function · L546-L618 — pub fn cascade_retrieve(
+- from_legacy_store · function · L625-L656 — pub fn from_legacy_store(store: MemoryStore) -> Self
+- is_migrated · function · L659-L661 — pub fn is_migrated(&self) -> bool
+- graph_tests · module · L665-L665 — mod graph_tests;

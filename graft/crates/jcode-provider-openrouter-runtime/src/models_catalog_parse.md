@@ -1,0 +1,29 @@
+# crates/jcode-provider-openrouter-runtime/src/models_catalog_parse.rs
+
+- parse_openai_compatible_models_response · function · L11-L13 — pub(crate) fn parse_openai_compatible_models_response(raw_body: &str) -> Result<Vec<ModelInfo>>
+- parse_grok_models_response · function · L17-L19 — pub(crate) fn parse_grok_models_response(raw_body: &str) -> Result<Vec<ModelInfo>>
+- parse_models_response · function · L21-L50 — fn parse_models_response(raw_body: &str, grok: bool) -> Result<Vec<ModelInfo>>
+- parse_grok_model_info_value · function · L52-L88 — fn parse_grok_model_info_value(value: &Value) -> Option<ModelInfo>
+- grok_tests · module · L91-L117 — mod grok_tests
+- native_grok_catalog_preserves_request_model_and_live_context · function · L95-L116 — fn native_grok_catalog_preserves_request_model_and_live_context()
+- parse_model_info_value · function · L119-L198 — pub(crate) fn parse_model_info_value(value: &Value) -> Option<ModelInfo>
+- is_muse_hidden_model · function · L200-L209 — fn is_muse_hidden_model(object: &serde_json::Map<String, Value>) -> bool
+- is_muse_non_text_output · function · L211-L233 — fn is_muse_non_text_output(object: &serde_json::Map<String, Value>) -> bool
+- parse_muse_context_limit · function · L235-L243 — fn parse_muse_context_limit(object: &serde_json::Map<String, Value>) -> Option<u64>
+- parse_input_modalities · function · L253-L282 — pub(crate) fn parse_input_modalities(object: &serde_json::Map<String, Value>) -> Vec<String>
+- first_u64_field · function · L284-L290 — pub(crate) fn first_u64_field(
+- value_as_u64 · function · L292-L298 — pub(crate) fn value_as_u64(value: &Value) -> Option<u64>
+- value_as_pricing_string · function · L300-L306 — pub(crate) fn value_as_pricing_string(value: &Value) -> Option<String>
+- parse_model_pricing · function · L308-L330 — pub(crate) fn parse_model_pricing(value: Option<&Value>) -> ModelPricing
+- tests · module · L333-L506 — mod tests
+- novita_model_catalog_preserves_names_and_context_limits · function · L337-L346 — fn novita_model_catalog_preserves_names_and_context_limits()
+- conifer_context_window_and_pricing_are_parsed · function · L349-L359 — fn conifer_context_window_and_pricing_are_parsed()
+- muse_native_shape_preserves_nested_context_and_filters_hidden · function · L362-L387 — fn muse_native_shape_preserves_nested_context_and_filters_hidden()
+- muse_native_missing_context_is_none_not_synthesized · function · L390-L399 — fn muse_native_missing_context_is_none_not_synthesized()
+- ordinary_provider_without_muse_metadata_not_filtered · function · L402-L410 — fn ordinary_provider_without_muse_metadata_not_filtered()
+- muse_native_non_text_output_is_filtered · function · L413-L431 — fn muse_native_non_text_output_is_filtered()
+- muse_native_no_output_field_means_not_filtered · function · L434-L441 — fn muse_native_no_output_field_means_not_filtered()
+- ordinary_provider_image_without_native_metadata_not_filtered · function · L444-L456 — fn ordinary_provider_image_without_native_metadata_not_filtered()
+- muse_native_human_name_prefers_metadata_name · function · L459-L466 — fn muse_native_human_name_prefers_metadata_name()
+- muse_native_top_level_context_wins_over_nested · function · L469-L476 — fn muse_native_top_level_context_wins_over_nested()
+- muse_catalog_fixture_matches_observed_schema · function · L479-L505 — fn muse_catalog_fixture_matches_observed_schema()

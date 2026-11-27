@@ -1,0 +1,42 @@
+# crates/jcode-protocol/src/protocol_tests/core_events.rs
+
+- tool_discovery_additive_wire_roundtrip · function · L2-L16 — fn tool_discovery_additive_wire_roundtrip()
+- plan_only_wire_flag_defaults_off_and_roundtrips · function · L19-L29 — fn plan_only_wire_flag_defaults_off_and_roundtrips()
+- provider_oauth_account_label_defaults_and_roundtrips · function · L32-L78 — fn provider_oauth_account_label_defaults_and_roundtrips() -> Result<()>
+- test_model_changed_roundtrip_carries_context_window · function · L85-L108 — fn test_model_changed_roundtrip_carries_context_window() -> Result<()>
+- test_model_changed_without_context_window_stays_absent · function · L114-L138 — fn test_model_changed_without_context_window_stays_absent() -> Result<()>
+- test_model_changed_oauth_identity_legacy_and_redaction · function · L141-L157 — fn test_model_changed_oauth_identity_legacy_and_redaction() -> Result<()>
+- test_request_roundtrip · function · L160-L175 — fn test_request_roundtrip() -> Result<()>
+- test_soft_interrupt_images_roundtrip_and_legacy_default · function · L178-L211 — fn test_soft_interrupt_images_roundtrip_and_legacy_default() -> Result<()>
+- test_soft_interrupt_ids_wire_shape_and_legacy_defaults · function · L214-L272 — fn test_soft_interrupt_ids_wire_shape_and_legacy_defaults() -> Result<()>
+- test_compacted_history_request_roundtrip · function · L275-L293 — fn test_compacted_history_request_roundtrip() -> Result<()>
+- recent_history_schema_is_opt_in_and_legacy_compatible · function · L296-L327 — fn recent_history_schema_is_opt_in_and_legacy_compatible() -> Result<()>
+- test_notify_auth_changed_provider_hint_is_optional · function · L330-L371 — fn test_notify_auth_changed_provider_hint_is_optional() -> Result<()>
+- test_invalidate_openai_usage_roundtrip_pins_account_scope · function · L374-L394 — fn test_invalidate_openai_usage_roundtrip_pins_account_scope() -> Result<()>
+- test_notify_auth_changed_typed_auth_payload_roundtrip · function · L397-L449 — fn test_notify_auth_changed_typed_auth_payload_roundtrip() -> Result<()>
+- test_rewind_request_roundtrip · function · L452-L466 — fn test_rewind_request_roundtrip() -> Result<()>
+- test_rewind_undo_request_roundtrip · function · L469-L479 — fn test_rewind_undo_request_roundtrip() -> Result<()>
+- test_rename_session_request_roundtrip · function · L482-L497 — fn test_rename_session_request_roundtrip() -> Result<()>
+- test_rename_session_clear_request_roundtrip_omits_title · function · L500-L515 — fn test_rename_session_clear_request_roundtrip_omits_title() -> Result<()>
+- test_event_roundtrip · function · L518-L529 — fn test_event_roundtrip() -> Result<()>
+- test_context_message_added_event_roundtrip · function · L532-L542 — fn test_context_message_added_event_roundtrip() -> Result<()>
+- test_session_renamed_event_roundtrip · function · L545-L566 — fn test_session_renamed_event_roundtrip() -> Result<()>
+- test_interrupted_event_decodes_from_json · function · L569-L576 — fn test_interrupted_event_decodes_from_json() -> Result<()>
+- test_connection_type_event_roundtrip · function · L579-L590 — fn test_connection_type_event_roundtrip() -> Result<()>
+- test_status_detail_event_roundtrip · function · L593-L604 — fn test_status_detail_event_roundtrip() -> Result<()>
+- test_generated_image_event_roundtrip · function · L607-L634 — fn test_generated_image_event_roundtrip() -> Result<()>
+- test_side_pane_images_event_roundtrip · function · L637-L668 — fn test_side_pane_images_event_roundtrip() -> Result<()>
+- test_interrupted_event_roundtrip · function · L671-L680 — fn test_interrupted_event_roundtrip() -> Result<()>
+- test_history_event_decodes_without_compaction_mode_for_older_servers · function · L683-L724 — fn test_history_event_decodes_without_compaction_mode_for_older_servers() -> Result<()>
+- test_history_available_service_tiers_roundtrip · function · L727-L751 — fn test_history_available_service_tiers_roundtrip() -> Result<()>
+- test_history_provider_oauth_email_roundtrip_redacts_debug · function · L754-L771 — fn test_history_provider_oauth_email_roundtrip_redacts_debug() -> Result<()>
+- test_history_event_roundtrip_preserves_side_panel_snapshot · function · L774-L875 — fn test_history_event_roundtrip_preserves_side_panel_snapshot() -> Result<()>
+- test_compacted_history_event_roundtrip · function · L878-L918 — fn test_compacted_history_event_roundtrip() -> Result<()>
+- test_side_panel_state_event_roundtrip · function · L921-L949 — fn test_side_panel_state_event_roundtrip() -> Result<()>
+- test_error_event_retry_after_roundtrip · function · L952-L972 — fn test_error_event_retry_after_roundtrip() -> Result<()>
+- test_error_event_retry_after_back_compat_default · function · L975-L990 — fn test_error_event_retry_after_back_compat_default() -> Result<()>
+- test_agent_models_session_setter_and_response_roundtrip · function · L993-L1037 — fn test_agent_models_session_setter_and_response_roundtrip() -> Result<()>
+- history_prefix_fingerprint_is_stable_and_streaming_consistent · function · L1040-L1067 — fn history_prefix_fingerprint_is_stable_and_streaming_consistent()
+- history_delta_fields_are_backward_compatible · function · L1070-L1082 — fn history_delta_fields_are_backward_compatible()
+- skill_provenance_metadata_roundtrips_and_legacy_is_unknown · function · L1085-L1109 — fn skill_provenance_metadata_roundtrips_and_legacy_is_unknown() -> Result<()>
+- skill_selector_metadata_roundtrips_and_legacy_names_remain_compatible · function · L1112-L1150 — fn skill_selector_metadata_roundtrips_and_legacy_names_remain_compatible() -> Result<()>

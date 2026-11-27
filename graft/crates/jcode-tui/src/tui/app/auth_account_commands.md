@@ -1,0 +1,31 @@
+# crates/jcode-tui/src/tui/app/auth_account_commands.rs
+
+- handle_auth_command · function · L3-L98 — pub(crate) fn handle_auth_command(app: &mut App, trimmed: &str) -> bool
+- handle_account_command_remote · function · L100-L139 — pub(crate) async fn handle_account_command_remote(
+- parse_account_command · function · L141-L362 — fn parse_account_command(trimmed: &str) -> Option<Result<AccountCommand, String>>
+- account_command_from_picker · function · L371-L402 — pub(crate) fn account_command_from_picker(
+- provider_id · function · L376-L381 — fn provider_id(provider: &AccountProviderKind) -> String
+- execute_account_command_local · function · L404-L487 — pub(crate) fn execute_account_command_local(app: &mut App, command: AccountCommand)
+- execute_account_command_remote · function · L491-L612 — pub(crate) async fn execute_account_command_remote(
+- ssh_account_runtime_args · function · L614-L676 — fn ssh_account_runtime_args(command: &AccountCommand) -> Option<Vec<String>>
+- handle_ssh_usage_command_remote · function · L678-L701 — pub(crate) async fn handle_ssh_usage_command_remote(
+- execute_account_add_local · function · L703-L745 — fn execute_account_add_local(app: &mut App, provider_id: &str, label: Option<&str>)
+- resolve_account_provider_descriptor · function · L747-L751 — pub(crate) fn resolve_account_provider_descriptor(
+- normalize_clearish_value · function · L753-L760 — fn normalize_clearish_value(value: &str) -> Option<String>
+- normalize_normal_mode_value · function · L762-L769 — fn normalize_normal_mode_value(value: &str) -> Option<String>
+- save_default_provider_setting · function · L771-L806 — fn save_default_provider_setting(app: &mut App, provider: Option<&str>)
+- save_default_model_setting · function · L808-L823 — fn save_default_model_setting(app: &mut App, model: Option<&str>)
+- save_openai_transport_setting_local · function · L825-L847 — fn save_openai_transport_setting_local(app: &mut App, value: Option<&str>)
+- save_openai_effort_setting_local · function · L849-L885 — fn save_openai_effort_setting_local(app: &mut App, value: Option<&str>)
+- save_openai_fast_setting_local · function · L887-L908 — pub(crate) fn save_openai_fast_setting_local(app: &mut App, enabled: bool)
+- save_copilot_premium_setting · function · L910-L948 — fn save_copilot_premium_setting(app: &mut App, mode: Option<&str>)
+- OpenAiCompatSetting · enum · L951-L956 — enum OpenAiCompatSetting
+- save_openai_compat_setting · function · L958-L1053 — fn save_openai_compat_setting(app: &mut App, setting: OpenAiCompatSetting, value: Option<&str>)
+- diagnostics · module · L1056-L1056 — mod diagnostics;
+- tests · module · L1060-L1156 — mod tests
+- parse_account_doctor_subcommands · function · L1064-L1073 — fn parse_account_doctor_subcommands()
+- parse_native_jcode_account_actions · function · L1076-L1093 — fn parse_native_jcode_account_actions()
+- parse_account_command_requires_a_token_boundary · function · L1096-L1107 — fn parse_account_command_requires_a_token_boundary()
+- named_provider_login_does_not_discard_label · function · L1110-L1114 — fn named_provider_login_does_not_discard_label()
+- ssh_account_runtime_arguments_preserve_labels_and_clear_values · function · L1117-L1145 — fn ssh_account_runtime_arguments_preserve_labels_and_clear_values()
+- render_auth_doctor_markdown_includes_recovery_steps · function · L1148-L1155 — fn render_auth_doctor_markdown_includes_recovery_steps()

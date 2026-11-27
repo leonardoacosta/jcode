@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/app/split_view.rs
+
+- SPLIT_VIEW_PAGE_ID · constant · L8-L8 — pub(super) const SPLIT_VIEW_PAGE_ID: &str = "split_view";
+- SPLIT_VIEW_TITLE · constant · L9-L9 — const SPLIT_VIEW_TITLE: &str = "Split View";
+- split_view_enabled · function · L12-L14 — pub(super) fn split_view_enabled(&self) -> bool
+- set_split_view_enabled · function · L16-L39 — pub(super) fn set_split_view_enabled(&mut self, enabled: bool, focus: bool)
+- decorate_side_panel_with_split_view · function · L41-L61 — pub(super) fn decorate_side_panel_with_split_view(
+- snapshot_without_split_view · function · L63-L70 — pub(super) fn snapshot_without_split_view(&self) -> SidePanelSnapshot
+- refresh_split_view_if_needed · function · L72-L81 — pub(super) fn refresh_split_view_if_needed(&mut self)
+- clear_split_view_cache · function · L83-L89 — fn clear_split_view_cache(&mut self)
+- refresh_split_view_page · function · L91-L103 — fn refresh_split_view_page(&mut self)
+- refresh_split_view_cache · function · L105-L119 — fn refresh_split_view_cache(&mut self, force: bool) -> bool
+- split_view_page · function · L121-L136 — fn split_view_page(&self) -> SidePanelPage
+- split_view_status_message · function · L139-L148 — pub(super) fn split_view_status_message(app: &App) -> String
+- handle_split_view_command · function · L150-L206 — pub(super) fn handle_split_view_command(app: &mut App, trimmed: &str) -> bool
+- build_split_view_markdown · function · L208-L296 — fn build_split_view_markdown(app: &App) -> String
+- push_markdown_body · function · L298-L308 — fn push_markdown_body(markdown: &mut String, body: &str)
+- split_view_placeholder_markdown · function · L310-L312 — fn split_view_placeholder_markdown() -> String
+- fenced_block · function · L314-L327 — fn fenced_block(language: &str, text: &str) -> String
+- capitalize_role · function · L329-L335 — fn capitalize_role(role: &str) -> String
+- hash_str · function · L337-L341 — fn hash_str(value: &str) -> u64
+- now_ms · function · L343-L348 — fn now_ms() -> u64

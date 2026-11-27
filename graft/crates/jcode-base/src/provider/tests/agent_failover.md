@@ -1,0 +1,25 @@
+# crates/jcode-base/src/provider/tests/agent_failover.rs
+
+- agent_failover_set_default_model · function · L1-L3 — fn agent_failover_set_default_model(model: &str) -> anyhow::Result<()>
+- agent_failover_catalog · function · L5-L14 — fn agent_failover_catalog(provider: &MultiProvider, routes: Vec<ModelRoute>)
+- agent_failover_fixture · function · L16-L39 — fn agent_failover_fixture(models: &[&str]) -> MultiProvider
+- agent_failover_target · function · L41-L63 — fn agent_failover_target(provider: &MultiProvider, tokens: usize, reason: &str) -> Option<String>
+- automatic_reset_request_routes_first_for_live_and_cached_failures · function · L66-L113 — fn automatic_reset_request_routes_first_for_live_and_cached_failures()
+- automatic_reset_defers_to_ready_pool_route_before_any_redemption · function · L116-L144 — fn automatic_reset_defers_to_ready_pool_route_before_any_redemption()
+- automatic_reset_route_guard_respects_pool_cooldown_and_override · function · L147-L196 — fn automatic_reset_route_guard_respects_pool_cooldown_and_override()
+- automatic_reset_route_guard_preserves_same_provider_account_rotation · function · L199-L220 — fn automatic_reset_route_guard_preserves_same_provider_account_rotation()
+- agent_failover_rejects_incident_sora_escape_after_oversized_oauth_failure · function · L223-L244 — fn agent_failover_rejects_incident_sora_escape_after_oversized_oauth_failure()
+- agent_failover_prefers_curated_model_independent_of_catalog_order · function · L247-L263 — fn agent_failover_prefers_curated_model_independent_of_catalog_order()
+- agent_failover_curated_order_beats_larger_context_window · function · L266-L279 — fn agent_failover_curated_order_beats_larger_context_window()
+- agent_failover_api_capacity_does_not_inherit_codex_limits · function · L282-L319 — fn agent_failover_api_capacity_does_not_inherit_codex_limits()
+- agent_failover_context_limits_follow_exact_saved_account · function · L322-L382 — fn agent_failover_context_limits_follow_exact_saved_account()
+- agent_failover_configured_unknown_context_cannot_bypass_capacity_check · function · L385-L404 — fn agent_failover_configured_unknown_context_cannot_bypass_capacity_check()
+- agent_failover_configured_model_beats_larger_curated_model_when_both_fit · function · L407-L423 — fn agent_failover_configured_model_beats_larger_curated_model_when_both_fit()
+- agent_failover_skips_unavailable_configured_model_and_never_prefers_media · function · L426-L447 — fn agent_failover_skips_unavailable_configured_model_and_never_prefers_media()
+- agent_failover_media_only_catalog_and_countdown_targets_are_rejected · function · L450-L485 — fn agent_failover_media_only_catalog_and_countdown_targets_are_rejected()
+- agent_failover_unranked_models_have_no_catalog_or_context_tiebreak_fallback · function · L488-L510 — fn agent_failover_unranked_models_have_no_catalog_or_context_tiebreak_fallback()
+- agent_failover_configured_oauth_model_does_not_override_api_identity · function · L513-L533 — fn agent_failover_configured_oauth_model_does_not_override_api_identity()
+- agent_failover_pool_order_beats_global_model_quality_and_configured_identity · function · L536-L586 — fn agent_failover_pool_order_beats_global_model_quality_and_configured_identity()
+- agent_failover_same_model_rotation_precedes_config_and_respects_context · function · L589-L621 — fn agent_failover_same_model_rotation_precedes_config_and_respects_context()
+- agent_failover_configured_account_pin_matches_only_exact_target_login · function · L624-L657 — fn agent_failover_configured_account_pin_matches_only_exact_target_login()
+- agent_failover_bedrock_without_tools_is_rejected_at_countdown_recheck · function · L660-L678 — fn agent_failover_bedrock_without_tools_is_rejected_at_countdown_recheck()

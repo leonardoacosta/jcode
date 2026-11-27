@@ -1,0 +1,23 @@
+# crates/jcode-tui-mermaid/src/mermaid_runtime/protocol_tests.rs
+
+- image_off_disables_cached_picker_and_rendering · function · L4-L35 — fn image_off_disables_cached_picker_and_rendering()
+- CHILD · constant · L5-L5 — const CHILD: &str = "JCODE_TEST_IMAGES_DISABLED_CHILD";
+- evicted_external_image_is_rediscovered_from_its_remembered_path · function · L43-L85 — fn evicted_external_image_is_rediscovered_from_its_remembered_path()
+- rediscovery_fails_when_the_external_image_file_is_gone · function · L90-L99 — fn rediscovery_fails_when_the_external_image_file_is_gone()
+- infer_protocol_detects_kitty_family · function · L102-L120 — fn infer_protocol_detects_kitty_family()
+- infer_protocol_detects_iterm_and_sixel · function · L123-L146 — fn infer_protocol_detects_iterm_and_sixel()
+- explicit_wezterm_identity_avoids_incomplete_kitty_placeholders · function · L149-L163 — fn explicit_wezterm_identity_avoids_incomplete_kitty_placeholders()
+- infer_protocol_misses_inside_masking_multiplexer · function · L166-L172 — fn infer_protocol_misses_inside_masking_multiplexer()
+- detect_multiplexer_identifies_each · function · L175-L217 — fn detect_multiplexer_identifies_each()
+- detect_multiplexer_herdr_wins_over_others · function · L220-L232 — fn detect_multiplexer_herdr_wins_over_others()
+- native_tmux_sixel_requires_server_and_client_support · function · L235-L244 — fn native_tmux_sixel_requires_server_and_client_support()
+- zellij_preserves_classic_kitty_unless_explicitly_disabled · function · L247-L267 — fn zellij_preserves_classic_kitty_unless_explicitly_disabled()
+- decide_mode_respects_explicit_override · function · L270-L298 — fn decide_mode_respects_explicit_override()
+- decide_mode_probes_orca_case_insensitively · function · L301-L309 — fn decide_mode_probes_orca_case_insensitively()
+- decide_mode_defaults_to_fast_path · function · L312-L347 — fn decide_mode_defaults_to_fast_path()
+- decide_mode_keeps_orca_multiplexers_fast_unless_forced · function · L350-L366 — fn decide_mode_keeps_orca_multiplexers_fast_unless_forced()
+- probe_env_helper_back_compat · function · L369-L381 — fn probe_env_helper_back_compat()
+- only_halfblocks_uses_the_user_facing_text_image_fallback · function · L384-L406 — fn only_halfblocks_uses_the_user_facing_text_image_fallback()
+- native_image_capability_excludes_halfblocks_but_allows_video_export · function · L409-L428 — fn native_image_capability_excludes_halfblocks_but_allows_video_export()
+- native_image_capability_respects_scoped_test_override · function · L431-L456 — fn native_image_capability_respects_scoped_test_override()
+- CHILD · constant · L432-L432 — const CHILD: &str = "JCODE_TEST_NATIVE_IMAGE_OVERRIDE_CHILD";

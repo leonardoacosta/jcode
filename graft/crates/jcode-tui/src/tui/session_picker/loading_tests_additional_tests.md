@@ -1,0 +1,14 @@
+# crates/jcode-tui/src/tui/session_picker/loading_tests_additional_tests.rs
+
+- fork_intent_snapshot_uses_first_genuine_request_and_keeps_inherited_search · function · L4-L25 — fn fork_intent_snapshot_uses_first_genuine_request_and_keeps_inherited_search()
+- fork_intent_journal_resets_across_entries_and_repeated_forks · function · L28-L83 — fn fork_intent_journal_resets_across_entries_and_repeated_forks()
+- fork_intent_ignores_non_fork_reminders_and_assistant_quotes · function · L86-L99 — fn fork_intent_ignores_non_fork_reminders_and_assistant_quotes()
+- preview_loading_preserves_live_tool_duration_metadata · function · L102-L127 — fn preview_loading_preserves_live_tool_duration_metadata()
+- cloud_sessions_are_loaded_outside_the_recent_window_and_grouped_by_host · function · L130-L197 — fn cloud_sessions_are_loaded_outside_the_recent_window_and_grouped_by_host()
+- cloud_session_discovery_keeps_missing_snapshots_and_ignores_corrupt_leases · function · L200-L244 — fn cloud_session_discovery_keeps_missing_snapshots_and_ignores_corrupt_leases()
+- collect_recent_session_stems_keeps_empty_snapshot_with_journal_history · function · L247-L259 — fn collect_recent_session_stems_keeps_empty_snapshot_with_journal_history()
+- collect_recent_session_stems_expands_candidate_window_past_recent_empty_stubs · function · L262-L275 — fn collect_recent_session_stems_expands_candidate_window_past_recent_empty_stubs()
+- trivial_hidden_only_snapshot_detector_skips_system_stub · function · L278-L281 — fn trivial_hidden_only_snapshot_detector_skips_system_stub()
+- trivial_hidden_only_snapshot_detector_keeps_visible_message · function · L284-L287 — fn trivial_hidden_only_snapshot_detector_keeps_visible_message()
+- trivial_hidden_only_snapshot_detector_keeps_system_plus_visible_message · function · L290-L293 — fn trivial_hidden_only_snapshot_detector_keeps_system_plus_visible_message()
+- cached_grouped_sessions_round_trip_from_disk_borrows_inventories · function · L296-L438 — fn cached_grouped_sessions_round_trip_from_disk_borrows_inventories()

@@ -1,0 +1,21 @@
+# crates/jcode-tui/src/tui/app/state_ui_maintenance.rs
+
+- handle_update_sim_shortcut · function · L6-L21 — pub(super) fn handle_update_sim_shortcut(
+- client_maintenance_busy_message · function · L23-L36 — fn client_maintenance_busy_message(
+- client_maintenance_card_title · function · L38-L40 — fn client_maintenance_card_title(action: crate::bus::ClientMaintenanceAction) -> String
+- client_maintenance_card_message · function · L42-L59 — fn client_maintenance_card_message(
+- set_client_maintenance_message · function · L61-L84 — fn set_client_maintenance_message(
+- remove_client_maintenance_message · function · L86-L101 — fn remove_client_maintenance_message(
+- start_background_client_rebuild · function · L103-L108 — pub(super) fn start_background_client_rebuild(&mut self, session_id: String)
+- start_background_client_update · function · L110-L115 — pub(super) fn start_background_client_update(&mut self, session_id: String)
+- start_background_client_maintenance · function · L117-L156 — fn start_background_client_maintenance(
+- handle_update_status · function · L158-L243 — pub(super) fn handle_update_status(&mut self, status: crate::bus::UpdateStatus)
+- maybe_finish_background_client_reload · function · L245-L287 — pub(super) fn maybe_finish_background_client_reload(&mut self) -> bool
+- RELOAD_TYPING_QUIET_WINDOW · constant · L256-L257 — const RELOAD_TYPING_QUIET_WINDOW: std::time::Duration =
+- handle_session_update_status · function · L289-L405 — pub(super) fn handle_session_update_status(&mut self, status: crate::bus::SessionUpdateStatus)
+- offer_update_merge · function · L413-L437 — pub(super) fn offer_update_merge(
+- clear_update_merge_offer · function · L439-L441 — pub(super) fn clear_update_merge_offer(&mut self)
+- merge_offer_key_matches · function · L445-L451 — pub(super) fn merge_offer_key_matches(
+- accept_update_merge_offer · function · L456-L505 — pub(super) fn accept_update_merge_offer(&mut self) -> bool
+- launch_update_merge_agent · function · L509-L524 — fn launch_update_merge_agent(
+- spawn_merge_session_terminal · function · L526-L539 — fn spawn_merge_session_terminal(

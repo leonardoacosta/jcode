@@ -1,0 +1,37 @@
+# crates/jcode-tui-markdown/src/render_core_adapter_tests.rs
+
+- nonblank_texts · function · L13-L27 — fn nonblank_texts(lines: &[Line<'static>]) -> Vec<String>
+- flattened · function · L31-L34 — fn flattened(lines: &[Line<'static>]) -> String
+- assert_content_parity · function · L36-L46 — fn assert_content_parity(md: &str)
+- parity_plain_paragraph · function · L49-L51 — fn parity_plain_paragraph()
+- parity_heading_and_paragraph · function · L54-L56 — fn parity_heading_and_paragraph()
+- parity_emphasis · function · L59-L61 — fn parity_emphasis()
+- parity_unordered_list · function · L64-L66 — fn parity_unordered_list()
+- parity_ordered_list · function · L69-L71 — fn parity_ordered_list()
+- parity_code_block · function · L74-L76 — fn parity_code_block()
+- parity_blockquote · function · L79-L81 — fn parity_blockquote()
+- parity_mixed_document · function · L84-L95 — fn parity_mixed_document()
+- core_marks_bold_and_code_styling · function · L98-L114 — fn core_marks_bold_and_code_styling()
+- parity_table · function · L117-L123 — fn parity_table()
+- core_renders_table_borders · function · L126-L136 — fn core_renders_table_borders()
+- core_renders_inline_math · function · L139-L146 — fn core_renders_inline_math()
+- core_renders_display_math_frame · function · L149-L160 — fn core_renders_display_math_frame()
+- parity_currency_dollars · function · L163-L165 — fn parity_currency_dollars()
+- parity_two_currency_amounts_not_math · function · L168-L171 — fn parity_two_currency_amounts_not_math()
+- probe_math_divergence · function · L174-L201 — fn probe_math_divergence()
+- fuzz_visible_text_parity · function · L204-L259 — fn fuzz_visible_text_parity()
+- Rng · struct · L270-L270 — struct Rng(u64);
+- new · function · L273-L275 — fn new(seed: u64) -> Self
+- next_u64 · function · L276-L283 — fn next_u64(&mut self) -> u64
+- below · function · L284-L286 — fn below(&mut self, n: usize) -> usize
+- chance · function · L287-L289 — fn chance(&mut self, n: usize) -> bool
+- pick · function · L290-L292 — fn pick<'a, T>(&mut self, items: &'a [T]) -> &'a T
+- WORDS · constant · L295-L316 — const WORDS: &[&str] = &[
+- gen_words · function · L318-L324 — fn gen_words(rng: &mut Rng, max: usize) -> String
+- gen_inline · function · L327-L348 — fn gen_inline(rng: &mut Rng, depth: usize) -> String
+- gen_block · function · L351-L434 — fn gen_block(rng: &mut Rng, depth: usize) -> String
+- gen_document · function · L436-L442 — fn gen_document(rng: &mut Rng) -> String
+- fuzz_random_documents_parity · function · L445-L480 — fn fuzz_random_documents_parity()
+- fuzz_random_documents_line_structure · function · L486-L521 — fn fuzz_random_documents_line_structure()
+- fuzz_random_documents_wrapped_parity · function · L524-L566 — fn fuzz_random_documents_wrapped_parity()
+- table_columns_follow_the_declared_alignment · function · L573-L584 — fn table_columns_follow_the_declared_alignment()

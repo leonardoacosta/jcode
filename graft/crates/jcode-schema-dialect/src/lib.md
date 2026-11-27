@@ -1,0 +1,36 @@
+# crates/jcode-schema-dialect/src/lib.rs
+
+- conformance · module · L32-L32 — pub mod conformance;
+- dialect · module · L33-L33 — pub mod dialect;
+- keyword · module · L34-L34 — pub mod keyword;
+- quirks · module · L35-L35 — pub mod quirks;
+- registry · module · L36-L36 — pub mod registry;
+- rejection · module · L37-L37 — pub mod rejection;
+- normalize · function · L51-L58 — pub fn normalize(schema: &Value, spec: &DialectSpec) -> Value
+- RecoveryAction · enum · L62-L75 — pub enum RecoveryAction
+- recover_from_error · function · L84-L166 — pub fn recover_from_error(message: &str, spec: &DialectSpec) -> RecoveryAction
+- learn_from_error · function · L180-L188 — pub fn learn_from_error(message: &str, spec: &DialectSpec) -> Option<String>
+- learn_tests · module · L191-L254 — mod learn_tests
+- isolated · function · L194-L198 — fn isolated(name: &str) -> tempfile::TempDir
+- openai_rejections_that_name_a_construct_are_learned · function · L203-L220 — fn openai_rejections_that_name_a_construct_are_learned()
+- a_structural_openai_rejection_is_labelled_not_retried · function · L226-L238 — fn a_structural_openai_rejection_is_labelled_not_retried()
+- operational_failures_pass_straight_through · function · L241-L253 — fn operational_failures_pass_straight_through()
+- tests · module · L257-L628 — mod tests
+- isolate_quirks · function · L263-L267 — fn isolate_quirks(name: &str) -> tempfile::TempDir
+- issue_754_playwright_schema_is_accepted_by_the_gemini_dialect · function · L273-L298 — fn issue_754_playwright_schema_is_accepted_by_the_gemini_dialect()
+- issue_687_unique_items_is_stripped_without_losing_the_property · function · L303-L319 — fn issue_687_unique_items_is_stripped_without_losing_the_property()
+- issue_543_unsupported_format_is_stripped_but_supported_ones_survive · function · L323-L335 — fn issue_543_unsupported_format_is_stripped_but_supported_ones_survive()
+- issue_446_bare_object_schema_gains_properties · function · L339-L345 — fn issue_446_bare_object_schema_gains_properties()
+- issue_495_top_level_combiner_is_flattened · function · L350-L364 — fn issue_495_top_level_combiner_is_flattened()
+- issue_655_dangling_required_is_pruned_for_gemini · function · L369-L377 — fn issue_655_dangling_required_is_pruned_for_gemini()
+- gemini_prunes_required_without_properties_in_array_items · function · L380-L409 — fn gemini_prunes_required_without_properties_in_array_items()
+- stripping_reaches_arbitrarily_deep_nesting · function · L414-L427 — fn stripping_reaches_arbitrarily_deep_nesting()
+- a_property_named_like_a_keyword_is_never_stripped · function · L432-L444 — fn a_property_named_like_a_keyword_is_never_stripped()
+- enum_values_that_look_like_keywords_survive · function · L449-L461 — fn enum_values_that_look_like_keywords_survive()
+- recovery_learns_then_refuses_to_loop · function · L464-L481 — fn recovery_learns_then_refuses_to_loop()
+- a_learned_keyword_is_stripped_by_later_normalization · function · L484-L512 — fn a_learned_keyword_is_stripped_by_later_normalization()
+- a_load_bearing_rejection_is_reported_not_absorbed · function · L515-L525 — fn a_load_bearing_rejection_is_reported_not_absorbed()
+- non_schema_errors_are_passed_through · function · L528-L533 — fn non_schema_errors_are_passed_through()
+- flattening_a_combiner_keeps_the_parent_properties · function · L540-L575 — fn flattening_a_combiner_keeps_the_parent_properties()
+- a_renamed_keyword_survives_instead_of_being_dropped · function · L582-L606 — fn a_renamed_keyword_survives_instead_of_being_dropped()
+- a_narrowing_branch_never_deletes_the_parent_description · function · L612-L627 — fn a_narrowing_branch_never_deletes_the_parent_description()

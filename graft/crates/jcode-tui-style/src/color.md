@@ -1,0 +1,46 @@
+# crates/jcode-tui-style/src/color.rs
+
+- ColorCapability · enum · L8-L11 — pub enum ColorCapability
+- CAPABILITY · constant · L13-L13 — static CAPABILITY: OnceLock<ColorCapability> = OnceLock::new();
+- CAPABILITY_OVERRIDE · constant · L21-L21 — static CAPABILITY_OVERRIDE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+- color_capability · function · L23-L28 — pub fn color_capability() -> ColorCapability
+- pin_truecolor_for_tests · function · L39-L41 — pub fn pin_truecolor_for_tests()
+- fragile_glyph_cache_terminal · function · L59-L81 — fn fragile_glyph_cache_terminal() -> bool
+- detect_color_capability · function · L83-L92 — fn detect_color_capability() -> ColorCapability
+- detect_raw_color_capability · function · L94-L134 — fn detect_raw_color_capability() -> ColorCapability
+- has_truecolor · function · L136-L138 — pub fn has_truecolor() -> bool
+- clear_buf · function · L140-L146 — pub fn clear_buf(area: Rect, buf: &mut Buffer)
+- rgb · function · L156-L162 — pub fn rgb(r: u8, g: u8, b: u8) -> Color
+- rgb_to_xterm256 · function · L167-L191 — pub(crate) fn rgb_to_xterm256(r: u8, g: u8, b: u8) -> u8
+- CUBE_VALUES · constant · L193-L193 — const CUBE_VALUES: [u8; 6] = [0, 95, 135, 175, 215, 255];
+- nearest_cube_components · function · L199-L217 — fn nearest_cube_components(v: u8) -> ([u8; 2], usize)
+- hue_scaled · function · L222-L238 — fn hue_scaled(r: u8, g: u8, b: u8) -> i32
+- hue_distance · function · L240-L243 — fn hue_distance(target_hue: i32, r: u8, g: u8, b: u8) -> i32
+- nearest_cube_index · function · L252-L280 — fn nearest_cube_index(r: u8, g: u8, b: u8) -> u16
+- cube_index_to_rgb · function · L282-L287 — fn cube_index_to_rgb(idx: u16) -> (u8, u8, u8)
+- nearest_gray_index · function · L289-L297 — fn nearest_gray_index(v: u8) -> u8
+- gray_index_to_value · function · L299-L301 — fn gray_index_to_value(idx: u8) -> u8
+- color_distance · function · L303-L309 — fn color_distance(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) -> u32
+- indexed_to_rgb · function · L311-L337 — pub fn indexed_to_rgb(idx: u8) -> (u8, u8, u8)
+- tests · module · L340-L630 — mod tests
+- test_pure_black · function · L344-L347 — fn test_pure_black()
+- test_pure_white · function · L350-L353 — fn test_pure_white()
+- test_mid_gray · function · L356-L364 — fn test_mid_gray()
+- test_dim_gray · function · L367-L374 — fn test_dim_gray()
+- test_red · function · L377-L380 — fn test_red()
+- test_green · function · L383-L386 — fn test_green()
+- test_blue · function · L389-L392 — fn test_blue()
+- test_rgb_truecolor · function · L395-L403 — fn test_rgb_truecolor()
+- test_near_colors_are_stable · function · L406-L410 — fn test_near_colors_are_stable()
+- test_near_neutral_dark_blue_quantizes_to_gray_not_navy · function · L419-L428 — fn test_near_neutral_dark_blue_quantizes_to_gray_not_navy()
+- test_light_blue_tint_keeps_blue_cast_on_tie · function · L437-L446 — fn test_light_blue_tint_keeps_blue_cast_on_tie()
+- atlas_key_for · function · L452-L459 — fn atlas_key_for(cap: ColorCapability, r: u8, g: u8, b: u8) -> u32
+- test_glyph_safe_bounds_atlas_keyspace · function · L467-L498 — fn test_glyph_safe_bounds_atlas_keyspace()
+- test_fragile_terminal_override_off_forces_truecolor · function · L501-L512 — fn test_fragile_terminal_override_off_forces_truecolor()
+- test_fragile_terminal_override_on_forces_quantize · function · L515-L519 — fn test_fragile_terminal_override_on_forces_quantize()
+- test_detect_color_capability_downgrades_on_fragile_override · function · L525-L540 — fn test_detect_color_capability_downgrades_on_fragile_override()
+- test_indexed_color_serializes_as_256_not_truecolor · function · L548-L567 — fn test_indexed_color_serializes_as_256_not_truecolor()
+- rgb_via · function · L570-L575 — fn rgb_via(cap: ColorCapability, r: u8, g: u8, b: u8) -> ratatui::style::Color
+- test_fragile_terminal_detects_vscode_and_apple_terminal · function · L579-L601 — fn test_fragile_terminal_detects_vscode_and_apple_terminal()
+- temp_env_scope · function · L605-L629 — fn temp_env_scope(vars: &[(&str, Option<&str>)], body: impl FnOnce())
+- ENV_LOCK · constant · L607-L607 — static ENV_LOCK: Mutex<()> = Mutex::new(());

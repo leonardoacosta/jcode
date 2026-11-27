@@ -1,0 +1,35 @@
+# crates/jcode-base/src/provider_activity_oauth.rs
+
+- Totals · struct · L10-L20 — struct Totals
+- is_zero · function · L22-L24 — fn is_zero(value: &u64) -> bool
+- format_usage_tokens · function · L26-L39 — fn format_usage_tokens(tokens: u64) -> String
+- add · function · L42-L55 — fn add(&mut self, other: &Self)
+- display · function · L57-L104 — fn display(&self) -> String
+- AccountUsage · struct · L109-L114 — struct AccountUsage
+- Store · struct · L118-L120 — struct Store
+- path · function · L122-L124 — fn path() -> anyhow::Result<std::path::PathBuf>
+- load · function · L126-L134 — fn load(path: &Path) -> anyhow::Result<Store>
+- update · function · L136-L162 — fn update(path: &Path, label: &str, totals: &Totals, now: DateTime<Local>) -> anyhow::Result<()>
+- priced_usage · function · L164-L216 — fn priced_usage(
+- record_openai_oauth_usage · function · L222-L240 — pub fn record_openai_oauth_usage(
+- openai_oauth_usage_summary · function · L245-L256 — pub fn openai_oauth_usage_summary(label: &str) -> Vec<(String, String)>
+- anthropic_path · function · L258-L260 — fn anthropic_path() -> anyhow::Result<std::path::PathBuf>
+- anthropic_priced_usage · function · L263-L323 — fn anthropic_priced_usage(
+- record_anthropic_oauth_usage · function · L330-L365 — pub fn record_anthropic_oauth_usage(
+- anthropic_oauth_usage_summary · function · L368-L379 — pub fn anthropic_oauth_usage_summary(label: &str) -> Vec<(String, String)>
+- summary · function · L381-L407 — fn summary(store: &Store, label: &str, now: DateTime<Local>) -> Vec<(String, String)>
+- tests · module · L410-L793 — mod tests
+- anthropic_totals_cache_pricing_and_unknown_models · function · L415-L471 — fn anthropic_totals_cache_pricing_and_unknown_models()
+- anthropic_accounts_days_and_storage_are_isolated · function · L474-L511 — fn anthropic_accounts_days_and_storage_are_isolated()
+- anthropic_cache_ttl_and_fast_tier_pricing · function · L514-L568 — fn anthropic_cache_ttl_and_fast_tier_pricing()
+- display_compacts_large_usage_counts · function · L571-L592 — fn display_compacts_large_usage_counts()
+- compact_token_units_keep_small_counts_exact · function · L595-L605 — fn compact_token_units_keep_small_counts_exact()
+- compact_display_omits_empty_cache_and_preserves_small_costs · function · L608-L618 — fn compact_display_omits_empty_cache_and_preserves_small_costs()
+- cached_input_discount_and_output_semantics · function · L621-L640 — fn cached_input_discount_and_output_semantics()
+- astra_equivalent_cost_uses_actual_context_length_and_tier · function · L643-L671 — fn astra_equivalent_cost_uses_actual_context_length_and_tier()
+- unknown_and_partial_are_not_zero_cost · function · L674-L689 — fn unknown_and_partial_are_not_zero_cost()
+- local_midnight_roundtrip_account_isolation_and_no_spend · function · L692-L717 — fn local_midnight_roundtrip_account_isolation_and_no_spend()
+- concurrent_writers_preserve_every_increment · function · L720-L742 — fn concurrent_writers_preserve_every_increment()
+- process_writer_child · function · L745-L758 — fn process_writer_child()
+- concurrent_processes_preserve_every_increment · function · L761-L783 — fn concurrent_processes_preserve_every_increment()
+- corrupt_ledger_is_not_overwritten · function · L786-L792 — fn corrupt_ledger_is_not_overwritten()

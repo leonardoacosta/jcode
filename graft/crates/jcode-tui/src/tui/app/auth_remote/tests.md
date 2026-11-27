@@ -1,0 +1,27 @@
+# crates/jcode-tui/src/tui/app/auth_remote/tests.rs
+
+- picker_provider · function · L3-L10 — fn picker_provider<'a>(
+- with_app · function · L12-L51 — pub(super) fn with_app(f: impl FnOnce(&mut App))
+- Restore · struct · L20-L20 — struct Restore(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L22-L30 — fn drop(&mut self)
+- ssh_login_picker_uses_shared_inline_ui_without_local_auth · function · L54-L99 — fn ssh_login_picker_uses_shared_inline_ui_without_local_auth()
+- ssh_import_requires_explicit_consent_before_any_task_and_masks_private_input · function · L102-L155 — fn ssh_import_requires_explicit_consent_before_any_task_and_masks_private_input()
+- ssh_import_all_consent_cancel_paths_are_local_and_quit_is_preserved · function · L158-L175 — fn ssh_import_all_consent_cancel_paths_are_local_and_quit_is_preserved()
+- ssh_import_invalid_syntax_never_starts_auth_or_confirmation · function · L178-L192 — fn ssh_import_invalid_syntax_never_starts_auth_or_confirmation()
+- ssh_import_confirm_without_runtime_does_not_export_or_spawn · function · L195-L211 — fn ssh_import_confirm_without_runtime_does_not_export_or_spawn()
+- ssh_import_success_refreshes_attached_remote_daemon_and_catalog · function · L214-L259 — fn ssh_import_success_refreshes_attached_remote_daemon_and_catalog()
+- ssh_import_failure_or_cancel_never_enters_oauth_retry_or_cleanup · function · L262-L290 — fn ssh_import_failure_or_cancel_never_enters_oauth_retry_or_cleanup()
+- ssh_login_callback_never_enters_composer_history_debug_or_paste_storage · function · L293-L317 — fn ssh_login_callback_never_enters_composer_history_debug_or_paste_storage()
+- ssh_login_enter_preempts_local_preview_and_preserves_pending_command_privacy · function · L320-L339 — fn ssh_login_enter_preempts_local_preview_and_preserves_pending_command_privacy()
+- ssh_login_bare_picker_cancel_keys_show_persistent_feedback · function · L342-L374 — fn ssh_login_bare_picker_cancel_keys_show_persistent_feedback()
+- ssh_login_unsupported_provider_never_starts_local_auth · function · L377-L388 — fn ssh_login_unsupported_provider_never_starts_local_auth()
+- ssh_picker_unsupported_catalog_actions_never_start_local_auth · function · L391-L418 — fn ssh_picker_unsupported_catalog_actions_never_start_local_auth()
+- ssh_login_disconnected_keys_stay_in_private_flow · function · L421-L432 — fn ssh_login_disconnected_keys_stay_in_private_flow()
+- ssh_login_success_refreshes_attached_daemon_and_catalog_without_local_login_event · function · L435-L476 — fn ssh_login_success_refreshes_attached_daemon_and_catalog_without_local_login_event()
+- ssh_login_failed_completion_stays_private_and_cancel_clears_state · function · L479-L503 — fn ssh_login_failed_completion_stays_private_and_cancel_clears_state()
+- ssh_login_cancel_after_queued_error_still_requests_remote_cleanup · function · L506-L532 — fn ssh_login_cancel_after_queued_error_still_requests_remote_cleanup()
+- ssh_inline_import_selection_requires_consent_and_cancel_reads_nothing · function · L535-L564 — fn ssh_inline_import_selection_requires_consent_and_cancel_reads_nothing()
+- ssh_inline_import_short_command_lists_only_supported_imports · function · L567-L578 — fn ssh_inline_import_short_command_lists_only_supported_imports()
+- ssh_inline_picker_filter_and_escape_match_local_navigation · function · L581-L601 — fn ssh_inline_picker_filter_and_escape_match_local_navigation()
+- ssh_inline_picker_status_is_remote_only_and_failure_stays_unknown · function · L604-L677 — fn ssh_inline_picker_status_is_remote_only_and_failure_stays_unknown()
+- ssh_picker_paste_selects_visible_import_action_not_browser_login · function · L680-L705 — fn ssh_picker_paste_selects_visible_import_action_not_browser_login()

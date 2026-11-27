@@ -1,0 +1,75 @@
+# crates/jcode-app-core/src/tool/bash.rs
+
+- MAX_OUTPUT_LEN · constant · L27-L27 — const MAX_OUTPUT_LEN: usize = 30000;
+- DEFAULT_TIMEOUT_MS · constant · L28-L28 — const DEFAULT_TIMEOUT_MS: u64 = 120000;
+- PROGRESS_MARKER_PREFIX · constant · L29-L29 — const PROGRESS_MARKER_PREFIX: &str = "JCODE_PROGRESS ";
+- CHECKPOINT_MARKER_PREFIX · constant · L30-L30 — const CHECKPOINT_MARKER_PREFIX: &str = "JCODE_CHECKPOINT ";
+- BASH_TOOL_DESCRIPTION · constant · L31-L32 — const BASH_TOOL_DESCRIPTION: &str =
+- WINDOWS_SHELL_TOOL_DESCRIPTION · constant · L33-L34 — const WINDOWS_SHELL_TOOL_DESCRIPTION: &str =
+- shell_single_quote · function · L37-L39 — fn shell_single_quote(value: &str) -> String
+- wrap_repo_cargo_commands · function · L45-L66 — fn wrap_repo_cargo_commands(command: &str, working_dir: Option<&Path>) -> Option<String>
+- timeout_message · function · L73-L83 — fn timeout_message(timeout_ms: u64) -> String
+- background_timeout_ms · function · L92-L94 — fn background_timeout_ms(requested: Option<u64>) -> Option<u64>
+- progress_ratio_regex · function · L96-L105 — fn progress_ratio_regex() -> Result<&'static regex::Regex>
+- REGEX · constant · L97-L101 — static REGEX: LazyLock<Result<regex::Regex, regex::Error>> = LazyLock::new(||
+- progress_of_regex · function · L107-L116 — fn progress_of_regex() -> Result<&'static regex::Regex>
+- REGEX · constant · L108-L112 — static REGEX: LazyLock<Result<regex::Regex, regex::Error>> = LazyLock::new(||
+- progress_byte_ratio_regex · function · L118-L127 — fn progress_byte_ratio_regex() -> Result<&'static regex::Regex>
+- REGEX · constant · L119-L123 — static REGEX: LazyLock<Result<regex::Regex, regex::Error>> = LazyLock::new(||
+- progress_percent_regex · function · L129-L135 — fn progress_percent_regex() -> Result<&'static regex::Regex>
+- REGEX · constant · L130-L131 — static REGEX: LazyLock<Result<regex::Regex, regex::Error>> =
+- ProgressMarker · struct · L138-L155 — struct ProgressMarker
+- task_id_from_output_path · function · L157-L159 — fn task_id_from_output_path(path: &Path) -> Option<&str>
+- parse_progress_kind · function · L161-L166 — fn parse_progress_kind(kind: Option<&str>) -> BackgroundTaskProgressKind
+- summarize_background_command · function · L168-L207 — fn summarize_background_command(description: Option<&str>, command: &str) -> String
+- parse_progress_marker_with_checkpoint · function · L209-L237 — fn parse_progress_marker_with_checkpoint(line: &str) -> Option<(BackgroundTaskProgress, bool)>
+- parse_progress_marker · function · L240-L242 — fn parse_progress_marker(line: &str) -> Option<BackgroundTaskProgress>
+- parse_checkpoint_marker · function · L244-L271 — fn parse_checkpoint_marker(line: &str) -> Option<BackgroundTaskProgress>
+- progress_message_from_line · function · L273-L280 — fn progress_message_from_line(line: &str, matched_fragment: &str) -> Option<String>
+- progress_from_counts · function · L282-L307 — fn progress_from_counts(
+- parse_heuristic_progress · function · L309-L440 — pub(super) fn parse_heuristic_progress(line: &str) -> Result<Option<BackgroundTaskProgress>>
+- PHASE_PREFIXES · constant · L409-L418 — const PHASE_PREFIXES: &[&str] = &[
+- handle_background_output_line · function · L442-L470 — async fn handle_background_output_line(
+- ProgressLineUpdate · enum · L474-L477 — pub(super) enum ProgressLineUpdate
+- parse_progress_line · function · L482-L496 — pub(super) fn parse_progress_line(line: &str) -> Result<Option<ProgressLineUpdate>>
+- apply_progress_update · function · L498-L506 — async fn apply_progress_update(task_id: &str, update: ProgressLineUpdate)
+- PromotedCommandProgress · struct · L516-L519 — struct PromotedCommandProgress
+- record · function · L522-L537 — async fn record(&self, update: ProgressLineUpdate)
+- attach_task · function · L539-L545 — async fn attach_task(&self, task_id: &str)
+- collect_output_reporting_progress · function · L551-L571 — async fn collect_output_reporting_progress<R>(
+- spawn_detached_progress_follower · function · L581-L583 — fn spawn_detached_progress_follower(task_id: String, output_file: std::path::PathBuf)
+- resume_reattached_task · function · L589-L609 — pub(crate) fn resume_reattached_task(status: &crate::background::TaskStatusFile)
+- spawn_detached_progress_follower_from · function · L612-L652 — fn spawn_detached_progress_follower_from(
+- tool_scratch_dir · function · L655-L662 — fn tool_scratch_dir() -> Option<std::path::PathBuf>
+- NON_INTERACTIVE_ENV · constant · L669-L680 — const NON_INTERACTIVE_ENV: &[(&str, &str)] = &[
+- configure_non_interactive · function · L683-L695 — fn configure_non_interactive(command: &mut TokioCommand)
+- configure_tool_scratch · function · L698-L702 — fn configure_tool_scratch(command: &mut TokioCommand)
+- ProcessGroupKillGuard · struct · L705-L707 — struct ProcessGroupKillGuard
+- new · function · L711-L713 — fn new(pid: Option<u32>) -> Self
+- disarm · function · L715-L717 — fn disarm(&mut self)
+- drop · function · L722-L726 — fn drop(&mut self)
+- build_shell_command · function · L729-L755 — fn build_shell_command(cmd_str: &str) -> TokioCommand
+- configure_background_command_stdio · function · L757-L762 — fn configure_background_command_stdio(command: &mut TokioCommand)
+- cloud_command_environment · function · L767-L776 — fn cloud_command_environment(
+- own_shell_child · function · L781-L785 — fn own_shell_child() -> Result<Option<crate::server::session_control::OwnedChild>>
+- build_detached_shell_wrapper · function · L787-L800 — fn build_detached_shell_wrapper(command: &str) -> StdCommand
+- format_command_output · function · L802-L817 — fn format_command_output(mut output: String, exit_code: Option<i32>) -> String
+- utf8_truncation_tests · module · L821-L821 — mod utf8_truncation_tests;
+- BashTool · struct · L823-L823 — pub struct BashTool;
+- new · function · L826-L828 — pub fn new() -> Self
+- BashInput · struct · L832-L856 — struct BashInput
+- default_true · function · L858-L860 — fn default_true() -> bool
+- deserialize_bool_or_default · function · L865-L872 — fn deserialize_bool_or_default<'de, D, const DEFAULT: bool>(
+- destructive_gate · module · L875-L875 — mod destructive_gate;
+- name · function · L879-L881 — fn name(&self) -> &str
+- description · function · L883-L889 — fn description(&self) -> &str
+- parameters_schema · function · L891-L893 — fn parameters_schema(&self) -> Value
+- execute · function · L895-L949 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- FILE_EDIT_HINT · constant · L952-L955 — const FILE_EDIT_HINT: &str = "Note: this command edits files in place. Next time use `edit` \
+- file_edit_hint · function · L959-L984 — fn file_edit_hint(command: &str) -> Option<&'static str>
+- file_edit_hint_tests · module · L988-L988 — mod file_edit_hint_tests;
+- execute_foreground · function · L991-L1140 — async fn execute_foreground(
+- supports_reload_persistence · function · L1143-L1149 — fn supports_reload_persistence(&self, ctx: &ToolContext) -> bool
+- execute_reload_persistable_foreground · function · L1152-L1303 — async fn execute_reload_persistable_foreground(
+- execute_background · function · L1306-L1507 — async fn execute_background(&self, params: BashInput, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L1512-L1512 — mod tests;

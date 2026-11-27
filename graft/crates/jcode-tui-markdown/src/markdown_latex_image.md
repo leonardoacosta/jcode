@@ -1,0 +1,81 @@
+# crates/jcode-tui-markdown/src/markdown_latex_image.rs
+
+- RENDERER_VERSION · constant · L14-L14 — const RENDERER_VERSION: u8 = 6;
+- MAX_SOURCE_BYTES · constant · L15-L15 — const MAX_SOURCE_BYTES: usize = 32 * 1024;
+- COMMAND_TIMEOUT · constant · L16-L16 — const COMMAND_TIMEOUT: Duration = Duration::from_secs(8);
+- FOREGROUND · constant · L17-L17 — const FOREGROUND: (u8, u8, u8) = super::MATH_FOREGROUND;
+- FALLBACK_RENDER_DPI · constant · L18-L18 — const FALLBACK_RENDER_DPI: u16 = 240;
+- MIN_RENDER_DPI · constant · L19-L19 — const MIN_RENDER_DPI: u16 = 240;
+- MAX_RENDER_DPI · constant · L20-L20 — const MAX_RENDER_DPI: u16 = 480;
+- DPI_PER_CELL_PIXEL · constant · L21-L21 — const DPI_PER_CELL_PIXEL: u16 = 9;
+- DPI_QUANTUM · constant · L22-L22 — const DPI_QUANTUM: u16 = 12;
+- LOG_HOOK · constant · L24-L24 — static LOG_HOOK: LazyLock<Mutex<fn(&str)>> = LazyLock::new(|| Mutex::new(|_| {}));
+- REPORTED_ERRORS · constant · L25-L26 — static REPORTED_ERRORS: LazyLock<Mutex<HashSet<String>>> =
+- COPY_SOURCE_CACHE_LIMIT · constant · L27-L27 — const COPY_SOURCE_CACHE_LIMIT: usize = 4096;
+- LatexCopySource · struct · L30-L33 — pub(super) struct LatexCopySource
+- CopySourceCache · struct · L36-L39 — struct CopySourceCache
+- COPY_SOURCES · constant · L41-L42 — static COPY_SOURCES: LazyLock<Mutex<CopySourceCache>> =
+- HandtermNativeLatex · struct · L45-L50 — pub struct HandtermNativeLatex
+- HandtermNativeLatexCache · struct · L53-L56 — struct HandtermNativeLatexCache
+- HANDTERM_NATIVE_LATEX · constant · L58-L59 — static HANDTERM_NATIVE_LATEX: LazyLock<Mutex<HandtermNativeLatexCache>> =
+- FAILED_RENDER_CACHE_LIMIT · constant · L67-L67 — const FAILED_RENDER_CACHE_LIMIT: usize = 4096;
+- FailedRenderCache · struct · L70-L73 — struct FailedRenderCache
+- FAILED_RENDERS · constant · L75-L76 — static FAILED_RENDERS: LazyLock<Mutex<FailedRenderCache>> =
+- LatexImageOutcome · enum · L79-L87 — pub(super) enum LatexImageOutcome
+- PENDING_RENDERS · constant · L91-L92 — static PENDING_RENDERS: LazyLock<Mutex<HashSet<u64>>> =
+- DeferredLatexTask · struct · L94-L99 — struct DeferredLatexTask
+- DEFERRED_TX · constant · L101-L101 — static DEFERRED_TX: OnceLock<mpsc::Sender<DeferredLatexTask>> = OnceLock::new();
+- deferred_sender · function · L103-L113 — fn deferred_sender() -> &'static mpsc::Sender<DeferredLatexTask>
+- deferred_worker · function · L115-L121 — fn deferred_worker(rx: mpsc::Receiver<DeferredLatexTask>)
+- deferred_worker_with · function · L123-L145 — fn deferred_worker_with<T>(
+- render_latex_task · function · L147-L156 — fn render_latex_task(task: DeferredLatexTask)
+- enqueue_render · function · L160-L182 — fn enqueue_render(source: &str, display: bool, dpi: u16, key: u64) -> bool
+- failed_renders · function · L189-L193 — fn failed_renders() -> std::sync::MutexGuard<'static, FailedRenderCache>
+- cached_render_failure · function · L195-L197 — fn cached_render_failure(key: u64) -> Option<String>
+- remember_render_failure · function · L199-L209 — fn remember_render_failure(key: u64, error: &str)
+- reset_failed_render_cache · function · L213-L217 — pub(super) fn reset_failed_render_cache()
+- TEST_TOOLCHAIN_RUNS · constant · L232-L233 — pub(super) static TEST_TOOLCHAIN_RUNS: std::sync::atomic::AtomicU64 =
+- reset_test_render_attempts · function · L236-L238 — pub(super) fn reset_test_render_attempts()
+- test_render_attempts · function · L241-L243 — pub(super) fn test_render_attempts() -> u64
+- test_toolchain_runs · function · L246-L248 — pub(super) fn test_toolchain_runs() -> u64
+- set_log_hook · function · L250-L254 — pub(crate) fn set_log_hook(hook: fn(&str))
+- report_error · function · L256-L262 — pub(crate) fn report_error(error: &str)
+- should_report_error · function · L264-L269 — fn should_report_error(error: &str) -> bool
+- error_is_missing_toolchain · function · L271-L275 — pub fn error_is_missing_toolchain(error: &str) -> bool
+- handterm_terminal_name · function · L277-L279 — fn handterm_terminal_name(term_program: Option<&str>) -> bool
+- handterm_native_latex_available · function · L281-L288 — fn handterm_native_latex_available() -> bool
+- with_handterm_native_latex_override · function · L291-L311 — pub(super) fn with_handterm_native_latex_override<T>(enabled: bool, f: impl FnOnce() -> T) -> T
+- ResetOverride · struct · L294-L297 — struct ResetOverride<'a>
+- drop · function · L300-L302 — fn drop(&mut self)
+- encode_handterm_latex_apc · function · L313-L318 — pub fn encode_handterm_latex_apc(source: &str) -> Option<String>
+- handterm_native_latex_for_hash · function · L320-L325 — pub fn handterm_native_latex_for_hash(hash: u64) -> Option<HandtermNativeLatex>
+- render_handterm_native_latex · function · L327-L390 — pub(super) fn render_handterm_native_latex(
+- Toolchain · struct · L393-L398 — struct Toolchain
+- TOOLCHAIN_MISSING_ERROR · constant · L400-L401 — const TOOLCHAIN_MISSING_ERROR: &str =
+- with_toolchain_missing_override · function · L410-L417 — pub(super) fn with_toolchain_missing_override<T>(missing: bool, f: impl FnOnce() -> T) -> T
+- executable_on_path · function · L419-L430 — fn executable_on_path(command: &Path) -> bool
+- toolchain_missing · function · L435-L448 — pub(super) fn toolchain_missing() -> bool
+- MISSING · constant · L440-L440 — static MISSING: OnceLock<bool> = OnceLock::new();
+- from_environment · function · L451-L466 — fn from_environment() -> Self
+- render_latex_image · function · L469-L527 — pub(super) fn render_latex_image(
+- cached_artifact · function · L531-L536 — fn cached_artifact(source: &str, display: bool, dpi: u16) -> Result<Artifact, String>
+- register_copy_source · function · L538-L558 — fn register_copy_source(hash: u64, source: &str, display: bool)
+- copy_source_for_placeholder · function · L560-L568 — pub(super) fn copy_source_for_placeholder(line: &Line<'_>) -> Option<LatexCopySource>
+- copy_text · function · L570-L576 — pub(super) fn copy_text(source: &LatexCopySource) -> String
+- Artifact · struct · L579-L583 — struct Artifact
+- render_dpi · function · L585-L599 — fn render_dpi(font_size: Option<(u16, u16)>) -> u16
+- render_artifact · function · L601-L610 — fn render_artifact(
+- render_artifact_in · function · L612-L683 — fn render_artifact_in(
+- dvipng_rgb_arg · function · L685-L694 — fn dvipng_rgb_arg((red, green, blue): (u8, u8, u8)) -> String
+- render_with_pdf_toolchain · function · L696-L725 — fn render_with_pdf_toolchain(
+- recolor_and_crop · function · L727-L769 — fn recolor_and_crop(path: &Path, dpi: u16) -> Result<(), String>
+- cache_dir · function · L771-L775 — fn cache_dir() -> Result<PathBuf, String>
+- load_artifact · function · L777-L788 — fn load_artifact(path: &Path) -> Result<Artifact, String>
+- run_command · function · L790-L831 — fn run_command<const N: usize>(
+- command_diagnostics · function · L833-L843 — fn command_diagnostics(path: &Path) -> String
+- MAX_DIAGNOSTIC_BYTES · constant · L834-L834 — const MAX_DIAGNOSTIC_BYTES: usize = 4 * 1024;
+- cache_key · function · L845-L853 — fn cache_key(source: &str, display: bool, dpi: u16) -> u64
+- latex_document · function · L855-L865 — fn latex_document(source: &str, display: bool) -> String
+- validate_source · function · L867-L892 — fn validate_source(source: &str) -> Result<(), String>
+- FORBIDDEN · constant · L875-L887 — const FORBIDDEN: &[&str] = &[
+- tests · module · L896-L896 — mod tests;

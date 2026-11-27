@@ -1,0 +1,36 @@
+# crates/jcode-base/src/session/crash.rs
+
+- RELEVANT_CRASH_GROUP_WINDOW_SECS · constant · L10-L10 — const RELEVANT_CRASH_GROUP_WINDOW_SECS: i64 = 60;
+- recover_crashed_sessions · function · L14-L16 — pub fn recover_crashed_sessions() -> Result<Vec<String>>
+- recover_crashed_sessions_by_ids · function · L23-L29 — pub fn recover_crashed_sessions_by_ids(session_ids: &[String]) -> Result<Vec<String>>
+- recover_crashed_sessions_for_allowed_ids · function · L31-L66 — fn recover_crashed_sessions_for_allowed_ids(allowed_ids: &HashSet<String>) -> Result<Vec<String>>
+- recover_crashed_sessions_matching · function · L68-L118 — fn recover_crashed_sessions_matching(allowed_ids: Option<&HashSet<String>>) -> Result<Vec<String>>
+- recover_loaded_crashed_sessions · function · L120-L176 — fn recover_loaded_crashed_sessions(mut crashed: Vec<Session>) -> Result<Vec<String>>
+- crash_timestamp · function · L178-L180 — fn crash_timestamp(session: &Session) -> DateTime<Utc>
+- retain_relevant_crash_group · function · L185-L198 — fn retain_relevant_crash_group(crashed: &mut Vec<Session>) -> Option<DateTime<Utc>>
+- CrashedSessionsInfo · struct · L202-L211 — pub struct CrashedSessionsInfo
+- detect_crashed_sessions · function · L216-L280 — pub fn detect_crashed_sessions() -> Result<Option<CrashedSessionsInfo>>
+- SessionHeader · struct · L286-L299 — struct SessionHeader
+- display_name · function · L302-L310 — fn display_name(&self) -> &str
+- find_recent_crashed_sessions · function · L322-L327 — pub fn find_recent_crashed_sessions() -> Vec<(String, String)>
+- find_crashed_via_pid_files · function · L330-L403 — fn find_crashed_via_pid_files() -> Option<Vec<(String, String)>>
+- had_streaming_marker · function · L411-L419 — fn had_streaming_marker(session_id: &str) -> bool
+- find_crashed_legacy_scan · function · L423-L518 — fn find_crashed_legacy_scan() -> Vec<(String, String)>
+- extract_timestamp_from_filename · function · L525-L535 — fn extract_timestamp_from_filename(filename: &str) -> Option<u64>
+- is_pid_running · function · L537-L539 — pub(super) fn is_pid_running(pid: u32) -> bool
+- normalize_resume_lookup_text · function · L549-L554 — fn normalize_resume_lookup_text(text: &str) -> String
+- resume_title_matches · function · L556-L564 — fn resume_title_matches(title: Option<&str>, normalized_query: &str) -> bool
+- resolve_imported_snapshot_id · function · L580-L594 — fn resolve_imported_snapshot_id(provider_id: &str) -> Option<String>
+- find_session_by_name_or_id · function · L601-L667 — pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String>
+- find_session_by_metadata · function · L670-L672 — fn find_session_by_metadata(name_or_id: &str) -> Result<String>
+- find_session_by_metadata_impl · function · L674-L743 — fn find_session_by_metadata_impl(name_or_id: &str, use_cache: bool) -> Result<String>
+- batch_crash_tests · module · L746-L746 — mod batch_crash_tests;
+- local_batch_crash_tests · module · L749-L943 — mod local_batch_crash_tests
+- hundred_sessions_on_one_pid_form_one_recoverable_event · function · L753-L792 — fn hundred_sessions_on_one_pid_form_one_recoverable_event()
+- test_crashed_sessions_info_struct · function · L795-L805 — fn test_crashed_sessions_info_struct()
+- idle_dead_pid_without_streaming_marker_is_not_a_crash · function · L808-L824 — fn idle_dead_pid_without_streaming_marker_is_not_a_crash()
+- leftover_streaming_marker_means_interrupted · function · L827-L847 — fn leftover_streaming_marker_means_interrupted()
+- find_session_by_name_or_id_matches_custom_title · function · L850-L875 — fn find_session_by_name_or_id_matches_custom_title()
+- find_session_by_name_or_id_accepts_imported_session_ids · function · L878-L894 — fn find_session_by_name_or_id_accepts_imported_session_ids() -> anyhow::Result<()>
+- find_session_by_name_or_id_resolves_bare_opencode_id_to_imported_snapshot · function · L901-L926 — fn find_session_by_name_or_id_resolves_bare_opencode_id_to_imported_snapshot()
+- find_session_by_name_or_id_bare_id_without_snapshot_still_errors · function · L931-L942 — fn find_session_by_name_or_id_bare_id_without_snapshot_still_errors() -> anyhow::Result<()>

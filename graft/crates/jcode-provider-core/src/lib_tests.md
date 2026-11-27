@@ -1,0 +1,35 @@
+# crates/jcode-provider-core/src/lib_tests.rs
+
+- SimpleFailureProvider · struct · L4-L10 — struct SimpleFailureProvider
+- complete · function · L14-L71 — async fn complete(
+- name · function · L73-L75 — fn name(&self) -> &str
+- model · function · L76-L86 — fn model(&self) -> String
+- fork · function · L87-L89 — fn fork(&self) -> Arc<dyn Provider>
+- simple_completion_failure_preserves_partial_usage_and_source · function · L93-L120 — async fn simple_completion_failure_preserves_partial_usage_and_source()
+- simple_completion_error_event_is_not_success · function · L123-L143 — async fn simple_completion_error_event_is_not_success()
+- simple_completion_success_returns_usage_once · function · L146-L161 — async fn simple_completion_success_returns_usage_once()
+- simple_completion_preserves_alias_and_late_actual_model_on_success_and_failure · function · L164-L186 — async fn simple_completion_preserves_alias_and_late_actual_model_on_success_and_failure()
+- simple_completion_retry_resets_actual_model_and_usage · function · L189-L206 — async fn simple_completion_retry_resets_actual_model_and_usage()
+- simple_completion_usage_keeps_latest_reported_values · function · L209-L221 — fn simple_completion_usage_keeps_latest_reported_values()
+- metered_estimate_computes_reference_cost · function · L224-L234 — fn metered_estimate_computes_reference_cost()
+- shared_http_client_reuses_builder · function · L237-L240 — fn shared_http_client_reuses_builder()
+- fresh_transport_client_builds_distinct_clients · function · L243-L250 — fn fresh_transport_client_builds_distinct_clients()
+- canonical_user_agent_identifies_jcode · function · L253-L255 — fn canonical_user_agent_identifies_jcode()
+- model_route_api_method_parser_keeps_profile_identity · function · L258-L285 — fn model_route_api_method_parser_keeps_profile_identity()
+- model_route_provider_label_matching_uses_aliases_without_substring_false_positives · function · L288-L303 — fn model_route_provider_label_matching_uses_aliases_without_substring_false_positives()
+- model_route_provider_key_matching_prefers_explicit_route_key · function · L306-L322 — fn model_route_provider_key_matching_prefers_explicit_route_key()
+- model_route_provider_key_matching_folds_dual_auth_vocabularies · function · L325-L371 — fn model_route_provider_key_matching_folds_dual_auth_vocabularies()
+- model_route_recommendation_policy_is_provider_aware · function · L374-L435 — fn model_route_recommendation_policy_is_provider_aware()
+- SnapshotTestProvider · struct · L437-L437 — struct SnapshotTestProvider;
+- complete · function · L441-L449 — async fn complete(
+- name · function · L451-L453 — fn name(&self) -> &str
+- model · function · L455-L457 — fn model(&self) -> String
+- available_models_display · function · L459-L461 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L463-L473 — fn model_routes(&self) -> Vec<ModelRoute>
+- fork · function · L475-L477 — fn fork(&self) -> Arc<dyn Provider>
+- model_catalog_snapshot_materializes_provider_catalog_contract · function · L481-L490 — fn model_catalog_snapshot_materializes_provider_catalog_contract()
+- runtime_key_distinguishes_openrouter_from_direct_compatible_profile · function · L493-L507 — fn runtime_key_distinguishes_openrouter_from_direct_compatible_profile()
+- route_selection_preserves_runtime_identity_from_model_route · function · L510-L540 — fn route_selection_preserves_runtime_identity_from_model_route()
+- grok_build_route_selection_is_a_first_class_runtime · function · L543-L567 — fn grok_build_route_selection_is_a_first_class_runtime()
+- runtime_key_other_is_internally_tagged_wire_safe · function · L570-L586 — fn runtime_key_other_is_internally_tagged_wire_safe()
+- grok_build_runtime_key_is_internally_tagged_wire_safe · function · L589-L594 — fn grok_build_runtime_key_is_internally_tagged_wire_safe()

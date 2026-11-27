@@ -1,0 +1,26 @@
+# crates/jcode-tui-tool-display/src/lib.rs
+
+- resolve_display_tool_name · function · L5-L19 — pub fn resolve_display_tool_name(name: &str) -> &str
+- canonical_tool_name · function · L21-L32 — pub fn canonical_tool_name(name: &str) -> &str
+- is_edit_tool_name · function · L34-L39 — pub fn is_edit_tool_name(name: &str) -> bool
+- edit_render_name · function · L44-L60 — pub fn edit_render_name<'a>(name: &'a str, input: &serde_json::Value) -> &'a str
+- ToolFailureSummary · struct · L64-L67 — pub struct ToolFailureSummary
+- exit_code · function · L69-L92 — fn exit_code(line: &str) -> Option<i32>
+- strip_wrappers · function · L94-L124 — fn strip_wrappers(mut line: &str) -> (&str, u8)
+- display_prefix_by_width · function · L126-L141 — fn display_prefix_by_width(s: &str, max_width: usize) -> &str
+- display_suffix_by_width · function · L143-L158 — fn display_suffix_by_width(s: &str, max_width: usize) -> &str
+- truncate_middle_display · function · L160-L178 — pub fn truncate_middle_display(s: &str, max_width: usize) -> String
+- without_ansi · function · L182-L209 — fn without_ansi(text: &str) -> String
+- parse_tool_failure · function · L214-L328 — pub fn parse_tool_failure(content: &str) -> Option<ToolFailureSummary>
+- concise_tool_error_summary · function · L330-L332 — pub fn concise_tool_error_summary(content: &str) -> Option<String>
+- tool_output_looks_failed · function · L334-L336 — pub fn tool_output_looks_failed(content: &str) -> bool
+- tests · module · L339-L574 — mod tests
+- canonicalizes_edit_tool_names · function · L343-L347 — fn canonicalizes_edit_tool_names()
+- summarizes_tool_errors · function · L350-L359 — fn summarizes_tool_errors()
+- structural_failure_regressions · function · L362-L423 — fn structural_failure_regressions()
+- preserves_full_diagnostics_and_ignores_success · function · L426-L445 — fn preserves_full_diagnostics_and_ignores_success()
+- preserves_codes_and_normalizes_ansi · function · L448-L486 — fn preserves_codes_and_normalizes_ansi()
+- panic_notes_and_backtraces_are_not_causes · function · L489-L513 — fn panic_notes_and_backtraces_are_not_causes()
+- exit_only_is_canonical_even_with_boilerplate · function · L516-L530 — fn exit_only_is_canonical_even_with_boilerplate()
+- fatal_diagnostics_outrank_generic_errors · function · L533-L559 — fn fatal_diagnostics_outrank_generic_errors()
+- detects_failed_tool_output · function · L562-L573 — fn detects_failed_tool_output()

@@ -1,0 +1,31 @@
+# crates/jcode-tui/src/tui/session_picker/cloud_preview.rs
+
+- cache · module · L4-L4 — mod cache;
+- projection_tests · module · L7-L7 — mod projection_tests;
+- CloudSnapshot · type · L9-L9 — type CloudSnapshot = (Session, Option<crate::session_telemetry::SessionTelemetry>);
+- StageTimer · struct · L12-L16 — pub(super) struct StageTimer
+- new · function · L19-L25 — pub(super) fn new(stage: &'static str) -> Self
+- outcome · function · L27-L29 — pub(super) fn outcome(&mut self, outcome: &'static str)
+- drop · function · L38-L47 — fn drop(&mut self)
+- stage_result · function · L50-L59 — fn stage_result<T, E>(operation: impl FnOnce() -> Result<T, E>, stage: &'static str) -> Option<T>
+- REMOTE_PROJECTOR · constant · L61-L62 — pub(in crate::tui::session_picker) const REMOTE_PROJECTOR: &str =
+- projection_script · function · L64-L66 — pub(in crate::tui::session_picker) fn projection_script(mode: &str) -> String
+- load · function · L68-L91 — pub(super) fn load(session_id: &str, host: &str) -> Option<CloudSnapshot>
+- load_cached_or_fetch · function · L96-L127 — fn load_cached_or_fetch(
+- fetch_and_cache · function · L129-L152 — fn fetch_and_cache(
+- parse_for_session · function · L154-L163 — fn parse_for_session(bytes: &[u8], session_id: &str) -> Option<CloudSnapshot>
+- fetch_bytes · function · L165-L194 — fn fetch_bytes(session_id: &str, host: &str) -> Option<Vec<u8>>
+- parse_preview · function · L196-L222 — fn parse_preview(
+- parse_transcript · function · L224-L242 — fn parse_transcript(bytes: &[u8]) -> Option<Session>
+- tests · module · L245-L505 — mod tests
+- stage_result_times_the_operation_not_only_result_conversion · function · L249-L267 — fn stage_result_times_the_operation_not_only_result_conversion()
+- wire · function · L269-L274 — fn wire(id: &str, title: &str) -> Vec<u8>
+- make_stale · function · L276-L286 — fn make_stale(path: &std::path::Path)
+- fresh_cloud_cache_never_waits_for_or_starts_network_io · function · L289-L298 — fn fresh_cloud_cache_never_waits_for_or_starts_network_io()
+- stale_cloud_cache_is_immediate_and_single_flight_refreshes_in_background · function · L301-L334 — fn stale_cloud_cache_is_immediate_and_single_flight_refreshes_in_background()
+- failed_cloud_refresh_preserves_last_good_transcript · function · L337-L353 — fn failed_cloud_refresh_preserves_last_good_transcript()
+- corrupt_cloud_cache_is_repaired_and_cold_fetch_is_persisted · function · L356-L366 — fn corrupt_cloud_cache_is_repaired_and_cold_fetch_is_persisted()
+- live_cloud_preview_benchmark · function · L372-L433 — fn live_cloud_preview_benchmark()
+- cloud_preview_hydrates_only_its_remote_telemetry · function · L436-L463 — fn cloud_preview_hydrates_only_its_remote_telemetry()
+- invalid_targets_are_rejected_before_remote_io · function · L466-L475 — fn invalid_targets_are_rejected_before_remote_io()
+- cloud_snapshot_is_loaded_without_persisting_locally · function · L478-L504 — fn cloud_snapshot_is_loaded_without_persisting_locally()

@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/ssh_remote.rs
+
+- SshRemoteConfig · struct · L7-L10 — pub struct SshRemoteConfig
+- SshRemoteProfile · struct · L13-L18 — pub struct SshRemoteProfile
+- default_workspace · function · L20-L22 — fn default_workspace() -> String
+- config_path · function · L24-L26 — pub fn config_path() -> Result<PathBuf>
+- control_dir · function · L28-L30 — pub fn control_dir() -> Result<PathBuf>
+- control_socket_path · function · L32-L34 — pub fn control_socket_path(name: &str) -> Result<PathBuf>
+- load_config · function · L36-L42 — pub fn load_config() -> Result<SshRemoteConfig>
+- save_config · function · L44-L54 — pub fn save_config(config: &SshRemoteConfig) -> Result<()>
+- upsert_profile · function · L56-L72 — pub fn upsert_profile(name: &str, ssh_target: &str) -> Result<SshRemoteProfile>
+- find_profile · function · L74-L82 — pub fn find_profile(name: &str) -> Result<Option<SshRemoteProfile>>
+- normalize_ssh_target · function · L84-L104 — pub fn normalize_ssh_target(input: &str) -> Result<String>
+- sanitize_profile_name · function · L106-L123 — pub fn sanitize_profile_name(name: &str) -> String
+- is_control_master_alive · function · L125-L141 — pub fn is_control_master_alive(profile: &SshRemoteProfile) -> bool
+- can_connect_batch_mode · function · L143-L157 — pub fn can_connect_batch_mode(profile: &SshRemoteProfile) -> bool
+- disconnect · function · L159-L173 — pub fn disconnect(profile: &SshRemoteProfile) -> Result<bool>
+- build_control_master_script · function · L175-L240 — pub fn build_control_master_script(profile: &SshRemoteProfile) -> Result<String>
+- spawn_control_master_terminal · function · L242-L250 — pub fn spawn_control_master_terminal(profile: &SshRemoteProfile) -> Result<bool>
+- shell_single_quote · function · L252-L254 — fn shell_single_quote(value: &str) -> String
+- tests · module · L257-L309 — mod tests
+- sanitize_profile_name_keeps_safe_chars · function · L261-L268 — fn sanitize_profile_name_keeps_safe_chars()
+- normalize_ssh_target_accepts_alias_and_user_host · function · L271-L277 — fn normalize_ssh_target_accepts_alias_and_user_host()
+- normalize_ssh_target_strips_pasted_ssh_prefix · function · L280-L285 — fn normalize_ssh_target_strips_pasted_ssh_prefix()
+- normalize_ssh_target_rejects_full_commands_with_options · function · L288-L291 — fn normalize_ssh_target_rejects_full_commands_with_options()
+- control_master_script_waits_for_verified_socket_before_closing · function · L294-L308 — fn control_master_script_waits_for_verified_socket_before_closing()

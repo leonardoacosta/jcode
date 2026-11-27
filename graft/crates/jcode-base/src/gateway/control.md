@@ -1,0 +1,40 @@
+# crates/jcode-base/src/gateway/control.rs
+
+- RemoteCommand · enum · L15-L30 — pub enum RemoteCommand
+- parse_remote_command · function · L36-L76 — pub fn parse_remote_command(input: &str) -> Option<Result<RemoteCommand, String>>
+- DeviceSummary · struct · L80-L85 — pub struct DeviceSummary
+- RemoteStatus · struct · L89-L98 — pub struct RemoteStatus
+- load · function · L102-L110 — pub fn load() -> Self
+- from_parts · function · L112-L131 — fn from_parts(enabled: bool, port: u16, bind_addr: &str, registry: DeviceRegistry) -> Self
+- dial_address · function · L134-L136 — pub fn dial_address(&self) -> String
+- to_markdown · function · L139-L189 — pub fn to_markdown(&self) -> String
+- is_wildcard_bind · function · L193-L195 — pub fn is_wildcard_bind(bind_addr: &str) -> bool
+- ToggleOutcome · enum · L199-L204 — pub enum ToggleOutcome
+- set_gateway_enabled · function · L211-L223 — pub fn set_gateway_enabled(enabled: bool) -> Result<ToggleOutcome>
+- revoke_device · function · L228-L246 — pub fn revoke_device(target: &str) -> Result<Vec<String>>
+- PairingInvite · struct · L250-L255 — pub struct PairingInvite
+- spaced_code · function · L259-L265 — pub fn spaced_code(&self) -> String
+- create_pairing_invite · function · L269-L284 — pub fn create_pairing_invite() -> Result<PairingInvite>
+- tests · module · L287-L546 — mod tests
+- device · function · L291-L300 — fn device(id: &str, name: &str) -> PairedDevice
+- registry · function · L302-L307 — fn registry(devices: Vec<PairedDevice>) -> DeviceRegistry
+- bare_remote_starts_cloud_activation · function · L310-L319 — fn bare_remote_starts_cloud_activation()
+- subcommands_and_aliases_parse · function · L322-L338 — fn subcommands_and_aliases_parse()
+- revoke_captures_target_including_spaced_names · function · L341-L350 — fn revoke_captures_target_including_spaced_names()
+- revoke_without_target_is_an_error · function · L353-L356 — fn revoke_without_target_is_an_error()
+- unknown_subcommand_and_stray_args_are_errors · function · L359-L365 — fn unknown_subcommand_and_stray_args_are_errors()
+- unrelated_commands_are_not_claimed · function · L368-L375 — fn unrelated_commands_are_not_claimed()
+- status_markdown_guides_setup_when_off · function · L378-L384 — fn status_markdown_guides_setup_when_off()
+- status_markdown_shows_dial_address_and_devices_when_on · function · L387-L402 — fn status_markdown_shows_dial_address_and_devices_when_on()
+- wildcard_bind_warns_about_exposure · function · L405-L411 — fn wildcard_bind_warns_about_exposure()
+- explicit_bind_address_is_used_verbatim_as_dial_host · function · L414-L418 — fn explicit_bind_address_is_used_verbatim_as_dial_host()
+- wildcard_bind_flags_unknown_reachable_host · function · L421-L425 — fn wildcard_bind_flags_unknown_reachable_host()
+- spaced_code_groups_six_digits · function · L428-L436 — fn spaced_code_groups_six_digits()
+- lock_env · function · L445-L447 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- HomeGuard · struct · L449-L452 — struct HomeGuard
+- new · function · L455-L465 — fn new(config_body: &str) -> Self
+- config_text · function · L467-L469 — fn config_text(&self) -> String
+- drop · function · L473-L479 — fn drop(&mut self)
+- enabling_the_gateway_preserves_unrelated_config · function · L486-L508 — fn enabling_the_gateway_preserves_unrelated_config()
+- toggling_to_the_current_value_reports_unchanged · function · L512-L520 — fn toggling_to_the_current_value_reports_unchanged()
+- revoke_removes_only_the_named_device · function · L524-L545 — fn revoke_removes_only_the_named_device()

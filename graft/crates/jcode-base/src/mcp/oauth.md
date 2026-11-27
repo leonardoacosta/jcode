@@ -1,0 +1,71 @@
+# crates/jcode-base/src/mcp/oauth.rs
+
+- STORE_FILE · constant · L25-L25 — const STORE_FILE: &str = "mcp-oauth.json";
+- STORE_VERSION · constant · L26-L26 — const STORE_VERSION: u32 = 1;
+- EXPIRY_SKEW_SECS · constant · L27-L27 — const EXPIRY_SKEW_SECS: i64 = 60;
+- LOGIN_TIMEOUT · constant · L28-L28 — const LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
+- DISCOVERY_TIMEOUT · constant · L29-L29 — const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(15);
+- STORE_LOCK_TIMEOUT · constant · L30-L30 — const STORE_LOCK_TIMEOUT: Duration = Duration::from_secs(30);
+- MAX_JSON_BYTES · constant · L31-L31 — const MAX_JSON_BYTES: usize = 1024 * 1024;
+- MAX_CALLBACK_BYTES · constant · L32-L32 — const MAX_CALLBACK_BYTES: usize = 16 * 1024;
+- StoredOAuth · struct · L36-L52 — pub struct StoredOAuth
+- fmt · function · L55-L62 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- OAuthStatus · struct · L67-L72 — pub struct OAuthStatus
+- Store · struct · L75-L82 — struct Store
+- generation · function · L84-L86 — fn generation(store: &Store, key: &str) -> u64
+- advance_generation · function · L88-L94 — fn advance_generation(store: &mut Store, key: &str) -> Result<()>
+- canonical_resource · function · L98-L109 — pub fn canonical_resource(url: &str) -> String
+- is_loopback · function · L111-L118 — fn is_loopback(url: &url::Url) -> bool
+- checked_url · function · L120-L139 — fn checked_url(value: &str, allow_loopback: bool) -> Result<url::Url>
+- validate_mcp_url · function · L143-L145 — pub fn validate_mcp_url(url: &str) -> Result<()>
+- allow_loopback · function · L147-L149 — fn allow_loopback(url: &str) -> Result<bool>
+- store_path · function · L151-L153 — fn store_path() -> Result<PathBuf>
+- private_directory · function · L155-L170 — fn private_directory(path: &Path) -> Result<()>
+- secure_file · function · L172-L189 — fn secure_file(file: &File, _path: &Path) -> Result<()>
+- secret_options · function · L191-L201 — fn secret_options() -> OpenOptions
+- load_store_at · function · L203-L239 — fn load_store_at(path: &Path) -> Result<Store>
+- load_store · function · L241-L243 — fn load_store() -> Result<Store>
+- save_store_at · function · L245-L269 — fn save_store_at(path: &Path, store: &Store) -> Result<()>
+- open_store_lock · function · L271-L273 — fn open_store_lock(path: &Path) -> Result<File>
+- open_lock_file · function · L275-L291 — fn open_lock_file(lock_path: &Path) -> Result<File>
+- lock_store · function · L293-L295 — async fn lock_store(path: &Path) -> Result<File>
+- lock_refresh · function · L297-L301 — async fn lock_refresh(path: &Path, resource: &str) -> Result<File>
+- wait_lock · function · L303-L319 — async fn wait_lock(file: File) -> Result<File>
+- checked_stored · function · L321-L324 — fn checked_stored(url: &str) -> Result<Option<StoredOAuth>>
+- stored · function · L328-L339 — pub fn stored(url: &str) -> Option<StoredOAuth>
+- status · function · L341-L351 — pub fn status(url: &str) -> Result<OAuthStatus>
+- logout · function · L356-L369 — pub fn logout(url: &str) -> Result<bool>
+- now_secs · function · L371-L373 — fn now_secs() -> i64
+- is_fresh · function · L375-L383 — fn is_fresh(entry: &StoredOAuth) -> bool
+- access_token · function · L387-L400 — pub async fn access_token(url: &str) -> Result<Option<String>>
+- token_after_unauthorized · function · L405-L407 — pub async fn token_after_unauthorized(url: &str, failed: Option<&str>) -> Result<Option<String>>
+- RefreshReason · enum · L409-L412 — enum RefreshReason
+- TokenResponse · struct · L415-L424 — struct TokenResponse
+- apply_token · function · L426-L455 — fn apply_token(entry: &mut StoredOAuth, token: TokenResponse) -> Result<()>
+- response_bytes · function · L457-L476 — async fn response_bytes(mut response: reqwest::Response) -> Result<Vec<u8>>
+- post_token · function · L478-L526 — async fn post_token(
+- refresh · function · L528-L594 — async fn refresh(url: &str, reason: RefreshReason) -> Result<Option<String>>
+- http_for · function · L596-L610 — fn http_for(endpoint: &url::Url) -> Result<reqwest::Client>
+- REMOTE_HTTP · constant · L600-L600 — static REMOTE_HTTP: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+- http · function · L612-L627 — fn http() -> Result<reqwest::Client>
+- HTTP · constant · L613-L613 — static HTTP: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+- ProtectedResourceMetadata · struct · L632-L637 — struct ProtectedResourceMetadata
+- AuthServerMetadata · struct · L640-L654 — pub struct AuthServerMetadata
+- www_authenticate_param · function · L659-L732 — pub(crate) fn www_authenticate_param(header: &str, key: &str) -> Option<String>
+- well_known · function · L735-L744 — fn well_known(base: &url::Url, suffix: &str) -> Vec<String>
+- auth_metadata_urls · function · L746-L757 — fn auth_metadata_urls(issuer: &url::Url) -> Vec<String>
+- get_json · function · L759-L781 — async fn get_json<T: for<'de> Deserialize<'de>>(value: &str, local: bool) -> Result<Option<T>>
+- validate_auth_metadata · function · L783-L802 — fn validate_auth_metadata(meta: &AuthServerMetadata, issuer: &str, local: bool) -> Result<()>
+- Discovery · struct · L804-L809 — struct Discovery
+- discover · function · L811-L886 — async fn discover(mcp_url: &str) -> Result<Discovery>
+- RegistrationResponse · struct · L891-L895 — struct RegistrationResponse
+- registration_request · function · L899-L917 — fn registration_request(redirect_uri: &str) -> impl Serialize + '_
+- Request · struct · L901-L908 — struct Request<'a>
+- register_client · function · L919-L948 — async fn register_client(
+- pkce_pair · function · L950-L955 — fn pkce_pair() -> (String, String)
+- BrowserMode · enum · L957-L960 — pub enum BrowserMode
+- callback_result · function · L965-L998 — fn callback_result(target: &str, state: &str, meta: &AuthServerMetadata) -> Result<Option<String>>
+- callback_request · function · L1000-L1028 — async fn callback_request(stream: &mut tokio::net::TcpStream) -> Result<Option<String>>
+- wait_for_callback · function · L1030-L1075 — async fn wait_for_callback(
+- login · function · L1080-L1181 — pub async fn login(mcp_url: &str, browser: BrowserMode, on_url: impl FnOnce(&str)) -> Result<()>
+- tests · module · L1185-L1185 — mod tests;

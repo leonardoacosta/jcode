@@ -1,0 +1,49 @@
+# crates/jcode-tui/src/tui/app/hotkey_feedback.rs
+
+- FAMILIAR_USES · constant · L31-L31 — const FAMILIAR_USES: u32 = 4;
+- STALE_SECS · constant · L33-L33 — const STALE_SECS: u64 = 45 * 24 * 60 * 60;
+- UNKNOWN_NOTICE_MIN_GAP_MS · constant · L35-L35 — const UNKNOWN_NOTICE_MIN_GAP_MS: u128 = 1200;
+- UNKNOWN_NOTICE_MAX_PER_CHORD · constant · L37-L37 — const UNKNOWN_NOTICE_MAX_PER_CHORD: u32 = 3;
+- STATE_FILE · constant · L39-L39 — const STATE_FILE: &str = "hotkey_usage.json";
+- KnownHotkey · struct · L43-L51 — pub(super) struct KnownHotkey
+- new · function · L54-L61 — fn new(binding: KeyBinding, action: &'static str, description: &'static str) -> Self
+- quiet · function · L63-L70 — fn quiet(binding: KeyBinding, action: &'static str, description: &'static str) -> Self
+- label · function · L72-L74 — pub fn label(&self) -> String
+- key · function · L77-L79 — fn key(code: KeyCode, modifiers: KeyModifiers) -> KeyBinding
+- ctrl · function · L81-L83 — fn ctrl(c: char) -> KeyBinding
+- alt · function · L85-L87 — fn alt(c: char) -> KeyBinding
+- RegistryInputs · struct · L91-L109 — pub(super) struct RegistryInputs<'a>
+- alternate_enter_description · function · L113-L119 — fn alternate_enter_description(queue_mode: bool) -> &'static str
+- build_registry · function · L123-L499 — pub(super) fn build_registry(inputs: &RegistryInputs<'_>) -> Vec<KnownHotkey>
+- contextual_lookup · function · L503-L537 — fn contextual_lookup(
+- lookup · function · L540-L553 — pub(super) fn lookup(
+- modifier_distance · function · L555-L557 — fn modifier_distance(a: KeyModifiers, b: KeyModifiers) -> u32
+- nearest_hotkey · function · L562-L595 — pub(super) fn nearest_hotkey(
+- unknown_chord_message · function · L598-L613 — pub(super) fn unknown_chord_message(
+- UsageStat · struct · L617-L622 — pub(super) struct UsageStat
+- HotkeyUsageState · struct · L625-L630 — pub(super) struct HotkeyUsageState
+- is_unfamiliar · function · L633-L635 — fn is_unfamiliar(stat: &UsageStat, now_unix: u64) -> bool
+- state_path · function · L637-L641 — fn state_path() -> Option<std::path::PathBuf>
+- load_state · function · L643-L648 — fn load_state() -> HotkeyUsageState
+- save_state · function · L650-L664 — fn save_state(state: &HotkeyUsageState)
+- now_unix · function · L666-L671 — fn now_unix() -> u64
+- render_hotkeys_listing · function · L675-L737 — pub(super) fn render_hotkeys_listing(
+- handle_hotkeys_command · function · L742-L754 — pub(super) fn handle_hotkeys_command(&mut self, trimmed: &str) -> bool
+- hotkey_registry · function · L756-L773 — fn hotkey_registry(&self, remote: bool) -> Vec<KnownHotkey>
+- observe_known_hotkey · function · L778-L831 — pub(crate) fn observe_known_hotkey(
+- note_unrecognized_hotkey · function · L836-L882 — pub(crate) fn note_unrecognized_hotkey(
+- tests · module · L886-L1227 — mod tests
+- test_inputs_registry · function · L889-L967 — fn test_inputs_registry(remote: bool) -> Vec<KnownHotkey>
+- alternate_enter_description_follows_queue_mode · function · L972-L979 — fn alternate_enter_description_follows_queue_mode()
+- lookup_finds_configured_ctrl_p_auto_poke · function · L982-L987 — fn lookup_finds_configured_ctrl_p_auto_poke()
+- lookup_prefers_kill_line_over_prompt_jump_with_draft · function · L990-L999 — fn lookup_prefers_kill_line_over_prompt_jump_with_draft()
+- lookup_reports_copy_viewport_for_ctrl_a_on_empty_input · function · L1002-L1011 — fn lookup_reports_copy_viewport_for_ctrl_a_on_empty_input()
+- workspace_bindings_only_register_in_remote_mode · function · L1014-L1020 — fn workspace_bindings_only_register_in_remote_mode()
+- nearest_suggests_same_key_one_modifier_away · function · L1023-L1032 — fn nearest_suggests_same_key_one_modifier_away()
+- nearest_suggests_same_letter_under_other_modifier · function · L1035-L1041 — fn nearest_suggests_same_letter_under_other_modifier()
+- nearest_returns_none_for_unrelated_chords · function · L1044-L1047 — fn nearest_returns_none_for_unrelated_chords()
+- unknown_chord_message_mentions_chord_and_suggestion · function · L1050-L1064 — fn unknown_chord_message_mentions_chord_and_suggestion()
+- familiarity_thresholds · function · L1067-L1092 — fn familiarity_thresholds()
+- registry_covers_every_canonical_keybinding_default · function · L1100-L1159 — fn registry_covers_every_canonical_keybinding_default()
+- hotkeys_listing_groups_chords_and_splits_by_usage · function · L1162-L1191 — fn hotkeys_listing_groups_chords_and_splits_by_usage()
+- registry_covers_every_toggle_binding · function · L1197-L1226 — fn registry_covers_every_toggle_binding()

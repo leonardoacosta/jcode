@@ -1,0 +1,21 @@
+# scripts/post_discord_release.py
+
+- announcement_marker · function · L43-L44 — def announcement_marker(tag: str) -> str
+- already_announced · function · L47-L48 — def already_announced(body: str, tag: str) -> bool
+- release_notes_for_discord · function · L51-L53 — def release_notes_for_discord(body: str) -> str
+- preview_commit_lines · function · L59-L72 — def preview_commit_lines(notes: str) -> list[str]
+- format_message · function · L75-L104 — def format_message(*, tag: str, name: str, body: str, url: str) -> str
+- github_request · function · L107-L128 — def github_request( url: str, *, token: str, method: str = "GET", payload: dict[str, Any] | None = None, ) -> dict[str, Any]
+- fetch_release · function · L131-L136 — def fetch_release(*, repository: str, tag: str, token: str) -> dict[str, Any]
+- discord_webhook_url · function · L139-L152 — def discord_webhook_url(webhook_url: str) -> str
+- post_to_discord · function · L155-L175 — def post_to_discord(*, webhook_url: str, content: str) -> dict[str, Any]
+- mark_release_announced · function · L178-L191 — def mark_release_announced( *, repository: str, release: dict[str, Any], tag: str, token: str ) -> None
+- load_announcement · function · L197-L215 — def load_announcement(tag: str) -> list[str] | None: # Tags must never escape the checked-in announcement directory.
+- multipart_marker · function · L218-L219 — def multipart_marker(tag: str, digest: str, index: int, state: str) -> str
+- announce_multipart · function · L222-L281 — def announce_multipart(*, repository: str, tag: str, token: str, webhook_url: str, messages: list[str]) -> str | None
+- latest · function · L227-L239 — def latest() -> dict[str, Any]
+- persist · function · L241-L245 — def persist(release: dict[str, Any], body: str) -> None
+- parse_args · function · L284-L288 — def parse_args() -> argparse.Namespace
+- required · function · L291-L294 — def required(value: str | None, description: str) -> str
+- announce_release · function · L297-L341 — def announce_release( *, repository: str, tag: str, token: str, webhook_url: str ) -> str | None
+- main · function · L344-L371 — def main() -> int

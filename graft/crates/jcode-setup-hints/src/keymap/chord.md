@@ -1,0 +1,21 @@
+# crates/jcode-setup-hints/src/keymap/chord.rs
+
+- KeyChord · struct · L15-L25 — pub struct KeyChord
+- is_false · function · L27-L29 — fn is_false(b: &bool) -> bool
+- new · function · L33-L41 — pub fn new(cmd: bool, ctrl: bool, alt: bool, shift: bool, key: &str) -> Self
+- canonical · function · L46-L62 — pub fn canonical(&self) -> String
+- display · function · L65-L81 — pub fn display(&self) -> String
+- display_super · function · L87-L103 — pub fn display_super(&self) -> String
+- display_symbols · function · L108-L124 — pub fn display_symbols(&self) -> String
+- parse · function · L130-L166 — pub fn parse(raw: &str) -> Option<Self>
+- normalize_key · function · L172-L218 — pub fn normalize_key(raw: &str) -> String
+- pretty_key · function · L221-L250 — fn pretty_key(key: &str) -> String
+- tests · module · L253-L342 — mod tests
+- canonical_orders_modifiers · function · L257-L261 — fn canonical_orders_modifiers()
+- display_super_renders_characters_not_key_names · function · L264-L275 — fn display_super_renders_characters_not_key_names()
+- display_symbols_renders_modifier_glyphs · function · L278-L288 — fn display_symbols_renders_modifier_glyphs()
+- normalizes_terminal_key_spellings · function · L291-L297 — fn normalizes_terminal_key_spellings()
+- equal_chords_compare_equal · function · L300-L305 — fn equal_chords_compare_equal()
+- parses_jcode_binding_strings · function · L308-L323 — fn parses_jcode_binding_strings()
+- parse_rejects_disabled_and_empty · function · L326-L332 — fn parse_rejects_disabled_and_empty()
+- parse_matches_discovered_chord · function · L335-L341 — fn parse_matches_discovered_chord()

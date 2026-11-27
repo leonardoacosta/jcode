@@ -1,0 +1,32 @@
+# crates/jcode-protocol/src/comm_format.rs
+
+- format_comm_plan_followup · function · L8-L21 — pub fn format_comm_plan_followup(summary: &PlanGraphStatus) -> String
+- default_comm_cleanup_target_statuses · function · L23-L31 — pub fn default_comm_cleanup_target_statuses() -> Vec<String>
+- default_comm_run_await_statuses · function · L33-L41 — pub fn default_comm_run_await_statuses() -> Vec<String>
+- default_comm_await_target_statuses · function · L43-L51 — pub fn default_comm_await_target_statuses() -> Vec<String>
+- comm_cleanup_candidate_session_ids · function · L53-L80 — pub fn comm_cleanup_candidate_session_ids(
+- format_comm_context_entries · function · L82-L96 — pub fn format_comm_context_entries(entries: &[ContextEntry]) -> String
+- duplicate_comm_friendly_names · function · L98-L109 — pub fn duplicate_comm_friendly_names<'a>(
+- comm_session_display_suffix · function · L111-L118 — pub fn comm_session_display_suffix(session_id: &str) -> &str
+- comm_display_friendly_name · function · L120-L132 — pub fn comm_display_friendly_name(
+- format_comm_members · function · L134-L310 — pub fn format_comm_members(current_session_id: &str, members: &[AgentInfo]) -> String
+- format_secs · function · L313-L321 — fn format_secs(secs: u64) -> String
+- format_count · function · L324-L332 — fn format_count(count: u64) -> String
+- truncate_report · function · L335-L344 — fn truncate_report(report: &str) -> String
+- MAX · constant · L336-L336 — const MAX: usize = 120;
+- format_comm_tool_summary · function · L346-L362 — pub fn format_comm_tool_summary(target: &str, calls: &[ToolCallSummary]) -> String
+- format_comm_status_snapshot · function · L364-L453 — pub fn format_comm_status_snapshot(snapshot: &AgentStatusSnapshot) -> String
+- format_comm_plan_status · function · L455-L520 — pub fn format_comm_plan_status(summary: &PlanGraphStatus) -> String
+- format_comm_context_history · function · L522-L537 — pub fn format_comm_context_history(target: &str, messages: &[HistoryMessage]) -> String
+- truncate_history_content · function · L541-L549 — fn truncate_history_content(content: &str, max_chars: usize) -> String
+- truncate_comm_completion_report · function · L551-L562 — pub fn truncate_comm_completion_report(report: &str) -> String
+- MAX_REPORT_CHARS · constant · L552-L552 — const MAX_REPORT_CHARS: usize = 4000;
+- latest_assistant_comm_report · function · L564-L572 — pub fn latest_assistant_comm_report(messages: &[HistoryMessage]) -> Option<String>
+- resolve_optional_comm_target_session · function · L574-L583 — pub fn resolve_optional_comm_target_session(
+- format_comm_awaited_members_with_reports · function · L585-L648 — pub fn format_comm_awaited_members_with_reports(
+- format_comm_channels · function · L650-L665 — pub fn format_comm_channels(channels: &[SwarmChannelInfo]) -> String
+- truncation_tests · module · L668-L734 — mod truncation_tests
+- worker_output_uses_recent_output_headings · function · L672-L699 — fn worker_output_uses_recent_output_headings()
+- history_truncation_handles_multibyte_boundaries · function · L702-L708 — fn history_truncation_handles_multibyte_boundaries()
+- history_truncation_keeps_short_content_verbatim · function · L711-L713 — fn history_truncation_keeps_short_content_verbatim()
+- format_comm_context_history_does_not_panic_on_multibyte · function · L716-L733 — fn format_comm_context_history_does_not_panic_on_multibyte()

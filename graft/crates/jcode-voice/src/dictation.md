@@ -1,0 +1,44 @@
+# crates/jcode-voice/src/dictation.rs
+
+- CLIENT_TITLE_PREFIXES · constant · L8-L8 — const CLIENT_TITLE_PREFIXES: &[&str] = &["jcode:d:", "jcode:c:"];
+- DictationRun · struct · L11-L14 — pub struct DictationRun
+- run_configured · function · L16-L30 — pub async fn run_configured() -> Result<DictationRun>
+- run_command · function · L32-L69 — pub async fn run_command(command: &str, timeout_secs: u64) -> Result<String>
+- type_text · function · L71-L81 — pub fn type_text(text: &str) -> Result<()>
+- focused_jcode_session · function · L83-L88 — pub fn focused_jcode_session() -> Result<Option<String>>
+- focused_cli_session · function · L96-L135 — pub fn focused_cli_session() -> Result<Option<String>>
+- FocusCacheEntry · type · L115-L119 — type FocusCacheEntry = (
+- CACHE · constant · L120-L120 — static CACHE: std::sync::Mutex<Option<FocusCacheEntry>> = std::sync::Mutex::new(None);
+- window_is_desktop · function · L137-L144 — fn window_is_desktop(window: &NiriFocusedWindow) -> bool
+- process_read · function · L146-L156 — fn process_read<T>(result: std::io::Result<T>, pid: u32, field: &str) -> Option<T>
+- process_exe_name · function · L158-L166 — fn process_exe_name(pid: u32) -> Option<String>
+- send_transcript_blocking · function · L171-L207 — pub fn send_transcript_blocking(
+- send_voice_activity_blocking · function · L211-L231 — pub fn send_voice_activity_blocking(
+- debug_socket_path · function · L235-L245 — fn debug_socket_path() -> std::path::PathBuf
+- is_jcode_client_process · function · L248-L275 — fn is_jcode_client_process(pid: u32) -> bool
+- NiriFocusedWindow · struct · L278-L285 — struct NiriFocusedWindow
+- focused_window_niri_socket · function · L290-L293 — fn focused_window_niri_socket() -> Option<Option<NiriFocusedWindow>>
+- focused_window_niri_socket · function · L296-L307 — fn focused_window_niri_socket() -> Option<Option<NiriFocusedWindow>>
+- socket_tests · module · L310-L354 — mod socket_tests
+- query · function · L313-L330 — fn query(reply: &'static str) -> anyhow::Result<Option<super::NiriFocusedWindow>>
+- socket_no_focus_is_success_not_fallback · function · L333-L339 — fn socket_no_focus_is_success_not_fallback()
+- malformed_reply_preserves_error_context · function · L342-L345 — fn malformed_reply_preserves_error_context()
+- missing_socket_preserves_error_context · function · L348-L353 — fn missing_socket_preserves_error_context()
+- focused_window_niri_socket_at · function · L357-L386 — fn focused_window_niri_socket_at(path: &std::ffi::OsStr) -> Result<Option<NiriFocusedWindow>>
+- Reply · enum · L376-L378 — enum Reply
+- Inner · enum · L380-L382 — enum Inner
+- focused_window_niri · function · L388-L414 — fn focused_window_niri() -> Result<Option<NiriFocusedWindow>>
+- resolve_session_for_window · function · L416-L484 — fn resolve_session_for_window(window: &NiriFocusedWindow) -> Option<String>
+- pick_last_focused · function · L486-L495 — fn pick_last_focused(registered: &[String]) -> Option<String>
+- resolve_session_from_window_title · function · L497-L509 — fn resolve_session_from_window_title(title: &str) -> Option<String>
+- extract_session_short_name_from_window_title · function · L511-L520 — fn extract_session_short_name_from_window_title(title: &str) -> Option<String>
+- normalize_session_short_name · function · L522-L532 — fn normalize_session_short_name(token: &str) -> Option<String>
+- ClientCandidate · struct · L535-L539 — struct ClientCandidate
+- inspect_client_process · function · L541-L573 — fn inspect_client_process(pid: u32) -> Option<ClientCandidate>
+- read_resumed_session_id · function · L575-L592 — fn read_resumed_session_id(pid: u32) -> Option<String>
+- select_candidate · function · L594-L608 — fn select_candidate(
+- resolve_candidate_session_id · function · L610-L626 — fn resolve_candidate_session_id(candidate: &ClientCandidate) -> Option<String>
+- proc_children_map · function · L628-L662 — fn proc_children_map() -> Result<HashMap<u32, Vec<u32>>>
+- parse_ppid · function · L664-L675 — fn parse_ppid(status: &str) -> Option<u32>
+- shell_command · function · L677-L691 — fn shell_command(command: &str) -> tokio::process::Command
+- dictation_tests · module · L695-L695 — mod dictation_tests;

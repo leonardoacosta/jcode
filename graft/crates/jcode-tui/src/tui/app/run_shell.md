@@ -1,0 +1,49 @@
+# crates/jcode-tui/src/tui/app/run_shell.rs
+
+- remote_execution · module · L3-L3 — mod remote_execution;
+- report_reload_interaction_gap · function · L8-L28 — fn report_reload_interaction_gap()
+- STATUS_SPINNER_FPS · constant · L35-L35 — const STATUS_SPINNER_FPS: f32 = 12.5;
+- FIRST_FRAME_GIT_BUDGET · constant · L40-L40 — const FIRST_FRAME_GIT_BUDGET: std::time::Duration = std::time::Duration::from_millis(40);
+- STARTUP_TRANSCRIPT_POLL · constant · L42-L42 — const STARTUP_TRANSCRIPT_POLL: std::time::Duration = std::time::Duration::from_millis(10);
+- EVENT_REDRAW_MIN_INTERVAL · constant · L44-L44 — const EVENT_REDRAW_MIN_INTERVAL: Duration = Duration::from_millis(16);
+- STATUS_SPINNER_ONLY_INTERVAL · constant · L45-L45 — pub(super) const STATUS_SPINNER_ONLY_INTERVAL: Duration = Duration::from_millis(80);
+- update_retained_frame · function · L50-L64 — pub(super) fn update_retained_frame(previous: &mut Buffer, rendered: &Buffer, updates: usize)
+- redraw_timer · function · L66-L73 — pub(super) fn redraw_timer(period: Duration) -> tokio::time::Interval
+- refresh_preview_redraw_timer · function · L75-L93 — pub(crate) fn refresh_preview_redraw_timer(
+- SERVER_EVENT_DRAIN_MAX · constant · L96-L96 — const SERVER_EVENT_DRAIN_MAX: usize = 256;
+- hold_server_events_while_unfocused · function · L101-L103 — pub(super) fn hold_server_events_while_unfocused(app: &App) -> bool
+- spinner_drives_deadlines · function · L119-L125 — pub(super) fn spinner_drives_deadlines(
+- deadline_due_on_spinner_tick · function · L130-L135 — pub(super) fn deadline_due_on_spinner_tick(
+- status_spinner_interval · function · L139-L141 — pub(super) fn status_spinner_interval() -> SpinnerTicker
+- reset_status_spinner_interval · function · L143-L147 — pub(super) fn reset_status_spinner_interval(interval: &mut SpinnerTicker, app: &App)
+- status_spinner_elapsed · function · L149-L151 — fn status_spinner_elapsed(app: &App) -> f32
+- status_spinner_elapsed_for_sources · function · L153-L155 — fn status_spinner_elapsed_for_sources(turn_elapsed: Option<f32>) -> f32
+- status_spinner_delay_until_next_frame · function · L157-L172 — fn status_spinner_delay_until_next_frame(elapsed: f32) -> Duration
+- status_spinner_only_symbol · function · L174-L214 — pub(super) fn status_spinner_only_symbol(app: &App) -> Option<&'static str>
+- is_slash_command_input · function · L216-L218 — fn is_slash_command_input(input: &str) -> bool
+- slash_command_palette_may_be_visible · function · L232-L237 — pub(crate) fn slash_command_palette_may_be_visible(
+- status_uses_primary_spinner · function · L244-L253 — pub(crate) fn status_uses_primary_spinner(status: &ProcessingStatus) -> bool
+- FullFrameInvalidation · enum · L257-L268 — pub(crate) enum FullFrameInvalidation
+- full_frame_invalidation · function · L271-L282 — pub(crate) fn full_frame_invalidation(
+- full_repaint_sentinel_cell · function · L286-L292 — fn full_repaint_sentinel_cell() -> ratatui::buffer::Cell
+- invalidate_previous_terminal_buffer · function · L305-L317 — pub(crate) fn invalidate_previous_terminal_buffer<B: ratatui::backend::Backend>(
+- IdleAnimationFastPathInputs · struct · L322-L330 — struct IdleAnimationFastPathInputs
+- idle_animation_fast_path_blocked_reason · function · L337-L367 — fn idle_animation_fast_path_blocked_reason(
+- StatusSpinnerRenderer · struct · L370-L395 — pub(super) struct StatusSpinnerRenderer
+- spinner_only_available · function · L398-L400 — pub(super) fn spinner_only_available(&self, app: &App) -> bool
+- invalidate · function · L402-L410 — pub(super) fn invalidate(&mut self)
+- remember_partial_frame · function · L414-L418 — fn remember_partial_frame(&mut self, rendered: &Buffer, area: Rect)
+- swap_after_animation_frame · function · L424-L430 — fn swap_after_animation_frame<B: ratatui::backend::Backend>(
+- composer_changed_since_last_full_frame · function · L445-L447 — fn composer_changed_since_last_full_frame(&self, input: &str) -> bool
+- idle_animation_only_available · function · L449-L477 — pub(super) fn idle_animation_only_available(&self, app: &App) -> bool
+- draw_idle_animation_only · function · L492-L563 — pub(super) fn draw_idle_animation_only(
+- draw_full · function · L565-L667 — pub(super) fn draw_full(
+- draw_status_spinner_only · function · L669-L727 — pub(super) fn draw_status_spinner_only(
+- render_status_spinner_into_buffer · function · L730-L737 — fn render_status_spinner_into_buffer(buffer: &Buffer, area: Rect, symbol: &str) -> bool
+- render_status_spinner_into_buffer_mut · function · L740-L750 — fn render_status_spinner_into_buffer_mut(buffer: &mut Buffer, area: Rect, symbol: &str)
+- status_spinner_patch_style · function · L752-L757 — fn status_spinner_patch_style() -> Style
+- run · function · L762-L901 — pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<RunResult>
+- run_replay · function · L904-L911 — pub async fn run_replay(
+- run_swarm_replay · function · L914-L921 — pub async fn run_swarm_replay(
+- run_headless_replay · function · L925-L1004 — pub async fn run_headless_replay(
+- tests · module · L1009-L1009 — mod tests;

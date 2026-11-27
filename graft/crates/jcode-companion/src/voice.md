@@ -1,0 +1,29 @@
+# crates/jcode-companion/src/voice.rs
+
+- IDLE_POLL · constant · L26-L26 — const IDLE_POLL: Duration = Duration::from_millis(40);
+- HELD_POLL · constant · L27-L27 — const HELD_POLL: Duration = Duration::from_millis(15);
+- FOCUS_REFRESH · constant · L29-L29 — const FOCUS_REFRESH: Duration = Duration::from_millis(400);
+- SEND_TIMEOUT · constant · L30-L30 — const SEND_TIMEOUT: Duration = Duration::from_secs(5);
+- WAVEFORM_TICK · constant · L32-L32 — const WAVEFORM_TICK: Duration = Duration::from_millis(80);
+- WAVEFORM_HISTORY · constant · L34-L34 — const WAVEFORM_HISTORY: usize = 48;
+- ACTIVITY_TIMEOUT · constant · L35-L35 — const ACTIVITY_TIMEOUT: Duration = Duration::from_millis(500);
+- VoiceIndicators · struct · L39-L44 — pub struct VoiceIndicators
+- spawn · function · L46-L79 — pub fn spawn(indicators: VoiceIndicators)
+- Capture · struct · L81-L92 — struct Capture
+- run · function · L94-L152 — fn run(mut listener: Listener, indicators: VoiceIndicators)
+- start · function · L154-L204 — fn start(session: String, indicators: VoiceIndicators) -> Option<Capture>
+- finish · function · L207-L249 — fn finish(mut capture: Capture)
+- tick_waveform · function · L253-L282 — fn tick_waveform(&mut self)
+- ActivityReporter · struct · L287-L290 — struct ActivityReporter
+- new · function · L293-L325 — fn new(session: String) -> Self
+- report · function · L327-L333 — fn report(&self, activity: VoiceActivity)
+- report_now · function · L336-L338 — fn report_now(&self, activity: VoiceActivity) -> bool
+- send_activity · function · L341-L343 — fn send_activity(session: &str, activity: VoiceActivity) -> anyhow::Result<()>
+- wait_final · function · L345-L370 — fn wait_final(capture: &mut Capture) -> Result<String, VoiceError>
+- failure_label · function · L372-L379 — fn failure_label(error: &VoiceError) -> String
+- block_on · function · L381-L383 — fn block_on<F: std::future::Future>(future: F) -> F::Output
+- Indicator · struct · L386-L389 — struct Indicator
+- new · function · L392-L397 — fn new(enabled: bool) -> Self
+- show · function · L400-L421 — fn show(&self, text: &str) -> bool
+- tests · module · L425-L439 — mod tests
+- failure_labels_are_short · function · L429-L438 — fn failure_labels_are_short()

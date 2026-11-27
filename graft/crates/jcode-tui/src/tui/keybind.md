@@ -1,0 +1,48 @@
+# crates/jcode-tui/src/tui/keybind.rs
+
+- log_keybinding_default_warnings · function · L26-L38 — pub fn log_keybinding_default_warnings()
+- load_model_switch_keys · function · L40-L60 — pub fn load_model_switch_keys() -> ModelSwitchKeys
+- load_fallback_switch_key · function · L64-L83 — pub fn load_fallback_switch_key() -> OptionalBinding
+- fallback_switch_key_label · function · L86-L90 — pub fn fallback_switch_key_label() -> String
+- load_workspace_navigation_keys · function · L92-L130 — pub fn load_workspace_navigation_keys() -> WorkspaceNavigationKeys
+- load_scroll_keys · function · L132-L216 — pub fn load_scroll_keys() -> ScrollKeys
+- load_effort_switch_keys · function · L218-L264 — pub fn load_effort_switch_keys() -> EffortSwitchKeys
+- load_speed_switch_keys · function · L266-L285 — pub fn load_speed_switch_keys() -> SpeedSwitchKeys
+- speed_switch_keys_label · function · L288-L297 — pub fn speed_switch_keys_label() -> Option<String>
+- effort_switch_keys_label · function · L300-L307 — pub fn effort_switch_keys_label() -> String
+- model_switch_next_label · function · L311-L318 — pub(crate) fn model_switch_next_label() -> Option<String>
+- effort_increase_label · function · L321-L328 — pub(crate) fn effort_increase_label() -> Option<String>
+- centered_toggle_label · function · L331-L336 — pub(crate) fn centered_toggle_label() -> Option<String>
+- load_centered_toggle_key · function · L338-L349 — pub fn load_centered_toggle_key() -> CenteredToggleKeys
+- ToggleBinding · struct · L355-L358 — pub struct ToggleBinding
+- load · function · L361-L369 — fn load(raw: &str, default_letter: char) -> Self
+- load_with_default · function · L372-L387 — fn load_with_default(raw: &str, default: KeyBinding) -> Self
+- matches · function · L389-L415 — pub fn matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- binding · function · L418-L420 — pub fn binding(&self) -> Option<&KeyBinding>
+- ToggleKeys · struct · L425-L437 — pub struct ToggleKeys
+- load_toggle_keys · function · L439-L469 — pub fn load_toggle_keys() -> ToggleKeys
+- EFFORT_HELP · constant · L473-L473 — pub(crate) const EFFORT_HELP: &str = "Show/change reasoning effort (⌥+left/right)";
+- EFFORT_HELP · constant · L475-L475 — pub(crate) const EFFORT_HELP: &str = "Show/change reasoning effort (Alt+left/right)";
+- swarm_panel_focus_default · function · L478-L483 — fn swarm_panel_focus_default() -> KeyBinding
+- side_panel_toggle_key_label · function · L485-L487 — pub(crate) fn side_panel_toggle_key_label() -> String
+- diagram_pane_visibility_key_label · function · L489-L495 — pub(crate) fn diagram_pane_visibility_key_label() -> String
+- swarm_page_hint · function · L498-L506 — pub(crate) fn swarm_page_hint() -> String
+- todo_card_key_label · function · L510-L522 — pub(crate) fn todo_card_key_label() -> String
+- shortcut_char_for_macos_option_key · function · L524-L529 — pub(crate) fn shortcut_char_for_macos_option_key(
+- shortcut_char_for_macos_option_shift_key · function · L531-L540 — pub(crate) fn shortcut_char_for_macos_option_shift_key(
+- shortcut_char_for_macos_option_key_for_platform · function · L542-L551 — fn shortcut_char_for_macos_option_key_for_platform(
+- shortcut_char_for_macos_option_shift_key_for_platform · function · L553-L562 — fn shortcut_char_for_macos_option_shift_key_for_platform(
+- macos_option_shift_char_to_ascii_key · function · L564-L601 — fn macos_option_shift_char_to_ascii_key(code: KeyCode) -> Option<char>
+- matches_side_panel_toggle_key_for_platform · function · L604-L621 — fn matches_side_panel_toggle_key_for_platform(
+- load_dictation_key · function · L623-L636 — pub fn load_dictation_key() -> OptionalBinding
+- load_new_terminal_key · function · L640-L653 — pub fn load_new_terminal_key() -> OptionalBinding
+- load_voice_input_key · function · L657-L670 — pub fn load_voice_input_key() -> OptionalBinding
+- load_open_resume_key · function · L674-L687 — pub fn load_open_resume_key() -> OptionalBinding
+- tests · module · L690-L825 — mod tests
+- auto_poke_toggle_can_be_remapped_or_disabled · function · L694-L706 — fn auto_poke_toggle_can_be_remapped_or_disabled()
+- new_terminal_alt_enter_binding_parses_and_matches · function · L709-L721 — fn new_terminal_alt_enter_binding_parses_and_matches()
+- side_panel_toggle_matches_alt_m_on_all_platforms · function · L724-L735 — fn side_panel_toggle_matches_alt_m_on_all_platforms()
+- side_panel_toggle_matches_macos_option_m_micro_sign · function · L738-L749 — fn side_panel_toggle_matches_macos_option_m_micro_sign()
+- side_panel_toggle_rejects_plain_m · function · L752-L758 — fn side_panel_toggle_rejects_plain_m()
+- macos_option_shortcut_chars_cover_builtin_alt_letter_shortcuts · function · L761-L791 — fn macos_option_shortcut_chars_cover_builtin_alt_letter_shortcuts()
+- macos_option_shift_shortcut_chars_cover_builtin_alt_shift_letter_shortcuts · function · L794-L824 — fn macos_option_shift_shortcut_chars_cover_builtin_alt_shift_letter_shortcuts()

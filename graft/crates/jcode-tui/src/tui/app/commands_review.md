@@ -1,0 +1,54 @@
+# crates/jcode-tui/src/tui/app/commands_review.rs
+
+- review_session_read_only_guardrails · function · L8-L15 — fn review_session_read_only_guardrails() -> &'static str
+- judge_session_visible_context_notice · function · L17-L24 — fn judge_session_visible_context_notice() -> &'static str
+- is_judge_session_title · function · L26-L28 — fn is_judge_session_title(title: Option<&str>) -> bool
+- is_analysis_feedback_session_title · function · L30-L32 — fn is_analysis_feedback_session_title(title: Option<&str>) -> bool
+- resolve_feedback_target_session_id · function · L34-L58 — fn resolve_feedback_target_session_id(session_id: &str) -> String
+- current_feedback_target_session_id · function · L60-L62 — pub(super) fn current_feedback_target_session_id(app: &App) -> String
+- judge_transcript_text_message · function · L64-L78 — fn judge_transcript_text_message(role: Role, text: String) -> StoredMessage
+- truncate_judge_visible_text · function · L80-L87 — fn truncate_judge_visible_text(text: &str, max_chars: usize) -> String
+- judge_visible_value_summary · function · L89-L106 — fn judge_visible_value_summary(value: &serde_json::Value) -> Option<String>
+- judge_visible_tool_summary · function · L108-L172 — fn judge_visible_tool_summary(tool: &ToolCall) -> Option<String>
+- build_judge_visible_transcript_messages · function · L174-L268 — fn build_judge_visible_transcript_messages(parent_session: &Session) -> Vec<StoredMessage>
+- apply_judge_visible_context_if_needed · function · L270-L287 — fn apply_judge_visible_context_if_needed(session: &mut Session, title_override: Option<&str>)
+- clear_side_panel_for_new_session · function · L294-L300 — pub(crate) fn clear_side_panel_for_new_session(app: &mut App)
+- reset_current_session · function · L302-L348 — pub(super) fn reset_current_session(app: &mut App)
+- observe_status_message · function · L350-L359 — fn observe_status_message(app: &App) -> String
+- handle_observe_command · function · L361-L408 — pub(super) fn handle_observe_command(app: &mut App, trimmed: &str) -> bool
+- current_autoreview_model_summary · function · L410-L414 — fn current_autoreview_model_summary(app: &App) -> String
+- current_autoreview_model_override · function · L416-L420 — pub(super) fn current_autoreview_model_override(app: &App) -> Option<String>
+- current_autojudge_model_summary · function · L422-L426 — fn current_autojudge_model_summary(app: &App) -> String
+- current_autojudge_model_override · function · L428-L432 — pub(super) fn current_autojudge_model_override(app: &App) -> Option<String>
+- autoreview_status_message · function · L434-L458 — pub(super) fn autoreview_status_message(app: &App) -> String
+- autojudge_status_message · function · L460-L484 — pub(super) fn autojudge_status_message(app: &App) -> String
+- build_autoreview_startup_message · function · L486-L519 — pub(super) fn build_autoreview_startup_message(parent_session_id: &str) -> String
+- build_autojudge_startup_message · function · L521-L560 — pub(super) fn build_autojudge_startup_message(parent_session_id: &str) -> String
+- build_review_startup_message · function · L562-L595 — pub(super) fn build_review_startup_message(parent_session_id: &str) -> String
+- build_judge_startup_message · function · L597-L635 — pub(super) fn build_judge_startup_message(parent_session_id: &str) -> String
+- preferred_one_shot_review_override · function · L637-L645 — pub(super) fn preferred_one_shot_review_override() -> Option<(String, String)>
+- feedback_model_override · function · L649-L660 — fn feedback_model_override(
+- current_review_model_override · function · L662-L668 — pub(super) fn current_review_model_override(app: &App) -> (Option<String>, Option<String>)
+- current_judge_model_override · function · L670-L672 — pub(super) fn current_judge_model_override(app: &App) -> (Option<String>, Option<String>)
+- clone_session_for_review · function · L674-L693 — fn clone_session_for_review(
+- clone_session_for_prompt · function · L695-L715 — fn clone_session_for_prompt(app: &App) -> anyhow::Result<(String, String)>
+- prepare_review_spawned_session · function · L717-L747 — pub(super) fn prepare_review_spawned_session(
+- launch_prompt_in_new_session_local · function · L749-L755 — pub(super) fn launch_prompt_in_new_session_local(
+- launch_forked_session_local · function · L760-L807 — pub(super) fn launch_forked_session_local(
+- launch_review_window_local · function · L809-L855 — fn launch_review_window_local(
+- launch_autoreview_window_local · function · L857-L867 — fn launch_autoreview_window_local(app: &mut App) -> anyhow::Result<bool>
+- launch_review_once_local · function · L869-L880 — fn launch_review_once_local(app: &mut App) -> anyhow::Result<bool>
+- launch_autojudge_window_local · function · L882-L892 — fn launch_autojudge_window_local(app: &mut App) -> anyhow::Result<bool>
+- launch_judge_once_local · function · L894-L905 — fn launch_judge_once_local(app: &mut App) -> anyhow::Result<bool>
+- queue_review_spawn_remote · function · L907-L923 — pub(super) fn queue_review_spawn_remote(
+- queue_autojudge_remote · function · L926-L942 — pub(super) fn queue_autojudge_remote(app: &mut App)
+- maybe_trigger_autoreview_local · function · L944-L955 — pub(super) fn maybe_trigger_autoreview_local(app: &mut App)
+- maybe_trigger_autojudge_local · function · L957-L968 — pub(super) fn maybe_trigger_autojudge_local(app: &mut App)
+- handle_review_command_local · function · L970-L990 — pub(super) fn handle_review_command_local(app: &mut App, trimmed: &str) -> bool
+- handle_autoreview_command_local · function · L992-L1043 — pub(super) fn handle_autoreview_command_local(app: &mut App, trimmed: &str) -> bool
+- handle_judge_command_local · function · L1045-L1065 — pub(super) fn handle_judge_command_local(app: &mut App, trimmed: &str) -> bool
+- handle_autojudge_command_local · function · L1067-L1118 — pub(super) fn handle_autojudge_command_local(app: &mut App, trimmed: &str) -> bool
+- ManualSubagentSpec · struct · L1121-L1126 — pub(super) struct ManualSubagentSpec
+- ImproveCommand · enum · L1129-L1137 — pub(super) enum ImproveCommand
+- RefactorCommand · enum · L1140-L1148 — pub(super) enum RefactorCommand
+- issue_605_clear_side_panel_tests · module · L1152-L1152 — mod issue_605_clear_side_panel_tests;

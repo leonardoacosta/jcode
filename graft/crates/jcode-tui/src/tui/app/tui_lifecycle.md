@@ -1,0 +1,29 @@
+# crates/jcode-tui/src/tui/app/tui_lifecycle.rs
+
+- keybindings · module · L2-L2 — mod keybindings;
+- reload_input · module · L4-L4 — mod reload_input;
+- remote_startup · module · L8-L8 — mod remote_startup;
+- begin_remote_send · function · L14-L22 — pub(super) async fn begin_remote_send(
+- schedule_pending_remote_retry · function · L24-L26 — pub(super) fn schedule_pending_remote_retry(&mut self, reason: &str) -> bool
+- schedule_pending_remote_network_wait · function · L28-L30 — pub(super) fn schedule_pending_remote_network_wait(&mut self, reason: &str) -> bool
+- schedule_pending_remote_network_wait_with_force · function · L45-L127 — pub(super) fn schedule_pending_remote_network_wait_with_force(
+- clear_pending_remote_retry · function · L129-L132 — pub(super) fn clear_pending_remote_retry(&mut self)
+- pause_exhausted_auto_resume · function · L139-L156 — pub(super) fn pause_exhausted_auto_resume(&mut self, message: String, notice: &str)
+- note_error_for_credential_breaker · function · L165-L174 — pub(super) fn note_error_for_credential_breaker(&mut self, message: &str) -> bool
+- reset_credential_failure_breaker · function · L179-L181 — pub(super) fn reset_credential_failure_breaker(&mut self)
+- trip_credential_failure_breaker · function · L188-L223 — pub(super) fn trip_credential_failure_breaker(&mut self, message: &str)
+- new_minimal_with_session · function · L225-L738 — pub(super) fn new_minimal_with_session(
+- new · function · L740-L1275 — pub fn new(provider: Arc<dyn Provider>, registry: Registry) -> Self
+- new_for_test_harness · function · L1277-L1288 — pub fn new_for_test_harness(provider: Arc<dyn Provider>, registry: Registry) -> Self
+- set_ambient_mode · function · L1291-L1299 — pub fn set_ambient_mode(&mut self, system_prompt: String, initial_message: String)
+- queue_startup_message · function · L1302-L1311 — pub fn queue_startup_message(&mut self, message: String)
+- take_history_base_for_subscribe · function · L1318-L1344 — pub(super) fn take_history_base_for_subscribe(
+- take_history_base_prefix · function · L1348-L1376 — pub(super) fn take_history_base_prefix(
+- poll_pending_startup_transcript · function · L1378-L1426 — pub(super) fn poll_pending_startup_transcript(&mut self) -> bool
+- restore_remote_startup_history · function · L1428-L1492 — fn restore_remote_startup_history(&mut self, session_id: &str)
+- new_for_remote · function · L1495-L1497 — pub fn new_for_remote(resume_session: Option<String>) -> Self
+- set_server_spawning · function · L1501-L1505 — pub fn set_server_spawning(&mut self)
+- terminal_retry_tests · module · L1509-L1615 — mod terminal_retry_tests
+- recovered_images_keep_stable_markers_with_existing_attachments · function · L1513-L1550 — fn recovered_images_keep_stable_markers_with_existing_attachments()
+- terminal_remote_retry_stops_preserve_user_attachments · function · L1553-L1584 — fn terminal_remote_retry_stops_preserve_user_attachments()
+- terminal_remote_retry_preserves_draft_and_deduplicates_images · function · L1587-L1614 — fn terminal_remote_retry_preserves_draft_and_deduplicates_images()

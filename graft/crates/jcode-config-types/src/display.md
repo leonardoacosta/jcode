@@ -1,0 +1,23 @@
+# crates/jcode-config-types/src/display.rs
+
+- DisplayConfig · struct · L12-L149 — pub struct DisplayConfig
+- ResumeOpenElsewhere · enum · L154-L167 — pub enum ResumeOpenElsewhere
+- parse · function · L170-L177 — pub fn parse(value: &str) -> Option<Self>
+- ResumeTimeMode · enum · L183-L196 — pub enum ResumeTimeMode
+- parse · function · L199-L207 — pub fn parse(value: &str) -> Option<Self>
+- default · function · L210-L253 — fn default() -> Self
+- apply_legacy_compat · function · L256-L264 — pub fn apply_legacy_compat(&mut self)
+- reasoning_display · function · L269-L275 — pub fn reasoning_display(&self) -> ReasoningDisplayMode
+- has_explicit_reasoning_display · function · L280-L282 — pub fn has_explicit_reasoning_display(&self) -> bool
+- set_reasoning_display · function · L287-L290 — pub fn set_reasoning_display(&mut self, mode: ReasoningDisplayMode)
+- reasoning_enabled · function · L293-L295 — pub fn reasoning_enabled(&self) -> bool
+- usage_display_used · function · L297-L299 — pub fn usage_display_used(&self) -> bool
+- tests · module · L303-L423 — mod tests
+- link_urls_are_opt_in_and_roundtrip · function · L308-L322 — fn link_urls_are_opt_in_and_roundtrip()
+- resume_time_defaults_to_message_and_parses_modes · function · L325-L343 — fn resume_time_defaults_to_message_and_parses_modes()
+- resume_open_elsewhere_defaults_to_off_and_parses_modes · function · L346-L365 — fn resume_open_elsewhere_defaults_to_off_and_parses_modes()
+- recent_close_window_defaults_to_thirty_and_is_configurable · function · L368-L378 — fn recent_close_window_defaults_to_thirty_and_is_configurable()
+- thinking_is_shown_in_full_by_default · function · L381-L389 — fn thinking_is_shown_in_full_by_default()
+- compact_thinking_is_opt_in · function · L392-L401 — fn compact_thinking_is_opt_in()
+- todos_are_pinned_by_default_but_can_be_disabled · function · L404-L413 — fn todos_are_pinned_by_default_but_can_be_disabled()
+- usage_percentage_wording_defaults_to_left_and_accepts_used · function · L416-L422 — fn usage_percentage_wording_defaults_to_left_and_accepts_used()

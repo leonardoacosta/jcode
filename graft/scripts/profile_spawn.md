@@ -1,0 +1,23 @@
+# scripts/profile_spawn.py
+
+- _read · function · L76-L81 — def _read(path: str) -> str | None
+- _status_kib · function · L84-L86 — def _status_kib(status: str, key: str) -> int | None
+- ProcSample · class · L90-L109 — class ProcSample
+- sample_proc · function · L112-L161 — def sample_proc(pid: int) -> ProcSample | None
+- ResourceProfile · class · L165-L186 — class ResourceProfile
+- ProcessMonitor · class · L189-L268 — class ProcessMonitor
+- __init__ · method · L192-L204 — def __init__(self, pid: int)
+- poll · method · L206-L229 — def poll(self) -> bool
+- finalize · method · L231-L268 — def finalize(self) -> ResourceProfile
+- isolated_env · function · L274-L282 — def isolated_env(root: str) -> dict[str, str]
+- socket_connectable · function · L285-L294 — def socket_connectable(path: str) -> bool
+- find_child_server · function · L297-L315 — def find_child_server(env: dict[str, str], exclude: set[int]) -> int | None
+- StartupProfile · class · L322-L325 — class StartupProfile
+- parse_startup_profile · function · L328-L351 — def parse_startup_profile(log_path: Path) -> StartupProfile | None
+- profile_server_spawn · function · L357-L397 — def profile_server_spawn(binary: str, sample_interval_s: float) -> dict | None
+- profile_client_spawn · function · L403-L484 — def profile_client_spawn(binary: str, sample_interval_s: float, hold_s: float) -> dict | None
+- mb · function · L490-L493 — def mb(n) -> str
+- agg · function · L496-L505 — def agg(values: list[float]) -> dict
+- median_field · function · L508-L510 — def median_field(runs: list[dict], key: str) -> float | None
+- print_resource_block · function · L513-L541 — def print_resource_block(title: str, runs: list[dict]) -> None
+- main · function · L544-L658 — def main() -> int

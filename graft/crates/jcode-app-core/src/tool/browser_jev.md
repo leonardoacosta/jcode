@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/tool/browser_jev.rs
+
+- MAX_REQUEST_BYTES · constant · L9-L9 — const MAX_REQUEST_BYTES: usize = 80 * 1024;
+- JevTransport · struct · L11-L13 — pub(super) struct JevTransport
+- new · function · L16-L20 — pub(super) fn new() -> Result<Self>
+- provider_name · function · L22-L24 — pub(super) fn provider_name(&self) -> &str
+- request_body · function · L28-L30 — fn request_body(request: &DecisionRequest) -> Result<Value>
+- request_body_for_model · function · L32-L171 — fn request_body_for_model(request: &DecisionRequest, model: &str) -> Result<Value>
+- request_fits_budget · function · L173-L177 — fn request_fits_budget(body: &mut Value, state: &serde_json::Map<String, Value>) -> Result<bool>
+- parse_decision · function · L179-L246 — fn parse_decision(value: &Value, request: &DecisionRequest) -> Result<Decision>
+- model · function · L250-L252 — fn model(&self) -> &str
+- decide · function · L254-L273 — async fn decide(&self, request: &DecisionRequest) -> Result<Decision>
+- tests · module · L277-L574 — mod tests
+- request · function · L281-L300 — fn request() -> DecisionRequest
+- response · function · L302-L305 — fn response() -> Value
+- uses_decisions_protocol_not_chat_completions · function · L308-L326 — fn uses_decisions_protocol_not_chat_completions()
+- configured_model_is_used_in_browser_decision_body · function · L329-L332 — fn configured_model_is_used_in_browser_decision_body()
+- action_menu_is_not_duplicated_in_bounded_task_requests · function · L335-L372 — fn action_menu_is_not_duplicated_in_bounded_task_requests()
+- oversized_history_compacts_old_evidence_then_entries_preserving_newest · function · L375-L423 — fn oversized_history_compacts_old_evidence_then_entries_preserving_newest()
+- newest_result_outlives_its_oversized_page_snapshots · function · L426-L448 — fn newest_result_outlives_its_oversized_page_snapshots()
+- irreducible_page_is_rejected_even_after_history_is_exhausted · function · L451-L463 — fn irreducible_page_is_rejected_even_after_history_is_exhausted()
+- task_contract_preserves_evidence_and_distinguishes_trust · function · L466-L501 — fn task_contract_preserves_evidence_and_distinguishes_trust()
+- validates_choice_and_uses_conservative_confidence · function · L504-L510 — fn validates_choice_and_uses_conservative_confidence()
+- rejects_unknown_missing_invalid_and_inconsistent_answers · function · L513-L532 — fn rejects_unknown_missing_invalid_and_inconsistent_answers()
+- request_bounds_and_mandatory_handback_are_enforced · function · L535-L548 — fn request_bounds_and_mandatory_handback_are_enforced()
+- live_jev_decision_smoke · function · L552-L559 — async fn live_jev_decision_smoke()
+- live_subscription_jev_decision_smoke · function · L563-L573 — async fn live_subscription_jev_decision_smoke()
+- size_tests · module · L577-L607 — mod size_tests
+- browser_size_jev_wire_budget_boundaries · function · L581-L606 — fn browser_size_jev_wire_budget_boundaries()
+- live_tests · module · L611-L611 — mod live_tests;

@@ -1,0 +1,57 @@
+# crates/jcode-tui-style/src/palette.rs
+
+- Role · enum · L35-L80 — pub enum Role
+- ALL_ROLES · constant · L84-L107 — pub const ALL_ROLES: &[Role] = &[
+- key · function · L111-L136 — pub const fn key(self) -> &'static str
+- from_key · function · L139-L145 — pub fn from_key(key: &str) -> Option<Role>
+- default_rgb · function · L148-L173 — pub const fn default_rgb(self) -> (u8, u8, u8)
+- is_background · function · L177-L179 — pub const fn is_background(self) -> bool
+- Palette · struct · L184-L189 — pub struct Palette
+- default · function · L192-L201 — fn default() -> Self
+- index_of · function · L211-L216 — fn index_of(role: Role) -> usize
+- rgb · function · L220-L222 — pub fn rgb(&self, role: Role) -> (u8, u8, u8)
+- color · function · L225-L228 — pub fn color(&self, role: Role) -> Color
+- is_overridden · function · L231-L233 — pub fn is_overridden(&self, role: Role) -> bool
+- set · function · L236-L240 — pub fn set(&mut self, role: Role, rgb: (u8, u8, u8))
+- has_overrides · function · L243-L245 — pub fn has_overrides(&self) -> bool
+- from_pairs · function · L250-L267 — pub fn from_pairs<'a, I>(pairs: I) -> (Self, Vec<String>)
+- parse_hex · function · L271-L289 — pub fn parse_hex(text: &str) -> Option<(u8, u8, u8)>
+- to_hex · function · L292-L294 — pub fn to_hex((r, g, b): (u8, u8, u8)) -> String
+- ACTIVE · constant · L296-L296 — static ACTIVE: RwLock<Option<Palette>> = RwLock::new(None);
+- HAS_OVERRIDES · constant · L300-L300 — static HAS_OVERRIDES: AtomicBool = AtomicBool::new(false);
+- set_palette · function · L304-L314 — pub fn set_palette(palette: Palette)
+- palette · function · L321-L329 — pub fn palette() -> Palette
+- configured_palette · function · L332-L334 — pub(crate) fn configured_palette() -> Option<Palette>
+- configured_native_color · function · L343-L374 — pub(crate) fn configured_native_color(palette: &Palette, color: Color) -> Option<Color>
+- role_color · function · L384-L387 — pub fn role_color(role: Role) -> Color
+- remap_named_with · function · L396-L417 — pub fn remap_named_with(palette: &Palette, color: Color) -> Color
+- FAMILY_RADIUS · constant · L422-L422 — const FAMILY_RADIUS: f32 = 0.16;
+- role_for_rendered · function · L431-L446 — pub fn role_for_rendered(color: Color) -> Option<Role>
+- tests · module · L449-L560 — mod tests
+- every_role_has_a_unique_key_and_roundtrips · function · L453-L461 — fn every_role_has_a_unique_key_and_roundtrips()
+- every_role_is_indexable · function · L466-L475 — fn every_role_is_indexable()
+- parses_hex_in_common_spellings · function · L478-L484 — fn parses_hex_in_common_spellings()
+- default_palette_matches_historical_values · function · L487-L491 — fn default_palette_matches_historical_values()
+- only_exact_role_defaults_follow_an_override · function · L497-L516 — fn only_exact_role_defaults_follow_an_override()
+- quantized_role_defaults_follow_an_override · function · L522-L547 — fn quantized_role_defaults_follow_an_override()
+- from_pairs_reports_errors_without_dropping_valid_entries · function · L550-L559 — fn from_pairs_reports_errors_without_dropping_valid_entries()
+- buffer_tests · module · L563-L660 — mod buffer_tests
+- with_palette · function · L575-L588 — fn with_palette(palette: Palette, body: impl FnOnce())
+- Restore · struct · L576-L576 — struct Restore;
+- drop · function · L578-L580 — fn drop(&mut self)
+- buffer_with · function · L590-L596 — fn buffer_with(colors: &[Color]) -> Buffer
+- default_palette_leaves_the_frame_untouched · function · L602-L615 — fn default_palette_leaves_the_frame_untouched()
+- configured_role_recolors_role_cells_and_named_colors_only · function · L618-L640 — fn configured_role_recolors_role_cells_and_named_colors_only()
+- palette_substitution_is_idempotent · function · L645-L659 — fn palette_substitution_is_idempotent()
+- light_theme_interaction · module · L663-L744 — mod light_theme_interaction
+- configured_colors_survive_the_light_theme_pass · function · L679-L743 — fn configured_colors_survive_the_light_theme_pass()
+- Restore · struct · L683-L683 — struct Restore;
+- drop · function · L685-L688 — fn drop(&mut self)
+- named_colors · module · L747-L804 — mod named_colors
+- every_named_color_used_by_the_tui_is_configurable · function · L757-L792 — fn every_named_color_used_by_the_tui_is_configurable()
+- reset_is_never_substituted · function · L797-L803 — fn reset_is_never_substituted()
+- default_palette_is_frozen · module · L807-L900 — mod default_palette_is_frozen
+- HAND_TUNED · constant · L821-L844 — const HAND_TUNED: &[(Role, (u8, u8, u8))] = &[
+- every_role_keeps_its_hand_tuned_default · function · L847-L862 — fn every_role_keeps_its_hand_tuned_default()
+- unconfigured_palette_resolves_to_the_hand_tuned_table · function · L867-L881 — fn unconfigured_palette_resolves_to_the_hand_tuned_table()
+- generating_and_scoring_do_not_disturb_the_default · function · L887-L899 — fn generating_and_scoring_do_not_disturb_the_default()

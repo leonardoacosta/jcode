@@ -1,0 +1,120 @@
+# crates/jcode-tui/src/tui/app/inline_interactive.rs
+
+- cache_signature · module · L2-L2 — mod cache_signature;
+- model_picker · module · L5-L5 — mod model_picker;
+- helpers · module · L17-L17 — mod helpers;
+- openers · module · L19-L19 — mod openers;
+- preview · module · L21-L21 — mod preview;
+- preview_request · module · L23-L23 — mod preview_request;
+- subagent_picker_model_spec · function · L31-L33 — pub(super) fn subagent_picker_model_spec(entry: &PickerEntry) -> String
+- REMOTE_MODEL_CATALOG_CACHE_FILE · constant · L35-L35 — const REMOTE_MODEL_CATALOG_CACHE_FILE: &str = "remote_model_catalog_cache.json";
+- REMOTE_MODEL_CATALOG_CACHE_VERSION · constant · L36-L36 — const REMOTE_MODEL_CATALOG_CACHE_VERSION: u8 = 3;
+- REMOTE_MODEL_CATALOG_CACHE_MAX_AGE_SECS · constant · L37-L37 — const REMOTE_MODEL_CATALOG_CACHE_MAX_AGE_SECS: u64 = 24 * 60 * 60;
+- REMOTE_MODEL_CATALOG_CACHE_MAX_BYTES · constant · L38-L38 — const REMOTE_MODEL_CATALOG_CACHE_MAX_BYTES: u64 = 16 * 1024 * 1024;
+- REMOTE_MODEL_CATALOG_MAX_ROUTES · constant · L39-L39 — const REMOTE_MODEL_CATALOG_MAX_ROUTES: usize = 10_000;
+- REMOTE_MODEL_CATALOG_MAX_MODEL_BYTES · constant · L40-L40 — const REMOTE_MODEL_CATALOG_MAX_MODEL_BYTES: usize = 4 * 1024;
+- REMOTE_MODEL_CATALOG_MAX_PROVIDER_BYTES · constant · L41-L41 — const REMOTE_MODEL_CATALOG_MAX_PROVIDER_BYTES: usize = 512;
+- REMOTE_MODEL_CATALOG_MAX_DETAIL_BYTES · constant · L42-L42 — const REMOTE_MODEL_CATALOG_MAX_DETAIL_BYTES: usize = 16 * 1024;
+- MODEL_PICKER_USAGE_FILE · constant · L43-L43 — const MODEL_PICKER_USAGE_FILE: &str = "model_picker_usage.json";
+- MODEL_PICKER_USAGE_VERSION · constant · L44-L44 — const MODEL_PICKER_USAGE_VERSION: u8 = 1;
+- MODEL_PICKER_FAVORITES_FILE · constant · L45-L45 — const MODEL_PICKER_FAVORITES_FILE: &str = "model_picker_favorites.json";
+- MODEL_PICKER_FAVORITES_VERSION · constant · L46-L46 — const MODEL_PICKER_FAVORITES_VERSION: u8 = 1;
+- RemoteModelCatalogCache · struct · L49-L56 — struct RemoteModelCatalogCache
+- CatalogReplaceOutcome · struct · L60-L66 — pub(super) struct CatalogReplaceOutcome
+- ModelPickerUsageEntry · struct · L69-L72 — struct ModelPickerUsageEntry
+- ModelPickerUsageStore · struct · L75-L78 — struct ModelPickerUsageStore
+- ModelPickerFavoritesStore · struct · L81-L84 — struct ModelPickerFavoritesStore
+- model_picker_usage_path · function · L86-L93 — fn model_picker_usage_path() -> Option<std::path::PathBuf>
+- model_picker_favorites_path · function · L95-L102 — fn model_picker_favorites_path() -> Option<std::path::PathBuf>
+- placeholder_routes · module · L105-L105 — mod placeholder_routes;
+- filter_routes_by_provider_allowlist · function · L119-L186 — fn filter_routes_by_provider_allowlist(
+- model_picker_usage_key · function · L188-L196 — fn model_picker_usage_key(model_name: &str, route: &PickerOption, effort: Option<&str>) -> String
+- load_model_picker_usage_store · function · L198-L213 — fn load_model_picker_usage_store() -> ModelPickerUsageStore
+- save_model_picker_usage_store · function · L215-L225 — fn save_model_picker_usage_store(store: &ModelPickerUsageStore)
+- model_picker_usage_score · function · L227-L238 — fn model_picker_usage_score(
+- record_model_picker_selection · function · L240-L248 — fn record_model_picker_selection(model_name: &str, route: &PickerOption, effort: Option<&str>)
+- load_model_picker_favorites_store · function · L250-L265 — fn load_model_picker_favorites_store() -> ModelPickerFavoritesStore
+- save_model_picker_favorites_store · function · L267-L277 — fn save_model_picker_favorites_store(store: &ModelPickerFavoritesStore)
+- model_picker_is_favorite · function · L279-L288 — fn model_picker_is_favorite(
+- next_model_favorite_after_current · function · L294-L326 — fn next_model_favorite_after_current(picker: &InlineInteractiveState) -> Option<usize>
+- picker_is_runtime_model_picker · function · L328-L334 — fn picker_is_runtime_model_picker(picker: &InlineInteractiveState) -> bool
+- AgentModelsPickerView · enum · L338-L343 — pub(crate) enum AgentModelsPickerView
+- agent_models_picker_view · function · L345-L360 — pub(crate) fn agent_models_picker_view(
+- key_char_eq_ignore_ascii_case · function · L362-L364 — fn key_char_eq_ignore_ascii_case(code: KeyCode, expected: char) -> bool
+- remote_model_catalog_cache_path · function · L366-L373 — fn remote_model_catalog_cache_path() -> Option<std::path::PathBuf>
+- remote_model_catalog_cache_origin · function · L375-L377 — fn remote_model_catalog_cache_origin() -> String
+- remote_catalog_text_is_safe · function · L379-L383 — fn remote_catalog_text_is_safe(value: &str, max_bytes: usize, allow_empty: bool) -> bool
+- remote_catalog_api_method_is_safe · function · L385-L399 — fn remote_catalog_api_method_is_safe(api_method: &str) -> bool
+- remote_model_catalog_snapshot_is_safe · function · L401-L440 — fn remote_model_catalog_snapshot_is_safe(
+- remote_model_catalog_cache_is_fresh · function · L442-L446 — fn remote_model_catalog_cache_is_fresh(cache: &RemoteModelCatalogCache, now: u64) -> bool
+- remote_model_catalog_observed_at_unix_secs · function · L448-L453 — fn remote_model_catalog_observed_at_unix_secs() -> u64
+- model_picker_route_is_current · function · L455-L480 — fn model_picker_route_is_current(
+- RECOMMENDED_MODELS · constant · L482-L485 — const RECOMMENDED_MODELS: &[&str] = &[
+- model_picker_recommendation_rank · function · L487-L492 — fn model_picker_recommendation_rank(name: &str) -> usize
+- model_picker_route_is_recommended · function · L494-L502 — fn model_picker_route_is_recommended(model_name: &str, route: &PickerOption) -> bool
+- model_picker_provider_hint_from_model_spec · function · L504-L530 — fn model_picker_provider_hint_from_model_spec(model_spec: &str) -> Option<(&str, &str)>
+- model_picker_route_provider_matches_key · function · L532-L542 — fn model_picker_route_provider_matches_key(
+- model_picker_effort_matches_default · function · L549-L567 — fn model_picker_effort_matches_default(
+- model_picker_route_is_default · function · L569-L635 — fn model_picker_route_is_default(
+- configure_subagent_model_picker · function · L638-L686 — fn configure_subagent_model_picker(
+- remote_model_catalog_snapshot · function · L688-L697 — pub(super) fn remote_model_catalog_snapshot(
+- replace_remote_model_catalog_snapshot · function · L699-L767 — pub(super) fn replace_remote_model_catalog_snapshot(
+- append_jcode_subscription_routes_static · function · L779-L821 — fn append_jcode_subscription_routes_static(
+- extend_remote_routes_for_uncovered_models · function · L823-L835 — fn extend_remote_routes_for_uncovered_models(
+- extend_remote_routes_for_uncovered_models_static · function · L839-L956 — fn extend_remote_routes_for_uncovered_models_static(
+- hydrate_remote_model_catalog_snapshot · function · L958-L978 — fn hydrate_remote_model_catalog_snapshot(
+- persist_remote_model_catalog_cache · function · L980-L1015 — pub(super) fn persist_remote_model_catalog_cache(&self)
+- hydrate_remote_model_catalog_cache · function · L1017-L1050 — fn hydrate_remote_model_catalog_cache(&mut self) -> bool
+- invalidate_model_picker_cache · function · L1052-L1057 — pub(super) fn invalidate_model_picker_cache(&mut self)
+- open_cached_model_picker_if_fresh · function · L1059-L1103 — fn open_cached_model_picker_if_fresh(
+- should_cache_model_picker_entries · function · L1105-L1110 — fn should_cache_model_picker_entries(model_count: usize, route_count: usize) -> bool
+- simplified_model_routes_for_picker · function · L1112-L1121 — fn simplified_model_routes_for_picker(
+- open_model_picker · function · L1123-L1125 — pub(super) fn open_model_picker(&mut self)
+- open_model_picker_preserving_input · function · L1127-L1129 — fn open_model_picker_preserving_input(&mut self)
+- refresh_open_model_picker_after_catalog_update · function · L1137-L1145 — pub(super) fn refresh_open_model_picker_after_catalog_update(&mut self)
+- finish_auth_catalog_refresh · function · L1151-L1162 — pub(super) fn finish_auth_catalog_refresh(&mut self)
+- open_loading_model_picker · function · L1164-L1201 — fn open_loading_model_picker(&mut self, current_model: &str)
+- start_model_picker_route_load · function · L1203-L1212 — fn start_model_picker_route_load(
+- start_model_picker_route_load_with · function · L1216-L1223 — fn start_model_picker_route_load_with(
+- start_model_picker_route_load_inner · function · L1227-L1259 — fn start_model_picker_route_load_inner(
+- poll_model_picker_load · function · L1261-L1382 — pub(super) fn poll_model_picker_load(&mut self) -> bool
+- open_model_picker_with_routes · function · L1384-L1396 — fn open_model_picker_with_routes(
+- model_picker_build_context · function · L1400-L1429 — fn model_picker_build_context(&self) -> ModelPickerBuildContext
+- build_model_picker_entries · function · L1431-L1903 — fn build_model_picker_entries(
+- route_sort_key · function · L1548-L1563 — fn route_sort_key(r: &PickerOption) -> (u8, u8, u64, String)
+- route_matches_recent_auth · function · L1565-L1567 — fn route_matches_recent_auth(route_provider: &str, login_provider: &str) -> bool
+- format_created · function · L1588-L1595 — fn format_created(ts: u64) -> String
+- EntrySortKey · struct · L1754-L1758 — struct EntrySortKey<'u, U>
+- apply_built_model_picker · function · L1905-L1994 — fn apply_built_model_picker(
+- debug_model_picker_live_json · function · L1996-L2154 — pub(in crate::tui::app) fn debug_model_picker_live_json(
+- build_remote_model_routes_fallback · function · L2156-L2166 — pub(super) fn build_remote_model_routes_fallback(&self) -> Vec<crate::provider::ModelRoute>
+- build_remote_model_routes_lightweight_fallback · function · L2168-L2177 — fn build_remote_model_routes_lightweight_fallback(
+- model_picker_preview_hotkey · function · L2181-L2207 — pub(super) fn model_picker_preview_hotkey(
+- handle_inline_interactive_preview_key · function · L2209-L2306 — pub(super) fn handle_inline_interactive_preview_key(
+- handle_account_picker_selection · function · L2308-L2366 — pub(super) fn handle_account_picker_selection(&mut self, action: AccountPickerAction)
+- open_session_picker · function · L2368-L2383 — pub(super) fn open_session_picker(&mut self)
+- open_active_sessions_picker · function · L2389-L2402 — pub(super) fn open_active_sessions_picker(&mut self)
+- maybe_open_active_sessions_on_left · function · L2408-L2417 — pub(super) fn maybe_open_active_sessions_on_left(&mut self) -> bool
+- poll_session_picker_presence · function · L2422-L2427 — pub(super) fn poll_session_picker_presence(&mut self) -> bool
+- start_session_picker_load · function · L2429-L2436 — fn start_session_picker_load(&mut self)
+- apply_loaded_session_picker · function · L2441-L2519 — fn apply_loaded_session_picker(
+- poll_session_picker_load · function · L2521-L2587 — pub(super) fn poll_session_picker_load(&mut self) -> bool
+- open_catchup_picker · function · L2589-L2611 — pub(super) fn open_catchup_picker(&mut self)
+- handle_session_picker_selection · function · L2613-L2784 — pub(super) fn handle_session_picker_selection(&mut self, targets: &[ResumeTarget])
+- handle_session_picker_current_terminal_selection · function · L2786-L2913 — pub(super) fn handle_session_picker_current_terminal_selection(
+- handle_live_claude_takeover · function · L2915-L2953 — fn handle_live_claude_takeover(&mut self, target: &ResumeTarget) -> bool
+- handle_batch_crash_restore · function · L2955-L3040 — pub(super) fn handle_batch_crash_restore(&mut self, session_ids: &[String])
+- handle_session_picker_key · function · L3042-L3060 — pub(super) fn handle_session_picker_key(
+- poll_session_picker_search_submission · function · L3062-L3078 — pub(super) fn poll_session_picker_search_submission(&mut self) -> bool
+- handle_session_picker_action · function · L3080-L3169 — fn handle_session_picker_action(&mut self, action: OverlayAction)
+- toggle_selected_model_favorite · function · L3171-L3210 — fn toggle_selected_model_favorite(&mut self)
+- cycle_selected_model_favorite · function · L3212-L3243 — fn cycle_selected_model_favorite(&mut self)
+- cycle_model_favorite_after_current · function · L3245-L3267 — fn cycle_model_favorite_after_current(&mut self) -> bool
+- cycle_model_favorite_hotkey · function · L3269-L3293 — pub(super) fn cycle_model_favorite_hotkey(&mut self)
+- handle_inline_interactive_key · function · L3295-L3913 — pub(super) fn handle_inline_interactive_key(
+- picker_fuzzy_score · function · L3915-L3917 — pub(super) fn picker_fuzzy_score(pattern: &str, text: &str) -> Option<i32>
+- apply_inline_interactive_filter · function · L3919-L3961 — pub(super) fn apply_inline_interactive_filter(picker: &mut InlineInteractiveState)
+- tab_complete_inline_interactive_filter · function · L3963-L3999 — pub(super) fn tab_complete_inline_interactive_filter(picker: &mut InlineInteractiveState)
+- queued_picker_submission_tests · module · L4004-L4004 — mod queued_picker_submission_tests;
+- tests · module · L4008-L4008 — mod tests;
+- cloud_resume_tests · module · L4012-L4012 — mod cloud_resume_tests;

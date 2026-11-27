@@ -1,0 +1,68 @@
+# crates/jcode-base/src/auth/claude.rs
+
+- CLAUDE_CODE_AUTH_SOURCE_ID · constant · L5-L5 — pub const CLAUDE_CODE_AUTH_SOURCE_ID: &str = "claude_code_credentials";
+- OPENCODE_AUTH_SOURCE_ID · constant · L6-L6 — pub const OPENCODE_AUTH_SOURCE_ID: &str = "opencode_anthropic_auth";
+- CLAUDE_CODE_NATIVE_AUTH_SOURCE_ID · constant · L11-L11 — pub const CLAUDE_CODE_NATIVE_AUTH_SOURCE_ID: &str = "claude_code_native_credentials";
+- CLAUDE_CODE_KEYCHAIN_SERVICE · constant · L16-L16 — const CLAUDE_CODE_KEYCHAIN_SERVICE: &str = "Claude Code-credentials";
+- CLAUDE_CODE_OAUTH_TOKEN_ENV · constant · L20-L20 — const CLAUDE_CODE_OAUTH_TOKEN_ENV: &str = "CLAUDE_CODE_OAUTH_TOKEN";
+- ExternalClaudeAuthSource · enum · L23-L26 — pub enum ExternalClaudeAuthSource
+- source_id · function · L29-L34 — pub fn source_id(self) -> &'static str
+- display_name · function · L36-L41 — pub fn display_name(self) -> &'static str
+- path · function · L43-L48 — pub fn path(self) -> Result<PathBuf>
+- ClaudeCredentials · struct · L52-L58 — pub struct ClaudeCredentials
+- AnthropicAccount · struct · L62-L73 — pub struct AnthropicAccount
+- JcodeAuthFile · struct · L78-L86 — pub struct JcodeAuthFile
+- LegacyAnthropicAuth · struct · L90-L97 — struct LegacyAnthropicAuth
+- ACCOUNT_LABEL_PREFIX · constant · L99-L99 — const ACCOUNT_LABEL_PREFIX: &str = "claude";
+- set_active_account_override · function · L103-L105 — pub fn set_active_account_override(label: Option<String>)
+- get_active_account_override · function · L107-L109 — pub fn get_active_account_override() -> Option<String>
+- primary_account_label · function · L111-L113 — pub fn primary_account_label() -> String
+- next_account_label · function · L115-L123 — pub fn next_account_label() -> Result<String>
+- login_target_label · function · L125-L134 — pub fn login_target_label(requested: Option<&str>) -> Result<String>
+- relabel_accounts · function · L136-L149 — fn relabel_accounts(auth: &mut JcodeAuthFile) -> bool
+- CredentialsFile · struct · L153-L156 — struct CredentialsFile
+- ClaudeOAuth · struct · L159-L177 — struct ClaudeOAuth
+- deserialize_expires_at · function · L182-L215 — fn deserialize_expires_at<'de, D>(deserializer: D) -> Result<i64, D::Error>
+- deserialize_scopes · function · L220-L235 — fn deserialize_scopes<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+- parse_claude_code_credentials_blob · function · L242-L271 — fn parse_claude_code_credentials_blob(content: &str) -> Result<ClaudeCredentials>
+- OpenCodeAuth · struct · L275-L277 — struct OpenCodeAuth
+- OpenCodeAnthropicAuth · struct · L280-L284 — struct OpenCodeAnthropicAuth
+- claude_code_path · function · L286-L288 — fn claude_code_path() -> Result<PathBuf>
+- opencode_path · function · L290-L292 — fn opencode_path() -> Result<PathBuf>
+- jcode_path · function · L294-L296 — pub fn jcode_path() -> Result<PathBuf>
+- load_auth_file · function · L301-L340 — pub fn load_auth_file() -> Result<JcodeAuthFile>
+- save_auth_file · function · L343-L356 — pub fn save_auth_file(auth: &JcodeAuthFile) -> Result<()>
+- list_accounts · function · L359-L362 — pub fn list_accounts() -> Result<Vec<AnthropicAccount>>
+- active_account_label · function · L365-L373 — pub fn active_account_label() -> Option<String>
+- set_active_account · function · L376-L390 — pub fn set_active_account(label: &str) -> Result<()>
+- upsert_account · function · L393-L407 — pub fn upsert_account(account: AnthropicAccount) -> Result<String>
+- remove_account · function · L410-L431 — pub fn remove_account(label: &str) -> Result<()>
+- clear_accounts · function · L434-L444 — pub fn clear_accounts() -> Result<usize>
+- update_account_tokens · function · L447-L464 — pub fn update_account_tokens(label: &str, access: &str, refresh: &str, expires: i64) -> Result<()>
+- update_account_profile · function · L467-L469 — pub fn update_account_profile(label: &str, email: Option<String>) -> Result<()>
+- update_account_profile_metadata · function · L473-L498 — pub fn update_account_profile_metadata(
+- has_credentials · function · L503-L505 — pub fn has_credentials() -> bool
+- preferred_external_auth_source · function · L507-L514 — pub fn preferred_external_auth_source() -> Option<ExternalClaudeAuthSource>
+- has_unconsented_external_auth · function · L516-L540 — pub fn has_unconsented_external_auth() -> Option<ExternalClaudeAuthSource>
+- trust_external_auth_source · function · L542-L553 — pub fn trust_external_auth_source(source: ExternalClaudeAuthSource) -> Result<()>
+- get_subscription_type · function · L556-L558 — pub fn get_subscription_type() -> Option<String>
+- is_max_subscription · function · L562-L567 — pub fn is_max_subscription() -> bool
+- load_credentials · function · L571-L643 — pub fn load_credentials() -> Result<ClaudeCredentials>
+- load_credentials_for_account · function · L646-L661 — pub fn load_credentials_for_account(label: &str) -> Result<ClaudeCredentials>
+- load_jcode_credentials · function · L664-L691 — fn load_jcode_credentials() -> Result<ClaudeCredentials>
+- load_claude_code_credentials · function · L693-L700 — fn load_claude_code_credentials() -> Result<ClaudeCredentials>
+- load_claude_code_env_credentials · function · L707-L732 — fn load_claude_code_env_credentials() -> Option<ClaudeCredentials>
+- load_claude_code_keychain_credentials · function · L738-L749 — fn load_claude_code_keychain_credentials() -> Option<ClaudeCredentials>
+- load_claude_code_keychain_credentials · function · L752-L754 — fn load_claude_code_keychain_credentials() -> Option<ClaudeCredentials>
+- read_claude_code_keychain_blob · function · L760-L808 — fn read_claude_code_keychain_blob() -> Option<String>
+- native_credentials_present · function · L818-L829 — pub fn native_credentials_present() -> bool
+- claude_code_keychain_item_exists · function · L834-L844 — fn claude_code_keychain_item_exists() -> bool
+- claude_code_keychain_item_exists · function · L847-L849 — fn claude_code_keychain_item_exists() -> bool
+- load_native_credentials · function · L853-L863 — pub fn load_native_credentials() -> Result<ClaudeCredentials>
+- native_source_allowed · function · L866-L868 — pub fn native_source_allowed() -> bool
+- native_source_display_name · function · L872-L884 — pub fn native_source_display_name() -> &'static str
+- native_source_path_hint · function · L889-L901 — pub fn native_source_path_hint() -> PathBuf
+- trust_native_source · function · L904-L908 — pub fn trust_native_source() -> Result<()>
+- import_native_credentials_into_account · function · L921-L944 — pub fn import_native_credentials_into_account() -> Result<String>
+- load_opencode_credentials · function · L946-L979 — pub fn load_opencode_credentials() -> Result<ClaudeCredentials>
+- tests · module · L983-L983 — mod tests;

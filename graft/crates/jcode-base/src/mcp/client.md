@@ -1,0 +1,62 @@
+# crates/jcode-base/src/mcp/client.rs
+
+- McpHandle · struct · L18-L39 — pub struct McpHandle
+- PendingRequest · struct · L42-L45 — struct PendingRequest
+- drop · function · L48-L58 — fn drop(&mut self)
+- DEFAULT_MCP_REQUEST_TIMEOUT · constant · L62-L62 — pub const DEFAULT_MCP_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+- REMOTE_MCP_HANDSHAKE_TIMEOUT · constant · L65-L65 — const REMOTE_MCP_HANDSHAKE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+- request_timeout_for · function · L68-L74 — pub fn request_timeout_for(config: &McpServerConfig) -> std::time::Duration
+- request · function · L78-L111 — pub async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse>
+- call_tool · function · L114-L133 — pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<ToolCallResult>
+- is_closed · function · L137-L139 — pub fn is_closed(&self) -> bool
+- name · function · L142-L144 — pub fn name(&self) -> &str
+- capabilities · function · L147-L152 — pub fn capabilities(&self) -> ServerCapabilities
+- notification_status · function · L157-L162 — pub fn notification_status(&self) -> super::notifications::NotificationStatus
+- server_info · function · L165-L170 — pub fn server_info(&self) -> Option<ServerInfo>
+- tool_count · function · L172-L177 — pub fn tool_count(&self) -> usize
+- tools · function · L180-L185 — pub fn tools(&self) -> Vec<McpToolDef>
+- refresh_tools · function · L188-L225 — pub async fn refresh_tools(&self) -> Result<()>
+- MAX_TOOL_LIST_PAGES · constant · L189-L189 — const MAX_TOOL_LIST_PAGES: usize = 256;
+- request · function · L230-L232 — async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse>
+- refresh_tools · function · L234-L236 — async fn refresh_tools(&self) -> Result<()>
+- McpClient · struct · L242-L248 — pub struct McpClient
+- Backend · enum · L251-L256 — enum Backend
+- STDERR_TAIL_LINES · constant · L259-L259 — pub const STDERR_TAIL_LINES: usize = 20;
+- StderrTail · struct · L264-L264 — pub struct StderrTail(pub Vec<String>);
+- fmt · function · L267-L273 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- connect · function · L278-L280 — pub async fn connect(name: String, config: &McpServerConfig) -> Result<Self>
+- connect_in_dir · function · L286-L480 — pub async fn connect_in_dir(
+- new_handle · function · L482-L506 — fn new_handle(
+- connect_remote · function · L511-L522 — async fn connect_remote(
+- connect_remote_handshake · function · L527-L554 — async fn connect_remote_handshake(
+- connect_remote_once · function · L556-L606 — async fn connect_remote_once(
+- start_notifications · function · L611-L634 — fn start_notifications(&mut self)
+- handle · function · L637-L639 — pub fn handle(&self) -> McpHandle
+- initialize · function · L642-L712 — async fn initialize(&mut self) -> Result<()>
+- is_running · function · L715-L720 — pub fn is_running(&mut self) -> bool
+- is_remote · function · L723-L725 — pub fn is_remote(&self) -> bool
+- shutdown · function · L728-L744 — pub async fn shutdown(&mut self)
+- name · function · L748-L750 — pub fn name(&self) -> &str
+- server_info · function · L752-L754 — pub fn server_info(&self) -> Option<ServerInfo>
+- tools · function · L756-L758 — pub fn tools(&self) -> Vec<McpToolDef>
+- call_tool · function · L760-L762 — pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<ToolCallResult>
+- refresh_tools · function · L764-L766 — pub async fn refresh_tools(&self) -> Result<()>
+- interactive_connect · function · L777-L779 — pub async fn interactive_connect<F: std::future::Future>(fut: F) -> F::Output
+- suppress_browser_launch · function · L786-L795 — fn suppress_browser_launch(env: &mut HashMap<String, String>, explicit: &HashMap<String, String>)
+- is_sensitive_inherited_env_key · function · L801-L814 — fn is_sensitive_inherited_env_key(key: &str) -> bool
+- mcp_child_env · function · L816-L823 — fn mcp_child_env(
+- drop · function · L826-L836 — fn drop(&mut self)
+- kill_process_group · function · L839-L849 — fn kill_process_group(child: &Child)
+- tests · module · L852-L1090 — pub(crate) mod tests
+- background_connect_env_cannot_open_browser · function · L858-L879 — fn background_connect_env_cannot_open_browser()
+- inherited_mcp_env_scrubs_provider_credentials · function · L882-L896 — fn inherited_mcp_env_scrubs_provider_credentials()
+- explicit_mcp_env_can_opt_a_credential_back_in · function · L899-L915 — fn explicit_mcp_env_can_opt_a_credential_back_in()
+- fake_server_config · function · L919-L949 — pub(crate) fn fake_server_config() -> McpServerConfig
+- stray_method_config · function · L953-L977 — fn stray_method_config(notifications: bool) -> McpServerConfig
+- response_with_stray_method_still_completes_requests · function · L980-L997 — async fn response_with_stray_method_still_completes_requests()
+- connect_fails_fast_when_server_exits_before_initialize · function · L1000-L1018 — async fn connect_fails_fast_when_server_exits_before_initialize()
+- tail_for · function · L1020-L1031 — async fn tail_for(script: &str) -> anyhow::Error
+- missing_cwd_failure_keeps_stderr_tail · function · L1034-L1045 — async fn missing_cwd_failure_keeps_stderr_tail()
+- silent_exit_has_empty_stderr_tail · function · L1048-L1052 — async fn silent_exit_has_empty_stderr_tail()
+- connect_in_dir_sets_subprocess_cwd · function · L1055-L1075 — async fn connect_in_dir_sets_subprocess_cwd()
+- connect_in_dir_missing_dir_falls_back_to_inherited_cwd · function · L1078-L1089 — async fn connect_in_dir_missing_dir_falls_back_to_inherited_cwd()

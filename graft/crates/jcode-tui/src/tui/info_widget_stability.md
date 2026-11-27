@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/info_widget_stability.rs
+
+- PlacedRect · struct · L26-L32 — pub struct PlacedRect
+- from_placement · function · L35-L43 — pub fn from_placement(p: &WidgetPlacement) -> Self
+- WidgetMotion · struct · L48-L81 — pub struct WidgetMotion
+- distraction · function · L86-L90 — fn distraction(&self) -> u32
+- FLICKER_WEIGHT · constant · L95-L95 — const FLICKER_WEIGHT: u32 = 8;
+- RIDE_TOLERANCE · constant · L102-L102 — const RIDE_TOLERANCE: i64 = 2;
+- StabilityReport · struct · L106-L157 — pub struct StabilityReport
+- KindVisibility · struct · L161-L165 — pub struct KindVisibility
+- analyze_frames · function · L172-L176 — pub fn analyze_frames(frames: &[Vec<PlacedRect>]) -> StabilityReport
+- analyze_frames_with_scroll · function · L183-L407 — pub fn analyze_frames_with_scroll(
+- rects_overlap · function · L410-L418 — fn rects_overlap(a: &PlacedRect, b: &PlacedRect) -> bool
+- simulate_scroll · function · L426-L439 — pub fn simulate_scroll(
+- SimMode · enum · L443-L461 — pub enum SimMode
+- right_widths_for_scroll · function · L467-L496 — fn right_widths_for_scroll(
+- simulate_scroll_mode · function · L500-L558 — pub fn simulate_scroll_mode(
+- measure_scroll · function · L561-L569 — pub fn measure_scroll(
+- measure_scroll_mode · function · L572-L581 — pub fn measure_scroll_mode(
+- abs_diff · function · L583-L585 — fn abs_diff(a: u16, b: u16) -> u16
+- intern_kind · function · L590-L598 — pub fn intern_kind(kind: &str) -> &'static str
+- tests · module · L602-L602 — mod tests;

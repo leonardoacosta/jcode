@@ -1,0 +1,24 @@
+# crates/jcode-voice/src/speech/http.rs
+
+- MAX_WAV · constant · L6-L6 — const MAX_WAV: usize = 16 * 1024 * 1024;
+- Shared · type · L7-L7 — type Shared = Arc<(Mutex<State>, Condvar)>;
+- endpoint · function · L9-L20 — fn endpoint(value: &str) -> Result<reqwest::Url, SpeechError>
+- create · function · L22-L29 — pub(super) fn create(
+- create_player · function · L31-L47 — fn create_player(options: Options) -> Result<SpeechPlayer, SpeechError>
+- Options · struct · L49-L54 — struct Options
+- new · function · L57-L95 — fn new(
+- create_with_player · function · L98-L121 — fn create_with_player(options: Options, backend: Backend) -> Result<SpeechPlayer, SpeechError>
+- synthesize · function · L123-L157 — async fn synthesize(client: &reqwest::Client, options: &Options, text: &str) -> Option<Vec<u8>>
+- run_http · function · L159-L275 — fn run_http(
+- tests · module · L278-L558 — mod tests
+- options · function · L282-L284 — fn options(url: reqwest::Url) -> Options
+- server · function · L286-L322 — fn server(response: Vec<u8>) -> (reqwest::Url, thread::JoinHandle<serde_json::Value>)
+- validates_endpoints · function · L325-L336 — fn validates_endpoints()
+- configured_service_receives_exact_openai_schema · function · L339-L357 — fn configured_service_receives_exact_openai_schema()
+- openai_options_validate_without_leaking_credentials · function · L360-L372 — fn openai_options_validate_without_leaking_credentials()
+- real_json_request_and_bounded_wav_response · function · L375-L424 — fn real_json_request_and_bounded_wav_response()
+- streaming_body_without_length_is_bounded · function · L427-L447 — fn streaming_body_without_length_is_bounded()
+- blocked_http_does_not_block_enqueue_cancel_or_drop · function · L450-L483 — fn blocked_http_does_not_block_enqueue_cancel_or_drop()
+- asynchronous_failure_is_reported_without_secret_or_url · function · L486-L504 — fn asynchronous_failure_is_reported_without_secret_or_url()
+- real_local_piper_api_playback · function · L510-L529 — fn real_local_piper_api_playback()
+- http_audio_reaches_fake_player_without_sound · function · L533-L557 — fn http_audio_reaches_fake_player_without_sound()

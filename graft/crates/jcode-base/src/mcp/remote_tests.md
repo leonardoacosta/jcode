@@ -1,0 +1,54 @@
+# crates/jcode-base/src/mcp/remote_tests.rs
+
+- HttpRequest · struct · L12-L17 — struct HttpRequest
+- Plan · struct · L20-L37 — struct Plan
+- default · function · L40-L56 — fn default() -> Self
+- FixtureState · struct · L59-L71 — struct FixtureState
+- Fixture · struct · L73-L77 — struct Fixture
+- drop · function · L80-L82 — fn drop(&mut self)
+- start · function · L86-L119 — async fn start(plan: Plan) -> Self
+- config · function · L121-L129 — fn config(&self, transport: &str) -> McpServerConfig
+- connect · function · L131-L139 — async fn connect(&self, transport: &str) -> McpClient
+- requests · function · L141-L143 — fn requests(&self) -> Vec<HttpRequest>
+- parse_request · function · L146-L183 — async fn parse_request(socket: TcpStream) -> Result<(HttpRequest, TcpStream)>
+- response · function · L185-L199 — async fn response(
+- open_stream · function · L201-L204 — async fn open_stream(socket: &mut TcpStream, content_type: &str) -> Result<()>
+- chunk · function · L206-L213 — async fn chunk(socket: &mut TcpStream, data: &[u8]) -> Result<()>
+- ActiveStream · struct · L215-L215 — struct ActiveStream(Arc<FixtureState>);
+- new · function · L217-L220 — fn new(state: &Arc<FixtureState>) -> Self
+- drop · function · L223-L225 — fn drop(&mut self)
+- until_disconnect · function · L228-L234 — async fn until_disconnect(socket: &mut TcpStream, state: &Arc<FixtureState>) -> Result<()>
+- serve · function · L236-L457 — async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()>
+- wait_until · function · L459-L467 — async fn wait_until(predicate: impl Fn() -> bool)
+- text · function · L469-L474 — fn text(result: crate::mcp::protocol::ToolCallResult) -> String
+- remote_tools_list_collects_all_pages_and_preserves_schema · function · L477-L500 — async fn remote_tools_list_collects_all_pages_and_preserves_schema()
+- remote_tools_list_rejects_cursor_cycles_and_keeps_previous_catalog_on_page_error · function · L503-L529 — async fn remote_tools_list_rejects_cursor_cycles_and_keeps_previous_catalog_on_page_error()
+- remote_tools_list_enforces_page_budget_and_preserves_previous_catalog · function · L532-L555 — async fn remote_tools_list_enforces_page_budget_and_preserves_previous_catalog()
+- remote_tools_list_missing_page_result_fails_and_preserves_previous_catalog · function · L558-L574 — async fn remote_tools_list_missing_page_result_fails_and_preserves_previous_catalog()
+- public_json_connect_list_call_refresh_and_shutdown · function · L577-L623 — async fn public_json_connect_list_call_refresh_and_shutdown()
+- public_post_sse_fragmentation_notifications_and_multiline_json · function · L626-L643 — async fn public_post_sse_fragmentation_notifications_and_multiline_json()
+- tool_list_requests · function · L645-L651 — fn tool_list_requests(fixture: &Fixture) -> usize
+- notifying_plan · function · L653-L663 — fn notifying_plan() -> Plan
+- notifying_config · function · L665-L669 — fn notifying_config(fixture: &Fixture, notifications: Value) -> McpServerConfig
+- remote_list_changed_over_http_sse_refreshes_catalog_for_opted_in_server · function · L672-L695 — async fn remote_list_changed_over_http_sse_refreshes_catalog_for_opted_in_server()
+- remote_notifications_are_ignored_without_opt_in · function · L698-L714 — async fn remote_notifications_are_ignored_without_opt_in()
+- remote_unlisted_or_unadvertised_notifications_do_not_refresh · function · L717-L734 — async fn remote_unlisted_or_unadvertised_notifications_do_not_refresh()
+- remote_server_cannot_force_listen_era_on_real_transport · function · L737-L747 — async fn remote_server_cannot_force_listen_era_on_real_transport()
+- discovery_probe_cannot_replace_legacy_sse_fixture_stream · function · L750-L774 — async fn discovery_probe_cannot_replace_legacy_sse_fixture_stream()
+- public_legacy_and_http_fallback_workflows · function · L777-L806 — async fn public_legacy_and_http_fallback_workflows()
+- concurrent_calls_do_not_block_or_cross_correlate · function · L809-L837 — async fn concurrent_calls_do_not_block_or_cross_correlate()
+- shutdown_and_drop_cancel_owned_http_streams_and_waiters · function · L840-L864 — async fn shutdown_and_drop_cancel_owned_http_streams_and_waiters()
+- caller_cancellation_aborts_response_stream_without_shutdown · function · L867-L878 — async fn caller_cancellation_aborts_response_stream_without_shutdown()
+- session_404_fails_all_waiters_and_requires_fresh_connect · function · L881-L906 — async fn session_404_fails_all_waiters_and_requires_fresh_connect()
+- invalid_responses_and_oversized_bodies_fail_promptly · function · L909-L935 — async fn invalid_responses_and_oversized_bodies_fail_promptly()
+- initialization_and_notification_errors_do_not_return_live_client · function · L938-L962 — async fn initialization_and_notification_errors_do_not_return_live_client()
+- static_authorization_401_never_falls_back_or_retries · function · L965-L977 — async fn static_authorization_401_never_falls_back_or_retries()
+- legacy_endpoint_cross_origin_and_redirects_never_leak_headers · function · L980-L1012 — async fn legacy_endpoint_cross_origin_and_redirects_never_leak_headers()
+- endpoint_timeout_and_cancelled_connect_drop_legacy_reader · function · L1015-L1038 — async fn endpoint_timeout_and_cancelled_connect_drop_legacy_reader()
+- remote_handshake_deadline_is_independent_of_long_tool_timeout · function · L1041-L1077 — async fn remote_handshake_deadline_is_independent_of_long_tool_timeout()
+- bounded_concurrency_applies_backpressure_and_queue_timeout · function · L1080-L1108 — async fn bounded_concurrency_applies_backpressure_and_queue_timeout()
+- owned_manager_reconnects_only_on_next_call_after_session_404 · function · L1111-L1160 — async fn owned_manager_reconnects_only_on_next_call_after_session_404()
+- shared_manager_and_pool_replace_expired_handles_without_replaying_calls · function · L1163-L1236 — async fn shared_manager_and_pool_replace_expired_handles_without_replaying_calls()
+- endpoint_origin_validation_accepts_relative_paths_only_on_configured_origin · function · L1239-L1259 — fn endpoint_origin_validation_accepts_relative_paths_only_on_configured_origin()
+- sse_parser_arbitrary_byte_splits_bom_line_endings_and_empty_fields · function · L1262-L1289 — fn sse_parser_arbitrary_byte_splits_bom_line_endings_and_empty_fields()
+- sse_parser_bounds_partial_lines_accumulated_events_and_chunk_output · function · L1292-L1306 — fn sse_parser_bounds_partial_lines_accumulated_events_and_chunk_output()

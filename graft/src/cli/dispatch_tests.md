@@ -1,0 +1,26 @@
+# src/cli/dispatch_tests.rs
+
+- only_file_controlled_debug_clients_need_parent_lifetime_binding · function · L5-L19 — fn only_file_controlled_debug_clients_need_parent_lifetime_binding()
+- init_and_systemd_are_recognized_as_orphan_adopters · function · L23-L28 — fn init_and_systemd_are_recognized_as_orphan_adopters()
+- auth_doctor_provider_focus_uses_global_provider_when_positional_is_absent · function · L31-L41 — fn auth_doctor_provider_focus_uses_global_provider_when_positional_is_absent()
+- auth_doctor_positional_provider_wins_over_global_provider · function · L44-L50 — fn auth_doctor_positional_provider_wins_over_global_provider()
+- interactive_startup_skips_bootstrap_credential_detection · function · L53-L66 — fn interactive_startup_skips_bootstrap_credential_detection()
+- ReloadTestEnv · struct · L68-L72 — struct ReloadTestEnv
+- new · function · L75-L89 — fn new() -> Self
+- drop · function · L93-L106 — fn drop(&mut self)
+- owned_server_argv_requests_the_temporary_lifecycle · function · L113-L145 — fn owned_server_argv_requests_the_temporary_lifecycle()
+- spawn_lock_serializes_shared_server_bootstrap · function · L149-L174 — fn spawn_lock_serializes_shared_server_bootstrap()
+- resolve_resume_id_imports_raw_codex_session_ids · function · L177-L202 — fn resolve_resume_id_imports_raw_codex_session_ids()
+- resume_failure_defers_to_server_during_reload_handoff · function · L205-L220 — fn resume_failure_defers_to_server_during_reload_handoff()
+- resume_failure_exits_when_no_handoff_in_progress · function · L223-L231 — fn resume_failure_exits_when_no_handoff_in_progress()
+- wait_for_existing_reload_server_uses_reloading_server_instead_of_spawning · function · L234-L268 — async fn wait_for_existing_reload_server_uses_reloading_server_instead_of_spawning()
+- wait_for_existing_reload_server_returns_false_for_failed_reload · function · L271-L282 — async fn wait_for_existing_reload_server_returns_false_for_failed_reload()
+- wait_for_resuming_server_detects_delayed_listener_without_marker · function · L285-L310 — async fn wait_for_resuming_server_detects_delayed_listener_without_marker()
+- wait_for_reloading_server_returns_false_when_idle · function · L313-L318 — async fn wait_for_reloading_server_returns_false_when_idle()
+- wait_for_reloading_server_returns_false_when_reload_failed · function · L321-L332 — async fn wait_for_reloading_server_returns_false_when_reload_failed()
+- wait_for_reloading_server_returns_true_for_live_listener · function · L335-L341 — async fn wait_for_reloading_server_returns_true_for_live_listener()
+- server_is_running_at_treats_live_listener_as_running_without_pong · function · L344-L354 — async fn server_is_running_at_treats_live_listener_as_running_without_pong()
+- spawn_lock_creates_missing_runtime_directory · function · L358-L372 — fn spawn_lock_creates_missing_runtime_directory()
+- provider_profile_transport_follows_profile_type · function · L375-L404 — fn provider_profile_transport_follows_profile_type()
+- supervised_gate_cgroup_and_delegation · function · L408-L417 — fn supervised_gate_cgroup_and_delegation()
+- supervised_gate_marker_absent_or_empty_allows_serve · function · L421-L434 — fn supervised_gate_marker_absent_or_empty_allows_serve()

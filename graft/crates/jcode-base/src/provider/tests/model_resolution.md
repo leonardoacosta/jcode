@@ -1,0 +1,45 @@
+# crates/jcode-base/src/provider/tests/model_resolution.rs
+
+- test_provider_for_model_bedrock · function · L2-L14 — fn test_provider_for_model_bedrock()
+- test_provider_for_model_openrouter · function · L17-L32 — fn test_provider_for_model_openrouter()
+- test_openrouter_catalog_model_id_normalizes_bare_openai_and_claude_models · function · L35-L55 — fn test_openrouter_catalog_model_id_normalizes_bare_openai_and_claude_models()
+- test_available_models_display_uses_route_models_and_filters_placeholder_rows · function · L58-L102 — fn test_available_models_display_uses_route_models_and_filters_placeholder_rows()
+- test_cerebras_model_routes_are_profile_scoped_and_unique · function · L105-L166 — fn test_cerebras_model_routes_are_profile_scoped_and_unique()
+- test_direct_chutes_ignores_legacy_openrouter_catalog_cache · function · L169-L254 — fn test_direct_chutes_ignores_legacy_openrouter_catalog_cache()
+- test_auth_changed_preserves_existing_direct_profile_session · function · L257-L319 — fn test_auth_changed_preserves_existing_direct_profile_session()
+- test_auth_changed_replaces_template_direct_profile_for_new_logins · function · L322-L366 — fn test_auth_changed_replaces_template_direct_profile_for_new_logins()
+- test_state_space_openrouter_default_survives_switch_to_nvidia_nim · function · L369-L479 — fn test_state_space_openrouter_default_survives_switch_to_nvidia_nim()
+- test_session_route_restore_request_matrix_preserves_runtime_identity · function · L482-L553 — fn test_session_route_restore_request_matrix_preserves_runtime_identity()
+- test_openrouter_and_compatible_profile_transition_invariants · function · L556-L641 — fn test_openrouter_and_compatible_profile_transition_invariants()
+- test_set_model_accepts_bare_openai_openrouter_pin_when_openrouter_available · function · L644-L678 — fn test_set_model_accepts_bare_openai_openrouter_pin_when_openrouter_available()
+- test_active_compatible_route_treats_claude_like_bare_model_as_provider_local · function · L681-L727 — fn test_active_compatible_route_treats_claude_like_bare_model_as_provider_local()
+- test_multi_provider_with_openrouter · function · L729-L750 — fn test_multi_provider_with_openrouter(openrouter: Arc<dyn Provider>) -> MultiProvider
+- test_bare_model_served_by_active_catalog_profile_stays_on_that_profile · function · L753-L782 — fn test_bare_model_served_by_active_catalog_profile_stays_on_that_profile()
+- test_bare_model_absent_from_active_catalog_profile_still_rebinds_to_openrouter · function · L785-L813 — fn test_bare_model_absent_from_active_catalog_profile_still_rebinds_to_openrouter()
+- test_active_compatible_route_preserves_custom_at_sign_model_ids · function · L816-L862 — fn test_active_compatible_route_preserves_custom_at_sign_model_ids()
+- test_config_default_provider_openai_compatible_keeps_gpt_model_provider_local · function · L865-L920 — fn test_config_default_provider_openai_compatible_keeps_gpt_model_provider_local()
+- test_custom_compatible_model_routes_do_not_request_openrouter_rewrite · function · L923-L978 — fn test_custom_compatible_model_routes_do_not_request_openrouter_rewrite()
+- test_configured_direct_compatible_profiles_are_listed_without_openrouter_key · function · L981-L1033 — fn test_configured_direct_compatible_profiles_are_listed_without_openrouter_key()
+- test_named_config_provider_models_appear_in_picker_and_are_selectable · function · L1036-L1144 — fn test_named_config_provider_models_appear_in_picker_and_are_selectable()
+- test_config_default_provider_deepseek_applies_without_openrouter_key · function · L1147-L1184 — fn test_config_default_provider_deepseek_applies_without_openrouter_key()
+- test_profile_prefixed_model_switch_reinitializes_direct_compatible_runtime · function · L1187-L1231 — fn test_profile_prefixed_model_switch_reinitializes_direct_compatible_runtime()
+- test_openai_auth_mode_prefixed_model_switch_changes_credentials · function · L1234-L1302 — fn test_openai_auth_mode_prefixed_model_switch_changes_credentials()
+- test_initial_openai_provider_can_switch_to_anthropic_auth_routes · function · L1305-L1368 — fn test_initial_openai_provider_can_switch_to_anthropic_auth_routes()
+- test_config_default_provider_anthropic_api_pins_api_credential · function · L1371-L1449 — fn test_config_default_provider_anthropic_api_pins_api_credential()
+- test_config_default_model_with_credential_prefix_applies_model_and_pin · function · L1452-L1535 — fn test_config_default_model_with_credential_prefix_applies_model_and_pin()
+- test_multi_provider_fork_switch_request_preserves_route_identity_state_space · function · L1538-L1732 — fn test_multi_provider_fork_switch_request_preserves_route_identity_state_space()
+- test_deepseek_direct_profile_supports_reasoning_effort_via_multi_provider · function · L1735-L1773 — fn test_deepseek_direct_profile_supports_reasoning_effort_via_multi_provider()
+- test_explicit_copilot_prefix_treats_claude_like_model_as_provider_local · function · L1776-L1807 — fn test_explicit_copilot_prefix_treats_claude_like_model_as_provider_local()
+- test_initial_provider_does_not_block_provider_specific_model_switch · function · L1810-L1844 — fn test_initial_provider_does_not_block_provider_specific_model_switch()
+- model_metadata · module · L1847-L1847 — mod model_metadata;
+- OrEnvVarGuard · struct · L1849-L1852 — struct OrEnvVarGuard
+- set · function · L1855-L1859 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- remove · function · L1861-L1865 — fn remove(key: &'static str) -> Self
+- drop · function · L1869-L1875 — fn drop(&mut self)
+- isolate_openrouter_autodetect_env_or · function · L1878-L1912 — fn isolate_openrouter_autodetect_env_or() -> Vec<OrEnvVarGuard>
+- spawn_single_response_chat_server_or · function · L1914-L1942 — fn spawn_single_response_chat_server_or() -> (String, std::sync::mpsc::Receiver<String>)
+- default_named_openai_compatible_provider_uses_direct_compatible_request_path · function · L1945-L2045 — fn default_named_openai_compatible_provider_uses_direct_compatible_request_path()
+- default_named_openai_compatible_with_catalog_uses_direct_compatible_request_path · function · L2055-L2139 — fn default_named_openai_compatible_with_catalog_uses_direct_compatible_request_path()
+- runtime_display_name_tracks_active_openai_compatible_profile · function · L2142-L2189 — fn runtime_display_name_tracks_active_openai_compatible_profile()
+- bare_openai_compatible_model_ids_route_to_their_profile_not_the_active_provider · function · L2199-L2250 — fn bare_openai_compatible_model_ids_route_to_their_profile_not_the_active_provider()
+- additional_test_provider_for_model_claude · module · L2253-L2253 — mod additional_test_provider_for_model_claude;

@@ -1,0 +1,107 @@
+# crates/jcode-tui/src/tui/info_widget.rs
+
+- commits · module · L15-L15 — mod commits;
+- frame · module · L17-L17 — pub(crate) mod frame;
+- git · module · L19-L19 — mod git;
+- graph · module · L21-L21 — mod graph;
+- memory_render · module · L23-L23 — mod memory_render;
+- memory_utils · module · L25-L25 — mod memory_utils;
+- model · module · L27-L27 — pub(crate) mod model;
+- swarm_background · module · L29-L29 — mod swarm_background;
+- swarm_gallery · module · L31-L31 — pub(crate) mod swarm_gallery;
+- text · module · L33-L33 — mod text;
+- tips · module · L35-L35 — mod tips;
+- usage_render · module · L37-L37 — mod usage_render;
+- changes_section_height · function · L79-L84 — pub(super) fn changes_section_height(data: &InfoWidgetData) -> u16
+- model_info_height · function · L87-L89 — pub(super) fn model_info_height(data: &InfoWidgetData) -> u16
+- WidgetKind · enum · L93-L127 — pub enum WidgetKind
+- priority · function · L131-L150 — pub fn priority(self) -> u8
+- preferred_side · function · L153-L172 — pub fn preferred_side(self) -> Side
+- min_height · function · L175-L194 — pub fn min_height(self) -> u16
+- all_by_priority · function · L197-L215 — pub fn all_by_priority() -> &'static [WidgetKind]
+- as_str · function · L217-L236 — pub fn as_str(self) -> &'static str
+- Side · enum · L241-L244 — pub enum Side
+- as_str · function · L247-L252 — pub fn as_str(self) -> &'static str
+- is_overview_mergeable · function · L255-L266 — pub(crate) fn is_overview_mergeable(kind: WidgetKind) -> bool
+- WidgetPlacement · struct · L270-L274 — pub struct WidgetPlacement
+- SwarmInfo · struct · L280-L301 — pub struct SwarmInfo
+- BackgroundInfo · struct · L305-L322 — pub struct BackgroundInfo
+- has_content · function · L326-L328 — pub fn has_content(&self) -> bool
+- UsageProvider · enum · L333-L344 — pub enum UsageProvider
+- label · function · L347-L355 — pub fn label(&self) -> &'static str
+- AuthMethod · enum · L360-L381 — pub enum AuthMethod
+- UsageInfo · struct · L385-L423 — pub struct UsageInfo
+- CacheHitInfo · struct · L427-L449 — pub struct CacheHitInfo
+- effective_prompt_tokens · function · L461-L468 — pub fn effective_prompt_tokens(provider: &str, input: u64, read: u64, creation: u64) -> u64
+- CacheMissAttribution · struct · L471-L476 — pub struct CacheMissAttribution
+- hit_ratio · function · L480-L487 — pub fn hit_ratio(&self) -> Option<f32>
+- optimal_ratio · function · L491-L497 — pub fn optimal_ratio(&self) -> Option<f32>
+- last_ratio · function · L499-L506 — pub fn last_ratio(&self) -> Option<f32>
+- last_optimal_ratio · function · L508-L515 — pub fn last_optimal_ratio(&self) -> Option<f32>
+- max_usage_pct · function · L520-L531 — pub fn max_usage_pct(&self) -> u8
+- MemoryInfo · struct · L536-L558 — pub struct MemoryInfo
+- should_render · function · L561-L563 — pub(crate) fn should_render(&self) -> bool
+- should_show_activity · function · L565-L576 — pub(crate) fn should_show_activity(&self) -> bool
+- GitInfo · struct · L583-L602 — pub struct GitInfo
+- RecentCommit · struct · L606-L616 — pub struct RecentCommit
+- DirtyFile · struct · L620-L631 — pub struct DirtyFile
+- new · function · L634-L640 — pub fn new(status: char, path: impl Into<String>) -> Self
+- with_lines · function · L642-L646 — pub fn with_lines(mut self, added: usize, removed: usize) -> Self
+- is_interesting · function · L650-L656 — pub fn is_interesting(&self) -> bool
+- AmbientWidgetData · struct · L661-L673 — pub struct AmbientWidgetData
+- PAGE_SWITCH_SECONDS · constant · L675-L675 — const PAGE_SWITCH_SECONDS: u64 = 30;
+- InfoWidgetData · struct · L679-L754 — pub struct InfoWidgetData
+- CompactionInfo · struct · L757-L763 — pub struct CompactionInfo
+- widget_disabled · function · L766-L768 — fn widget_disabled(kind: WidgetKind) -> bool
+- is_empty · function · L770-L780 — pub fn is_empty(&self) -> bool
+- has_data_for · function · L783-L881 — pub fn has_data_for(&self, kind: WidgetKind) -> bool
+- effective_priority · function · L887-L953 — pub fn effective_priority(&self, kind: WidgetKind) -> u8
+- available_widgets · function · L955-L963 — pub fn available_widgets(&self) -> Vec<WidgetKind>
+- SingleWidgetState · struct · L968-L973 — struct SingleWidgetState
+- WidgetsState · struct · L977-L1003 — struct WidgetsState
+- default · function · L1006-L1018 — fn default() -> Self
+- WIDGETS_STATE · constant · L1022-L1022 — static WIDGETS_STATE: Mutex<Option<WidgetsState>> = Mutex::new(None);
+- SECONDARY_WIDGETS_STATE · constant · L1025-L1025 — static SECONDARY_WIDGETS_STATE: Mutex<Option<WidgetsState>> = Mutex::new(None);
+- get_or_init_state · function · L1027-L1038 — fn get_or_init_state() -> std::sync::MutexGuard<'static, Option<WidgetsState>>
+- toggle_enabled · function · L1041-L1046 — pub fn toggle_enabled()
+- is_enabled · function · L1049-L1054 — pub fn is_enabled() -> bool
+- apply_settlement · function · L1063-L1099 — pub fn apply_settlement(margins: &mut Margins, area_width: u16)
+- intersect_widths · function · L1103-L1111 — fn intersect_widths(dst: &mut Vec<u16>, src: &[u16])
+- calculate_placements · function · L1115-L1139 — pub fn calculate_placements(
+- calculate_placements_with_cloud_reflow · function · L1145-L1180 — pub(super) fn calculate_placements_with_cloud_reflow(
+- SCROLL_CHURN_GRACE · constant · L1185-L1185 — const SCROLL_CHURN_GRACE: Duration = Duration::from_millis(1500);
+- SWARM_STRIP_STAND_DOWN_LINGER · constant · L1196-L1196 — const SWARM_STRIP_STAND_DOWN_LINGER: Duration = Duration::from_millis(2000);
+- swarm_dock_engaged · function · L1201-L1211 — fn swarm_dock_engaged(state: &WidgetsState) -> bool
+- swarm_strip_stands_down_for_dock · function · L1225-L1236 — pub(crate) fn swarm_strip_stands_down_for_dock() -> bool
+- note_widget_pass_skipped · function · L1243-L1250 — pub(crate) fn note_widget_pass_skipped()
+- clear_widget_placements_for_tests · function · L1257-L1264 — pub(crate) fn clear_widget_placements_for_tests()
+- calculate_widget_height · function · L1267-L1341 — pub(crate) fn calculate_widget_height(
+- calculate_layout · function · L1347-L1360 — pub fn calculate_layout(
+- render_all · function · L1363-L1367 — pub fn render_all(frame: &mut Frame, placements: &[WidgetPlacement], data: &InfoWidgetData)
+- tight_rects · function · L1373-L1389 — fn tight_rects(rect: Rect, inner: Rect, body_lines: usize) -> (Rect, Rect)
+- render_single_widget · function · L1392-L1443 — fn render_single_widget(frame: &mut Frame, placement: &WidgetPlacement, data: &InfoWidgetData)
+- diagram_footer · function · L1445-L1455 — fn diagram_footer(data: &InfoWidgetData) -> String
+- workspace_footer · function · L1457-L1475 — fn workspace_footer(data: &InfoWidgetData) -> String
+- overview_footer · function · L1479-L1509 — fn overview_footer(data: &InfoWidgetData) -> String
+- render_diagrams_widget · function · L1512-L1524 — fn render_diagrams_widget(frame: &mut Frame, inner: Rect, data: &InfoWidgetData)
+- render_overview_framed · function · L1528-L1616 — fn render_overview_framed(data: &InfoWidgetData, inner: Rect) -> Option<Framed>
+- MemorySubgraph · struct · L1619-L1622 — struct MemorySubgraph
+- select_contextual_subgraph · function · L1624-L1739 — fn select_contextual_subgraph(
+- pick_subgraph_center · function · L1742-L1761 — fn pick_subgraph_center(info: &MemoryInfo) -> Option<usize>
+- edge_kind_priority · function · L1764-L1774 — fn edge_kind_priority(kind: &str) -> u8
+- render_widget_content · function · L1777-L1810 — fn render_widget_content(kind: WidgetKind, data: &InfoWidgetData, inner: Rect) -> Framed
+- render_compaction_widget · function · L1812-L1850 — fn render_compaction_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- cache_render · module · L1853-L1853 — mod cache_render;
+- render_ambient_widget · function · L1859-L2017 — fn render_ambient_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render · function · L2022-L2036 — pub fn render(frame: &mut Frame, rect: Rect, data: &InfoWidgetData)
+- render_page · function · L2038-L2045 — fn render_page(kind: InfoPageKind, data: &InfoWidgetData, inner: Rect) -> Vec<Line<'static>>
+- compact_usage_rows · function · L2047-L2053 — pub(super) fn compact_usage_rows(
+- startup_usage_lines · function · L2055-L2065 — pub(super) fn startup_usage_lines(width: u16) -> Vec<Line<'static>>
+- render_sections · function · L2067-L2112 — fn render_sections(
+- cloud_reflow_tests · module · L2120-L2120 — mod cloud_reflow_tests;
+- startup_tests · module · L2124-L2124 — mod startup_tests;
+- tests · module · L2128-L2128 — mod tests;
+- format_event_for_expanded · function · L2130-L2212 — fn format_event_for_expanded(
+- tight_rect_tests · module · L2215-L2236 — mod tight_rect_tests
+- border_hugs_shorter_body · function · L2220-L2226 — fn border_hugs_shorter_body()
+- full_or_overflowing_body_keeps_slot · function · L2229-L2235 — fn full_or_overflowing_body_keeps_slot()

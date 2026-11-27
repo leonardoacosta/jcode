@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/tool/codemode.rs
+
+- EXCLUDED · constant · L24-L24 — const EXCLUDED: &[&str] = &["codemode", "batch"];
+- MAX_REPORT_CHARS · constant · L27-L27 — const MAX_REPORT_CHARS: usize = 60_000;
+- DESCRIPTION · constant · L29-L32 — const DESCRIPTION: &str = "Run sandboxed JavaScript to chain, filter, or parallelize tool calls, including MCP. Supply an async function body using await/return; only returned values and console.log reach the conversation.\n\
+- CodemodeTool · struct · L34-L36 — pub struct CodemodeTool
+- new · function · L39-L41 — pub(super) fn new(registry: WeakRegistry) -> Self
+- CodemodeInput · struct · L45-L48 — struct CodemodeInput
+- RegistryHost · struct · L50-L57 — struct RegistryHost
+- call_tool · function · L60-L77 — fn call_tool(&self, name: String, args: Value) -> BoxFuture<'static, Result<Value, String>>
+- enabled · function · L81-L83 — pub(crate) fn enabled() -> bool
+- store_path · function · L85-L105 — fn store_path(session_id: &str) -> Option<PathBuf>
+- load_store · function · L107-L112 — fn load_store(session_id: &str) -> Map<String, Value>
+- save_store · function · L114-L129 — fn save_store(session_id: &str, store: &Map<String, Value>)
+- truncate · function · L131-L137 — fn truncate(text: String, max: usize) -> String
+- render_report · function · L139-L182 — pub(crate) fn render_report(out: &jcode_codemode::RunOutput) -> String
+- name · function · L186-L188 — fn name(&self) -> &str
+- description · function · L190-L192 — fn description(&self) -> &str
+- parameters_schema · function · L194-L206 — fn parameters_schema(&self) -> Value
+- execute · function · L208-L262 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- codemode_tests · module · L267-L267 — mod codemode_tests;

@@ -1,0 +1,117 @@
+# crates/jcode-tui-markdown/src/lib.rs
+
+- mermaid · module · L18-L18 — mod mermaid;
+- types · module · L21-L21 — mod types;
+- MarkdownConfigSnapshot · struct · L28-L35 — pub struct MarkdownConfigSnapshot
+- default · function · L38-L46 — fn default() -> Self
+- ProcessMemorySnapshot · struct · L50-L54 — pub struct ProcessMemorySnapshot
+- CONFIG_SNAPSHOT_HOOK · constant · L56-L57 — static CONFIG_SNAPSHOT_HOOK: LazyLock<Mutex<fn() -> MarkdownConfigSnapshot>> =
+- MEMORY_SNAPSHOT_HOOK · constant · L58-L59 — static MEMORY_SNAPSHOT_HOOK: LazyLock<Mutex<fn() -> ProcessMemorySnapshot>> =
+- default_config_snapshot · function · L61-L63 — fn default_config_snapshot() -> MarkdownConfigSnapshot
+- default_memory_snapshot · function · L65-L67 — fn default_memory_snapshot() -> ProcessMemorySnapshot
+- set_config_snapshot_hook · function · L69-L73 — pub fn set_config_snapshot_hook(hook: fn() -> MarkdownConfigSnapshot)
+- set_memory_snapshot_hook · function · L75-L79 — pub fn set_memory_snapshot_hook(hook: fn() -> ProcessMemorySnapshot)
+- set_latex_log_hook · function · L81-L83 — pub fn set_latex_log_hook(hook: fn(&str))
+- config_snapshot · function · L92-L97 — pub(crate) fn config_snapshot() -> MarkdownConfigSnapshot
+- process_memory_snapshot · function · L99-L104 — pub(crate) fn process_memory_snapshot() -> ProcessMemorySnapshot
+- context · module · L107-L107 — mod context;
+- wrap · module · L109-L109 — mod wrap;
+- latex_image · module · L125-L125 — mod latex_image;
+- math_copy · module · L127-L127 — mod math_copy;
+- render_full · module · L133-L133 — mod render_full;
+- render_lazy · module · L135-L135 — mod render_lazy;
+- render_support · module · L137-L137 — mod render_support;
+- markdown_links · module · L139-L139 — mod markdown_links;
+- render_core_adapter · module · L142-L142 — mod render_core_adapter;
+- should_render_mermaid_block · function · L176-L180 — fn should_render_mermaid_block(lang: Option<&str>) -> bool
+- SYNTAX_SET · constant · L184-L184 — static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+- THEME_SET · constant · L185-L185 — static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
+- HIGHLIGHT_CACHE · constant · L188-L189 — static HIGHLIGHT_CACHE: LazyLock<Mutex<HighlightCache>> =
+- clear_highlight_cache · function · L193-L198 — pub fn clear_highlight_cache()
+- HIGHLIGHT_CACHE_LIMIT · constant · L200-L200 — const HIGHLIGHT_CACHE_LIMIT: usize = 256;
+- MarkdownDebugStats · struct · L203-L216 — pub struct MarkdownDebugStats
+- MarkdownMemoryProfile · struct · L219-L229 — pub struct MarkdownMemoryProfile
+- MarkdownDebugState · struct · L232-L234 — struct MarkdownDebugState
+- MARKDOWN_DEBUG · constant · L236-L237 — static MARKDOWN_DEBUG: LazyLock<Mutex<MarkdownDebugState>> =
+- MarkdownBlockKind · enum · L240-L251 — enum MarkdownBlockKind
+- spacing_separates_after · function · L253-L258 — fn spacing_separates_after(kind: MarkdownBlockKind, mode: MarkdownSpacingMode) -> bool
+- line_is_blank · function · L260-L266 — fn line_is_blank(line: &Line<'_>) -> bool
+- rendered_task_marker_width · function · L268-L276 — fn rendered_task_marker_width(text: &str) -> Option<(usize, &str)>
+- rendered_list_marker_width · function · L278-L303 — fn rendered_list_marker_width(text: &str) -> Option<usize>
+- repeated_gutter_prefix · function · L305-L351 — fn repeated_gutter_prefix(line: &Line<'static>) -> Option<(Vec<Span<'static>>, usize)>
+- leading_spans_for_display_width · function · L353-L387 — fn leading_spans_for_display_width(
+- push_blank_separator · function · L389-L394 — fn push_blank_separator(lines: &mut Vec<Line<'static>>)
+- push_block_separator · function · L396-L404 — fn push_block_separator(
+- normalize_block_separators · function · L406-L456 — fn normalize_block_separators(lines: &mut Vec<Line<'static>>)
+- HighlightCache · struct · L458-L460 — struct HighlightCache
+- new · function · L463-L467 — fn new() -> Self
+- get · function · L469-L471 — fn get(&self, hash: u64) -> Option<Vec<Line<'static>>>
+- release · function · L473-L475 — fn release(&mut self)
+- insert · function · L477-L483 — fn insert(&mut self, hash: u64, lines: Vec<Line<'static>>)
+- highlight_cache_release_drops_capacity_and_can_rebuild · function · L488-L502 — fn highlight_cache_release_drops_capacity_and_can_rebuild()
+- hash_code · function · L504-L510 — fn hash_code(code: &str, lang: Option<&str>) -> u64
+- incremental · module · L518-L518 — mod incremental;
+- rendered_rule_width · function · L522-L528 — fn rendered_rule_width(max_width: Option<usize>) -> usize
+- MATH_FOREGROUND · constant · L532-L532 — const MATH_FOREGROUND: (u8, u8, u8) = (255, 255, 255);
+- MATH_INLINE_FOREGROUND · constant · L533-L533 — const MATH_INLINE_FOREGROUND: (u8, u8, u8) = (255, 255, 255);
+- code_bg · function · L535-L537 — fn code_bg() -> Color
+- code_fg · function · L538-L540 — fn code_fg() -> Color
+- math_fg · function · L541-L543 — fn math_fg() -> Color
+- math_inline_fg · function · L544-L550 — fn math_inline_fg() -> Color
+- link_fg · function · L551-L553 — fn link_fg() -> Color
+- html_fg · function · L554-L556 — fn html_fg() -> Color
+- text_color · function · L557-L559 — fn text_color() -> Color
+- bold_color · function · L560-L562 — fn bold_color() -> Color
+- heading_h1_color · function · L563-L565 — fn heading_h1_color() -> Color
+- heading_h2_color · function · L566-L568 — fn heading_h2_color() -> Color
+- heading_h3_color · function · L569-L571 — fn heading_h3_color() -> Color
+- heading_color · function · L572-L574 — fn heading_color() -> Color
+- md_dim_color · function · L575-L577 — fn md_dim_color() -> Color
+- RULE_LEN · constant · L578-L578 — const RULE_LEN: usize = 24;
+- ListRenderState · struct · L581-L586 — struct ListRenderState
+- CenteredStructuredBlockState · struct · L589-L593 — struct CenteredStructuredBlockState
+- mermaid_should_register_active · function · L595-L597 — fn mermaid_should_register_active() -> bool
+- mermaid_sidebar_placeholder · function · L599-L605 — fn mermaid_sidebar_placeholder(text: &str) -> Line<'static>
+- MERMAID_PENDING_PLACEHOLDER_TEXT · constant · L612-L612 — pub const MERMAID_PENDING_PLACEHOLDER_TEXT: &str = "↻ rendering mermaid diagram...";
+- MATH_PENDING_PLACEHOLDER_TEXT · constant · L617-L617 — pub const MATH_PENDING_PLACEHOLDER_TEXT: &str = "↻ rendering math...";
+- MERMAID_PENDING_MATCH_PREFIX · constant · L621-L621 — const MERMAID_PENDING_MATCH_PREFIX: &str = "↻ rendering";
+- line_is_mermaid_pending_placeholder · function · L632-L639 — pub fn line_is_mermaid_pending_placeholder(line: &Line<'_>) -> bool
+- apply_inline_decorations · function · L641-L649 — fn apply_inline_decorations(mut style: Style, strike: bool, in_link: bool) -> Style
+- ensure_blockquote_prefix · function · L651-L657 — fn ensure_blockquote_prefix(current_spans: &mut Vec<Span<'static>>, blockquote_depth: usize)
+- with_blockquote_prefix · function · L659-L674 — fn with_blockquote_prefix(line: Line<'static>, blockquote_depth: usize) -> Line<'static>
+- fill_blockquote_separators · function · L679-L703 — fn fill_blockquote_separators(lines: &mut [Line<'static>], depth: usize)
+- flush_current_line_with_alignment · function · L705-L717 — fn flush_current_line_with_alignment(
+- enter_centered_structured_block · function · L719-L724 — fn enter_centered_structured_block(state: &mut CenteredStructuredBlockState, current_line: usize)
+- exit_centered_structured_block · function · L726-L737 — fn exit_centered_structured_block(state: &mut CenteredStructuredBlockState, current_line: usize)
+- record_centered_independent_block · function · L739-L747 — fn record_centered_independent_block(
+- finalize_centered_structured_blocks · function · L749-L761 — fn finalize_centered_structured_blocks(
+- center_structured_block_ranges · function · L763-L796 — fn center_structured_block_ranges(
+- leading_raw_padding_width · function · L798-L808 — fn leading_raw_padding_width(line: &Line<'_>) -> usize
+- strip_leading_raw_padding · function · L810-L836 — fn strip_leading_raw_padding(line: &mut Line<'static>, trim_width: usize)
+- blockquote_gutter_width · function · L838-L846 — fn blockquote_gutter_width(text: &str) -> (usize, &str)
+- ordered_marker_components · function · L848-L858 — fn ordered_marker_components(text: &str) -> Option<(usize, usize)>
+- ordered_marker_info · function · L860-L870 — fn ordered_marker_info(line: &Line<'_>) -> Option<(usize, usize, usize)>
+- pad_ordered_marker_line · function · L872-L903 — fn pad_ordered_marker_line(
+- align_ordered_list_markers · function · L905-L925 — fn align_ordered_list_markers(
+- recenter_structured_blocks_for_display · function · L927-L967 — pub fn recenter_structured_blocks_for_display(lines: &mut [Line<'static>], width: usize)
+- structured_markdown_alignment · function · L969-L984 — fn structured_markdown_alignment(
+- parse_opening_fence · function · L986-L1003 — fn parse_opening_fence(line: &str) -> Option<(char, usize)>
+- is_closing_fence · function · L1005-L1018 — fn is_closing_fence(line: &str, fence_char: char, min_len: usize) -> bool
+- math_inline_span · function · L1020-L1024 — fn math_inline_span(math: &str) -> Span<'static>
+- raw_math_inline_span · function · L1026-L1028 — fn raw_math_inline_span(math: &str) -> Span<'static>
+- math_display_lines · function · L1030-L1047 — fn math_display_lines(math: &str) -> Vec<Line<'static>>
+- raw_math_display_lines · function · L1049-L1069 — fn raw_math_display_lines(math: &str) -> Vec<Line<'static>>
+- LATEX_INSTALL_HINT_TEXT · constant · L1073-L1073 — pub const LATEX_INSTALL_HINT_TEXT: &str = "LaTeX is not installed, so math is shown as a text approximation. Install TeX Live (latex + dvipng) for typeset math, or set display.latex_rendering = \"unicode\" to hide this.";
+- latex_install_hint_line · function · L1075-L1085 — fn latex_install_hint_line() -> Line<'static>
+- push_latex_install_hint_if_needed · function · L1089-L1094 — fn push_latex_install_hint_if_needed(lines: &mut Vec<Line<'static>>, shown: &mut bool)
+- latex_image_lines · function · L1096-L1117 — fn latex_image_lines(
+- table_color · function · L1118-L1120 — fn table_color() -> Color
+- render_markdown · function · L1123-L1125 — pub fn render_markdown(text: &str) -> Vec<Line<'static>>
+- text_preprocess · module · L1134-L1134 — pub(crate) mod text_preprocess;
+- debug_stats · function · L1137-L1142 — pub fn debug_stats() -> MarkdownDebugStats
+- debug_memory_profile · function · L1144-L1171 — pub fn debug_memory_profile() -> MarkdownMemoryProfile
+- reset_debug_stats · function · L1173-L1177 — pub fn reset_debug_stats()
+- estimate_lines_bytes · function · L1179-L1192 — fn estimate_lines_bytes(lines: &[Line<'static>]) -> usize
+- debug_stats_json · function · L1194-L1196 — pub fn debug_stats_json() -> Option<serde_json::Value>
+- display_helpers · module · L1199-L1199 — mod display_helpers;
+- tests · module · L1207-L1207 — mod tests;

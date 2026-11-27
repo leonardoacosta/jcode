@@ -1,0 +1,42 @@
+# crates/jcode-tui/src/tui/window_visibility.rs
+
+- Visibility · enum · L28-L33 — pub(crate) enum Visibility
+- code · function · L36-L42 — fn code(self) -> u8
+- from_code · function · L44-L50 — fn from_code(code: u8) -> Self
+- label · function · L52-L58 — pub(crate) fn label(self) -> &'static str
+- combine_with · function · L64-L70 — fn combine_with(self, other: impl FnOnce() -> Self) -> Self
+- combine · function · L72-L78 — fn combine(self, other: Self) -> Self
+- PROBE_EVERY_HIDDEN · constant · L83-L83 — const PROBE_EVERY_HIDDEN: Duration = Duration::from_secs(2);
+- PROBE_EVERY_VISIBLE · constant · L86-L86 — const PROBE_EVERY_VISIBLE: Duration = Duration::from_secs(6);
+- PROBE_EVERY_UNKNOWN · constant · L89-L89 — const PROBE_EVERY_UNKNOWN: Duration = Duration::from_secs(30);
+- FRESH_FOR · constant · L92-L92 — const FRESH_FOR: Duration = Duration::from_secs(8);
+- PROBE_IO_TIMEOUT · constant · L93-L93 — const PROBE_IO_TIMEOUT: Duration = Duration::from_millis(400);
+- STATE · constant · L95-L95 — static STATE: AtomicU8 = AtomicU8::new(0);
+- PROBED_AT_MS · constant · L97-L97 — static PROBED_AT_MS: AtomicU64 = AtomicU64::new(0);
+- IN_FLIGHT · constant · L98-L98 — static IN_FLIGHT: AtomicBool = AtomicBool::new(false);
+- epoch · function · L100-L103 — fn epoch() -> Instant
+- EPOCH · constant · L101-L101 — static EPOCH: OnceLock<Instant> = OnceLock::new();
+- now_ms · function · L105-L108 — fn now_ms() -> u64
+- age_of_last_probe · function · L110-L115 — fn age_of_last_probe() -> Option<Duration>
+- poll · function · L119-L156 — pub(crate) fn poll(focused: bool, working: bool)
+- current · function · L159-L167 — pub(crate) fn current() -> Visibility
+- hidden · function · L170-L172 — pub(crate) fn hidden(focused: bool) -> bool
+- probe · function · L174-L185 — fn probe() -> Visibility
+- probe_tmux · function · L189-L211 — fn probe_tmux() -> Visibility
+- parse_tmux · function · L215-L229 — fn parse_tmux(output: &str) -> Visibility
+- probe_niri · function · L234-L250 — fn probe_niri() -> Visibility
+- probe_niri · function · L253-L255 — fn probe_niri() -> Visibility
+- niri_request · function · L258-L276 — fn niri_request(socket: &std::path::Path, request: &str) -> Option<serde_json::Value>
+- ancestor_pids · function · L281-L308 — fn ancestor_pids() -> Vec<u32>
+- ancestor_pids · function · L311-L313 — fn ancestor_pids() -> Vec<u32>
+- parse_niri · function · L326-L370 — fn parse_niri(
+- tests · module · L373-L512 — mod tests
+- lazy_visibility_combination_matches_all_layers_without_redundant_probes · function · L378-L391 — fn lazy_visibility_combination_matches_all_layers_without_redundant_probes()
+- layers_combine_towards_hidden_and_unknown_stays_unknown · function · L394-L400 — fn layers_combine_towards_hidden_and_unknown_stays_unknown()
+- tmux_pane_is_hidden_when_its_window_is_not_current_or_nothing_is_attached · function · L403-L412 — fn tmux_pane_is_hidden_when_its_window_is_not_current_or_nothing_is_attached()
+- workspaces · function · L414-L419 — fn workspaces(shown: &[u64]) -> serde_json::Value
+- windows · function · L421-L429 — fn windows(entries: &[(u64, u64, bool)]) -> serde_json::Value
+- niri_window_on_a_workspace_that_is_not_shown_is_hidden · function · L432-L448 — fn niri_window_on_a_workspace_that_is_not_shown_is_hidden()
+- niri_single_instance_terminal_is_hidden_only_if_all_its_windows_are · function · L451-L469 — fn niri_single_instance_terminal_is_hidden_only_if_all_its_windows_are()
+- niri_answers_unknown_rather_than_guess · function · L472-L502 — fn niri_answers_unknown_rather_than_guess()
+- nothing_is_hidden_without_a_fresh_probe · function · L505-L511 — fn nothing_is_hidden_without_a_fresh_probe()

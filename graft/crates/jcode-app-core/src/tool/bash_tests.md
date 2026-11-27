@@ -1,0 +1,52 @@
+# crates/jcode-app-core/src/tool/bash_tests.rs
+
+- SessionEnvLaunchGate · type · L10-L13 — type SessionEnvLaunchGate = (
+- SESSION_ENV_LAUNCH_GATES · constant · L14-L16 — static SESSION_ENV_LAUNCH_GATES: std::sync::LazyLock<
+- wait_for_session_env_launch_gate · function · L18-L24 — pub(super) async fn wait_for_session_env_launch_gate(session_id: &str)
+- session_environment · module · L27-L27 — mod session_environment;
+- bash_definition_prefers_repository_search_tools · function · L31-L49 — fn bash_definition_prefers_repository_search_tools()
+- bash_optional_nulls_use_omitted_defaults · function · L52-L75 — fn bash_optional_nulls_use_omitted_defaults()
+- bash_optional_booleans_preserve_explicit_values · function · L78-L89 — fn bash_optional_booleans_preserve_explicit_values()
+- bash_optional_booleans_still_reject_invalid_types · function · L92-L102 — fn bash_optional_booleans_still_reject_invalid_types()
+- bash_executes_with_null_optional_arguments · function · L105-L119 — async fn bash_executes_with_null_optional_arguments()
+- repository_commands_export_a_logged_cargo_function · function · L122-L136 — fn repository_commands_export_a_logged_cargo_function()
+- cargo_routing_is_limited_to_the_jcode_repository · function · L139-L142 — fn cargo_routing_is_limited_to_the_jcode_repository()
+- background_command_stdin_is_null · function · L145-L166 — async fn background_command_stdin_is_null()
+- make_ctx · function · L168-L178 — fn make_ctx(stdin_tx: Option<mpsc::UnboundedSender<StdinInputRequest>>) -> ToolContext
+- cloud_environment_hydrates_commands_without_transcript_values · function · L181-L252 — fn cloud_environment_hydrates_commands_without_transcript_values()
+- RestoreHome · struct · L189-L189 — struct RestoreHome(Option<std::ffi::OsString>);
+- drop · function · L191-L196 — fn drop(&mut self)
+- background_handoff_names_reason_task_and_productive_wait_without_bg_tutorial · function · L255-L282 — async fn background_handoff_names_reason_task_and_productive_wait_without_bg_tutorial()
+- make_agent_ctx · function · L284-L294 — fn make_agent_ctx(signal: jcode_agent_runtime::InterruptSignal) -> ToolContext
+- test_basic_command_no_stdin · function · L297-L303 — async fn test_basic_command_no_stdin()
+- test_basic_command_with_unused_stdin_channel · function · L306-L313 — async fn test_basic_command_with_unused_stdin_channel()
+- test_stdin_reader_gets_eof_immediately · function · L316-L330 — async fn test_stdin_reader_gets_eof_immediately()
+- test_command_has_no_controlling_tty_and_no_prompt_env · function · L334-L343 — async fn test_command_has_no_controlling_tty_and_no_prompt_env()
+- test_stdin_not_triggered_for_non_blocking_command · function · L346-L362 — async fn test_stdin_not_triggered_for_non_blocking_command()
+- test_command_timeout_with_stdin_channel · function · L365-L395 — async fn test_command_timeout_with_stdin_channel()
+- test_foreground_timeout_promotes_and_command_keeps_running · function · L398-L452 — async fn test_foreground_timeout_promotes_and_command_keeps_running()
+- test_reload_persistable_bash_continues_in_background · function · L455-L507 — async fn test_reload_persistable_bash_continues_in_background()
+- test_reload_persistable_bash_timeout_promotes_to_background · function · L510-L602 — async fn test_reload_persistable_bash_timeout_promotes_to_background()
+- test_stderr_captured_with_stdin · function · L605-L618 — async fn test_stderr_captured_with_stdin()
+- unanswered_stdin_request_closes_stdin_instead_of_hanging · function · L621-L641 — async fn unanswered_stdin_request_closes_stdin_instead_of_hanging()
+- progress_parsing · module · L644-L644 — mod progress_parsing;
+- terminal_env · module · L647-L647 — mod terminal_env;
+- test_background_command_progress_marker_updates_status_and_stays_out_of_output · function · L650-L709 — async fn test_background_command_progress_marker_updates_status_and_stays_out_of_output()
+- test_background_command_ratio_output_updates_progress · function · L712-L761 — async fn test_background_command_ratio_output_updates_progress()
+- test_background_command_byte_ratio_output_updates_progress · function · L764-L811 — async fn test_background_command_byte_ratio_output_updates_progress()
+- test_background_command_respects_timeout · function · L814-L881 — async fn test_background_command_respects_timeout()
+- test_background_command_without_timeout_keeps_running_past_default_foreground_timeout · function · L884-L945 — async fn test_background_command_without_timeout_keeps_running_past_default_foreground_timeout()
+- process_group_kill_guard_terminates_descendants · function · L949-L982 — async fn process_group_kill_guard_terminates_descendants()
+- test_bash_tool_schema_advertises_background_progress_guidance · function · L985-L1002 — fn test_bash_tool_schema_advertises_background_progress_guidance()
+- gate_ctx · function · L1010-L1020 — fn gate_ctx(working_dir: &str) -> ToolContext
+- bash_refuses_to_delete_the_home_directory · function · L1023-L1055 — async fn bash_refuses_to_delete_the_home_directory()
+- bash_holds_a_risky_delete_until_justified_then_runs_it · function · L1058-L1108 — async fn bash_holds_a_risky_delete_until_justified_then_runs_it()
+- bash_does_not_interfere_with_ordinary_commands · function · L1111-L1124 — async fn bash_does_not_interfere_with_ordinary_commands()
+- indirect_dispatch_paths_cannot_bypass_the_gate · function · L1127-L1160 — async fn indirect_dispatch_paths_cannot_bypass_the_gate()
+- parse_progress_line_classifies_markers_checkpoints_and_heuristics · function · L1163-L1199 — fn parse_progress_line_classifies_markers_checkpoints_and_heuristics()
+- required_check_real_failed_process_metadata_ignores_success_text · function · L1202-L1227 — async fn required_check_real_failed_process_metadata_ignores_success_text()
+- required_check_real_exit_success_signal_and_invalid_id_boundary · function · L1230-L1283 — async fn required_check_real_exit_success_signal_and_invalid_id_boundary()
+- required_check_background_and_promoted_process_never_pass · function · L1286-L1303 — async fn required_check_background_and_promoted_process_never_pass()
+- required_check_real_startup_error_never_passes · function · L1306-L1318 — async fn required_check_real_startup_error_never_passes()
+- promoted · module · L1321-L1321 — mod promoted;
+- background_timeout_honors_values_above_the_foreground_cap · function · L1324-L1330 — fn background_timeout_honors_values_above_the_foreground_cap()

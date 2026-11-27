@@ -1,0 +1,39 @@
+# crates/jcode-app-core/src/overnight/admission.rs
+
+- read_manifest_at · function · L6-L10 — pub(super) fn read_manifest_at(path: &Path) -> Result<OvernightManifest>
+- TaskAttemptClaim · struct · L14-L21 — pub struct TaskAttemptClaim
+- dispatch_decision · function · L24-L26 — pub fn dispatch_decision(&self) -> &crate::config::AdmissionDecision
+- complete_with_provider · function · L30-L116 — pub async fn complete_with_provider(
+- task_monetary_account · function · L120-L171 — pub fn task_monetary_account(
+- start_task_attempt_with_provider · function · L173-L180 — pub fn start_task_attempt_with_provider(
+- restart_task_attempt_with_provider · function · L182-L189 — pub fn restart_task_attempt_with_provider(
+- bounded_task_attempt · function · L191-L209 — fn bounded_task_attempt(
+- AdmissionLock · struct · L211-L211 — struct AdmissionLock(File);
+- drop · function · L214-L218 — fn drop(&mut self)
+- lock · function · L221-L240 — fn lock(path: &Path) -> Result<AdmissionLock>
+- save_manifest_at · function · L245-L313 — pub(super) fn save_manifest_at(path: &Path, proposed: &OvernightManifest) -> Result<()>
+- start_task_attempt · function · L317-L325 — pub fn start_task_attempt(
+- restart_task_attempt · function · L329-L337 — pub fn restart_task_attempt(
+- current_policy_ceiling · function · L339-L352 — fn current_policy_ceiling(
+- validate_runtime_manifest · function · L354-L387 — fn validate_runtime_manifest(path: &Path) -> Result<()>
+- claim_task_attempt · function · L389-L396 — fn claim_task_attempt(
+- claim_task_attempt_bounded · function · L398-L540 — fn claim_task_attempt_bounded(
+- tests · module · L543-L1046 — mod tests
+- task_admission_bounded_provider_dispatch_persists_nonrefundable_spend · function · L547-L616 — fn task_admission_bounded_provider_dispatch_persists_nonrefundable_spend()
+- task_admission_monetary_account_never_resets_prior_spend · function · L619-L648 — fn task_admission_monetary_account_never_resets_prior_spend()
+- task_admission_claim_retains_requested_runtime_ceiling · function · L651-L688 — fn task_admission_claim_retains_requested_runtime_ceiling()
+- start_task_attempt · function · L691-L697 — fn start_task_attempt(
+- restart_task_attempt · function · L699-L705 — fn restart_task_attempt(
+- task_admission_atomic_public_boundary_rejects_external_path_and_accepts_sandbox_root · function · L708-L754 — fn task_admission_atomic_public_boundary_rejects_external_path_and_accepts_sandbox_root()
+- fixture · function · L756-L785 — fn fixture() -> (tempfile::TempDir, PathBuf, crate::config::TasksConfig)
+- task_admission_releases_claim_while_fork_child_retains_descriptor · function · L789-L818 — fn task_admission_releases_claim_while_fork_child_retains_descriptor()
+- task_admission_atomic_start_restart_preserves_authority_and_denies_unknown_spend · function · L821-L866 — fn task_admission_atomic_start_restart_preserves_authority_and_denies_unknown_spend()
+- task_admission_atomic_race_has_one_live_owner · function · L869-L886 — fn task_admission_atomic_race_has_one_live_owner()
+- task_admission_atomic_child_process_probe · function · L889-L898 — fn task_admission_atomic_child_process_probe()
+- task_admission_atomic_live_owner_blocks_another_process_and_attempts_are_finite · function · L901-L923 — fn task_admission_atomic_live_owner_blocks_another_process_and_attempts_are_finite()
+- task_admission_atomic_cancel_and_stale_save_cannot_refund_or_widen · function · L926-L949 — fn task_admission_atomic_cancel_and_stale_save_cannot_refund_or_widen()
+- task_admission_atomic_capacity_and_current_policy_narrowing · function · L952-L966 — fn task_admission_atomic_capacity_and_current_policy_narrowing()
+- task_admission_atomic_completion_after_cancel_stays_terminal · function · L969-L981 — fn task_admission_atomic_completion_after_cancel_stays_terminal()
+- task_admission_atomic_corrupt_primary_never_restores_older_backup · function · L984-L1001 — fn task_admission_atomic_corrupt_primary_never_restores_older_backup()
+- task_admission_atomic_corrupt_capacity_candidate_is_not_recovered · function · L1004-L1013 — fn task_admission_atomic_corrupt_capacity_candidate_is_not_recovered()
+- task_admission_atomic_rejects_dependencies_exhaustion_legacy_and_workspace_drift · function · L1016-L1045 — fn task_admission_atomic_rejects_dependencies_exhaustion_legacy_and_workspace_drift()

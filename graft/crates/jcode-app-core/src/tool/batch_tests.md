@@ -1,0 +1,37 @@
+# crates/jcode-app-core/src/tool/batch_tests.rs
+
+- EchoTool · struct · L5-L5 — struct EchoTool;
+- name · function · L9-L11 — fn name(&self) -> &str
+- description · function · L13-L15 — fn description(&self) -> &str
+- parameters_schema · function · L17-L19 — fn parameters_schema(&self) -> Value
+- execute · function · L21-L23 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- test_context · function · L26-L36 — fn test_context() -> ToolContext
+- registry_with_batch_and_echo · function · L38-L48 — async fn registry_with_batch_and_echo() -> Registry
+- registry_tool_map_drops_after_external_owners_are_dropped · function · L51-L66 — async fn registry_tool_map_drops_after_external_owners_are_dropped()
+- batch_executes_through_surviving_registry_clone · function · L69-L91 — async fn batch_executes_through_surviving_registry_clone()
+- batch_fails_cleanly_after_registry_tool_map_is_dropped · function · L94-L123 — async fn batch_fails_cleanly_after_registry_tool_map_is_dropped()
+- description_is_compact_and_explains_flat_parallel_calls · function · L126-L132 — fn description_is_compact_and_explains_flat_parallel_calls()
+- test_normalize_flat_params · function · L135-L149 — fn test_normalize_flat_params()
+- test_normalize_already_nested · function · L152-L164 — fn test_normalize_already_nested()
+- test_normalize_forwards_top_level_intent_into_nested_parameters · function · L167-L182 — fn test_normalize_forwards_top_level_intent_into_nested_parameters()
+- test_normalize_name_key_to_tool · function · L185-L202 — fn test_normalize_name_key_to_tool()
+- test_normalize_mixed_tool_and_name_keys · function · L205-L220 — fn test_normalize_mixed_tool_and_name_keys()
+- test_normalize_arguments_aliases_to_parameters · function · L223-L248 — fn test_normalize_arguments_aliases_to_parameters()
+- test_schema_only_requires_tool · function · L251-L281 — fn test_schema_only_requires_tool()
+- test_schema_keeps_flat_generic_subcall_shape · function · L284-L296 — fn test_schema_keeps_flat_generic_subcall_shape()
+- subcall_level_accept_large_output_is_forwarded_into_parameters · function · L299-L317 — fn subcall_level_accept_large_output_is_forwarded_into_parameters()
+- subcall_level_accept_large_output_does_not_override_an_explicit_value · function · L320-L336 — fn subcall_level_accept_large_output_does_not_override_an_explicit_value()
+- ImageTool · struct · L338-L338 — struct ImageTool;
+- name · function · L342-L344 — fn name(&self) -> &str
+- description · function · L345-L347 — fn description(&self) -> &str
+- parameters_schema · function · L348-L350 — fn parameters_schema(&self) -> Value
+- execute · function · L351-L360 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- batch_preserves_images_in_input_order_across_failures · function · L364-L394 — async fn batch_preserves_images_in_input_order_across_failures()
+- required_check_batch_preserves_real_failed_process_not_prose_or_other_metadata · function · L397-L418 — async fn required_check_batch_preserves_real_failed_process_not_prose_or_other_metadata()
+- required_check_batch_caps_real_children_and_rejects_nested_batch · function · L421-L442 — async fn required_check_batch_caps_real_children_and_rejects_nested_batch()
+- required_check_batch_ignores_arbitrary_non_bash_process_metadata · function · L445-L480 — async fn required_check_batch_ignores_arbitrary_non_bash_process_metadata()
+- FakeProcess · struct · L446-L446 — struct FakeProcess;
+- name · function · L449-L451 — fn name(&self) -> &str
+- description · function · L452-L454 — fn description(&self) -> &str
+- parameters_schema · function · L455-L457 — fn parameters_schema(&self) -> Value
+- execute · function · L458-L463 — async fn execute(&self, _: Value, _: ToolContext) -> Result<ToolOutput>

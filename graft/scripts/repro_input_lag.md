@@ -1,0 +1,23 @@
+# scripts/repro_input_lag.py
+
+- wait_for_socket · function · L90-L103 — def wait_for_socket(path: Path, timeout_s: float = 30.0) -> None
+- _recv · function · L106-L123 — def _recv(sock: socket.socket, timeout: float) -> dict
+- dbg · function · L126-L137 — def dbg(debug_sock: Path, command: str, timeout: float = 30.0) -> str
+- client_cmd · function · L141-L154 — def client_cmd(cmd_path: Path, resp_path: Path, command: str, timeout_s: float = 8.0) -> str
+- LiveClient · class · L159-L264 — class LiveClient
+- _pump · method · L169-L201 — def _pump(self) -> None
+- start_pump · method · L203-L205 — def start_pump(self) -> None
+- mark · method · L207-L209 — def mark(self) -> int
+- next_event_after · method · L211-L215 — def next_event_after(self, index: int) -> float | None
+- last_event · method · L217-L219 — def last_event(self) -> float | None
+- idle_probe · method · L221-L243 — def idle_probe(self, window_s: float = 2.0) -> dict
+- send_bytes · method · L245-L246 — def send_bytes(self, data: bytes) -> None
+- shutdown · method · L248-L264 — def shutdown(self) -> None
+- launch_client · function · L267-L290 — def launch_client(binary: str, env: dict, session_id: str, cmd_path: Path, resp_path: Path, rows: int = 48, cols: int = 160) -> LiveClient
+- settle · function · L293-L301 — def settle(cmd_path: Path, resp_path: Path, timeout_s: float = 40.0) -> bool
+- Scenario · class · L306-L313 — class Scenario
+- measure · function · L316-L385 — def measure(client: LiveClient, scenario: Scenario, timeout_s: float = 2.0, verbose: bool = False) -> dict
+- pct · function · L369-L370 — def pct(values: list[float], p: float) -> float
+- slow_frame_summary · function · L388-L414 — def slow_frame_summary(cmd_path: Path, resp_path: Path) -> dict
+- draw_stats_summary · function · L417-L433 — def draw_stats_summary(cmd_path: Path, resp_path: Path) -> dict
+- main · function · L436-L667 — def main() -> int

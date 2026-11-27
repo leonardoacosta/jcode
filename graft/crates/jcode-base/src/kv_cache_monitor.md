@@ -1,0 +1,69 @@
+# crates/jcode-base/src/kv_cache_monitor.rs
+
+- MIN_MISSED_TOKENS · constant · L18-L18 — pub const MIN_MISSED_TOKENS: u64 = 1_024;
+- OPENAI_MIN_MISSED_TOKENS · constant · L25-L25 — pub const OPENAI_MIN_MISSED_TOKENS: u64 = 2_048;
+- min_missed_tokens_for_provider · function · L28-L34 — pub fn min_missed_tokens_for_provider(provider: &str) -> u64
+- provider_rolls_cache_daily · function · L42-L47 — pub fn provider_rolls_cache_daily(provider: &str) -> bool
+- utc_day_now · function · L50-L52 — pub fn utc_day_now() -> i64
+- utc_day_of · function · L54-L59 — pub fn utc_day_of(time: std::time::SystemTime) -> i64
+- RequestSignature · struct · L63-L70 — pub struct RequestSignature
+- checked_prefix_unchanged · function · L75-L85 — pub fn checked_prefix_unchanged(&self, previous: &RequestSignature) -> bool
+- extends · function · L88-L97 — pub fn extends(&self, previous: &RequestSignature) -> bool
+- RequestRoute · struct · L102-L114 — pub struct RequestRoute
+- MissReason · enum · L118-L131 — pub enum MissReason
+- id · function · L135-L150 — pub fn id(self) -> &'static str
+- detail · function · L153-L170 — pub fn detail(self) -> &'static str
+- harness_caused · function · L174-L179 — pub fn harness_caused(self) -> bool
+- KvCacheMiss · struct · L184-L200 — pub struct KvCacheMiss
+- message · function · L204-L236 — pub fn message(&self) -> String
+- format_token_count · function · L240-L260 — pub fn format_token_count(value: u64) -> String
+- trim · function · L241-L247 — fn trim(text: String) -> String
+- format_duration_secs · function · L263-L281 — pub fn format_duration_secs(secs: u64) -> String
+- or_unknown · function · L283-L285 — fn or_unknown(value: Option<&str>) -> &str
+- MissContext · struct · L289-L306 — pub struct MissContext<'a>
+- timing · function · L309-L333 — fn timing(&self) -> String
+- describe_miss · function · L338-L398 — pub fn describe_miss(reason: MissReason, ctx: &MissContext<'_>) -> String
+- Baseline · struct · L401-L408 — struct Baseline
+- Pending · struct · L411-L417 — struct Pending
+- KvCacheMonitor · struct · L422-L425 — pub struct KvCacheMonitor
+- new · function · L428-L430 — pub fn new() -> Self
+- reset · function · L432-L435 — pub fn reset(&mut self)
+- begin_request · function · L437-L439 — pub fn begin_request(&mut self, route: RequestRoute, signature: RequestSignature)
+- begin_request_on_day · function · L442-L455 — pub fn begin_request_on_day(
+- note_gateway_route · function · L461-L470 — pub fn note_gateway_route(&mut self, provider: Option<&str>, connection: Option<&str>)
+- note_provider_compaction · function · L474-L478 — pub fn note_provider_compaction(&mut self)
+- finish_request · function · L484-L504 — pub fn finish_request(
+- classify · function · L507-L575 — fn classify(
+- reason · function · L577-L626 — fn reason(baseline: &Baseline, pending: &Pending, read: u64) -> Option<MissReason>
+- tests · module · L629-L1129 — mod tests
+- route · function · L632-L641 — fn route() -> RequestRoute
+- sig · function · L643-L652 — fn sig(messages: &[u64]) -> RequestSignature
+- warm · function · L654-L661 — fn warm(monitor: &mut KvCacheMonitor)
+- account_failover_is_an_account_switch_with_from_to_detail · function · L664-L680 — fn account_failover_is_an_account_switch_with_from_to_detail()
+- token_counts_are_human_readable · function · L683-L692 — fn token_counts_are_human_readable()
+- zero_read_detail_reports_observations_without_claiming_eviction · function · L695-L714 — fn zero_read_detail_reports_observations_without_claiming_eviction()
+- healthy_append_is_not_a_miss · function · L717-L722 — fn healthy_append_is_not_a_miss()
+- prefix_unchanged_tag_requires_complete_matching_fingerprints · function · L725-L777 — fn prefix_unchanged_tag_requires_complete_matching_fingerprints()
+- small_real_loss_on_large_warm_prefix_is_not_hidden_by_percent · function · L780-L790 — fn small_real_loss_on_large_warm_prefix_is_not_hidden_by_percent()
+- openai_route · function · L792-L801 — fn openai_route() -> RequestRoute
+- observed_openai_partial_reads_do_not_prove_eviction_and_recover · function · L804-L827 — fn observed_openai_partial_reads_do_not_prove_eviction_and_recover()
+- openai_tail_block_rounding_is_not_a_miss · function · L830-L839 — fn openai_tail_block_rounding_is_not_a_miss()
+- openai_real_loss_is_still_reported · function · L842-L851 — fn openai_real_loss_is_still_reported()
+- noise_floor_is_provider_specific · function · L854-L868 — fn noise_floor_is_provider_specific()
+- previous_cache_creation_is_reusable_but_uncached_tail_is_not · function · L871-L877 — fn previous_cache_creation_is_reusable_but_uncached_tail_is_not()
+- modified_prefix_is_a_harness_miss · function · L880-L889 — fn modified_prefix_is_a_harness_miss()
+- tools_change_is_classified_even_when_read_looks_ok · function · L892-L900 — fn tools_change_is_classified_even_when_read_looks_ok()
+- model_switch_is_not_harness_caused · function · L903-L912 — fn model_switch_is_not_harness_caused()
+- missing_cache_telemetry_never_reports · function · L915-L920 — fn missing_cache_telemetry_never_reports()
+- native_compaction_zero_read_is_an_expected_refresh · function · L923-L956 — fn native_compaction_zero_read_is_an_expected_refresh()
+- compaction_does_not_hide_independent_changes · function · L959-L980 — fn compaction_does_not_hide_independent_changes()
+- compaction_evidence_does_not_survive_retry_or_reset · function · L983-L1001 — fn compaction_evidence_does_not_survive_retry_or_reset()
+- compaction_without_reported_loss_is_not_a_miss · function · L1004-L1013 — fn compaction_without_reported_loss_is_not_a_miss()
+- reset_drops_baseline · function · L1016-L1022 — fn reset_drops_baseline()
+- utc_midnight_straddle_is_a_provider_daily_rollover · function · L1025-L1042 — fn utc_midnight_straddle_is_a_provider_daily_rollover()
+- harness_changes_still_win_over_daily_rollover · function · L1045-L1052 — fn harness_changes_still_win_over_daily_rollover()
+- same_utc_day_low_read_is_not_attributed_to_rollover · function · L1055-L1062 — fn same_utc_day_low_read_is_not_attributed_to_rollover()
+- non_anthropic_day_change_is_not_attributed_to_rollover · function · L1065-L1074 — fn non_anthropic_day_change_is_not_attributed_to_rollover()
+- low_read_timing_reports_exceeded_ttl · function · L1077-L1099 — fn low_read_timing_reports_exceeded_ttl()
+- observed_gateway_connection_switch_is_account_switch · function · L1102-L1120 — fn observed_gateway_connection_switch_is_account_switch()
+- utc_day_boundaries · function · L1123-L1128 — fn utc_day_boundaries()

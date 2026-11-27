@@ -1,0 +1,47 @@
+# crates/jcode-tui/src/tui/session_picker/transcript_search/token_cache.rs
+
+- MAX_ENTRIES · constant · L11-L11 — const MAX_ENTRIES: usize = 4096;
+- MAX_BYTES · constant · L12-L12 — const MAX_BYTES: usize = 1024 * 1024;
+- MAX_TOKEN_BYTES · constant · L13-L13 — const MAX_TOKEN_BYTES: usize = 4096;
+- MAX_PREFIX_PROBES · constant · L14-L14 — const MAX_PREFIX_PROBES: usize = 64;
+- MAX_NARROW_SEGMENTS · constant · L17-L17 — const MAX_NARROW_SEGMENTS: usize = 2048;
+- Hit · struct · L22-L25 — pub(crate) struct Hit
+- hit · function · L27-L32 — pub(crate) fn hit(score: i64) -> Hit
+- Evidence · struct · L34-L42 — struct Evidence
+- Generation · struct · L43-L46 — struct Generation
+- GENERATION_BYTES · constant · L49-L49 — const GENERATION_BYTES: usize = std::mem::size_of::<(usize, Generation)>() + 64;
+- EVIDENCE_BYTES · constant · L50-L50 — const EVIDENCE_BYTES: usize = std::mem::size_of::<(String, Evidence)>() + 32;
+- PRUNE_EVERY · constant · L51-L51 — const PRUNE_EVERY: usize = 64;
+- Cache · struct · L54-L60 — struct Cache
+- prune · function · L62-L68 — fn prune(&mut self)
+- recount · function · L69-L78 — fn recount(&mut self)
+- get · function · L79-L109 — fn get(&mut self, text: &Arc<Segments>, token: &str, fuzzy: bool) -> Option<Option<Hit>>
+- narrowing · function · L112-L135 — fn narrowing(&mut self, text: &Arc<Segments>, token: &str) -> Option<Arc<[u32]>>
+- evict · function · L136-L167 — fn evict(&mut self, incoming_bytes: usize)
+- insert · function · L168-L170 — fn insert(&mut self, text: &Arc<Segments>, token: &str, fuzzy: bool, outcome: Option<Hit>)
+- insert_narrowed · function · L171-L226 — fn insert_narrowed(
+- cache · function · L228-L231 — fn cache() -> &'static Mutex<Cache>
+- CACHE · constant · L229-L229 — static CACHE: OnceLock<Mutex<Cache>> = OnceLock::new();
+- matches · function · L236-L249 — pub(super) fn matches(
+- matches_with_scores · function · L251-L267 — pub(super) fn matches_with_scores(
+- matches_cached · function · L271-L284 — pub(super) fn matches_cached(
+- matches_cached_with_scores · function · L288-L304 — pub(super) fn matches_cached_with_scores(
+- resolve · function · L306-L360 — fn resolve(
+- LiteralEvidence · type · L361-L361 — type LiteralEvidence = (Option<Hit>, Option<Arc<[u32]>>);
+- literal_in_segments · function · L366-L400 — fn literal_in_segments(
+- scan_token · function · L403-L416 — fn scan_token(
+- scan_token_with_scores · function · L421-L462 — fn scan_token_with_scores(
+- tests · module · L465-L860 — mod tests
+- tokens · function · L467-L469 — fn tokens(values: &[&str]) -> Vec<String>
+- long_queries_bound_prefix_probes_and_fall_back_safely · function · L472-L484 — fn long_queries_bound_prefix_probes_and_fall_back_safely()
+- completed_tokens_and_backspacing_reuse_positive_and_negative_evidence · function · L487-L513 — fn completed_tokens_and_backspacing_reuse_positive_and_negative_evidence()
+- validated_generation_changes_invalidate_results · function · L516-L530 — fn validated_generation_changes_invalidate_results()
+- fuzzy_matches_single_scan_first_segment_scores_and_separate_mode · function · L533-L567 — fn fuzzy_matches_single_scan_first_segment_scores_and_separate_mode()
+- literal_extensions_scan_only_segments_matching_their_prefix · function · L571-L617 — fn literal_extensions_scan_only_segments_matching_their_prefix()
+- cancellation_keeps_completed_work_not_incomplete_negatives · function · L620-L653 — fn cancellation_keeps_completed_work_not_incomplete_negatives()
+- cache_only_lookup_never_hydrates_missing_or_invalidated_text · function · L656-L689 — fn cache_only_lookup_never_hydrates_missing_or_invalidated_text()
+- shared_word_scores_preserve_results_across_transcript_generations · function · L692-L720 — fn shared_word_scores_preserve_results_across_transcript_generations()
+- literal_negative_extensions_skip_scans_but_not_backspacing_or_fuzzy · function · L723-L773 — fn literal_negative_extensions_skip_scans_but_not_backspacing_or_fuzzy()
+- warm_lookups_do_not_prune_unrelated_generations · function · L776-L796 — fn warm_lookups_do_not_prune_unrelated_generations()
+- generation_maps_and_batch_lru_keep_recent_hits_at_full_capacity · function · L799-L817 — fn generation_maps_and_batch_lru_keep_recent_hits_at_full_capacity()
+- weak_generations_lru_entry_and_key_byte_limits · function · L820-L859 — fn weak_generations_lru_entry_and_key_byte_limits()

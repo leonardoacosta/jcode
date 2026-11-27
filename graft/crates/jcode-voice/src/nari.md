@@ -1,0 +1,70 @@
+# crates/jcode-voice/src/nari.rs
+
+- URL · constant · L24-L24 — pub(super) const URL: &str = "wss://api.narilabs.com/v1/realtime?intent=transcription";
+- END · constant · L25-L25 — const END: &str = "jcode_end";
+- IO_TIMEOUT · constant · L26-L26 — const IO_TIMEOUT: Duration = Duration::from_secs(15);
+- FINAL_TIMEOUT · constant · L27-L27 — const FINAL_TIMEOUT: Duration = Duration::from_secs(20);
+- NARI_PCM_CHUNK_SAMPLES · constant · L28-L28 — pub const NARI_PCM_CHUNK_SAMPLES: usize = 6400;
+- NARI_USD_PER_AUDIO_HOUR · constant · L31-L31 — pub const NARI_USD_PER_AUDIO_HOUR: f64 = 0.12;
+- estimated_transcription_usd · function · L34-L36 — pub fn estimated_transcription_usd(audio: Duration) -> f64
+- NariEvent · enum · L40-L44 — pub enum NariEvent
+- NAME_CONTEXT · constant · L50-L55 — const NAME_CONTEXT: &str = "The user often addresses Jev, a voice assistant. \
+- BUILTIN_VOCABULARY · constant · L59-L106 — const BUILTIN_VOCABULARY: &[&str] = &[
+- BUILTIN_CORRECTIONS · constant · L111-L119 — const BUILTIN_CORRECTIONS: &[(&str, &str)] = &[
+- corrections · function · L121-L139 — fn corrections() -> &'static [(regex::Regex, &'static str)]
+- CORRECTIONS · constant · L122-L123 — static CORRECTIONS: std::sync::OnceLock<Vec<(regex::Regex, &'static str)>> =
+- correct_transcript · function · L144-L155 — pub fn correct_transcript(text: &str) -> String
+- PROMPT_EXAMPLES · constant · L158-L165 — const PROMPT_EXAMPLES: &[&[&str]] = &[
+- is_prompt_leak · function · L170-L190 — fn is_prompt_leak(text: &str) -> bool
+- words · function · L192-L197 — fn words(text: &str) -> Vec<String>
+- ECHO_NGRAM · constant · L201-L201 — const ECHO_NGRAM: usize = 5;
+- prompt_ngrams · function · L203-L217 — fn prompt_ngrams() -> &'static HashSet<Vec<String>>
+- NGRAMS · constant · L204-L204 — static NGRAMS: std::sync::OnceLock<HashSet<Vec<String>>> = std::sync::OnceLock::new();
+- is_prompt_echo · function · L222-L236 — fn is_prompt_echo(text: &str) -> bool
+- MAX_PROMPT_CHARS · constant · L239-L239 — const MAX_PROMPT_CHARS: usize = 1000;
+- recognition_prompt · function · L243-L252 — pub fn recognition_prompt() -> String
+- build_prompt · function · L254-L282 — fn build_prompt(extra: &[String]) -> String
+- nari_api_key · function · L284-L287 — pub fn nari_api_key() -> Option<String>
+- nari_pcm_channel · function · L291-L293 — pub fn nari_pcm_channel() -> (mpsc::Sender<Vec<i16>>, mpsc::Receiver<Vec<i16>>)
+- capture_pcm_channel · function · L298-L300 — pub(super) fn capture_pcm_channel() -> (mpsc::Sender<Vec<i16>>, mpsc::Receiver<Vec<i16>>)
+- cancelled · function · L302-L309 — pub(super) async fn cancelled(cancel: &AtomicBool)
+- Socket · type · L311-L311 — type Socket = WebSocketStream<MaybeTlsStream<TcpStream>>;
+- bundled_root_store · function · L313-L317 — fn bundled_root_store() -> rustls::RootCertStore
+- tls_connector · function · L323-L329 — fn tls_connector() -> tokio_tungstenite::Connector
+- NariSession · struct · L331-L334 — pub struct NariSession
+- connect_relay · function · L341-L351 — pub async fn connect_relay(
+- connect · function · L354-L356 — pub async fn connect(key: &str, cancel: Arc<AtomicBool>) -> Result<Self, VoiceError>
+- connect_to · function · L357-L363 — pub(super) async fn connect_to(
+- connect_with_prompt · function · L364-L371 — pub(super) async fn connect_with_prompt(
+- connect_socket · function · L373-L439 — async fn connect_socket(
+- run · function · L445-L459 — pub async fn run(
+- run_inner · function · L460-L524 — async fn run_inner(
+- validate_relay_url · function · L526-L556 — fn validate_relay_url(url: &str) -> Result<(), VoiceError>
+- handshake_error · function · L557-L567 — fn handshake_error(error: tokio_tungstenite::tungstenite::Error) -> VoiceError
+- send · function · L569-L577 — async fn send<S>(socket: &mut S, value: Value) -> Result<(), VoiceError>
+- receive · function · L578-L598 — async fn receive<S>(socket: &mut S) -> Result<Value, VoiceError>
+- provider_error · function · L599-L606 — fn provider_error(event: &Value) -> VoiceError
+- TranscriptState · struct · L608-L613 — struct TranscriptState
+- text · function · L615-L625 — fn text(&self) -> String
+- apply · function · L626-L687 — fn apply(&mut self, event: &Value, stopping: bool) -> Result<bool, VoiceError>
+- tests · module · L691-L1178 — mod tests
+- bundled_tls_roots_are_complete_without_native_store · function · L695-L704 — fn bundled_tls_roots_are_complete_without_native_store()
+- bundled_tls_connector_uses_rustls_even_with_unified_features · function · L707-L719 — fn bundled_tls_connector_uses_rustls_even_with_unified_features()
+- relay_rejects_unsafe_urls_and_invalid_bearers_before_network · function · L722-L764 — async fn relay_rejects_unsafe_urls_and_invalid_bearers_before_network()
+- relay_server · function · L768-L816 — async fn relay_server(bearer: String, stream: bool) -> (String, tokio::task::JoinHandle<()>)
+- relay_auth_configure_partial_and_final_reuse_protocol · function · L819-L840 — async fn relay_auth_configure_partial_and_final_reuse_protocol()
+- relay_cancellation_interrupts_setup_and_streaming · function · L843-L878 — async fn relay_cancellation_interrupts_setup_and_streaming()
+- silent_prompt_leaks_are_dropped_but_real_speech_is_kept · function · L881-L909 — fn silent_prompt_leaks_are_dropped_but_real_speech_is_kept()
+- product_name_mishearings_are_corrected · function · L911-L939 — fn product_name_mishearings_are_corrected()
+- transcription_cost_uses_published_hourly_rate · function · L942-L945 — fn transcription_cost_uses_published_hourly_rate()
+- lightweight_prompt_uses_builtin_vocabulary · function · L949-L952 — fn lightweight_prompt_uses_builtin_vocabulary()
+- prompt_merges_user_terms_dedupes_and_stays_bounded · function · L955-L980 — fn prompt_merges_user_terms_dedupes_and_stays_bounded()
+- server · function · L981-L1020 — async fn server(events: Vec<Value>) -> (String, tokio::task::JoinHandle<()>)
+- final_ack_waits_for_all_auto_commits_and_aggregates_revisions · function · L1022-L1043 — async fn final_ack_waits_for_all_auto_commits_and_aggregates_revisions()
+- empty_final_commit_waits_for_pending_duration_item · function · L1045-L1059 — async fn empty_final_commit_waits_for_pending_duration_item()
+- empty_recording_can_finalize · function · L1061-L1073 — async fn empty_recording_can_finalize()
+- cancellation_interrupts_handshake_without_credentials_or_audio · function · L1075-L1098 — async fn cancellation_interrupts_handshake_without_credentials_or_audio()
+- completed_before_committed_and_late_partial_are_safe · function · L1100-L1131 — fn completed_before_committed_and_late_partial_are_safe()
+- handshake_statuses_are_sanitized · function · L1133-L1147 — fn handshake_statuses_are_sanitized()
+- wrong_final_ack_cannot_return_success · function · L1149-L1162 — async fn wrong_final_ack_cannot_return_success()
+- full_partial_revisions_can_replace_non_prefix_text · function · L1164-L1177 — fn full_partial_revisions_can_replace_non_prefix_text()

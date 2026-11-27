@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/tool/write.rs
+
+- FILE_TOUCH_PREVIEW_MAX_LINES · constant · L10-L10 — const FILE_TOUCH_PREVIEW_MAX_LINES: usize = 6;
+- FILE_TOUCH_PREVIEW_MAX_BYTES · constant · L11-L11 — const FILE_TOUCH_PREVIEW_MAX_BYTES: usize = 240;
+- WriteTool · struct · L13-L13 — pub struct WriteTool;
+- new · function · L16-L18 — pub fn new() -> Self
+- WriteInput · struct · L22-L27 — struct WriteInput
+- name · function · L31-L33 — fn name(&self) -> &str
+- description · function · L35-L37 — fn description(&self) -> &str
+- parameters_schema · function · L39-L55 — fn parameters_schema(&self) -> Value
+- execute · function · L57-L168 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- generate_diff_summary · function · L172-L218 — fn generate_diff_summary(old: &str, new: &str) -> String
+- MAX_LINES · constant · L176-L176 — const MAX_LINES: usize = 20;
+- build_file_touch_preview · function · L220-L246 — fn build_file_touch_preview(diff: &str) -> Option<String>
+- tests · module · L249-L330 — mod tests
+- test_generate_diff_summary_single_change · function · L253-L261 — fn test_generate_diff_summary_single_change()
+- test_generate_diff_summary_multi_line · function · L264-L276 — fn test_generate_diff_summary_multi_line()
+- test_generate_diff_summary_new_file · function · L279-L287 — fn test_generate_diff_summary_new_file()
+- test_generate_diff_summary_truncation · function · L290-L303 — fn test_generate_diff_summary_truncation()
+- test_generate_diff_summary_line_number_format · function · L306-L320 — fn test_generate_diff_summary_line_number_format()
+- test_generate_diff_summary_empty_result · function · L323-L329 — fn test_generate_diff_summary_empty_result()

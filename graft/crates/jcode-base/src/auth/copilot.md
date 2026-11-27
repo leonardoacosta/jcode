@@ -1,0 +1,71 @@
+# crates/jcode-base/src/auth/copilot.rs
+
+- GITHUB_TOKEN_CACHE · constant · L13-L14 — static GITHUB_TOKEN_CACHE: LazyLock<RwLock<Option<(String, std::time::Instant)>>> =
+- GITHUB_TOKEN_CACHE_TTL · constant · L15-L15 — const GITHUB_TOKEN_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(300);
+- FAILED_VALIDATION_AUTO_USE_TTL_MS · constant · L16-L16 — const FAILED_VALIDATION_AUTO_USE_TTL_MS: i64 = 24 * 60 * 60 * 1000;
+- cached_github_token · function · L18-L24 — fn cached_github_token() -> Option<String>
+- cache_github_token · function · L26-L30 — fn cache_github_token(token: &str)
+- invalidate_github_token_cache · function · L32-L36 — pub fn invalidate_github_token_cache()
+- GITHUB_COPILOT_CLIENT_ID · constant · L40-L40 — pub const GITHUB_COPILOT_CLIENT_ID: &str = "Iv1.b507a08c87ecfe98";
+- GITHUB_DEVICE_CODE_URL · constant · L43-L43 — pub const GITHUB_DEVICE_CODE_URL: &str = "https://github.com/login/device/code";
+- GITHUB_ACCESS_TOKEN_URL · constant · L44-L44 — pub const GITHUB_ACCESS_TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
+- COPILOT_TOKEN_URL · constant · L45-L45 — pub const COPILOT_TOKEN_URL: &str = "https://api.github.com/copilot_internal/v2/token";
+- COPILOT_API_BASE · constant · L48-L48 — pub const COPILOT_API_BASE: &str = "https://api.githubcopilot.com";
+- COPILOT_CONFIG_JSON_SOURCE_ID · constant · L49-L49 — pub const COPILOT_CONFIG_JSON_SOURCE_ID: &str = "copilot_config_json";
+- COPILOT_HOSTS_AUTH_SOURCE_ID · constant · L50-L50 — pub const COPILOT_HOSTS_AUTH_SOURCE_ID: &str = "copilot_hosts_json";
+- COPILOT_APPS_AUTH_SOURCE_ID · constant · L51-L51 — pub const COPILOT_APPS_AUTH_SOURCE_ID: &str = "copilot_apps_json";
+- ExternalCopilotAuthSource · enum · L54-L60 — pub enum ExternalCopilotAuthSource
+- source_id · function · L63-L71 — pub fn source_id(self) -> &'static str
+- display_name · function · L73-L81 — pub fn display_name(self) -> &'static str
+- path · function · L83-L95 — pub fn path(self) -> PathBuf
+- EDITOR_VERSION · constant · L99-L99 — pub const EDITOR_VERSION: &str = "jcode/1.0";
+- EDITOR_PLUGIN_VERSION · constant · L100-L100 — pub const EDITOR_PLUGIN_VERSION: &str = "jcode/1.0";
+- COPILOT_INTEGRATION_ID · constant · L101-L101 — pub const COPILOT_INTEGRATION_ID: &str = "vscode-chat";
+- DeviceCodeResponse · struct · L105-L111 — pub struct DeviceCodeResponse
+- AccessTokenResponse · struct · L115-L121 — pub struct AccessTokenResponse
+- CopilotTokenResponse · struct · L125-L128 — pub struct CopilotTokenResponse
+- CopilotApiToken · struct · L132-L135 — pub struct CopilotApiToken
+- is_expired · function · L138-L142 — pub fn is_expired(&self) -> bool
+- load_github_token · function · L156-L219 — pub fn load_github_token() -> Result<String>
+- allow_gh_cli_fallback · function · L221-L229 — fn allow_gh_cli_fallback() -> bool
+- copilot_env_token_present · function · L231-L240 — fn copilot_env_token_present() -> bool
+- validation_failure_blocks_auto_use · function · L253-L278 — pub fn validation_failure_blocks_auto_use() -> bool
+- has_copilot_credentials · function · L281-L283 — pub fn has_copilot_credentials() -> bool
+- has_copilot_credentials_fast · function · L289-L357 — pub fn has_copilot_credentials_fast() -> bool
+- preferred_external_auth_source · function · L359-L391 — pub fn preferred_external_auth_source() -> Option<ExternalCopilotAuthSource>
+- has_unconsented_external_auth · function · L393-L408 — pub fn has_unconsented_external_auth() -> Option<ExternalCopilotAuthSource>
+- trust_external_auth_source · function · L410-L431 — pub fn trust_external_auth_source(source: ExternalCopilotAuthSource) -> Result<()>
+- copilot_cli_dir · function · L433-L440 — fn copilot_cli_dir() -> PathBuf
+- legacy_copilot_config_dir · function · L442-L462 — fn legacy_copilot_config_dir() -> PathBuf
+- saved_hosts_path · function · L464-L466 — pub fn saved_hosts_path() -> PathBuf
+- load_token_from_config_json · function · L468-L476 — fn load_token_from_config_json(path: &Path) -> Result<String>
+- find_token_in_value · function · L478-L492 — fn find_token_in_value(value: &Value) -> Option<String>
+- normalize_candidate_token · function · L494-L509 — fn normalize_candidate_token(token: &str) -> Option<String>
+- load_token_from_gh_cli · function · L511-L523 — fn load_token_from_gh_cli() -> Option<String>
+- load_token_from_json · function · L527-L540 — fn load_token_from_json(path: &Path) -> Result<String>
+- select_preferred_token · function · L542-L569 — fn select_preferred_token(
+- github_host_priority · function · L571-L583 — fn github_host_priority(raw_host: &str, normalized_host: &str) -> u8
+- normalize_github_host_key · function · L585-L609 — fn normalize_github_host_key(host: &str) -> Option<String>
+- TOKEN_EXCHANGE_MAX_ATTEMPTS · constant · L613-L613 — const TOKEN_EXCHANGE_MAX_ATTEMPTS: u32 = 5;
+- token_exchange_backoff_ms · function · L617-L621 — pub(crate) fn token_exchange_backoff_ms(attempt: u32) -> u64
+- token_exchange_retryable_status · function · L624-L626 — pub(crate) fn token_exchange_retryable_status(status: u16) -> bool
+- exchange_github_token · function · L633-L683 — pub async fn exchange_github_token(
+- verify_copilot_credentials_live · function · L696-L717 — pub async fn verify_copilot_credentials_live(client: &reqwest::Client) -> Result<()>
+- verify_copilot_credentials_live_default · function · L722-L725 — pub async fn verify_copilot_credentials_live_default() -> Result<()>
+- initiate_device_flow · function · L729-L749 — pub async fn initiate_device_flow(client: &reqwest::Client) -> Result<DeviceCodeResponse>
+- poll_for_access_token · function · L753-L803 — pub async fn poll_for_access_token(
+- save_github_token · function · L806-L842 — pub fn save_github_token(token: &str, username: &str) -> Result<()>
+- CopilotAccountType · enum · L846-L851 — pub enum CopilotAccountType
+- fmt · function · L854-L861 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- CopilotSubscriptionInfo · struct · L866-L869 — pub struct CopilotSubscriptionInfo
+- CopilotModelInfo · struct · L873-L885 — pub struct CopilotModelInfo
+- CopilotModelCapabilities · struct · L888-L893 — pub struct CopilotModelCapabilities
+- CopilotModelSupports · struct · L896-L900 — pub struct CopilotModelSupports
+- reasoning_efforts · function · L905-L920 — pub fn reasoning_efforts(&self) -> Vec<String>
+- CopilotModelLimits · struct · L924-L929 — pub struct CopilotModelLimits
+- ModelsResponse · struct · L932-L935 — struct ModelsResponse
+- fetch_available_models · function · L938-L964 — pub async fn fetch_available_models(
+- choose_default_model · function · L975-L1027 — pub fn choose_default_model(available_models: &[CopilotModelInfo]) -> String
+- fetch_github_username · function · L1030-L1050 — pub async fn fetch_github_username(client: &reqwest::Client, token: &str) -> Result<String>
+- GithubUser · struct · L1044-L1046 — struct GithubUser
+- tests · module · L1054-L1054 — mod tests;

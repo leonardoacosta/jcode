@@ -1,0 +1,47 @@
+# crates/jcode-provider-openai-runtime/src/chatgpt_web.rs
+
+- CHATGPT_WEB_URL · constant · L13-L13 — const CHATGPT_WEB_URL: &str = "https://chatgpt.com/?model=gpt-5-6-pro&temporary-chat=true";
+- EDITOR_SELECTOR · constant · L14-L14 — const EDITOR_SELECTOR: &str = "[contenteditable=true][aria-label='Chat with ChatGPT']";
+- TOOL_CALL_START · constant · L15-L15 — const TOOL_CALL_START: &str = "<jcode_tool_call>";
+- TOOL_CALL_END · constant · L16-L16 — const TOOL_CALL_END: &str = "</jcode_tool_call>";
+- PROMPT_CHUNK_BYTES · constant · L17-L17 — const PROMPT_CHUNK_BYTES: usize = 24_000;
+- POLL_INTERVAL · constant · L18-L18 — const POLL_INTERVAL: Duration = Duration::from_millis(750);
+- REQUIRED_STABLE_POLLS · constant · L19-L19 — const REQUIRED_STABLE_POLLS: usize = 8;
+- MODEL_SELECTION_TIMEOUT · constant · L20-L20 — const MODEL_SELECTION_TIMEOUT: Duration = Duration::from_secs(15);
+- TOOL_CALL_SEQUENCE · constant · L22-L22 — static TOOL_CALL_SEQUENCE: AtomicU64 = AtomicU64::new(1);
+- ChatGptWebState · struct · L27-L29 — pub(crate) struct ChatGptWebState
+- new · function · L32-L36 — pub(crate) fn new() -> Self
+- complete · function · L38-L85 — pub(crate) async fn complete(
+- run_turn · function · L87-L151 — async fn run_turn(
+- send_phase · function · L154-L161 — async fn send_phase(
+- open_chatgpt_tab · function · L163-L198 — async fn open_chatgpt_tab() -> Result<(u64, String)>
+- close_chatgpt_tab · function · L200-L219 — async fn close_chatgpt_tab(tab_id: u64, fork_name: &str) -> Result<()>
+- next_owned_tab_name · function · L221-L228 — fn next_owned_tab_name() -> String
+- wait_for_editor · function · L230-L244 — async fn wait_for_editor(tab_id: u64) -> Result<()>
+- prepare_chatgpt_page · function · L246-L332 — async fn prepare_chatgpt_page(tab_id: u64) -> Result<()>
+- page_verification_ready · function · L334-L337 — fn page_verification_ready(verification: &Value) -> bool
+- insert_prompt · function · L339-L406 — async fn insert_prompt(tab_id: u64, prompt: &str) -> Result<()>
+- poll_for_response · function · L408-L530 — async fn poll_for_response(tab_id: u64, tx: &mpsc::Sender<Result<StreamEvent>>) -> Result<String>
+- emit_response · function · L532-L573 — async fn emit_response(
+- ParsedToolCall · struct · L575-L578 — struct ParsedToolCall
+- parse_tool_call · function · L580-L608 — fn parse_tool_call(response: &str) -> Result<Option<ParsedToolCall>>
+- next_tool_call_id · function · L610-L617 — fn next_tool_call_id() -> String
+- build_web_prompt · function · L619-L709 — fn build_web_prompt(
+- split_utf8_chunks · function · L711-L733 — fn split_utf8_chunks(value: &str, max_bytes: usize) -> Vec<&str>
+- utf16_fingerprint · function · L735-L743 — fn utf16_fingerprint(value: &str) -> (usize, u32)
+- evaluate · function · L745-L748 — async fn evaluate(tab_id: u64, script: &str) -> Result<Value>
+- take_evaluation_result · function · L750-L755 — fn take_evaluation_result(mut output: Value) -> Result<Value>
+- bridge_command · function · L757-L795 — async fn bridge_command(action: &str, params: Value) -> Result<Value>
+- tests · module · L798-L977 — mod tests
+- tool_call_parser_accepts_valid_exact_envelope · function · L802-L810 — fn tool_call_parser_accepts_valid_exact_envelope()
+- evaluation_result_moves_backing_and_preserves_missing_vs_null · function · L813-L838 — fn evaluation_result_moves_backing_and_preserves_missing_vs_null()
+- tool_call_parser_preserves_large_nested_and_optional_input · function · L841-L860 — fn tool_call_parser_preserves_large_nested_and_optional_input()
+- tool_call_parser_rejects_incomplete_envelope · function · L863-L868 — fn tool_call_parser_rejects_incomplete_envelope()
+- tool_call_parser_rejects_quoted_or_suffixed_envelope · function · L871-L881 — fn tool_call_parser_rejects_quoted_or_suffixed_envelope()
+- tool_call_parser_rejects_non_object_input · function · L884-L891 — fn tool_call_parser_rejects_non_object_input()
+- tool_call_parser_allows_marker_text_inside_json_string_values · function · L894-L901 — fn tool_call_parser_allows_marker_text_inside_json_string_values()
+- utf8_chunking_preserves_content_and_boundaries · function · L904-L909 — fn utf8_chunking_preserves_content_and_boundaries()
+- utf16_fingerprint_counts_surrogate_pairs_deterministically · function · L912-L916 — fn utf16_fingerprint_counts_surrogate_pairs_deterministically()
+- page_verification_requires_exact_pro_and_temporary_chat · function · L919-L932 — fn page_verification_requires_exact_pro_and_temporary_chat()
+- web_prompt_omits_hidden_reasoning_and_documents_tool_protocol · function · L935-L958 — fn web_prompt_omits_hidden_reasoning_and_documents_tool_protocol()
+- web_prompt_keeps_delimiter_like_user_text_inside_json_string_data · function · L961-L976 — fn web_prompt_keeps_delimiter_like_user_text_inside_json_string_data()

@@ -1,0 +1,22 @@
+# crates/jcode-tui/src/tui/session_picker/navigation.rs
+
+- next_selectable · function · L5-L8 — fn next_selectable(&self, from: usize) -> Option<usize>
+- prev_selectable · function · L11-L15 — fn prev_selectable(&self, from: usize) -> Option<usize>
+- next · function · L17-L42 — pub fn next(&mut self)
+- previous · function · L44-L73 — pub fn previous(&mut self)
+- scroll_preview_down · function · L79-L93 — pub fn scroll_preview_down(&mut self, amount: u16) -> bool
+- scroll_preview_up · function · L96-L102 — pub fn scroll_preview_up(&mut self, amount: u16) -> bool
+- point_in_rect · function · L104-L109 — fn point_in_rect(col: u16, row: u16, rect: Rect) -> bool
+- mouse_over_preview · function · L113-L123 — pub fn mouse_over_preview(&self, col: u16, row: u16) -> bool
+- mouse_scroll_amount · function · L125-L131 — fn mouse_scroll_amount(&mut self) -> u16
+- handle_mouse_scroll · function · L133-L161 — pub(super) fn handle_mouse_scroll(&mut self, col: u16, row: u16, kind: MouseEventKind)
+- focus_previous_step · function · L163-L170 — fn focus_previous_step(&mut self)
+- focus_next_step · function · L172-L179 — fn focus_next_step(&mut self)
+- focus_previous_page · function · L181-L192 — fn focus_previous_page(&mut self)
+- focus_next_page · function · L194-L205 — fn focus_next_page(&mut self)
+- handle_focus_navigation_key · function · L207-L254 — pub(super) fn handle_focus_navigation_key(
+- handle_overlay_mouse · function · L257-L267 — pub fn handle_overlay_mouse(&mut self, mouse: crossterm::event::MouseEvent)
+- apply_preview_scroll_step · function · L273-L281 — pub fn apply_preview_scroll_step(&mut self, direction: i16) -> bool
+- mouse_over_list · function · L286-L290 — pub fn mouse_over_list(&self, col: u16, row: u16) -> bool
+- step_list_selection · function · L293-L302 — pub fn step_list_selection(&mut self, direction: i16)
+- preview_scroll_offset_for_test · function · L307-L309 — pub fn preview_scroll_offset_for_test(&self) -> u16

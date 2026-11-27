@@ -1,0 +1,38 @@
+# crates/jcode-sdk/tests/client_behavior.rs
+
+- protocol_disconnect · module · L22-L22 — mod protocol_disconnect;
+- protocol_partial_disconnect · module · L24-L24 — mod protocol_partial_disconnect;
+- PairTransport · struct · L28-L28 — struct PairTransport(UnixStream);
+- split · function · L31-L36 — fn split(
+- session · function · L39-L58 — fn session(id: &str) -> SessionInfo
+- fake_harness · function · L62-L94 — fn fake_harness(handle: impl Fn(&ClientFrame, &mut dyn Write) + Send + 'static) -> JcodeClient
+- reply · function · L96-L103 — fn reply(frame: &ClientFrame, event: ApiEvent, writer: &mut dyn Write)
+- push · function · L105-L112 — fn push(event: ApiEvent, writer: &mut dyn Write)
+- soft_interrupt_tests · module · L115-L115 — mod soft_interrupt_tests;
+- runtime_and_files · module · L118-L118 — mod runtime_and_files;
+- an_error_frame_becomes_a_typed_failure · function · L123-L137 — fn an_error_frame_becomes_a_typed_failure()
+- a_reply_of_the_wrong_kind_is_reported_as_such · function · L143-L147 — fn a_reply_of_the_wrong_kind_is_reported_as_such()
+- every_subscriber_sees_every_event · function · L152-L196 — fn every_subscriber_sees_every_event()
+- a_filtered_subscription_only_sees_its_own_session · function · L201-L234 — fn a_filtered_subscription_only_sees_its_own_session()
+- run_collects_one_turn · function · L239-L317 — fn run_collects_one_turn()
+- run_usage_is_latest_call_and_does_not_retain_previous_cache_counters · function · L320-L356 — fn run_usage_is_latest_call_and_does_not_retain_previous_cache_counters()
+- an_error_mid_turn_fails_the_run_instead_of_hanging · function · L361-L384 — fn an_error_mid_turn_fails_the_run_instead_of_hanging()
+- a_lost_connection_fails_requests_in_flight · function · L389-L427 — fn a_lost_connection_fails_requests_in_flight()
+- model_switch_preserves_identity_and_catalog_events_around_the_reply · function · L430-L491 — fn model_switch_preserves_identity_and_catalog_events_around_the_reply()
+- model_switch_refusal_is_a_typed_error_not_a_success · function · L494-L514 — fn model_switch_refusal_is_a_typed_error_not_a_success()
+- recovery_events_are_delivered_and_filtered_by_session · function · L517-L549 — fn recovery_events_are_delivered_and_filtered_by_session()
+- send_system_reminder_is_hidden_and_does_not_wait_for_acceptance · function · L552-L571 — fn send_system_reminder_is_hidden_and_does_not_wait_for_acceptance()
+- side_panel_events_hydrate_before_attach_and_route_only_to_matching_session · function · L574-L619 — fn side_panel_events_hydrate_before_attach_and_route_only_to_matching_session()
+- run_collects_framed_final_answer_and_retracts_completed_retry_output · function · L622-L678 — fn run_collects_framed_final_answer_and_retracts_completed_retry_output()
+- custom_tool · function · L680-L690 — fn custom_tool() -> jcode_sdk::SessionToolDefinition
+- session_tool_configuration_and_listing_preserve_typed_payloads · function · L693-L733 — fn session_tool_configuration_and_listing_preserve_typed_payloads()
+- custom_tool_events_are_session_filtered_and_results_preserve_success_and_failure · function · L736-L806 — fn custom_tool_events_are_session_filtered_and_results_preserve_success_and_failure()
+- session_tool_methods_propagate_harness_errors · function · L809-L843 — fn session_tool_methods_propagate_harness_errors()
+- session_tool_methods_reject_unexpected_replies · function · L846-L862 — fn session_tool_methods_reject_unexpected_replies()
+- create_session_options_preserve_system_prompt_wire_values · function · L865-L952 — fn create_session_options_preserve_system_prompt_wire_values()
+- set_session_env_sends_replacement_and_clear · function · L955-L1008 — fn set_session_env_sends_replacement_and_clear()
+- set_session_env_rejects_correlated_error_then_accepts_valid_map · function · L1011-L1041 — fn set_session_env_rejects_correlated_error_then_accepts_valid_map()
+- run_retains_abnormal_stop_and_filters_other_sessions · function · L1044-L1087 — fn run_retains_abnormal_stop_and_filters_other_sessions()
+- failure_callback_receives_structured_stop_before_error · function · L1090-L1156 — fn failure_callback_receives_structured_stop_before_error()
+- tool_names_arrive_before_any_arguments_and_interleaved_inputs_keep_call_ids · function · L1159-L1203 — fn tool_names_arrive_before_any_arguments_and_interleaved_inputs_keep_call_ids()
+- additional_the_handshake_reports_the_server_and_its_capabilities · module · L1206-L1206 — mod additional_the_handshake_reports_the_server_and_its_capabilities;

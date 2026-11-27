@@ -1,0 +1,29 @@
+# crates/jcode-tui/src/tui/app/commands_improve.rs
+
+- improve_usage · function · L7-L9 — pub(super) fn improve_usage() -> &'static str
+- parse_improve_command · function · L11-L59 — pub(super) fn parse_improve_command(trimmed: &str) -> Option<Result<ImproveCommand, String>>
+- refactor_usage · function · L61-L63 — pub(super) fn refactor_usage() -> &'static str
+- parse_refactor_command · function · L65-L113 — pub(super) fn parse_refactor_command(trimmed: &str) -> Option<Result<RefactorCommand, String>>
+- build_improve_prompt · function · L115-L152 — pub(super) fn build_improve_prompt(plan_only: bool, focus: Option<&str>) -> String
+- build_refactor_prompt · function · L154-L193 — pub(super) fn build_refactor_prompt(plan_only: bool, focus: Option<&str>) -> String
+- improve_mode_for · function · L195-L201 — pub(super) fn improve_mode_for(plan_only: bool) -> ImproveMode
+- refactor_mode_for · function · L203-L209 — pub(super) fn refactor_mode_for(plan_only: bool) -> ImproveMode
+- session_improve_mode_for · function · L211-L218 — pub(super) fn session_improve_mode_for(mode: ImproveMode) -> crate::session::SessionImproveMode
+- restore_improve_mode · function · L220-L227 — pub(super) fn restore_improve_mode(mode: crate::session::SessionImproveMode) -> ImproveMode
+- improve_launch_notice · function · L229-L248 — pub(super) fn improve_launch_notice(
+- improve_stop_notice · function · L250-L256 — pub(super) fn improve_stop_notice(interrupted: bool) -> String
+- improve_stop_prompt · function · L258-L260 — pub(super) fn improve_stop_prompt() -> String
+- refactor_launch_notice · function · L262-L281 — pub(super) fn refactor_launch_notice(
+- refactor_stop_notice · function · L283-L289 — pub(super) fn refactor_stop_notice(interrupted: bool) -> String
+- refactor_stop_prompt · function · L291-L293 — pub(super) fn refactor_stop_prompt() -> String
+- build_improve_resume_prompt · function · L295-L340 — pub(super) fn build_improve_resume_prompt(
+- build_refactor_resume_prompt · function · L342-L387 — pub(super) fn build_refactor_resume_prompt(
+- current_mode_for · function · L389-L393 — fn current_mode_for(app: &App, predicate: impl Fn(ImproveMode) -> bool) -> Option<ImproveMode>
+- persist_improve_mode_local · function · L395-L399 — fn persist_improve_mode_local(app: &mut App, mode: Option<ImproveMode>)
+- start_synthetic_user_turn · function · L401-L438 — pub(super) fn start_synthetic_user_turn(app: &mut App, content: String)
+- interrupt_and_queue_synthetic_message · function · L440-L454 — pub(super) fn interrupt_and_queue_synthetic_message(
+- format_improve_status · function · L456-L523 — pub(super) fn format_improve_status(app: &App) -> String
+- format_refactor_status · function · L525-L592 — pub(super) fn format_refactor_status(app: &App) -> String
+- todo_confidence_suffix · function · L594-L599 — fn todo_confidence_suffix(todo: &crate::todo::TodoItem) -> String
+- handle_improve_command_local · function · L601-L696 — pub(super) fn handle_improve_command_local(app: &mut App, command: ImproveCommand)
+- handle_refactor_command_local · function · L698-L793 — pub(super) fn handle_refactor_command_local(app: &mut App, command: RefactorCommand)

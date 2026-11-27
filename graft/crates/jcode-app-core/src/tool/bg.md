@@ -1,0 +1,45 @@
+# crates/jcode-app-core/src/tool/bg.rs
+
+- default_watch_notify · function · L16-L18 — fn default_watch_notify() -> bool
+- default_watch_wake · function · L20-L22 — fn default_watch_wake() -> bool
+- default_wait_return_on_progress · function · L24-L26 — fn default_wait_return_on_progress() -> bool
+- DEFAULT_WAIT_SECONDS · constant · L28-L28 — const DEFAULT_WAIT_SECONDS: u64 = 60;
+- MAX_WAIT_SECONDS · constant · L29-L29 — const MAX_WAIT_SECONDS: u64 = 60 * 60;
+- DEFAULT_TAIL_LINES · constant · L30-L30 — const DEFAULT_TAIL_LINES: usize = 80;
+- DEFAULT_WAIT_PREVIEW_LINES · constant · L31-L31 — const DEFAULT_WAIT_PREVIEW_LINES: usize = 40;
+- MAX_OUTPUT_BYTES · constant · L32-L32 — const MAX_OUTPUT_BYTES: usize = 50_000;
+- BgTool · struct · L34-L34 — pub struct BgTool;
+- new · function · L37-L39 — pub fn new() -> Self
+- BgInput · struct · L43-L102 — struct BgInput
+- deserialize_intent · function · L104-L114 — fn deserialize_intent<'de, D: serde::Deserializer<'de>>(
+- infer_action_from_intent · function · L116-L139 — fn infer_action_from_intent(intent: Option<&str>) -> Option<&'static str>
+- resolve_action · function · L141-L158 — fn resolve_action(params: &BgInput) -> Result<String>
+- status_label · function · L160-L168 — fn status_label(status: &BackgroundTaskStatus) -> &'static str
+- is_terminal · function · L170-L172 — fn is_terminal(status: &BackgroundTaskStatus) -> bool
+- is_success · function · L174-L183 — fn is_success(status: &BackgroundTaskStatus, exit_code: Option<i32>) -> Option<bool>
+- parse_status_filter · function · L185-L230 — fn parse_status_filter(value: Option<&Value>) -> HashSet<&'static str>
+- task_matches_filter · function · L232-L234 — fn task_matches_filter(task: &background::TaskStatusFile, filter: &HashSet<&str>) -> bool
+- task_metadata · function · L236-L262 — fn task_metadata(
+- format_task_details · function · L264-L323 — fn format_task_details(task: &background::TaskStatusFile) -> String
+- tail_lines · function · L325-L331 — fn tail_lines(output: &str, lines: usize) -> String
+- output_preview · function · L333-L351 — fn output_preview(output: &str, tail: Option<usize>) -> (String, bool)
+- wait_reason_label · function · L353-L362 — fn wait_reason_label(reason: background::BackgroundTaskWaitReason) -> &'static str
+- filtered_tasks · function · L364-L377 — async fn filtered_tasks(
+- resolve_task_ids · function · L379-L425 — async fn resolve_task_ids(
+- task_label · function · L427-L432 — fn task_label(task: &background::TaskStatusFile) -> String
+- task_wait_reason · function · L435-L437 — fn task_wait_reason(task: &background::TaskStatusFile) -> String
+- wait_many_polling · function · L439-L516 — async fn wait_many_polling(
+- name · function · L520-L522 — fn name(&self) -> &str
+- description · function · L524-L526 — fn description(&self) -> &str
+- parameters_schema · function · L528-L566 — fn parameters_schema(&self) -> Value
+- execute · function · L568-L931 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L935-L1197 — mod tests
+- multi_wait_metadata_tracks_only_blocking_lifetime · function · L940-L983 — async fn multi_wait_metadata_tracks_only_blocking_lifetime()
+- status_filter_schema_is_a_typed_enum_and_arrays_still_parse · function · L986-L1005 — fn status_filter_schema_is_a_typed_enum_and_arrays_still_parse() -> Result<()>
+- lost_tasks_are_terminal_unknown_and_selectable · function · L1008-L1020 — fn lost_tasks_are_terminal_unknown_and_selectable()
+- first_failure_wait_returns_on_a_lost_task · function · L1023-L1065 — async fn first_failure_wait_returns_on_a_lost_task()
+- schema_advertises_only_parameters_the_input_accepts · function · L1068-L1114 — fn schema_advertises_only_parameters_the_input_accepts() -> Result<()>
+- bg_intent_is_required_and_nonblank · function · L1117-L1153 — fn bg_intent_is_required_and_nonblank()
+- bg_schema_requires_nonblank_intent · function · L1156-L1171 — fn bg_schema_requires_nonblank_intent()
+- resolve_action_infers_wait_from_intent_only_call · function · L1174-L1182 — fn resolve_action_infers_wait_from_intent_only_call() -> Result<()>
+- resolve_action_reports_clear_error_when_missing_and_not_inferable · function · L1185-L1196 — fn resolve_action_reports_clear_error_when_missing_and_not_inferable() -> Result<()>

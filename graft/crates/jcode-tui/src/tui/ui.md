@@ -1,0 +1,223 @@
+# crates/jcode-tui/src/tui/ui.rs
+
+- copy_pane_drag · module · L14-L14 — mod copy_pane_drag;
+- frame_rendering · module · L17-L17 — mod frame_rendering;
+- animations · module · L46-L46 — mod animations;
+- box_utils · module · L53-L53 — mod box_utils;
+- changelog · module · L55-L55 — mod changelog;
+- debug_capture · module · L57-L57 — mod debug_capture;
+- diagram_pane · module · L59-L59 — mod diagram_pane;
+- file_diff_ui · module · L61-L61 — mod file_diff_ui;
+- frame_metrics · module · L63-L63 — mod frame_metrics;
+- header · module · L67-L67 — pub(crate) mod header;
+- inline_image_ui · module · L69-L69 — pub(crate) mod inline_image_ui;
+- inline_interactive_ui · module · L71-L71 — mod inline_interactive_ui;
+- inline_ui · module · L73-L73 — mod inline_ui;
+- input_ui · module · L75-L75 — pub(crate) mod input_ui;
+- memory_estimates · module · L77-L77 — mod memory_estimates;
+- memory_ui · module · L79-L79 — mod memory_ui;
+- messages · module · L81-L81 — mod messages;
+- onboarding · module · L85-L85 — mod onboarding;
+- output_style · module · L86-L86 — mod output_style;
+- overlays · module · L88-L88 — mod overlays;
+- panel_image_preview · module · L90-L90 — pub(crate) mod panel_image_preview;
+- pinned_ui · module · L92-L92 — mod pinned_ui;
+- prepare · module · L94-L94 — pub(crate) mod prepare;
+- smoothness · module · L96-L96 — mod smoothness;
+- todo_changes · module · L98-L98 — mod todo_changes;
+- tools_ui · module · L100-L100 — pub(crate) mod tools_ui;
+- transitions · module · L102-L102 — mod transitions;
+- viewport · module · L104-L104 — pub(crate) mod viewport;
+- LAST_MAX_SCROLL · constant · L184-L184 — static LAST_MAX_SCROLL: AtomicUsize = AtomicUsize::new(0);
+- LAST_CHAT_SCROLLBAR_VISIBLE · constant · L195-L195 — static LAST_CHAT_SCROLLBAR_VISIBLE: AtomicUsize = AtomicUsize::new(1);
+- PINNED_PANE_TOTAL_LINES · constant · L198-L198 — static PINNED_PANE_TOTAL_LINES: AtomicUsize = AtomicUsize::new(0);
+- LAST_DIFF_PANE_EFFECTIVE_SCROLL · constant · L201-L201 — static LAST_DIFF_PANE_EFFECTIVE_SCROLL: AtomicUsize = AtomicUsize::new(0);
+- LAST_DIFF_PANE_MAX_SCROLL · constant · L204-L204 — static LAST_DIFF_PANE_MAX_SCROLL: AtomicUsize = AtomicUsize::new(0);
+- LAST_TOTAL_WRAPPED_LINES · constant · L210-L210 — static LAST_TOTAL_WRAPPED_LINES: AtomicUsize = AtomicUsize::new(0);
+- LAST_CHAT_VIEWPORT_HEIGHT · constant · L215-L215 — static LAST_CHAT_VIEWPORT_HEIGHT: AtomicUsize = AtomicUsize::new(0);
+- LAST_RESOLVED_CHAT_SCROLL · constant · L220-L220 — static LAST_RESOLVED_CHAT_SCROLL: AtomicUsize = AtomicUsize::new(0);
+- TAIL_CATCHUP_ACTIVE · constant · L225-L226 — static TAIL_CATCHUP_ACTIVE: std::sync::atomic::AtomicBool =
+- TAIL_FOLLOW_SNAP_PENDING · constant · L232-L233 — static TAIL_FOLLOW_SNAP_PENDING: std::sync::atomic::AtomicBool =
+- last_max_scroll · function · L260-L269 — pub fn last_max_scroll() -> usize
+- SecondaryGeometry · struct · L282-L287 — pub(crate) struct SecondaryGeometry
+- note_secondary_geometry · function · L289-L295 — fn note_secondary_geometry(update: impl FnOnce(&mut SecondaryGeometry))
+- secondary_render_active · function · L300-L302 — pub(crate) fn secondary_render_active() -> bool
+- with_secondary_render · function · L306-L318 — pub(crate) fn with_secondary_render<R>(f: impl FnOnce() -> R) -> (R, SecondaryGeometry)
+- Reset · struct · L307-L307 — struct Reset(bool);
+- drop · function · L309-L311 — fn drop(&mut self)
+- take_secondary_chat_frame · function · L321-L323 — pub(crate) fn take_secondary_chat_frame() -> Option<Arc<PreparedChatFrame>>
+- set_last_chat_scrollbar_visible · function · L325-L338 — fn set_last_chat_scrollbar_visible(visible: bool)
+- last_chat_scrollbar_visible · function · L344-L356 — fn last_chat_scrollbar_visible() -> bool
+- pinned_pane_total_lines · function · L359-L368 — pub fn pinned_pane_total_lines() -> usize
+- last_diff_pane_effective_scroll · function · L370-L379 — pub fn last_diff_pane_effective_scroll() -> usize
+- last_diff_pane_max_scroll · function · L385-L394 — pub fn last_diff_pane_max_scroll() -> usize
+- set_last_max_scroll · function · L396-L410 — pub(crate) fn set_last_max_scroll(value: usize)
+- set_pinned_pane_total_lines · function · L412-L425 — pub(crate) fn set_pinned_pane_total_lines(value: usize)
+- set_last_diff_pane_effective_scroll · function · L427-L440 — pub(crate) fn set_last_diff_pane_effective_scroll(value: usize)
+- set_last_diff_pane_max_scroll · function · L442-L455 — pub(crate) fn set_last_diff_pane_max_scroll(value: usize)
+- last_total_wrapped_lines · function · L459-L468 — pub fn last_total_wrapped_lines() -> usize
+- set_last_total_wrapped_lines · function · L470-L484 — pub(crate) fn set_last_total_wrapped_lines(value: usize)
+- last_chat_viewport_height · function · L488-L497 — pub(crate) fn last_chat_viewport_height() -> usize
+- set_last_chat_viewport_height · function · L499-L513 — pub(crate) fn set_last_chat_viewport_height(value: usize)
+- last_resolved_chat_scroll · function · L517-L529 — pub fn last_resolved_chat_scroll() -> usize
+- set_last_resolved_chat_scroll · function · L531-L545 — pub(crate) fn set_last_resolved_chat_scroll(value: usize)
+- tail_catchup_active · function · L549-L558 — pub(crate) fn tail_catchup_active() -> bool
+- set_tail_catchup_active · function · L560-L573 — pub(crate) fn set_tail_catchup_active(active: bool)
+- request_tail_follow_snap · function · L582-L592 — pub(crate) fn request_tail_follow_snap()
+- take_tail_follow_snap_request · function · L594-L606 — pub(crate) fn take_tail_follow_snap_request() -> bool
+- hash_text_for_cache · function · L608-L612 — pub(super) fn hash_text_for_cache(text: &str) -> u64
+- layout_support · module · L615-L615 — mod layout_support;
+- status_support · module · L617-L617 — mod status_support;
+- theme_support · module · L619-L619 — mod theme_support;
+- ActiveFileDiffContext · struct · L646-L653 — struct ActiveFileDiffContext
+- VisibleCopyTarget · struct · L656-L663 — pub(crate) struct VisibleCopyTarget
+- COPY_BADGE_KEYS · constant · L667-L667 — const COPY_BADGE_KEYS: [char; 12] = ['s', 'd', 'f', 'g', 'w', 'e', 'r', 't', 'x', 'c', 'v', 'b'];
+- VISIBLE_COPY_TARGETS · constant · L670-L670 — static VISIBLE_COPY_TARGETS: OnceLock<Mutex<Vec<VisibleCopyTarget>>> = OnceLock::new();
+- VISIBLE_EXPAND_EDIT_BADGE · constant · L673-L673 — static VISIBLE_EXPAND_EDIT_BADGE: OnceLock<Mutex<bool>> = OnceLock::new();
+- VISIBLE_EXPAND_EDIT_BADGE_LINE · constant · L676-L676 — static VISIBLE_EXPAND_EDIT_BADGE_LINE: OnceLock<Mutex<Option<usize>>> = OnceLock::new();
+- VISIBLE_EXPAND_EDIT_BADGE_RECT · constant · L679-L679 — static VISIBLE_EXPAND_EDIT_BADGE_RECT: OnceLock<Mutex<Option<Rect>>> = OnceLock::new();
+- visible_copy_targets_state · function · L682-L684 — fn visible_copy_targets_state() -> &'static Mutex<Vec<VisibleCopyTarget>>
+- visible_expand_edit_badge_state · function · L687-L689 — fn visible_expand_edit_badge_state() -> &'static Mutex<bool>
+- visible_expand_edit_badge_line_state · function · L692-L694 — fn visible_expand_edit_badge_line_state() -> &'static Mutex<Option<usize>>
+- visible_expand_edit_badge_rect_state · function · L697-L699 — fn visible_expand_edit_badge_rect_state() -> &'static Mutex<Option<Rect>>
+- set_visible_expand_edit_badge_rect · function · L701-L717 — pub(crate) fn set_visible_expand_edit_badge_rect(rect: Option<Rect>)
+- visible_expand_edit_badge_at · function · L719-L732 — pub(crate) fn visible_expand_edit_badge_at(column: u16, row: u16) -> bool
+- set_visible_expand_edit_badge · function · L734-L758 — pub(crate) fn set_visible_expand_edit_badge(visible: bool, line: Option<usize>)
+- visible_expand_edit_badge · function · L760-L773 — pub(crate) fn visible_expand_edit_badge() -> bool
+- visible_expand_edit_badge_line · function · L775-L788 — pub(crate) fn visible_expand_edit_badge_line() -> Option<usize>
+- set_visible_copy_targets · function · L790-L809 — fn set_visible_copy_targets(targets: Vec<VisibleCopyTarget>)
+- visible_copy_target_for_key · function · L811-L833 — pub(crate) fn visible_copy_target_for_key(key: char) -> Option<VisibleCopyTarget>
+- visible_copy_target_at · function · L835-L856 — pub(crate) fn visible_copy_target_at(column: u16, row: u16) -> Option<VisibleCopyTarget>
+- PromptViewportAnimation · struct · L859-L862 — struct PromptViewportAnimation
+- PromptViewportState · struct · L865-L870 — struct PromptViewportState
+- PROMPT_ENTRY_ANIMATION_MS · constant · L872-L872 — const PROMPT_ENTRY_ANIMATION_MS: u64 = 450;
+- PROMPT_VIEWPORT_STATE · constant · L875-L875 — static PROMPT_VIEWPORT_STATE: OnceLock<Mutex<PromptViewportState>> = OnceLock::new();
+- prompt_viewport_state · function · L878-L880 — fn prompt_viewport_state() -> &'static Mutex<PromptViewportState>
+- active_prompt_entry_animation · function · L882-L911 — fn active_prompt_entry_animation(now_ms: u64) -> Option<PromptViewportAnimation>
+- record_prompt_viewport · function · L913-L939 — fn record_prompt_viewport(visible_start: usize, visible_end: usize)
+- update_prompt_entry_animation · function · L941-L1048 — fn update_prompt_entry_animation(
+- BodyCacheKey · struct · L1051-L1079 — struct BodyCacheKey
+- BodyCacheEntry · struct · L1082-L1092 — struct BodyCacheEntry
+- BODY_CACHE_MAX_ENTRIES · constant · L1094-L1094 — const BODY_CACHE_MAX_ENTRIES: usize = 8;
+- BODY_CACHE_MAX_BYTES · constant · L1097-L1097 — const BODY_CACHE_MAX_BYTES: usize = 32 * 1024 * 1024;
+- BODY_OVERSIZED_CACHE_MAX_ENTRIES · constant · L1098-L1098 — const BODY_OVERSIZED_CACHE_MAX_ENTRIES: usize = 2;
+- BodyCacheState · struct · L1101-L1104 — struct BodyCacheState
+- total_bytes · function · L1107-L1109 — fn total_bytes(&self) -> usize
+- get_exact_with_kind · function · L1114-L1141 — fn get_exact_with_kind(
+- get_exact · function · L1144-L1147 — fn get_exact(&mut self, key: &BodyCacheKey) -> Option<Arc<PreparedMessages>>
+- best_incremental_base · function · L1150-L1215 — fn best_incremental_base(
+- insert · function · L1218-L1227 — fn insert(
+- insert_with_bytes · function · L1229-L1289 — fn insert_with_bytes(
+- BODY_CACHE · constant · L1292-L1292 — static BODY_CACHE: OnceLock<Mutex<BodyCacheState>> = OnceLock::new();
+- body_cache · function · L1294-L1296 — fn body_cache() -> &'static Mutex<BodyCacheState>
+- FullPrepCacheKey · struct · L1299-L1324 — struct FullPrepCacheKey
+- FullPrepCacheEntry · struct · L1327-L1331 — struct FullPrepCacheEntry
+- FULL_PREP_CACHE_MAX_ENTRIES · constant · L1333-L1333 — const FULL_PREP_CACHE_MAX_ENTRIES: usize = 4;
+- FULL_PREP_CACHE_MAX_BYTES · constant · L1336-L1336 — const FULL_PREP_CACHE_MAX_BYTES: usize = 24 * 1024 * 1024;
+- FULL_PREP_OVERSIZED_CACHE_MAX_ENTRIES · constant · L1337-L1337 — const FULL_PREP_OVERSIZED_CACHE_MAX_ENTRIES: usize = 2;
+- FullPrepCacheState · struct · L1340-L1343 — struct FullPrepCacheState
+- CacheEntryKind · enum · L1346-L1349 — enum CacheEntryKind
+- total_bytes · function · L1352-L1354 — fn total_bytes(&self) -> usize
+- get_exact_with_kind · function · L1359-L1386 — fn get_exact_with_kind(
+- get_exact · function · L1389-L1392 — fn get_exact(&mut self, key: &FullPrepCacheKey) -> Option<Arc<PreparedChatFrame>>
+- insert · function · L1395-L1398 — fn insert(&mut self, key: FullPrepCacheKey, prepared: Arc<PreparedChatFrame>)
+- insert_with_bytes · function · L1400-L1450 — fn insert_with_bytes(
+- FULL_PREP_CACHE · constant · L1453-L1453 — static FULL_PREP_CACHE: OnceLock<Mutex<FullPrepCacheState>> = OnceLock::new();
+- full_prep_cache · function · L1455-L1457 — fn full_prep_cache() -> &'static Mutex<FullPrepCacheState>
+- release_frame_refs_to_body · function · L1468-L1494 — pub(super) fn release_frame_refs_to_body(base: &Arc<PreparedMessages>)
+- release_idle_render_caches · function · L1498-L1522 — pub(crate) fn release_idle_render_caches()
+- idle_render_caches_empty · function · L1525-L1533 — pub(crate) fn idle_render_caches_empty() -> bool
+- LAST_STATUS_AREA · constant · L1536-L1536 — static LAST_STATUS_AREA: OnceLock<Mutex<Option<Rect>>> = OnceLock::new();
+- last_status_area_state · function · L1539-L1541 — fn last_status_area_state() -> &'static Mutex<Option<Rect>>
+- record_status_area · function · L1543-L1560 — pub(crate) fn record_status_area(area: Rect)
+- last_status_area · function · L1562-L1574 — pub(crate) fn last_status_area() -> Option<Rect>
+- LayoutSnapshot · struct · L1605-L1610 — pub struct LayoutSnapshot
+- LAST_LAYOUT · constant · L1613-L1613 — static LAST_LAYOUT: OnceLock<Mutex<Option<LayoutSnapshot>>> = OnceLock::new();
+- LAST_CHAT_FRAME · constant · L1619-L1619 — static LAST_CHAT_FRAME: OnceLock<Mutex<Option<Arc<PreparedChatFrame>>>> = OnceLock::new();
+- last_chat_frame_state · function · L1622-L1624 — fn last_chat_frame_state() -> &'static Mutex<Option<Arc<PreparedChatFrame>>>
+- last_layout_state · function · L1627-L1629 — fn last_layout_state() -> &'static Mutex<Option<LayoutSnapshot>>
+- record_layout_snapshot · function · L1631-L1663 — pub fn record_layout_snapshot(
+- last_layout_snapshot · function · L1665-L1677 — pub fn last_layout_snapshot() -> Option<LayoutSnapshot>
+- terminal_clear_start · function · L1681-L1695 — fn terminal_clear_start(app: &dyn TuiState, prepared: &PreparedChatFrame) -> Option<usize>
+- set_last_chat_frame · function · L1698-L1714 — pub(crate) fn set_last_chat_frame(frame: Arc<PreparedChatFrame>)
+- last_chat_frame · function · L1719-L1731 — pub(crate) fn last_chat_frame() -> Option<Arc<PreparedChatFrame>>
+- render_state_test_lock · function · L1747-L1755 — pub(crate) fn render_state_test_lock() -> RenderStateTestGuard
+- LOCK · constant · L1748-L1748 — static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+- RenderStateTestGuard · struct · L1761-L1763 — pub(crate) struct RenderStateTestGuard
+- drop · function · L1767-L1769 — fn drop(&mut self)
+- with_render_state_lock · function · L1784-L1791 — fn with_render_state_lock<T>(body: impl FnOnce() -> T) -> T
+- render_state_lock_held · function · L1801-L1803 — fn render_state_lock_held() -> bool
+- clear_test_render_state_for_tests · function · L1806-L1808 — pub(crate) fn clear_test_render_state_for_tests()
+- clear_test_render_state_locked · function · L1812-L1839 — fn clear_test_render_state_locked()
+- draw_onboarding_welcome_for_tests · function · L1846-L1852 — pub(crate) fn draw_onboarding_welcome_for_tests(
+- CopyViewportData · enum · L1855-L1866 — enum CopyViewportData
+- CopyViewportSnapshot · struct · L1869-L1876 — struct CopyViewportSnapshot
+- wrapped_plain_line_count · function · L1879-L1887 — fn wrapped_plain_line_count(&self) -> usize
+- wrapped_plain_line · function · L1889-L1897 — fn wrapped_plain_line(&self, abs_line: usize) -> Option<&str>
+- wrapped_copy_offset · function · L1899-L1907 — fn wrapped_copy_offset(&self, abs_line: usize) -> Option<usize>
+- raw_plain_line · function · L1909-L1916 — fn raw_plain_line(&self, raw_line: usize) -> Option<&str>
+- raw_plain_line_count · function · L1918-L1925 — fn raw_plain_line_count(&self) -> usize
+- wrapped_line_map · function · L1927-L1934 — fn wrapped_line_map(&self, abs_line: usize) -> Option<WrappedLineMap>
+- inline_image_id_for_label_line · function · L1940-L1953 — fn inline_image_id_for_label_line(&self, abs_line: usize) -> Option<u64>
+- CopyViewportSnapshots · struct · L1957-L1961 — struct CopyViewportSnapshots
+- LAST_COPY_VIEWPORT · constant · L1964-L1964 — static LAST_COPY_VIEWPORT: OnceLock<Mutex<CopyViewportSnapshots>> = OnceLock::new();
+- copy_selection · module · L1966-L1966 — mod copy_selection;
+- display_width · module · L1968-L1968 — mod display_width;
+- draw_recovery · module · L1970-L1970 — mod draw_recovery;
+- profile · module · L1972-L1972 — mod profile;
+- selection_highlight · module · L1974-L1974 — pub(crate) mod selection_highlight;
+- todo_completion_flash · module · L1976-L1976 — pub(crate) mod todo_completion_flash;
+- url_regex_support · module · L1978-L1978 — mod url_regex_support;
+- copy_viewport_state · function · L1987-L1989 — fn copy_viewport_state() -> &'static Mutex<CopyViewportSnapshots>
+- copy_snapshot_slot_mut · function · L1991-L2000 — fn copy_snapshot_slot_mut(
+- copy_snapshot_for_pane · function · L2002-L2023 — fn copy_snapshot_for_pane(pane: crate::tui::CopySelectionPane) -> Option<CopyViewportSnapshot>
+- clear_copy_viewport_snapshot · function · L2025-L2040 — pub(crate) fn clear_copy_viewport_snapshot()
+- record_copy_pane_snapshot · function · L2046-L2097 — fn record_copy_pane_snapshot(
+- record_copy_viewport_frame_snapshot · function · L2099-L2136 — fn record_copy_viewport_frame_snapshot(
+- record_side_pane_snapshot_precomputed · function · L2142-L2165 — pub(crate) fn record_side_pane_snapshot_precomputed(
+- record_link_lines · function · L2167-L2194 — fn record_link_lines(pane: crate::tui::CopySelectionPane, lines: &[Line<'static>])
+- record_copy_viewport_snapshot · function · L2201-L2222 — pub(crate) fn record_copy_viewport_snapshot(
+- record_copy_viewport_frame_snapshot_for_test · function · L2229-L2237 — pub(crate) fn record_copy_viewport_frame_snapshot_for_test(
+- line_left_margins_for_area · function · L2239-L2257 — pub(crate) fn line_left_margins_for_area(lines: &[Line<'static>], area_width: u16) -> Vec<u16>
+- record_side_pane_snapshot · function · L2259-L2272 — pub(crate) fn record_side_pane_snapshot(
+- record_chat_overlay_copy_snapshot · function · L2279-L2292 — pub(crate) fn record_chat_overlay_copy_snapshot(
+- record_input_copy_snapshot · function · L2299-L2320 — pub(crate) fn record_input_copy_snapshot(
+- record_pane_snapshot_from_lines · function · L2322-L2355 — fn record_pane_snapshot_from_lines(
+- copy_point_from_screen · function · L2357-L2403 — pub(crate) fn copy_point_from_screen(
+- copy_point_screen_position · function · L2406-L2433 — pub(crate) fn copy_point_screen_position(
+- edge_autoscroll_zone_rows · function · L2440-L2442 — fn edge_autoscroll_zone_rows(height: u16) -> u16
+- edge_autoscroll_zone_tests · module · L2445-L2465 — mod edge_autoscroll_zone_tests
+- zone_is_at_least_one_row_for_tiny_panes · function · L2449-L2455 — fn zone_is_at_least_one_row_for_tiny_panes()
+- zone_scales_with_height_but_is_capped · function · L2458-L2464 — fn zone_scales_with_height_but_is_capped()
+- copy_pane_autoscroll_edge_point · function · L2470-L2485 — pub(crate) fn copy_pane_autoscroll_edge_point(
+- copy_viewport_point_from_screen · function · L2488-L2494 — pub(crate) fn copy_viewport_point_from_screen(
+- side_pane_point_from_screen · function · L2497-L2503 — pub(crate) fn side_pane_point_from_screen(
+- copy_pane_line_text · function · L2505-L2509 — fn copy_pane_line_text(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<String>
+- copy_viewport_line_text · function · L2511-L2513 — pub(crate) fn copy_viewport_line_text(abs_line: usize) -> Option<String>
+- side_pane_line_text · function · L2515-L2517 — pub(crate) fn side_pane_line_text(abs_line: usize) -> Option<String>
+- input_pane_line_text · function · L2519-L2521 — pub(crate) fn input_pane_line_text(abs_line: usize) -> Option<String>
+- copy_pane_line_count · function · L2523-L2525 — fn copy_pane_line_count(pane: crate::tui::CopySelectionPane) -> Option<usize>
+- copy_viewport_line_count · function · L2527-L2529 — pub(crate) fn copy_viewport_line_count() -> Option<usize>
+- side_pane_line_count · function · L2531-L2533 — pub(crate) fn side_pane_line_count() -> Option<usize>
+- input_pane_line_count · function · L2535-L2537 — pub(crate) fn input_pane_line_count() -> Option<usize>
+- copy_viewport_visible_range · function · L2539-L2542 — pub(crate) fn copy_viewport_visible_range() -> Option<(usize, usize)>
+- side_pane_visible_range · function · L2545-L2548 — pub(crate) fn side_pane_visible_range() -> Option<(usize, usize)>
+- copy_pane_first_visible_point · function · L2550-L2564 — pub(crate) fn copy_pane_first_visible_point(
+- copy_selection_text · function · L2566-L2585 — pub(crate) fn copy_selection_text(range: crate::tui::CopySelectionRange) -> Option<String>
+- copy_selection_metrics · function · L2591-L2621 — pub(crate) fn copy_selection_metrics(
+- link_target_from_screen · function · L2623-L2632 — pub(crate) fn link_target_from_screen(column: u16, row: u16) -> Option<String>
+- oauth_login_link_message_from_screen · function · L2635-L2652 — pub(crate) fn oauth_login_link_message_from_screen(column: u16, row: u16) -> Option<usize>
+- inline_image_expand_target_from_screen · function · L2658-L2662 — pub(crate) fn inline_image_expand_target_from_screen(column: u16, row: u16) -> Option<u64>
+- swarm_expand_target_from_screen · function · L2668-L2695 — pub(crate) fn swarm_expand_target_from_screen(column: u16, row: u16) -> Option<usize>
+- inline_image_body_target_from_screen · function · L2705-L2739 — pub(crate) fn inline_image_body_target_from_screen(
+- debug_chat_image_regions_json · function · L2745-L2796 — pub(crate) fn debug_chat_image_regions_json() -> String
+- overflow · module · L2799-L2799 — mod overflow;
+- draw_inner · function · L2802-L3780 — fn draw_inner(frame: &mut Frame, app: &dyn TuiState)
+- MIN_DIAGRAM_WIDTH · constant · L2972-L2972 — const MIN_DIAGRAM_WIDTH: u16 = 24;
+- MIN_CHAT_WIDTH · constant · L2973-L2973 — const MIN_CHAT_WIDTH: u16 = 20;
+- MIN_DIAGRAM_HEIGHT · constant · L3013-L3013 — const MIN_DIAGRAM_HEIGHT: u16 = 6;
+- MIN_CHAT_HEIGHT · constant · L3014-L3014 — const MIN_CHAT_HEIGHT: u16 = 8;
+- MIN_DIFF_WIDTH · constant · L3061-L3061 — const MIN_DIFF_WIDTH: u16 = 30;
+- MIN_CHAT_WIDTH · constant · L3062-L3062 — const MIN_CHAT_WIDTH: u16 = 20;
+- native_scrollbar · module · L3783-L3783 — mod native_scrollbar;
+- tests · module · L3792-L3792 — mod tests;

@@ -1,0 +1,33 @@
+# crates/jcode-tui/src/tui/ui_inline_interactive_tests.rs
+
+- account_priority_titles_and_normalized_colors_are_width_safe · function · L4-L45 — fn account_priority_titles_and_normalized_colors_are_width_safe()
+- format_elapsed_uses_whole_seconds_below_one_minute · function · L48-L53 — fn format_elapsed_uses_whole_seconds_below_one_minute()
+- fallback_route_details_are_warning_limited · function · L56-L62 — fn fallback_route_details_are_warning_limited()
+- selected_fallback_model_shows_warning_notice · function · L65-L76 — fn selected_fallback_model_shows_warning_notice()
+- sample_picker · function · L78-L108 — fn sample_picker() -> crate::tui::InlineInteractiveState
+- model_suggestions_align_provider_and_method_columns · function · L111-L144 — fn model_suggestions_align_provider_and_method_columns()
+- model_suggestions_measure_only_visible_filtered_rows · function · L147-L169 — fn model_suggestions_measure_only_visible_filtered_rows()
+- sample_account_picker · function · L171-L233 — fn sample_account_picker(mixed_providers: bool) -> crate::tui::InlineInteractiveState
+- sample_agent_target_picker · function · L235-L265 — fn sample_agent_target_picker() -> crate::tui::InlineInteractiveState
+- picker_row_marker_uses_explicit_unavailable_marker · function · L268-L277 — fn picker_row_marker_uses_explicit_unavailable_marker()
+- route_detail_display_text_prefixes_unavailable_reason · function · L280-L298 — fn route_detail_display_text_prefixes_unavailable_reason()
+- selected_model_route_notice_explains_unavailable_and_limited_routes · function · L301-L322 — fn selected_model_route_notice_explains_unavailable_and_limited_routes()
+- picker_render_width_uses_intrinsic_content_width · function · L325-L346 — fn picker_render_width_uses_intrinsic_content_width()
+- picker_render_area_centers_in_centered_mode · function · L349-L366 — fn picker_render_area_centers_in_centered_mode()
+- model_picker_method_display_uses_user_friendly_labels · function · L369-L378 — fn model_picker_method_display_uses_user_friendly_labels()
+- oauth_row_displays_email_instead_of_account_label · function · L381-L396 — fn oauth_row_displays_email_instead_of_account_label()
+- oauth_email_is_visible_in_unselected_suggestion_rows_and_width_scan · function · L399-L420 — fn oauth_email_is_visible_in_unselected_suggestion_rows_and_width_scan()
+- picker_entry_display_name_labels_recently_added_models_as_new · function · L423-L430 — fn picker_entry_display_name_labels_recently_added_models_as_new()
+- picker_entry_display_name_labels_recommended_even_when_current · function · L433-L440 — fn picker_entry_display_name_labels_recommended_even_when_current()
+- picker_entry_display_name_labels_default_models_explicitly · function · L443-L449 — fn picker_entry_display_name_labels_default_models_explicitly()
+- model_picker_shows_default_shortcut_hint · function · L452-L456 — fn model_picker_shows_default_shortcut_hint()
+- model_picker_keybind_hint_mentions_default_and_favorites · function · L459-L465 — fn model_picker_keybind_hint_mentions_default_and_favorites()
+- swarm_agent_model_picker_permanently_links_to_swarm_prompt_command · function · L468-L480 — fn swarm_agent_model_picker_permanently_links_to_swarm_prompt_command()
+- agents_pickers_name_their_scope_and_the_toggle · function · L485-L521 — fn agents_pickers_name_their_scope_and_the_toggle()
+- picker_entry_display_name_prettifies_known_model_families · function · L524-L535 — fn picker_entry_display_name_prettifies_known_model_families()
+- picker_entry_display_name_keeps_unknown_and_namespaced_ids_verbatim · function · L538-L553 — fn picker_entry_display_name_keeps_unknown_and_namespaced_ids_verbatim()
+- picker_entry_display_name_labels_favorites · function · L556-L563 — fn picker_entry_display_name_labels_favorites()
+- account_picker_width_uses_compact_two_column_layout · function · L566-L574 — fn account_picker_width_uses_compact_two_column_layout()
+- account_picker_only_shows_provider_badges_when_needed · function · L577-L588 — fn account_picker_only_shows_provider_badges_when_needed()
+- account_picker_fits_full_email_and_clamps_to_narrow_terminals · function · L591-L602 — fn account_picker_fits_full_email_and_clamps_to_narrow_terminals()
+- agent_target_picker_uses_specific_column_labels · function · L605-L613 — fn agent_target_picker_uses_specific_column_labels()

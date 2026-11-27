@@ -1,0 +1,26 @@
+# crates/jcode-base/src/hooks_tests.rs
+
+- payload_json_includes_event_and_lowercased_fields · function · L4-L16 — fn payload_json_includes_event_and_lowercased_fields()
+- truncate_bytes_respects_char_boundaries · function · L19-L25 — fn truncate_bytes_respects_char_boundaries()
+- write_executable_script · function · L28-L34 — fn write_executable_script(dir: &std::path::Path, name: &str, body: &str) -> PathBuf
+- gate_test_config · function · L37-L62 — fn gate_test_config(hook: &str, timeout_ms: u64) -> impl Drop + use<>
+- EnvReset · struct · L38-L38 — struct EnvReset(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L40-L47 — fn drop(&mut self)
+- transform_test_config · function · L65-L93 — fn transform_test_config(hook: &str, timeout_ms: u64) -> impl Drop + use<>
+- EnvReset · struct · L66-L66 — struct EnvReset(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L68-L75 — fn drop(&mut self)
+- tool_transformers_compose_json_replacements · function · L97-L125 — async fn tool_transformers_compose_json_replacements()
+- tool_transformer_fails_open_for_invalid_output_and_timeout · function · L129-L150 — async fn tool_transformer_fails_open_for_invalid_output_and_timeout()
+- tool_transformer_timeout_includes_stdin_delivery · function · L154-L173 — async fn tool_transformer_timeout_includes_stdin_delivery()
+- pre_tool_gate_allows_on_exit_zero_and_blocks_on_exit_two · function · L177-L209 — async fn pre_tool_gate_allows_on_exit_zero_and_blocks_on_exit_two()
+- pre_tool_gate_runs_every_configured_command_and_preserves_first_block · function · L213-L265 — async fn pre_tool_gate_runs_every_configured_command_and_preserves_first_block()
+- pre_tool_gate_fails_open_on_timeout_and_odd_exits · function · L269-L301 — async fn pre_tool_gate_fails_open_on_timeout_and_odd_exits()
+- gate_stdout_json_decisions_parse_codex_shapes · function · L304-L336 — fn gate_stdout_json_decisions_parse_codex_shapes()
+- pre_tool_gate_json_rewrites_chain_and_deny_drops_rewrite · function · L340-L388 — async fn pre_tool_gate_json_rewrites_chain_and_deny_drops_rewrite()
+- pre_tool_gate_receives_input_on_stdin · function · L392-L412 — async fn pre_tool_gate_receives_input_on_stdin()
+- observer_dispatch_runs_hook_with_event_env · function · L416-L453 — fn observer_dispatch_runs_hook_with_event_env()
+- observer_dispatch_reaps_completed_hook · function · L457-L498 — fn observer_dispatch_reaps_completed_hook()
+- observer_dispatch_runs_each_configured_command · function · L502-L546 — fn observer_dispatch_runs_each_configured_command()
+- concurrent_client_terminal_environments_remain_isolated · function · L549-L572 — async fn concurrent_client_terminal_environments_remain_isolated()
+- pane_id · function · L550-L561 — async fn pane_id(env: Vec<(String, String)>) -> Option<String>
+- hook_process_replaces_daemon_terminal_env_with_client_snapshot · function · L576-L628 — async fn hook_process_replaces_daemon_terminal_env_with_client_snapshot()

@@ -1,0 +1,49 @@
+# crates/jcode-tui/src/tui/login_picker.rs
+
+- PANEL_BG · constant · L9-L9 — const PANEL_BG: Color = Color::Rgb(24, 28, 40);
+- PANEL_BORDER · constant · L10-L10 — const PANEL_BORDER: Color = Color::Rgb(90, 95, 110);
+- PANEL_BORDER_ACTIVE · constant · L11-L11 — const PANEL_BORDER_ACTIVE: Color = Color::Rgb(120, 140, 190);
+- SECTION_BORDER · constant · L12-L12 — const SECTION_BORDER: Color = Color::Rgb(70, 78, 94);
+- SELECTED_BG · constant · L13-L13 — const SELECTED_BG: Color = Color::Rgb(38, 42, 56);
+- MUTED · constant · L14-L14 — const MUTED: Color = Color::Rgb(140, 146, 163);
+- MUTED_DARK · constant · L15-L15 — const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
+- OVERLAY_PERCENT_X · constant · L16-L16 — const OVERLAY_PERCENT_X: u16 = 88;
+- OVERLAY_PERCENT_Y · constant · L17-L17 — const OVERLAY_PERCENT_Y: u16 = 74;
+- LoginPickerItem · struct · L20-L25 — pub struct LoginPickerItem
+- new · function · L28-L40 — pub fn new(
+- matches_filter · function · L42-L73 — fn matches_filter(&self, filter: &str) -> bool
+- status_label · function · L75-L81 — fn status_label(&self) -> &'static str
+- status_icon · function · L83-L88 — fn status_icon(&self) -> &'static str
+- status_color · function · L90-L96 — fn status_color(&self) -> Color
+- LoginPickerSummary · struct · L100-L105 — pub struct LoginPickerSummary
+- LoginPicker · struct · L108-L116 — pub struct LoginPicker
+- OverlayAction · enum · L122-L126 — pub enum OverlayAction
+- with_summary · function · L129-L145 — pub fn with_summary(
+- debug_memory_profile · function · L147-L165 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- selected_item · function · L167-L171 — fn selected_item(&self) -> Option<&LoginPickerItem>
+- visible_window_start · function · L173-L176 — fn visible_window_start(&self, available_items: usize) -> usize
+- visible_index_for_list_row · function · L178-L186 — fn visible_index_for_list_row(&self, row: u16, list_height: u16) -> Option<usize>
+- apply_filter · function · L188-L198 — fn apply_filter(&mut self)
+- handle_overlay_key · function · L200-L261 — pub fn handle_overlay_key(
+- handle_overlay_mouse · function · L263-L288 — pub fn handle_overlay_mouse(&mut self, mouse: MouseEvent)
+- render · function · L290-L344 — pub fn render(&mut self, frame: &mut Frame)
+- render_header · function · L346-L402 — fn render_header(&self, frame: &mut Frame, area: Rect)
+- render_provider_list · function · L404-L470 — fn render_provider_list(&mut self, frame: &mut Frame, area: Rect)
+- render_detail_pane · function · L472-L593 — fn render_detail_pane(&self, frame: &mut Frame, area: Rect)
+- estimate_item_bytes · function · L596-L607 — fn estimate_item_bytes(item: &LoginPickerItem) -> usize
+- hotkey · function · L609-L611 — fn hotkey(text: &'static str) -> Span<'static>
+- metric_span · function · L613-L618 — fn metric_span(label: &'static str, value: usize, color: Color) -> Span<'static>
+- provider_style · function · L620-L640 — fn provider_style(provider_id: &str) -> Style
+- auth_kind_color · function · L642-L652 — fn auth_kind_color(kind: &str) -> Color
+- provider_supports_named_accounts · function · L654-L660 — fn provider_supports_named_accounts(provider: LoginProviderDescriptor) -> bool
+- account_detail_lines · function · L662-L677 — fn account_detail_lines(provider: LoginProviderDescriptor) -> Vec<Line<'static>>
+- claude_account_lines · function · L679-L752 — fn claude_account_lines() -> Vec<Line<'static>>
+- openai_account_lines · function · L754-L827 — fn openai_account_lines() -> Vec<Line<'static>>
+- mask_email · function · L829-L845 — fn mask_email(email: &str) -> String
+- truncate_with_ellipsis · function · L847-L861 — fn truncate_with_ellipsis(input: &str, width: usize) -> String
+- centered_rect · function · L863-L880 — fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect
+- tests · module · L883-L1062 — mod tests
+- buffer_to_text · function · L887-L897 — fn buffer_to_text(buffer: &ratatui::buffer::Buffer) -> String
+- test_login_picker_preserves_underlying_background_outside_panels · function · L900-L934 — fn test_login_picker_preserves_underlying_background_outside_panels()
+- test_login_picker_mouse_click_selects_visible_provider · function · L937-L993 — fn test_login_picker_mouse_click_selects_visible_provider()
+- login_picker_catalog_state_space_renders_and_executes_every_provider_state · function · L996-L1061 — fn login_picker_catalog_state_space_renders_and_executes_every_provider_state()

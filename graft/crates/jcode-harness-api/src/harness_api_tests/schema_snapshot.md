@@ -1,0 +1,29 @@
+# crates/jcode-harness-api/src/harness_api_tests/schema_snapshot.rs
+
+- shared_protocol_goldens_match_rust_types · function · L6-L84 — fn shared_protocol_goldens_match_rust_types()
+- create_session_system_prompt_roundtrip_and_legacy_default · function · L87-L100 — fn create_session_system_prompt_roundtrip_and_legacy_default()
+- token_usage_preserves_cache_creation_and_accepts_legacy_frames · function · L103-L129 — fn token_usage_preserves_cache_creation_and_accepts_legacy_frames()
+- client_frame_wire_shape · function · L132-L148 — fn client_frame_wire_shape()
+- send_message_no_reply_wire_shape_and_legacy_default · function · L151-L180 — fn send_message_no_reply_wire_shape_and_legacy_default()
+- soft_interrupt_images_wire_shape_and_legacy_default · function · L183-L211 — fn soft_interrupt_images_wire_shape_and_legacy_default()
+- soft_interrupt_ids_requests_and_events_wire_shape · function · L214-L299 — fn soft_interrupt_ids_requests_and_events_wire_shape()
+- server_frame_wire_shape · function · L302-L316 — fn server_frame_wire_shape()
+- unknown_event_kind_is_skippable · function · L319-L323 — fn unknown_event_kind_is_skippable()
+- unknown_fields_are_ignored · function · L326-L336 — fn unknown_fields_are_ignored()
+- request_roundtrip · function · L339-L423 — fn request_roundtrip()
+- client_handshake_over_in_memory_pipe · function · L426-L447 — fn client_handshake_over_in_memory_pipe()
+- typescript_sdk_lists_every_variant · function · L456-L470 — fn typescript_sdk_lists_every_variant()
+- sdk_protocol_source · function · L472-L476 — fn sdk_protocol_source() -> Option<String>
+- typescript_sdk_lists_every_field · function · L484-L508 — fn typescript_sdk_lists_every_field()
+- sdk_variant_block · function · L511-L529 — fn sdk_variant_block(sdk: &str, tag: &str, variant: &str) -> Option<String>
+- enum_variant_fields · function · L532-L572 — fn enum_variant_fields(file: &str, enum_name: &str) -> Vec<(String, Vec<String>)>
+- field_name · function · L575-L590 — fn field_name(line: &str) -> Option<String>
+- enum_body · function · L592-L605 — fn enum_body(file: &str, enum_name: &str) -> String
+- enum_variants · function · L608-L639 — fn enum_variants(file: &str, enum_name: &str) -> Vec<String>
+- snake_case · function · L641-L654 — fn snake_case(name: &str) -> String
+- session_recovery_wire_shape_roundtrips_optional_notice · function · L657-L675 — fn session_recovery_wire_shape_roundtrips_optional_notice()
+- hidden_system_reminder_wire_shape_and_legacy_default · function · L678-L705 — fn hidden_system_reminder_wire_shape_and_legacy_default()
+- side_panel_state_shared_types_roundtrip · function · L708-L737 — fn side_panel_state_shared_types_roundtrip()
+- text_framing_is_additive_and_accepts_unframed_legacy_deltas · function · L740-L775 — fn text_framing_is_additive_and_accepts_unframed_legacy_deltas()
+- session_tool_control_wire_shapes_and_defaults · function · L778-L830 — fn session_tool_control_wire_shapes_and_defaults()
+- turn_stopped_schema_and_future_reason_compatibility · function · L833-L854 — fn turn_stopped_schema_and_future_reason_compatibility()

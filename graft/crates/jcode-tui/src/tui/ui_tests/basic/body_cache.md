@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/ui_tests/basic/body_cache.rs
+
+- test_body_cache_state_keeps_multiple_width_entries · function · L2-L103 — fn test_body_cache_state_keeps_multiple_width_entries()
+- test_body_cache_state_does_not_reuse_a_different_mermaid_aspect_profile · function · L106-L135 — fn test_body_cache_state_does_not_reuse_a_different_mermaid_aspect_profile()
+- test_body_cache_state_evicts_oldest_entries · function · L138-L182 — fn test_body_cache_state_evicts_oldest_entries()
+- test_body_cache_state_accepts_large_single_entry_within_total_budget · function · L185-L214 — fn test_body_cache_state_accepts_large_single_entry_within_total_budget()
+- test_body_cache_state_retains_oversized_hot_entry · function · L217-L247 — fn test_body_cache_state_retains_oversized_hot_entry()
+- test_body_cache_state_keeps_two_oversized_width_entries_hot · function · L250-L287 — fn test_body_cache_state_keeps_two_oversized_width_entries_hot()
+- test_body_cache_state_uses_oversized_hot_entry_as_incremental_base · function · L290-L325 — fn test_body_cache_state_uses_oversized_hot_entry_as_incremental_base()
+- test_build_body_from_base_rerenders_stale_mermaid_pending_tail · function · L333-L397 — fn test_build_body_from_base_rerenders_stale_mermaid_pending_tail()
+- test_build_body_from_base_keeps_current_mermaid_pending_base · function · L403-L433 — fn test_build_body_from_base_keeps_current_mermaid_pending_base()
+- test_prepare_body_swarm_await_wake_is_not_a_numbered_prompt · function · L436-L469 — fn test_prepare_body_swarm_await_wake_is_not_a_numbered_prompt()
+- test_prepare_body_incremental_reuses_unique_prepared_arc · function · L472-L502 — fn test_prepare_body_incremental_reuses_unique_prepared_arc()
+- test_prepare_body_incremental_applies_compaction_prompt_offset · function · L505-L562 — fn test_prepare_body_incremental_applies_compaction_prompt_offset()
+- test_full_prep_cache_state_keeps_multiple_width_entries · function · L565-L664 — fn test_full_prep_cache_state_keeps_multiple_width_entries()
+- test_full_prep_cache_state_does_not_reuse_a_different_mermaid_aspect_profile · function · L667-L698 — fn test_full_prep_cache_state_does_not_reuse_a_different_mermaid_aspect_profile()
+- test_full_prep_cache_state_evicts_oldest_entries · function · L701-L749 — fn test_full_prep_cache_state_evicts_oldest_entries()
+- test_full_prep_cache_state_accepts_large_single_entry_within_total_budget · function · L752-L784 — fn test_full_prep_cache_state_accepts_large_single_entry_within_total_budget()
+- test_full_prep_cache_state_retains_oversized_hot_entry · function · L787-L821 — fn test_full_prep_cache_state_retains_oversized_hot_entry()
+- test_full_prep_cache_state_keeps_two_oversized_width_entries_hot · function · L824-L865 — fn test_full_prep_cache_state_keeps_two_oversized_width_entries_hot()
+- BODY_ANCHOR_TINY_PNG_B64 · constant · L868-L868 — const BODY_ANCHOR_TINY_PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+- anchored_tool_image · function · L870-L883 — fn anchored_tool_image(tool_id: &str) -> crate::session::RenderedImage
+- read_tool_call · function · L885-L893 — fn read_tool_call(tool_id: &str) -> crate::message::ToolCall
+- test_prepare_body_anchors_tool_image_after_tool_message · function · L896-L941 — fn test_prepare_body_anchors_tool_image_after_tool_message()
+- test_prepare_body_incremental_anchors_image_on_new_tool_message · function · L944-L984 — fn test_prepare_body_incremental_anchors_image_on_new_tool_message()
+- test_prepare_body_skips_anchored_images_when_pin_images_off · function · L987-L1005 — fn test_prepare_body_skips_anchored_images_when_pin_images_off()
+- test_prepare_body_collapses_anchored_images_when_inline_images_hidden · function · L1008-L1038 — fn test_prepare_body_collapses_anchored_images_when_inline_images_hidden()
+- cache_equivalence · module · L1044-L1044 — mod cache_equivalence;
+- test_full_prep_cache_drops_superseded_streaming_frames · function · L1051-L1099 — fn test_full_prep_cache_drops_superseded_streaming_frames()
+- test_body_cache_drops_superseded_message_versions · function · L1102-L1147 — fn test_body_cache_drops_superseded_message_versions()

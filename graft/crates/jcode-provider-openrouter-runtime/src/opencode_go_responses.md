@@ -1,0 +1,30 @@
+# crates/jcode-provider-openrouter-runtime/src/opencode_go_responses.rs
+
+- RESPONSES_MODELS · constant · L19-L26 — const RESPONSES_MODELS: &[&str] = &[
+- named_profile_responses_api · function · L28-L54 — pub(crate) fn named_profile_responses_api(
+- model_uses_responses_api · function · L56-L75 — pub(crate) fn model_uses_responses_api(
+- build_request · function · L77-L120 — pub(crate) fn build_request(
+- build_input · function · L122-L202 — fn build_input(messages: &[Message]) -> Vec<Value>
+- ToolState · struct · L205-L209 — struct ToolState
+- ResponsesStream · struct · L211-L221 — pub(crate) struct ResponsesStream
+- new · function · L224-L236 — pub(crate) fn new(
+- parse_event · function · L238-L400 — fn parse_event(&mut self, data: &str)
+- emit_tool · function · L402-L421 — fn emit_tool(&mut self, state: ToolState, fallback_id: &str)
+- next_event · function · L423-L458 — fn next_event(&mut self) -> Option<StreamEvent>
+- subscription_usage_detail · function · L463-L499 — fn subscription_usage_detail(value: &Value) -> Option<String>
+- Item · type · L502-L502 — type Item = anyhow::Result<StreamEvent>;
+- poll_next · function · L504-L545 — fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>>
+- tests · module · L549-L931 — mod tests
+- resolved_model_metadata_dedupes_and_resets_per_attempt · function · L551-L573 — fn resolved_model_metadata_dedupes_and_resets_per_attempt()
+- fake_responses_server · function · L580-L597 — fn fake_responses_server(body: &'static str) -> (String, std::sync::mpsc::Receiver<String>)
+- queued_payload_is_moved_without_reallocating_and_preserves_order · function · L600-L617 — fn queued_payload_is_moved_without_reallocating_and_preserves_order()
+- only_open_code_go_responses_models_use_responses · function · L620-L643 — fn only_open_code_go_responses_models_use_responses()
+- native_muse_responses_route_is_scoped_to_its_official_endpoint · function · L646-L662 — fn native_muse_responses_route_is_scoped_to_its_official_endpoint()
+- named_responses_profile_uses_route_reasoning_and_extra_body · function · L665-L711 — fn named_responses_profile_uses_route_reasoning_and_extra_body()
+- named_responses_selector_is_explicit_and_requires_auth · function · L714-L735 — fn named_responses_selector_is_explicit_and_requires_auth()
+- subscription_usage_requires_valid_measured_windows · function · L738-L755 — fn subscription_usage_requires_valid_measured_windows()
+- subscription_usage_stream_event_reaches_status_display · function · L758-L768 — fn subscription_usage_stream_event_reaches_status_display()
+- request_uses_responses_input_and_instructions · function · L771-L786 — fn request_uses_responses_input_and_instructions()
+- native_muse_request_retains_history_system_and_jcode_tools · function · L789-L824 — fn native_muse_request_retains_history_system_and_jcode_tools()
+- responses_stream_preserves_unicode_at_every_byte_split · function · L827-L886 — fn responses_stream_preserves_unicode_at_every_byte_split()
+- responses_stream_handles_crlf_reasoning_text_and_usage · function · L889-L930 — fn responses_stream_handles_crlf_reasoning_text_and_usage()

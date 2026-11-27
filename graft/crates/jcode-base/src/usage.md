@@ -1,0 +1,52 @@
+# crates/jcode-base/src/usage.rs
+
+- accessors · module · L6-L6 — mod accessors;
+- account_fetch · module · L7-L7 — mod account_fetch;
+- anthropic_fable_reset · module · L9-L9 — mod anthropic_fable_reset;
+- anthropic_reset · module · L10-L10 — mod anthropic_reset;
+- anthropic_response · module · L12-L12 — mod anthropic_response;
+- api_keys · module · L15-L15 — mod api_keys;
+- banked · module · L16-L16 — mod banked;
+- cache · module · L18-L18 — mod cache;
+- disk_cache · module · L19-L19 — mod disk_cache;
+- display · module · L20-L20 — mod display;
+- flight · module · L21-L21 — mod flight;
+- local_activity · module · L22-L22 — mod local_activity;
+- model · module · L23-L23 — mod model;
+- openai_helpers · module · L24-L24 — mod openai_helpers;
+- openai_reset · module · L25-L25 — mod openai_reset;
+- provider_fetch · module · L27-L27 — mod provider_fetch;
+- remote_accounts · module · L28-L28 — mod remote_accounts;
+- startup_snapshot · module · L29-L29 — mod startup_snapshot;
+- USAGE_URL · constant · L73-L73 — const USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage?at_wall=1&skip_spend=1";
+- OPENAI_USAGE_URL · constant · L76-L76 — const OPENAI_USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
+- CACHE_DURATION · constant · L79-L79 — const CACHE_DURATION: Duration = Duration::from_secs(300);
+- ANTHROPIC_CACHE_DURATION · constant · L82-L82 — const ANTHROPIC_CACHE_DURATION: Duration = Duration::from_secs(900);
+- ERROR_BACKOFF · constant · L85-L85 — const ERROR_BACKOFF: Duration = Duration::from_secs(300);
+- TRANSPORT_ERROR_BACKOFF · constant · L89-L89 — const TRANSPORT_ERROR_BACKOFF: Duration = Duration::from_secs(30);
+- TRANSPORT_LAST_GOOD_MAX_AGE · constant · L92-L92 — const TRANSPORT_LAST_GOOD_MAX_AGE: Duration = Duration::from_secs(900);
+- TRANSPORT_ERROR_PREFIX · constant · L95-L95 — const TRANSPORT_ERROR_PREFIX: &str = "Failed to fetch: ";
+- TRANSIENT_RETRY_DELAYS_MS · constant · L98-L98 — const TRANSIENT_RETRY_DELAYS_MS: [u64; 2] = [500, 1500];
+- RATE_LIMIT_BACKOFF · constant · L101-L101 — const RATE_LIMIT_BACKOFF: Duration = Duration::from_secs(900);
+- PROVIDER_USAGE_CACHE_TTL · constant · L104-L104 — const PROVIDER_USAGE_CACHE_TTL: Duration = Duration::from_secs(120);
+- PROVIDER_USAGE_CACHE · constant · L108-L110 — static PROVIDER_USAGE_CACHE: std::sync::OnceLock<
+- fetch_anthropic_usage_data · function · L112-L117 — async fn fetch_anthropic_usage_data(access_token: String, cache_key: String) -> Result<UsageData>
+- fetch_anthropic_usage_data_uncached · function · L119-L258 — async fn fetch_anthropic_usage_data_uncached(
+- cache_anthropic_usage_failure · function · L262-L264 — fn cache_anthropic_usage_failure(cache_key: String, message: String) -> Result<UsageData>
+- cache_anthropic_usage_failure_with_hint · function · L266-L279 — fn cache_anthropic_usage_failure_with_hint(
+- fetch_all_provider_usage · function · L284-L286 — pub async fn fetch_all_provider_usage() -> Vec<ProviderUsage>
+- fetch_all_provider_usage_progressive · function · L292-L393 — pub async fn fetch_all_provider_usage_progressive<F>(mut on_update: F) -> Vec<ProviderUsage>
+- upsert_provider_usage · function · L395-L405 — fn upsert_provider_usage(results: &mut Vec<ProviderUsage>, report: ProviderUsage)
+- sort_reports_most_recent_first · function · L409-L415 — fn sort_reports_most_recent_first(results: &mut [ProviderUsage])
+- attach_activity · function · L421-L454 — fn attach_activity(report: &mut ProviderUsage, source_key: &str)
+- enqueue_provider_usage_tasks · function · L456-L526 — fn enqueue_provider_usage_tasks(tasks: &mut tokio::task::JoinSet<Option<ProviderUsage>>) -> usize
+- activity_source_has_dedicated_report · function · L532-L566 — fn activity_source_has_dedicated_report(source_key: &str) -> bool
+- enqueue_activity_sweeper_task · function · L570-L609 — fn enqueue_activity_sweeper_task(tasks: &mut tokio::task::JoinSet<Option<ProviderUsage>>) -> usize
+- enqueue_anthropic_usage_tasks · function · L611-L679 — fn enqueue_anthropic_usage_tasks(tasks: &mut tokio::task::JoinSet<Option<ProviderUsage>>) -> usize
+- enqueue_openai_usage_tasks · function · L681-L732 — fn enqueue_openai_usage_tasks(tasks: &mut tokio::task::JoinSet<Option<ProviderUsage>>) -> usize
+- sync_cached_usage_from_reports · function · L734-L737 — async fn sync_cached_usage_from_reports(results: &[ProviderUsage], openai_generation: u64)
+- sync_active_anthropic_usage_from_reports · function · L739-L768 — async fn sync_active_anthropic_usage_from_reports(results: &[ProviderUsage])
+- sync_openai_usage_from_reports · function · L770-L793 — async fn sync_openai_usage_from_reports(results: &[ProviderUsage], generation: u64)
+- active_anthropic_usage_report · function · L795-L811 — fn active_anthropic_usage_report(results: &[ProviderUsage]) -> Option<&ProviderUsage>
+- active_openai_usage_report · function · L813-L846 — fn active_openai_usage_report(results: &[ProviderUsage]) -> Option<&ProviderUsage>
+- tests · module · L849-L849 — mod tests;

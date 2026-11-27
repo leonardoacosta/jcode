@@ -1,0 +1,18 @@
+# scripts/waybar/test_jcode_sessions_status.py
+
+- CloudCountsTests · class · L12-L97 — class CloudCountsTests(unittest.TestCase)
+- setUp · method · L13-L18 — def setUp(self)
+- marker · method · L20-L23 — def marker(self, directory, session, pid=None)
+- probe · method · L25-L26 — def probe(self)
+- test_counts_sessions_not_shared_daemon_pids · method · L28-L33 — def test_counts_sessions_not_shared_daemon_pids(self)
+- test_stale_and_invalid_markers_are_ignored · method · L35-L41 — def test_stale_and_invalid_markers_are_ignored(self)
+- test_dead_owner_is_not_alive · method · L43-L47 — def test_dead_owner_is_not_alive(self)
+- test_no_markers_means_zero · method · L49-L50 — def test_no_markers_means_zero(self)
+- test_cloud_streaming_controls_color_without_local_sessions · method · L52-L57 — def test_cloud_streaming_controls_color_without_local_sessions(self)
+- test_unknown_does_not_display_zero · method · L59-L62 — def test_unknown_does_not_display_zero(self)
+- test_sleeping_host_is_not_connected_or_woken · method · L64-L74 — def test_sleeping_host_is_not_connected_or_woken(self)
+- run · function · L66-L70 — def run(args)
+- test_managed_and_ephemeral_counts_are_summed · method · L76-L91 — def test_managed_and_ephemeral_counts_are_summed(self)
+- run · function · L78-L87 — def run(args)
+- test_connection_failure_is_unknown · method · L93-L97 — def test_connection_failure_is_unknown(self)
+- run · function · L94-L95 — def run(args)

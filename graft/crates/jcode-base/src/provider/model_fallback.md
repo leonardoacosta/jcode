@@ -1,0 +1,23 @@
+# crates/jcode-base/src/provider/model_fallback.rs
+
+- COOL_FAILURES · constant · L10-L10 — pub(super) const COOL_FAILURES: usize = 3;
+- COOL_WINDOW · constant · L11-L11 — pub(super) const COOL_WINDOW: Duration = Duration::from_secs(60);
+- MAX_CYCLES · constant · L12-L12 — pub(super) const MAX_CYCLES: usize = 3;
+- ErrorClass · enum · L15-L18 — pub(super) enum ErrorClass
+- as_str · function · L21-L26 — pub(super) fn as_str(self) -> &'static str
+- classify · function · L31-L42 — pub(super) fn classify(message: &str) -> ErrorClass
+- chain_for · function · L45-L54 — pub(super) fn chain_for(map: &HashMap<String, Vec<String>>, model: &str) -> Vec<String>
+- Health · struct · L57-L59 — pub(super) struct Health
+- record_failure · function · L62-L68 — pub(super) fn record_failure(&mut self, model: &str, now: Instant)
+- record_success · function · L70-L72 — pub(super) fn record_success(&mut self, model: &str)
+- is_cooling · function · L74-L78 — pub(super) fn is_cooling(&self, model: &str, now: Instant) -> bool
+- order · function · L81-L85 — pub(super) fn order(&self, chain: &[String], now: Instant) -> Vec<(String, bool)>
+- HEALTH · constant · L88-L88 — pub(super) static HEALTH: LazyLock<Mutex<Health>> = LazyLock::new(Default::default);
+- health · function · L90-L92 — pub(super) fn health() -> std::sync::MutexGuard<'static, Health>
+- plan · function · L95-L98 — pub(super) fn plan(chain: &[String], health: &Health, now: Instant) -> Vec<(String, bool)>
+- tests · module · L101-L160 — mod tests
+- classifier · function · L105-L113 — fn classifier()
+- shared_taxonomy_never_substitutes_after_quota_or_refresh_failure · function · L116-L125 — fn shared_taxonomy_never_substitutes_after_quota_or_refresh_failure()
+- chain_drops_blank_and_self · function · L128-L132 — fn chain_drops_blank_and_self()
+- cooling_window_and_reset · function · L135-L146 — fn cooling_window_and_reset()
+- ordering_and_cycle_cap · function · L149-L159 — fn ordering_and_cycle_cap()

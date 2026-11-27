@@ -1,0 +1,35 @@
+# crates/jcode-setup-hints/src/macos_terminal.rs
+
+- MacTerminalKind · enum · L8-L17 — pub(super) enum MacTerminalKind
+- label · function · L20-L31 — pub(super) fn label(self) -> &'static str
+- cli_value · function · L33-L44 — pub(super) fn cli_value(self) -> &'static str
+- from_cli_value · function · L46-L57 — fn from_cli_value(value: &str) -> Option<Self>
+- open_command_app_and_args · function · L59-L66 — fn open_command_app_and_args(self) -> Option<(&'static str, &'static str)>
+- fmt · function · L70-L72 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- MacTerminalPreference · struct · L76-L78 — struct MacTerminalPreference
+- mac_terminal_pref_path · function · L80-L82 — fn mac_terminal_pref_path() -> Result<PathBuf>
+- load_preferred_macos_terminal · function · L84-L88 — pub(super) fn load_preferred_macos_terminal() -> Option<MacTerminalKind>
+- save_preferred_macos_terminal · function · L90-L98 — pub(super) fn save_preferred_macos_terminal(terminal: MacTerminalKind) -> Result<()>
+- effective_macos_terminal · function · L100-L106 — pub(super) fn effective_macos_terminal() -> MacTerminalKind
+- config_preferred_macos_terminal · function · L109-L120 — fn config_preferred_macos_terminal() -> Option<MacTerminalKind>
+- Wrapper · struct · L111-L114 — struct Wrapper
+- detect_macos_terminal · function · L122-L151 — fn detect_macos_terminal() -> MacTerminalKind
+- escape_shell_single_quotes · function · L153-L155 — pub(super) fn escape_shell_single_quotes(input: &str) -> String
+- escape_applescript_text · function · L157-L159 — pub(super) fn escape_applescript_text(input: &str) -> String
+- paused_jcode_shell_command · function · L162-L164 — pub(super) fn paused_jcode_shell_command(exe_path: &str) -> String
+- paused_jcode_shell_command_with_args · function · L168-L181 — pub(super) fn paused_jcode_shell_command_with_args(exe_path: &str, args: &[String]) -> String
+- open_command_for_terminal · function · L183-L186 — fn open_command_for_terminal(app_name: &str, app_args: &str, shell_command: &str) -> String
+- run_in_bash_login · function · L197-L202 — fn run_in_bash_login(shell_command: &str) -> String
+- applescript_command_for_terminal · function · L204-L210 — fn applescript_command_for_terminal(app_name: &str, shell_command: &str) -> String
+- applescript_command_for_iterm · function · L212-L218 — fn applescript_command_for_iterm(shell_command: &str) -> String
+- launch_command_for_macos_terminal · function · L220-L238 — pub(super) fn launch_command_for_macos_terminal(
+- launch_script_for_macos_terminal · function · L241-L249 — pub(super) fn launch_script_for_macos_terminal(
+- NoAutomationLaunch · enum · L255-L262 — pub(super) enum NoAutomationLaunch
+- no_automation_launch · function · L264-L279 — pub(super) fn no_automation_launch(
+- tests · module · L282-L415 — mod tests
+- from_cli_value_maps_documented_config_values · function · L289-L312 — fn from_cli_value_maps_documented_config_values()
+- open_command_terminals_use_open_with_expected_args · function · L315-L333 — fn open_command_terminals_use_open_with_expected_args()
+- paused_shell_command_quotes_extra_args · function · L336-L355 — fn paused_shell_command_quotes_extra_args()
+- applescript_terminals_use_expected_launcher_commands · function · L358-L372 — fn applescript_terminals_use_expected_launcher_commands()
+- applescript_launchers_run_under_bash_for_non_bash_login_shells · function · L375-L396 — fn applescript_launchers_run_under_bash_for_non_bash_login_shells()
+- open_command_terminals_pass_snippet_to_bash_not_login_shell · function · L399-L414 — fn open_command_terminals_pass_snippet_to_bash_not_login_shell()

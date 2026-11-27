@@ -1,0 +1,33 @@
+# crates/jcode-base/src/side_panel.rs
+
+- MAX_PDF_BYTES · constant · L6-L6 — pub const MAX_PDF_BYTES: u64 = 20 * 1024 * 1024;
+- MAX_SESSION_PDF_BYTES · constant · L8-L8 — pub const MAX_SESSION_PDF_BYTES: u64 = 32 * 1024 * 1024;
+- snapshot_for_session · function · L17-L20 — pub fn snapshot_for_session(session_id: &str) -> Result<SidePanelSnapshot>
+- write_markdown_page · function · L22-L30 — pub fn write_markdown_page(
+- append_markdown_page · function · L32-L40 — pub fn append_markdown_page(
+- load_markdown_file · function · L42-L51 — pub fn load_markdown_file(
+- load_file · function · L54-L91 — pub fn load_file(
+- refresh_linked_page_content · function · L93-L141 — pub fn refresh_linked_page_content(
+- focus_page · function · L143-L154 — pub fn focus_page(session_id: &str, page_id: &str) -> Result<SidePanelSnapshot>
+- delete_page · function · L156-L178 — pub fn delete_page(session_id: &str, page_id: &str) -> Result<SidePanelSnapshot>
+- status_output · function · L180-L214 — pub fn status_output(snapshot: &SidePanelSnapshot) -> String
+- write_page · function · L216-L270 — fn write_page(
+- PageRecordLocation · struct · L273-L277 — struct PageRecordLocation<'a>
+- upsert_page_record · function · L279-L330 — fn upsert_page_record(
+- hydrate_snapshot · function · L332-L371 — fn hydrate_snapshot(state: PersistedSidePanelState) -> Result<SidePanelSnapshot>
+- load_state · function · L373-L379 — fn load_state(session_id: &str) -> Result<PersistedSidePanelState>
+- save_state · function · L381-L384 — fn save_state(session_id: &str, state: &PersistedSidePanelState) -> Result<()>
+- session_dir · function · L386-L389 — fn session_dir(session_id: &str) -> Result<PathBuf>
+- state_file · function · L391-L393 — fn state_file(session_id: &str) -> Result<PathBuf>
+- validate_page_id · function · L395-L416 — fn validate_page_id(page_id: &str) -> Result<()>
+- validate_markdown_source_path · function · L418-L437 — fn validate_markdown_source_path(path: &Path) -> Result<()>
+- next_focus_revision · function · L439-L441 — fn next_focus_revision(previous: u64) -> u64
+- pdf_byte_len · function · L443-L445 — fn pdf_byte_len(encoded: &str) -> u64
+- validate_pdf_budget · function · L447-L465 — fn validate_pdf_budget(
+- enforce_pdf_budget · function · L467-L478 — fn enforce_pdf_budget(content: &mut String, data: &mut Option<String>, budget: &mut u64)
+- source_format · function · L480-L491 — fn source_format(path: &Path) -> Result<SidePanelPageFormat>
+- read_page_content · function · L493-L532 — fn read_page_content(path: &Path, format: SidePanelPageFormat) -> Result<(String, Option<String>)>
+- hydrated_content · function · L534-L541 — fn hydrated_content(path: &Path, format: SidePanelPageFormat) -> (String, Option<String>)
+- now_ms · function · L543-L548 — fn now_ms() -> u64
+- linked_file_revision · function · L550-L572 — fn linked_file_revision(path: &Path) -> u64
+- side_panel_tests · module · L576-L576 — mod side_panel_tests;

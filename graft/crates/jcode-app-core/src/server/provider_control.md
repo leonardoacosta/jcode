@@ -1,0 +1,46 @@
+# crates/jcode-app-core/src/server/provider_control.rs
+
+- AUTH_REFRESH_GENERATIONS · constant · L15-L15 — static AUTH_REFRESH_GENERATIONS: OnceLock<StdMutex<HashMap<String, u64>>> = OnceLock::new();
+- NEXT_AUTH_REFRESH_GENERATION · constant · L16-L16 — static NEXT_AUTH_REFRESH_GENERATION: AtomicU64 = AtomicU64::new(1);
+- AuthRefreshTargets · struct · L18-L22 — struct AuthRefreshTargets
+- begin_auth_refresh · function · L24-L32 — fn begin_auth_refresh(session_id: &str) -> u64
+- auth_refresh_is_current · function · L34-L40 — fn auth_refresh_is_current(session_id: &str, generation: u64) -> bool
+- finish_auth_refresh · function · L42-L50 — fn finish_auth_refresh(session_id: &str, generation: u64)
+- available_models_snapshot_into_event · function · L52-L59 — fn available_models_snapshot_into_event(snapshot: ModelCatalogSnapshot) -> ServerEvent
+- available_models_snapshot · function · L61-L64 — async fn available_models_snapshot(agent: &Arc<Mutex<Agent>>) -> ModelCatalogSnapshot
+- available_models_snapshot_from_provider · function · L66-L70 — fn available_models_snapshot_from_provider(provider: &Arc<dyn Provider>) -> ModelCatalogSnapshot
+- available_models_updated_event · function · L72-L77 — pub(super) async fn available_models_updated_event(agent: &Arc<Mutex<Agent>>) -> ServerEvent
+- try_available_models_catalog_offloaded · function · L79-L89 — pub(super) async fn try_available_models_catalog_offloaded(
+- catalog_activity · module · L92-L92 — mod catalog_activity;
+- deferred_operations · module · L96-L96 — mod deferred_operations;
+- send_model_changed_result · function · L104-L161 — fn send_model_changed_result(
+- apply_cycle_model · function · L163-L219 — fn apply_cycle_model(
+- handle_cycle_model · function · L221-L240 — pub(super) async fn handle_cycle_model(
+- premium_mode_control · module · L243-L243 — mod premium_mode_control;
+- apply_set_model · function · L246-L278 — fn apply_set_model(
+- automatic_failover_source_is_pool_member · function · L280-L352 — pub(super) fn automatic_failover_source_is_pool_member(agent: &Agent) -> bool
+- apply_set_route · function · L354-L410 — fn apply_set_route(
+- handle_set_model · function · L412-L431 — pub(super) async fn handle_set_model(
+- handle_set_route · function · L433-L465 — pub(super) async fn handle_set_route(
+- handle_refresh_models · function · L467-L547 — pub(super) async fn handle_refresh_models(
+- send_catalog_activity · function · L549-L560 — fn send_catalog_activity(client_event_tx: &mpsc::UnboundedSender<ServerEvent>, message: &str)
+- handle_set_context_cap · function · L563-L602 — pub(super) async fn handle_set_context_cap(
+- handle_set_reasoning_effort · function · L604-L623 — pub(super) async fn handle_set_reasoning_effort(
+- send_reasoning_effort_result · function · L625-L646 — fn send_reasoning_effort_result(
+- spawn_deferred_reasoning_effort_change · function · L648-L668 — fn spawn_deferred_reasoning_effort_change(
+- handle_set_service_tier · function · L670-L720 — pub(super) async fn handle_set_service_tier(
+- handle_set_transport · function · L722-L759 — pub(super) async fn handle_set_transport(
+- handle_set_compaction_mode · function · L761-L774 — pub(super) async fn handle_set_compaction_mode(
+- apply_set_compaction_mode · function · L776-L807 — async fn apply_set_compaction_mode(
+- spawn_deferred_set_compaction_mode · function · L809-L825 — fn spawn_deferred_set_compaction_mode(
+- handle_notify_auth_changed · function · L828-L1100 — pub(super) async fn handle_notify_auth_changed(
+- handle_unbound_notify_auth_changed · function · L1107-L1147 — pub(super) async fn handle_unbound_notify_auth_changed(
+- provider_control_tests · module · L1151-L1151 — mod provider_control_tests;
+- handle_switch_anthropic_account · function · L1153-L1178 — pub(super) async fn handle_switch_anthropic_account(
+- handle_switch_openai_account · function · L1180-L1205 — pub(super) async fn handle_switch_openai_account(
+- handle_invalidate_openai_usage · function · L1207-L1217 — pub(super) async fn handle_invalidate_openai_usage(
+- handle_invalidate_anthropic_usage · function · L1219-L1227 — pub(super) async fn handle_invalidate_anthropic_usage(
+- account_switch_selection · function · L1229-L1280 — fn account_switch_selection(
+- apply_account_switch · function · L1282-L1305 — fn apply_account_switch(
+- spawn_account_switch_refresh · function · L1307-L1399 — fn spawn_account_switch_refresh(
+- tests · module · L1403-L1403 — mod tests;

@@ -1,0 +1,71 @@
+# crates/jcode-session-types/src/lib.rs
+
+- title · module · L6-L6 — mod title;
+- transcription · module · L7-L7 — mod transcription;
+- ResumeTarget · enum · L18-L41 — pub enum ResumeTarget
+- stable_id · function · L44-L53 — pub fn stable_id(&self) -> &str
+- ResponseStats · struct · L62-L75 — pub struct ResponseStats
+- RenderedMessage · struct · L78-L96 — pub struct RenderedMessage
+- RenderedCompactedHistoryInfo · struct · L99-L112 — pub struct RenderedCompactedHistoryInfo
+- RenderedImageSource · enum · L116-L120 — pub enum RenderedImageSource
+- RenderedImageAnchor · enum · L127-L133 — pub enum RenderedImageAnchor
+- RenderedImage · struct · L136-L154 — pub struct RenderedImage
+- SessionStatus · enum · L157-L170 — pub enum SessionStatus
+- display · function · L173-L183 — pub fn display(&self) -> &'static str
+- icon · function · L185-L195 — pub fn icon(&self) -> &'static str
+- detail · function · L197-L203 — pub fn detail(&self) -> Option<&str>
+- SessionImproveMode · enum · L207-L216 — pub enum SessionImproveMode
+- GitState · struct · L219-L224 — pub struct GitState
+- EnvSnapshot · struct · L227-L245 — pub struct EnvSnapshot
+- StoredMemoryInjection · struct · L249-L268 — pub struct StoredMemoryInjection
+- StoredMessage · struct · L271-L283 — pub struct StoredMessage
+- StoredDisplayRole · enum · L287-L291 — pub enum StoredDisplayRole
+- StoredTokenUsage · struct · L294-L305 — pub struct StoredTokenUsage
+- StoredCompactionState · struct · L308-L316 — pub struct StoredCompactionState
+- to_message · function · L319-L326 — pub fn to_message(&self) -> Message
+- content_preview · function · L329-L352 — pub fn content_preview(&self) -> String
+- SessionSearchQueryProfile · struct · L356-L360 — pub struct SessionSearchQueryProfile
+- new · function · L363-L372 — pub fn new(query: &str) -> Self
+- is_empty · function · L374-L376 — pub fn is_empty(&self) -> bool
+- is_actionable · function · L378-L380 — pub fn is_actionable(&self) -> bool
+- SessionSearchMatchScore · struct · L384-L389 — pub struct SessionSearchMatchScore
+- score_session_search_text_match · function · L391-L434 — pub fn score_session_search_text_match(
+- session_search_raw_matches_query · function · L436-L460 — pub fn session_search_raw_matches_query(raw: &[u8], query: &SessionSearchQueryProfile) -> bool
+- session_search_path_matches_query · function · L462-L467 — pub fn session_search_path_matches_query(
+- normalized_session_search_text_matches · function · L469-L485 — pub fn normalized_session_search_text_matches(
+- tokenize_session_search_query · function · L487-L508 — pub fn tokenize_session_search_query(query: &str) -> Vec<String>
+- tokenize_prelowercased_session_search_text · function · L512-L525 — pub fn tokenize_prelowercased_session_search_text(text: &str) -> Vec<String>
+- prelowercased_tokenization_tests · module · L528-L528 — mod prelowercased_tokenization_tests;
+- is_session_search_stop_word · function · L530-L568 — pub fn is_session_search_stop_word(token: &str) -> bool
+- minimum_session_search_term_matches · function · L570-L578 — pub fn minimum_session_search_term_matches(term_count: usize) -> usize
+- contains_case_insensitive_bytes · function · L587-L622 — pub fn contains_case_insensitive_bytes(haystack: &[u8], needle_lower: &[u8]) -> bool
+- session_search_working_dir_matches · function · L624-L644 — pub fn session_search_working_dir_matches(session_wd: &str, filter: &str) -> bool
+- session_search_truncate_title_text · function · L646-L659 — pub fn session_search_truncate_title_text(text: &str, max_chars: usize) -> String
+- session_search_field_filter_matches · function · L661-L668 — pub fn session_search_field_filter_matches(value: Option<&str>, filter: Option<&str>) -> bool
+- session_search_datetime_matches · function · L670-L682 — pub fn session_search_datetime_matches(
+- session_search_format_matched_terms · function · L684-L699 — pub fn session_search_format_matched_terms(terms: &[String]) -> String
+- session_search_markdown_code_block · function · L701-L710 — pub fn session_search_markdown_code_block(text: &str) -> String
+- SessionSearchResultKind · enum · L713-L716 — pub enum SessionSearchResultKind
+- label · function · L719-L724 — pub fn label(self) -> &'static str
+- SessionSearchContextLine · struct · L728-L733 — pub struct SessionSearchContextLine
+- SessionSearchResult · struct · L736-L755 — pub struct SessionSearchResult
+- SessionSearchReport · struct · L758-L767 — pub struct SessionSearchReport
+- SessionSearchRenderOptions · struct · L770-L777 — pub struct SessionSearchRenderOptions
+- format_session_search_results · function · L779-L888 — pub fn format_session_search_results(
+- format_session_search_no_results · function · L890-L921 — pub fn format_session_search_no_results(
+- session_search_format_datetime · function · L923-L925 — pub fn session_search_format_datetime(ts: DateTime<Utc>) -> String
+- longest_repeated_char_run · function · L927-L939 — pub fn longest_repeated_char_run(text: &str, needle: char) -> usize
+- normalize_path_for_session_search_match · function · L941-L946 — pub fn normalize_path_for_session_search_match(path: &str) -> String
+- extract_session_search_snippet · function · L949-L987 — pub fn extract_session_search_snippet(
+- floor_char_boundary · function · L989-L998 — fn floor_char_boundary(s: &str, i: usize) -> usize
+- ceil_char_boundary · function · L1000-L1009 — fn ceil_char_boundary(s: &str, i: usize) -> usize
+- session_search_tests · module · L1012-L1137 — mod session_search_tests
+- query_profile_filters_stop_words_and_requires_actionable_terms · function · L1016-L1024 — fn query_profile_filters_stop_words_and_requires_actionable_terms()
+- score_text_match_handles_token_overlap_without_exact_phrase · function · L1027-L1038 — fn score_text_match_handles_token_overlap_without_exact_phrase()
+- raw_and_path_matching_are_case_insensitive · function · L1041-L1051 — fn raw_and_path_matching_are_case_insensitive()
+- contains_case_insensitive_bytes_matches_naive_reference · function · L1054-L1094 — fn contains_case_insensitive_bytes_matches_naive_reference()
+- naive · function · L1055-L1062 — fn naive(haystack: &[u8], needle_lower: &[u8]) -> bool
+- working_dir_match_is_case_insensitive_and_prefix_based · function · L1097-L1110 — fn working_dir_match_is_case_insensitive_and_prefix_based()
+- snippet_respects_utf8_boundaries · function · L1113-L1118 — fn snippet_respects_utf8_boundaries()
+- formatting_helpers_are_stable · function · L1121-L1136 — fn formatting_helpers_are_stable()
+- TurnStopReason · enum · L1143-L1152 — pub enum TurnStopReason

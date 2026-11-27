@@ -1,0 +1,37 @@
+# crates/jcode-app-core/src/server/await_members_state.rs
+
+- AWAIT_MEMBERS_DIR · constant · L11-L11 — const AWAIT_MEMBERS_DIR: &str = "jcode-await-members";
+- FINAL_STATE_TTL · constant · L12-L12 — const FINAL_STATE_TTL: Duration = Duration::from_secs(6 * 60 * 60);
+- PENDING_STATE_TTL · constant · L13-L13 — const PENDING_STATE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+- STATE_WRITE · constant · L14-L14 — static STATE_WRITE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+- PersistedAwaitMembersResult · struct · L17-L22 — pub struct PersistedAwaitMembersResult
+- PersistedAwaitMembersState · struct · L25-L53 — pub struct PersistedAwaitMembersState
+- default_true · function · L55-L57 — fn default_true() -> bool
+- dependency_id · function · L60-L62 — pub fn dependency_id(&self) -> String
+- is_pending · function · L64-L66 — pub fn is_pending(&self) -> bool
+- remaining_timeout · function · L68-L71 — pub fn remaining_timeout(&self) -> Duration
+- AwaitMembersWaiter · struct · L75-L78 — struct AwaitMembersWaiter
+- AwaitMembersRuntime · struct · L81-L84 — pub(crate) struct AwaitMembersRuntime
+- add_waiter · function · L87-L101 — pub(super) async fn add_waiter(
+- mark_active_if_new · function · L103-L106 — pub(super) async fn mark_active_if_new(&self, key: &str) -> bool
+- clear_active · function · L108-L110 — pub(super) async fn clear_active(&self, key: &str)
+- retain_open_waiters · function · L112-L123 — pub(super) async fn retain_open_waiters(&self, key: &str) -> usize
+- take_waiters · function · L125-L137 — pub(super) async fn take_waiters(
+- is_stale · function · L140-L147 — fn is_stale(state: &PersistedAwaitMembersState) -> bool
+- request_key · function · L149-L172 — pub(super) fn request_key(
+- generation_bound_key · function · L177-L190 — pub(super) fn generation_bound_key(base: &str, watched: &[String]) -> String
+- load_state · function · L192-L194 — pub(super) fn load_state(key: &str) -> Option<PersistedAwaitMembersState>
+- save_state · function · L196-L206 — pub(crate) fn save_state(state: &PersistedAwaitMembersState)
+- save_state_unlocked · function · L208-L211 — fn save_state_unlocked(state: &PersistedAwaitMembersState)
+- subscribe_dependency · function · L215-L217 — pub(crate) fn subscribe_dependency(id: &str, session_id: &str) -> anyhow::Result<()>
+- set_dependency_delivery · function · L219-L243 — pub fn set_dependency_delivery(
+- PendingScan · struct · L250-L254 — struct PendingScan
+- PENDING_SCAN · constant · L256-L256 — static PENDING_SCAN: std::sync::Mutex<Option<PendingScan>> = std::sync::Mutex::new(None);
+- PENDING_SCAN_TTL · constant · L257-L257 — const PENDING_SCAN_TTL: Duration = Duration::from_secs(5);
+- invalidate_pending_scan · function · L259-L263 — fn invalidate_pending_scan()
+- ensure_pending_state · function · L269-L305 — pub(super) fn ensure_pending_state(
+- persist_final_response · function · L307-L334 — pub(super) fn persist_final_response(
+- pending_await_members_for_session · function · L336-L343 — pub fn pending_await_members_for_session(session_id: &str) -> Vec<PersistedAwaitMembersState>
+- all_pending_await_members · function · L348-L354 — pub(super) fn all_pending_await_members() -> Vec<PersistedAwaitMembersState>
+- all_pending_await_members_including_expired · function · L361-L386 — pub(super) fn all_pending_await_members_including_expired() -> Vec<PersistedAwaitMembersState>
+- scan_pending_await_members_including_expired · function · L388-L414 — fn scan_pending_await_members_including_expired() -> Vec<PersistedAwaitMembersState>

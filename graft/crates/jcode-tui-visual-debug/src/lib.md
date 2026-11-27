@@ -1,0 +1,59 @@
+# crates/jcode-tui-visual-debug/src/lib.rs
+
+- VISUAL_DEBUG_ENABLED · constant · L19-L19 — static VISUAL_DEBUG_ENABLED: AtomicBool = AtomicBool::new(false);
+- VISUAL_DEBUG_OVERLAY · constant · L21-L21 — static VISUAL_DEBUG_OVERLAY: AtomicBool = AtomicBool::new(false);
+- MAX_FRAMES · constant · L24-L24 — const MAX_FRAMES: usize = 100;
+- FRAME_BUFFER · constant · L27-L27 — static FRAME_BUFFER: OnceLock<Mutex<FrameBuffer>> = OnceLock::new();
+- get_frame_buffer · function · L29-L31 — fn get_frame_buffer() -> &'static Mutex<FrameBuffer>
+- FrameCapture · struct · L35-L66 — pub struct FrameCapture
+- LayoutCapture · struct · L70-L93 — pub struct LayoutCapture
+- RectCapture · struct · L97-L102 — pub struct RectCapture
+- MarginsCapture · struct · L106-L110 — pub struct MarginsCapture
+- WidgetPlacementCapture · struct · L114-L118 — pub struct WidgetPlacementCapture
+- RenderTimingCapture · struct · L122-L128 — pub struct RenderTimingCapture
+- InfoWidgetSummary · struct · L132-L154 — pub struct InfoWidgetSummary
+- InfoWidgetCapture · struct · L158-L161 — pub struct InfoWidgetCapture
+- from · function · L164-L171 — fn from(r: Rect) -> Self
+- StateSnapshot · struct · L176-L197 — pub struct StateSnapshot
+- RenderedText · struct · L201-L214 — pub struct RenderedText
+- ImageRegionCapture · struct · L218-L222 — pub struct ImageRegionCapture
+- MessageCapture · struct · L226-L230 — pub struct MessageCapture
+- FrameBuffer · struct · L233-L236 — struct FrameBuffer
+- VisualDebugMemoryProfile · struct · L239-L247 — pub struct VisualDebugMemoryProfile
+- new · function · L250-L255 — fn new() -> Self
+- push · function · L257-L265 — fn push(&mut self, mut frame: FrameCapture)
+- recent · function · L267-L269 — fn recent(&self, count: usize) -> Vec<&FrameCapture>
+- frames_with_anomalies · function · L271-L276 — fn frames_with_anomalies(&self) -> Vec<&FrameCapture>
+- enable · function · L280-L283 — pub fn enable()
+- disable · function · L286-L288 — pub fn disable()
+- set_overlay · function · L291-L293 — pub fn set_overlay(enabled: bool)
+- overlay_enabled · function · L296-L298 — pub fn overlay_enabled() -> bool
+- is_enabled · function · L301-L303 — pub fn is_enabled() -> bool
+- record_frame · function · L306-L330 — pub fn record_frame(frame: FrameCapture)
+- debug_path · function · L333-L338 — fn debug_path() -> PathBuf
+- dump_to_file · function · L341-L381 — pub fn dump_to_file() -> std::io::Result<PathBuf>
+- latest_frame · function · L384-L387 — pub fn latest_frame() -> Option<FrameCapture>
+- latest_frame_json · function · L390-L393 — pub fn latest_frame_json() -> Option<String>
+- latest_frame_json_normalized · function · L397-L401 — pub fn latest_frame_json_normalized() -> Option<String>
+- estimate_json_bytes · function · L403-L407 — fn estimate_json_bytes<T: Serialize>(value: &T) -> usize
+- debug_memory_profile · function · L409-L432 — pub fn debug_memory_profile() -> VisualDebugMemoryProfile
+- normalize_frame · function · L436-L439 — pub fn normalize_frame(frame: &FrameCapture) -> serde_json::Value
+- normalize_json_value · function · L442-L465 — fn normalize_json_value(value: serde_json::Value) -> serde_json::Value
+- normalize_string · function · L468-L567 — fn normalize_string(s: &str) -> String
+- compile_regex · function · L472-L483 — fn compile_regex(pattern: &str) -> Option<Regex>
+- UUID_RE · constant · L486-L486 — static UUID_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- SESSION_ID_RE · constant · L487-L487 — static SESSION_ID_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- TIMESTAMP_RE · constant · L488-L488 — static TIMESTAMP_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- ISO_DATE_RE · constant · L489-L489 — static ISO_DATE_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- DURATION_RE · constant · L490-L490 — static DURATION_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- PATH_RE · constant · L491-L491 — static PATH_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- ELAPSED_RE · constant · L492-L492 — static ELAPSED_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- TOKENS_RE · constant · L493-L493 — static TOKENS_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- frames_equal_normalized · function · L570-L574 — pub fn frames_equal_normalized(a: &FrameCapture, b: &FrameCapture) -> bool
+- write_frame · function · L576-L763 — fn write_frame(file: &mut File, frame: &FrameCapture) -> std::io::Result<()>
+- FrameCaptureBuilder · struct · L767-L781 — pub struct FrameCaptureBuilder
+- new · function · L784-L789 — pub fn new(width: u16, height: u16) -> Self
+- anomaly · function · L792-L794 — pub fn anomaly(&mut self, msg: impl Into<String>)
+- check · function · L797-L801 — pub fn check(&mut self, condition: bool, msg: impl Into<String>)
+- build · function · L804-L822 — pub fn build(self) -> FrameCapture
+- check_shift_enter_anomaly · function · L826-L852 — pub fn check_shift_enter_anomaly(

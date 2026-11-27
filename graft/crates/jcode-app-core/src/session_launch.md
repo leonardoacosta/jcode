@@ -1,0 +1,39 @@
+# crates/jcode-app-core/src/session_launch.rs
+
+- resume_provider_arg · function · L25-L30 — fn resume_provider_arg(provider_key: Option<&str>) -> Option<&'static str>
+- SessionSpawnContext · struct · L37-L50 — pub struct SessionSpawnContext
+- kind · function · L53-L60 — pub fn kind(kind: impl Into<String>) -> Self
+- env · function · L62-L65 — pub fn env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self
+- with_client_terminal_env · function · L68-L71 — pub fn with_client_terminal_env(mut self, env: Vec<(String, String)>) -> Self
+- with_runtime_env · function · L74-L77 — pub fn with_runtime_env(mut self, env: Vec<(String, String)>) -> Self
+- with_local_runtime · function · L81-L106 — pub fn with_local_runtime(mut self, connected_socket: &std::path::Path) -> Self
+- apply · function · L108-L127 — fn apply(
+- resume_args · function · L131-L150 — fn resume_args(
+- resumed_window_title · function · L153-L171 — pub fn resumed_window_title(session_id: &str) -> String
+- focus_session_via_hook · function · L178-L180 — pub fn focus_session_via_hook(session_id: &str, title: &str) -> bool
+- focus_session_via_hook_with_env · function · L186-L235 — pub fn focus_session_via_hook_with_env(
+- focus_session_window_best_effort · function · L239-L241 — pub fn focus_session_window_best_effort(session_id: &str, title: &str)
+- focus_session_window_best_effort_with_env · function · L245-L254 — pub fn focus_session_window_best_effort_with_env(
+- focus_title_best_effort · function · L257-L274 — fn focus_title_best_effort(title: &str)
+- focus_title_best_effort · function · L277-L277 — fn focus_title_best_effort(_title: &str) {}
+- spawn_resume_in_new_terminal · function · L280-L286 — pub fn spawn_resume_in_new_terminal(
+- spawn_resume_in_new_terminal_with_provider · function · L289-L302 — pub fn spawn_resume_in_new_terminal_with_provider(
+- spawn_resume_in_new_terminal_with_context · function · L305-L319 — pub fn spawn_resume_in_new_terminal_with_context(
+- spawn_selfdev_in_new_terminal · function · L322-L328 — pub fn spawn_selfdev_in_new_terminal(
+- spawn_selfdev_in_new_terminal_with_provider · function · L331-L344 — pub fn spawn_selfdev_in_new_terminal_with_provider(
+- spawn_selfdev_in_new_terminal_with_context · function · L347-L378 — pub fn spawn_selfdev_in_new_terminal_with_context(
+- find_wezterm_gui_binary · function · L381-L430 — fn find_wezterm_gui_binary() -> Option<String>
+- resume_terminal_candidates_windows · function · L433-L452 — fn resume_terminal_candidates_windows() -> Vec<String>
+- spawn_resume_in_new_terminal · function · L455-L461 — pub fn spawn_resume_in_new_terminal(
+- spawn_resume_in_new_terminal_with_provider · function · L464-L477 — pub fn spawn_resume_in_new_terminal_with_provider(
+- spawn_resume_in_new_terminal_with_context · function · L480-L577 — pub fn spawn_resume_in_new_terminal_with_context(
+- spawn_selfdev_in_new_terminal · function · L580-L586 — pub fn spawn_selfdev_in_new_terminal(
+- spawn_selfdev_in_new_terminal_with_provider · function · L589-L602 — pub fn spawn_selfdev_in_new_terminal_with_provider(
+- spawn_selfdev_in_new_terminal_with_context · function · L605-L702 — pub fn spawn_selfdev_in_new_terminal_with_context(
+- runtime_context_tests · module · L705-L876 — mod runtime_context_tests
+- app_core_runtime_allowlist_facade_is_portable · function · L709-L712 — fn app_core_runtime_allowlist_facade_is_portable()
+- value · function · L714-L720 — fn value<'a>(context: &'a SessionSpawnContext, key: &str) -> Option<&'a str>
+- run_isolated_context_case · function · L722-L777 — fn run_isolated_context_case(mode: &str) -> std::process::Output
+- local_runtime_context_captures_custom_paths_and_connected_socket · function · L781-L789 — fn local_runtime_context_captures_custom_paths_and_connected_socket()
+- local_runtime_context_uses_effective_default_home_and_optional_values · function · L793-L801 — fn local_runtime_context_uses_effective_default_home_and_optional_values()
+- runtime_context_child · function · L805-L875 — fn runtime_context_child()

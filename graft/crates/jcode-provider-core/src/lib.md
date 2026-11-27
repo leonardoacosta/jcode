@@ -1,0 +1,172 @@
+# crates/jcode-provider-core/src/lib.rs
+
+- anthropic · module · L1-L1 — pub mod anthropic;
+- attempt_tracker · module · L2-L2 — pub mod attempt_tracker;
+- auth_mode · module · L3-L3 — pub mod auth_mode;
+- catalog_refresh · module · L4-L4 — pub mod catalog_refresh;
+- failover · module · L5-L5 — pub mod failover;
+- fallback_pick · module · L6-L6 — pub mod fallback_pick;
+- fingerprint · module · L7-L7 — pub mod fingerprint;
+- model_id · module · L8-L8 — pub mod model_id;
+- model_names · module · L9-L9 — pub mod model_names;
+- models · module · L10-L10 — pub mod models;
+- openai_schema · module · L11-L11 — pub mod openai_schema;
+- pricing · module · L12-L12 — pub mod pricing;
+- provider_call_budget · module · L13-L13 — pub mod provider_call_budget;
+- provider_monetary_budget · module · L14-L14 — pub mod provider_monetary_budget;
+- reasoning · module · L15-L15 — pub mod reasoning;
+- request_compression · module · L16-L16 — pub mod request_compression;
+- retry_after · module · L17-L17 — pub mod retry_after;
+- selection · module · L18-L18 — pub mod selection;
+- service_tier · module · L19-L19 — pub mod service_tier;
+- transport · module · L20-L20 — pub mod transport;
+- ws_deflate · module · L21-L21 — pub mod ws_deflate;
+- scope_plan_mode · function · L26-L31 — pub async fn scope_plan_mode<T>(
+- plan_mode_active · function · L33-L35 — pub fn plan_mode_active() -> bool
+- EventStream · type · L93-L93 — pub type EventStream = Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>;
+- InputCompressionProfile · enum · L96-L100 — pub enum InputCompressionProfile
+- header_value · function · L103-L109 — pub fn header_value(self) -> &'static str
+- Provider · interface · L114-L606 — pub trait Provider: Send + Sync
+- monetary_capability · function · L117-L119 — fn monetary_capability(&self) -> Option<provider_monetary_budget::MonetaryCapability>
+- set_input_compression_profile · function · L122-L124 — fn set_input_compression_profile(&self, _profile: InputCompressionProfile) -> bool
+- set_session_id · function · L129-L129 — fn set_session_id(&self, _session_id: &str) {}
+- prewarm · function · L135-L135 — async fn prewarm(&self, _tools: &[ToolDefinition], _system_static: &str) {}
+- complete · function · L139-L145 — async fn complete(
+- complete_split · function · L148-L159 — async fn complete_split(
+- name · function · L168-L168 — fn name(&self) -> &str;
+- display_name · function · L177-L179 — fn display_name(&self) -> String
+- catalog_sharing_identity · function · L188-L190 — fn catalog_sharing_identity(&self) -> Option<String>
+- model · function · L193-L195 — fn model(&self) -> String
+- active_auth_method_label · function · L202-L205 — fn active_auth_method_label(&self) -> Option<&'static str>
+- active_resolved_credential · function · L218-L220 — fn active_resolved_credential(&self) -> Option<ResolvedCredential>
+- active_explicit_credential · function · L232-L234 — fn active_explicit_credential(&self) -> Option<ResolvedCredential>
+- set_oauth_account · function · L238-L243 — fn set_oauth_account(&self, label: Option<&str>) -> Result<()>
+- oauth_account_label · function · L246-L248 — fn oauth_account_label(&self) -> Option<String>
+- serving_oauth_account_label · function · L253-L255 — fn serving_oauth_account_label(&self) -> Option<String>
+- active_oauth_account_email · function · L260-L262 — fn active_oauth_account_email(&self) -> Option<String>
+- supports_image_input · function · L265-L267 — fn supports_image_input(&self) -> bool
+- supports_deferred_tools · function · L273-L275 — fn supports_deferred_tools(&self) -> bool
+- set_model · function · L278-L282 — fn set_model(&self, _model: &str) -> Result<()>
+- set_route_selection · function · L289-L291 — fn set_route_selection(&self, selection: &RouteSelection) -> Result<()>
+- available_models · function · L294-L296 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L299-L305 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L308-L313 — fn available_models_for_switching(&self) -> Vec<String>
+- available_providers_for_model · function · L316-L318 — fn available_providers_for_model(&self, _model: &str) -> Vec<String>
+- provider_details_for_model · function · L321-L323 — fn provider_details_for_model(&self, _model: &str) -> Vec<(String, String)>
+- preferred_provider · function · L326-L328 — fn preferred_provider(&self) -> Option<String>
+- model_routes · function · L331-L333 — fn model_routes(&self) -> Vec<ModelRoute>
+- model_catalog_snapshot · function · L337-L344 — fn model_catalog_snapshot(&self) -> ModelCatalogSnapshot
+- prefetch_models · function · L347-L349 — async fn prefetch_models(&self) -> Result<()>
+- model_capabilities_need_refresh · function · L355-L357 — fn model_capabilities_need_refresh(&self) -> bool
+- refresh_model_catalog · function · L360-L372 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- on_auth_changed · function · L375-L375 — fn on_auth_changed(&self) {}
+- on_auth_changed_preserve_current_provider · function · L380-L382 — fn on_auth_changed_preserve_current_provider(&self)
+- auth_model_refresh_pending · function · L388-L390 — fn auth_model_refresh_pending(&self) -> bool
+- reasoning_effort · function · L393-L395 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L398-L402 — fn set_reasoning_effort(&self, _effort: &str) -> Result<()>
+- available_efforts · function · L405-L407 — fn available_efforts(&self) -> Vec<&'static str>
+- service_tier · function · L410-L412 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L415-L419 — fn set_service_tier(&self, _service_tier: &str) -> Result<()>
+- available_service_tiers · function · L422-L424 — fn available_service_tiers(&self) -> Vec<&'static str>
+- native_compaction_mode · function · L427-L429 — fn native_compaction_mode(&self) -> Option<String>
+- native_compaction_threshold_tokens · function · L432-L434 — fn native_compaction_threshold_tokens(&self) -> Option<usize>
+- transport · function · L436-L438 — fn transport(&self) -> Option<String>
+- set_transport · function · L440-L444 — fn set_transport(&self, _transport: &str) -> Result<()>
+- available_transports · function · L446-L448 — fn available_transports(&self) -> Vec<&'static str>
+- handles_tools_internally · function · L451-L453 — fn handles_tools_internally(&self) -> bool
+- invalidate_credentials · function · L456-L456 — async fn invalidate_credentials(&self) {}
+- set_premium_mode · function · L459-L459 — fn set_premium_mode(&self, _mode: PremiumMode) {}
+- premium_mode · function · L462-L464 — fn premium_mode(&self) -> PremiumMode
+- credential_mode · function · L468-L470 — fn credential_mode(&self) -> CredentialMode
+- set_credential_mode · function · L473-L475 — fn set_credential_mode(&self, _mode: CredentialMode) -> Result<()>
+- reload_credentials · function · L480-L480 — fn reload_credentials(&self) {}
+- runtime_display_name · function · L485-L487 — fn runtime_display_name(&self) -> String
+- supports_provider_routing_features · function · L492-L494 — fn supports_provider_routing_features(&self) -> bool
+- direct_openai_compatible_route_parts · function · L499-L501 — fn direct_openai_compatible_route_parts(&self) -> Option<(String, String, String)>
+- explicit_provider_pin_for_current_model · function · L505-L507 — fn explicit_provider_pin_for_current_model(&self) -> Option<String>
+- maybe_schedule_endpoint_refresh_for_display · function · L511-L518 — fn maybe_schedule_endpoint_refresh_for_display(
+- model_catalog_detail · function · L523-L525 — fn model_catalog_detail(&self) -> String
+- supports_compaction · function · L528-L530 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L533-L535 — fn uses_jcode_compaction(&self) -> bool
+- native_compact · function · L538-L547 — async fn native_compact(
+- context_window · function · L550-L553 — fn context_window(&self) -> usize
+- fork · function · L556-L556 — fn fork(&self) -> Arc<dyn Provider>;
+- fork_for_new_session · function · L564-L566 — fn fork_for_new_session(&self) -> Arc<dyn Provider>
+- native_result_sender · function · L569-L571 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- drain_startup_notices · function · L574-L576 — fn drain_startup_notices(&self) -> Vec<String>
+- switch_active_provider_to · function · L579-L583 — fn switch_active_provider_to(&self, _provider: &str) -> Result<()>
+- complete_simple · function · L586-L590 — async fn complete_simple(&self, prompt: &str, system: &str) -> Result<String>
+- complete_simple_with_usage · function · L599-L605 — async fn complete_simple_with_usage(
+- collect_simple_completion · function · L610-L712 — pub async fn collect_simple_completion<P: Provider + ?Sized>(
+- is_guardrail_stop_reason · function · L716-L724 — pub fn is_guardrail_stop_reason(stop_reason: Option<&str>) -> bool
+- SimpleCompletionError · struct · L730-L737 — pub struct SimpleCompletionError
+- new · function · L740-L752 — pub fn new(
+- fmt · function · L756-L758 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- source · function · L762-L764 — fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+- SimpleCompletionUsage · struct · L774-L783 — pub struct SimpleCompletionUsage
+- nonempty_response_model · function · L786-L788 — pub fn nonempty_response_model(model: Option<&str>) -> Option<&str>
+- observe · function · L791-L810 — pub fn observe(
+- is_empty · function · L812-L817 — pub fn is_empty(&self) -> bool
+- PremiumMode · enum · L826-L830 — pub enum PremiumMode
+- CredentialMode · enum · L836-L841 — pub enum CredentialMode
+- from_runtime_env · function · L846-L852 — pub fn from_runtime_env(provider: DualAuthProvider) -> Self
+- auth_route · function · L856-L868 — pub fn auth_route(self, provider: DualAuthProvider) -> Option<AuthRoute>
+- NativeToolResultSender · type · L872-L872 — pub type NativeToolResultSender = tokio::sync::mpsc::Sender<NativeToolResult>;
+- NativeToolResult · struct · L876-L882 — pub struct NativeToolResult
+- NativeToolResultPayload · struct · L885-L890 — pub struct NativeToolResultPayload
+- success · function · L893-L903 — pub fn success(request_id: String, output: String) -> Self
+- error · function · L905-L915 — pub fn error(request_id: String, error: String) -> Self
+- JCODE_USER_AGENT · constant · L919-L919 — pub const JCODE_USER_AGENT: &str = concat!("jcode/", env!("CARGO_PKG_VERSION"));
+- http_client · module · L921-L921 — mod http_client;
+- NativeCompactionResult · struct · L927-L932 — pub struct NativeCompactionResult
+- ModelRoute · struct · L936-L946 — pub struct ModelRoute
+- RuntimeKey · enum · L957-L987 — pub enum RuntimeKey
+- from_api_method · function · L990-L1013 — pub fn from_api_method(api_method: &ModelRouteApiMethod, _provider_label: &str) -> Self
+- stable_id · function · L1015-L1038 — pub fn stable_id(&self) -> String
+- RouteSelection · struct · L1047-L1054 — pub struct RouteSelection
+- from_model_route · function · L1057-L1066 — pub fn from_model_route(route: &ModelRoute) -> Self
+- account_label · function · L1069-L1071 — pub fn account_label(&self) -> Option<&str>
+- routed_model_spec · function · L1082-L1127 — pub fn routed_model_spec(&self) -> String
+- grok_build_model_spec · function · L1133-L1136 — pub fn grok_build_model_spec(model: &str) -> String
+- openrouter_catalog_model_id · function · L1142-L1149 — fn openrouter_catalog_model_id(model: &str) -> String
+- ModelRouteApiMethod · enum · L1157-L1174 — pub enum ModelRouteApiMethod
+- oauth_account_label · function · L1177-L1187 — pub fn oauth_account_label(method: &str) -> Option<&str>
+- from_auth_route · function · L1191-L1199 — pub fn from_auth_route(route: crate::auth_mode::AuthRoute) -> Self
+- parse · function · L1201-L1237 — pub fn parse(value: &str) -> Self
+- profile_id · function · L1239-L1246 — pub fn profile_id(&self) -> Option<&str>
+- is_openai_compatible · function · L1248-L1250 — pub fn is_openai_compatible(&self) -> bool
+- is_openrouter · function · L1252-L1254 — pub fn is_openrouter(&self) -> bool
+- is_copilot · function · L1256-L1258 — pub fn is_copilot(&self) -> bool
+- is_cursor · function · L1260-L1262 — pub fn is_cursor(&self) -> bool
+- is_bedrock · function · L1264-L1266 — pub fn is_bedrock(&self) -> bool
+- matches_openai_compatible_profile · function · L1268-L1271 — pub fn matches_openai_compatible_profile(&self, provider_id: &str) -> bool
+- is_anthropic_credential_route · function · L1273-L1275 — pub fn is_anthropic_credential_route(&self) -> bool
+- is_openai_credential_route · function · L1277-L1279 — pub fn is_openai_credential_route(&self) -> bool
+- display_label · function · L1281-L1302 — pub fn display_label(&self) -> String
+- normalize_model_route_provider_label · function · L1305-L1310 — pub fn normalize_model_route_provider_label(value: &str) -> String
+- model_route_provider_labels_match · function · L1312-L1336 — pub fn model_route_provider_labels_match(route_provider: &str, current_provider: &str) -> bool
+- model_route_provider_labels_related · function · L1338-L1348 — pub fn model_route_provider_labels_related(route_provider: &str, login_provider: &str) -> bool
+- model_route_provider_matches_key · function · L1350-L1393 — pub fn model_route_provider_matches_key(
+- model_route_metadata_is_recommended · function · L1395-L1420 — pub fn model_route_metadata_is_recommended(
+- api_method_kind · function · L1423-L1425 — pub fn api_method_kind(&self) -> ModelRouteApiMethod
+- estimated_reference_cost_micros · function · L1427-L1431 — pub fn estimated_reference_cost_micros(&self) -> Option<u64>
+- ModelCatalogSnapshot · struct · L1441-L1450 — pub struct ModelCatalogSnapshot
+- new · function · L1453-L1465 — pub fn new(
+- from_provider · function · L1467-L1469 — pub fn from_provider(provider: &dyn Provider) -> Self
+- has_routes · function · L1471-L1473 — pub fn has_routes(&self) -> bool
+- CHEAPNESS_REFERENCE_INPUT_TOKENS · constant · L1476-L1476 — pub const CHEAPNESS_REFERENCE_INPUT_TOKENS: u64 = 25_000;
+- CHEAPNESS_REFERENCE_OUTPUT_TOKENS · constant · L1477-L1477 — pub const CHEAPNESS_REFERENCE_OUTPUT_TOKENS: u64 = 5_000;
+- ResolvedCredential · enum · L1486-L1491 — pub enum ResolvedCredential
+- auth_method_label · function · L1495-L1500 — pub fn auth_method_label(self) -> &'static str
+- is_subscription · function · L1504-L1506 — pub fn is_subscription(self) -> bool
+- RouteBillingKind · enum · L1511-L1516 — pub enum RouteBillingKind
+- RouteCostSource · enum · L1520-L1529 — pub enum RouteCostSource
+- RouteCostConfidence · enum · L1533-L1539 — pub enum RouteCostConfidence
+- RouteCheapnessEstimate · struct · L1542-L1562 — pub struct RouteCheapnessEstimate
+- metered · function · L1565-L1590 — pub fn metered(
+- subscription · function · L1592-L1614 — pub fn subscription(
+- included_quota · function · L1616-L1638 — pub fn included_quota(
+- reference_request_cost_micros · function · L1641-L1647 — fn reference_request_cost_micros(
+- saved_account_route_tests · module · L1651-L1651 — mod saved_account_route_tests;
+- tests · module · L1655-L1655 — mod tests;
+- catalog_snapshot_tests · module · L1658-L1658 — mod catalog_snapshot_tests;

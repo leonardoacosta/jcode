@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/server/client_disconnect_cleanup.rs
+
+- ChannelSubscriptions · type · L17-L17 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- RELOAD_DISCONNECT_MARKER_MAX_AGE · constant · L19-L19 — const RELOAD_DISCONNECT_MARKER_MAX_AGE: Duration = Duration::from_secs(30);
+- IDLE_RECONNECT_GRACE · constant · L20-L20 — pub(super) const IDLE_RECONNECT_GRACE: Duration = Duration::from_secs(30);
+- attachment_was_replaced · function · L31-L41 — async fn attachment_was_replaced(
+- DisconnectDisposition · enum · L44-L48 — enum DisconnectDisposition
+- disconnect_disposition · function · L50-L62 — fn disconnect_disposition(disconnected_while_processing: bool) -> DisconnectDisposition
+- disconnected_while_processing · function · L64-L73 — fn disconnected_while_processing(
+- record_transport_closed · function · L78-L93 — pub(super) async fn record_transport_closed(
+- detach_client_attachment · function · L96-L107 — pub(super) async fn detach_client_attachment(
+- cleanup_client_connection · function · L114-L425 — pub(super) async fn cleanup_client_connection(
+- window_closure_tests · module · L429-L429 — mod window_closure_tests;
+- grace_tests · module · L433-L433 — mod grace_tests;
+- tests · module · L436-L512 — mod tests
+- idle_disconnect_is_closed · function · L440-L442 — fn idle_disconnect_is_closed()
+- completed_task_overrides_stale_processing_flag · function · L445-L454 — async fn completed_task_overrides_stale_processing_flag()
+- unfinished_task_is_processing_even_without_cached_flag · function · L457-L463 — async fn unfinished_task_is_processing_even_without_cached_flag()
+- running_disconnect_without_reload_is_crash · function · L466-L470 — fn running_disconnect_without_reload_is_crash()
+- running_disconnect_during_reload_is_expected · function · L473-L491 — fn running_disconnect_during_reload_is_expected()
+- running_disconnect_during_recent_socket_ready_reload_is_expected · function · L494-L511 — fn running_disconnect_during_recent_socket_ready_reload_is_expected()

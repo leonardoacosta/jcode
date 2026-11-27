@@ -1,0 +1,73 @@
+# crates/jcode-app-core/src/overnight.rs
+
+- RESOURCE_SAMPLE_INTERVAL · constant · L31-L31 — const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
+- LONG_TURN_NOTICE_INTERVAL · constant · L32-L32 — const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
+- admission · module · L34-L34 — mod admission;
+- usage · module · L35-L35 — mod usage;
+- OvernightLaunch · struct · L44-L50 — pub struct OvernightLaunch
+- OvernightStartOptions · struct · L52-L62 — pub struct OvernightStartOptions
+- revalidate_task_admission · function · L66-L84 — pub fn revalidate_task_admission(
+- ensure_task_dispatch · function · L88-L103 — pub fn ensure_task_dispatch(
+- start_overnight_run · function · L105-L220 — pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLaunch>
+- create_coordinator_session · function · L222-L242 — fn create_coordinator_session(parent: &Session, mission: &Option<String>) -> Result<Session>
+- spawn_supervisor · function · L244-L282 — fn spawn_supervisor(
+- run_supervisor · function · L284-L456 — async fn run_supervisor(
+- run_turn_monitored · function · L458-L505 — async fn run_turn_monitored(
+- gather_preflight · function · L507-L518 — async fn gather_preflight(manifest: &OvernightManifest) -> OvernightPreflight
+- build_usage_projection · function · L520-L602 — fn build_usage_projection(
+- gather_resource_snapshot · function · L604-L633 — pub fn gather_resource_snapshot(working_dir: Option<&Path>) -> ResourceSnapshot
+- detect_memory · function · L635-L667 — fn detect_memory() -> (Option<u64>, Option<u64>, Option<u64>, Option<u64>)
+- parse_meminfo_kb · function · L670-L672 — fn parse_meminfo_kb(rest: &str) -> Option<u64>
+- detect_load · function · L674-L692 — fn detect_load() -> (Option<f64>, Option<usize>)
+- detect_battery · function · L694-L720 — fn detect_battery() -> (Option<u8>, Option<String>)
+- disk_available_gb · function · L722-L740 — fn disk_available_gb(path: &Path) -> Option<f64>
+- gather_git_snapshot · function · L742-L777 — pub fn gather_git_snapshot(working_dir: Option<&Path>) -> GitSnapshot
+- run_git · function · L779-L790 — fn run_git(dir: &Path, args: &[&str]) -> std::result::Result<String, String>
+- overnight_root_dir · function · L792-L794 — pub fn overnight_root_dir() -> Result<PathBuf>
+- runs_dir · function · L796-L798 — pub fn runs_dir() -> Result<PathBuf>
+- run_dir · function · L800-L802 — pub fn run_dir(run_id: &str) -> Result<PathBuf>
+- manifest_path · function · L804-L806 — pub fn manifest_path(run_id: &str) -> Result<PathBuf>
+- save_manifest · function · L808-L810 — pub fn save_manifest(manifest: &OvernightManifest) -> Result<()>
+- load_manifest · function · L812-L814 — pub fn load_manifest(run_id: &str) -> Result<OvernightManifest>
+- latest_manifest · function · L816-L840 — pub fn latest_manifest() -> Result<Option<OvernightManifest>>
+- session_manifests_newest_first · function · L844-L871 — pub fn session_manifests_newest_first(session_id: &str) -> Result<Vec<OvernightManifest>>
+- supervisor_is_alive · function · L874-L876 — pub fn supervisor_is_alive(manifest: &OvernightManifest) -> bool
+- process_is_alive · function · L879-L890 — fn process_is_alive(pid: u32) -> bool
+- process_is_alive · function · L893-L895 — fn process_is_alive(pid: u32) -> bool
+- is_stale · function · L898-L900 — pub fn is_stale(manifest: &OvernightManifest) -> bool
+- stale_pid · function · L903-L909 — pub fn stale_pid(manifest: &OvernightManifest) -> Option<u32>
+- cancel_latest_run · function · L911-L934 — pub fn cancel_latest_run() -> Result<OvernightManifest>
+- read_events · function · L936-L945 — pub fn read_events(manifest: &OvernightManifest) -> Result<Vec<OvernightEvent>>
+- read_task_cards · function · L947-L992 — pub fn read_task_cards(manifest: &OvernightManifest) -> Result<Vec<OvernightTaskCard>>
+- summarize_task_cards · function · L994-L996 — pub fn summarize_task_cards(manifest: &OvernightManifest) -> OvernightTaskCardSummary
+- format_progress_card_content · function · L998-L1000 — pub fn format_progress_card_content(manifest: &OvernightManifest) -> Result<String>
+- latest_progress_card_content · function · L1002-L1006 — pub fn latest_progress_card_content() -> Result<Option<String>>
+- build_progress_card · function · L1008-L1021 — pub fn build_progress_card(manifest: &OvernightManifest) -> OvernightProgressCard
+- read_preflight · function · L1023-L1028 — fn read_preflight(manifest: &OvernightManifest) -> Option<OvernightPreflight>
+- record_event · function · L1030-L1078 — pub fn record_event(
+- mark_completed · function · L1080-L1100 — async fn mark_completed(
+- format_status_markdown · function · L1102-L1105 — pub fn format_status_markdown(manifest: &OvernightManifest) -> String
+- format_log_markdown · function · L1107-L1110 — pub fn format_log_markdown(manifest: &OvernightManifest, max_lines: usize) -> String
+- write_initial_review_notes · function · L1112-L1123 — fn write_initial_review_notes(manifest: &OvernightManifest) -> Result<()>
+- write_task_card_schema · function · L1125-L1173 — fn write_task_card_schema(manifest: &OvernightManifest) -> Result<()>
+- render_review_html · function · L1175-L1199 — pub fn render_review_html(manifest: &OvernightManifest) -> Result<()>
+- write_text_file · function · L1201-L1207 — fn write_text_file(path: &Path, content: &str) -> Result<()>
+- tests · module · L1210-L1636 — mod tests
+- test_manifest · function · L1213-L1249 — pub(in crate::overnight) fn test_manifest(root: &Path, run_id: &str) -> OvernightManifest
+- task_admission_native_manifest_revalidates_cancel_owner_and_policy · function · L1252-L1311 — fn task_admission_native_manifest_revalidates_cancel_owner_and_policy()
+- task_admission_legacy_manifest_has_no_implicit_authority · function · L1314-L1321 — fn task_admission_legacy_manifest_has_no_implicit_authority()
+- parse_duration_accepts_hours_minutes_and_decimals · function · L1324-L1329 — fn parse_duration_accepts_hours_minutes_and_decimals()
+- parse_overnight_command_start_with_mission · function · L1332-L1343 — fn parse_overnight_command_start_with_mission()
+- parse_overnight_command_subcommands · function · L1346-L1369 — fn parse_overnight_command_subcommands()
+- html_escape_escapes_basic_entities · function · L1372-L1374 — fn html_escape_escapes_basic_entities()
+- render_review_html_writes_required_sections · function · L1377-L1390 — fn render_review_html_writes_required_sections()
+- task_card_summary_reads_structured_json_cards · function · L1393-L1433 — fn task_card_summary_reads_structured_json_cards()
+- progress_card_content_includes_task_summary_and_latest_event · function · L1436-L1480 — fn progress_card_content_includes_task_summary_and_latest_event()
+- write_run · function · L1482-L1496 — fn write_run(
+- with_home · function · L1498-L1508 — fn with_home<T>(home: &Path, f: impl FnOnce() -> T) -> T
+- latest_manifest_skips_corrupt_entries · function · L1511-L1523 — fn latest_manifest_skips_corrupt_entries()
+- unknown_status_manifest_is_terminal_for_cancel · function · L1526-L1539 — fn unknown_status_manifest_is_terminal_for_cancel()
+- blocked_and_unknown_fail_admission_revalidation · function · L1542-L1563 — fn blocked_and_unknown_fail_admission_revalidation()
+- stale_detection_uses_process_liveness_and_status · function · L1566-L1583 — fn stale_detection_uses_process_liveness_and_status()
+- status_markdown_labels_stale_without_rewriting_manifest · function · L1586-L1606 — fn status_markdown_labels_stale_without_rewriting_manifest()
+- render_review_html_includes_structured_task_cards · function · L1609-L1635 — fn render_review_html_includes_structured_task_cards()

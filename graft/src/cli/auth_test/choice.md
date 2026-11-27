@@ -1,0 +1,36 @@
+# src/cli/auth_test/choice.rs
+
+- AuthTestChoicePlan · enum · L2-L5 — pub(crate) enum AuthTestChoicePlan
+- OpenAiCompatibleModelsResponse · struct · L8-L11 — struct OpenAiCompatibleModelsResponse
+- OpenAiCompatibleModelInfo · struct · L14-L16 — struct OpenAiCompatibleModelInfo
+- auth_test_choice_plan · function · L18-L47 — pub(crate) async fn auth_test_choice_plan(
+- tool_smoke_skip_detail_for_choice · function · L49-L89 — pub(crate) fn tool_smoke_skip_detail_for_choice(
+- effective_openai_compatible_auth_test_model · function · L91-L128 — fn effective_openai_compatible_auth_test_model(
+- nvidia_nim_model_supports_openai_tools · function · L130-L137 — fn nvidia_nim_model_supports_openai_tools(model: &str) -> bool
+- discover_openai_compatible_validation_model · function · L139-L189 — async fn discover_openai_compatible_validation_model(
+- nvidia_nim_tool_smoke_tests · module · L192-L259 — mod nvidia_nim_tool_smoke_tests
+- skips_kimi_k2_6_tool_smoke_for_nvidia_nim · function · L196-L205 — fn skips_kimi_k2_6_tool_smoke_for_nvidia_nim()
+- allows_other_nvidia_nim_models_to_attempt_tool_smoke · function · L208-L216 — fn allows_other_nvidia_nim_models_to_attempt_tool_smoke()
+- does_not_apply_nvidia_skip_to_other_providers · function · L219-L227 — fn does_not_apply_nvidia_skip_to_other_providers()
+- skips_fpt_tool_smoke_for_vllm_auto_tool_choice_gap · function · L230-L240 — fn skips_fpt_tool_smoke_for_vllm_auto_tool_choice_gap()
+- allows_cerebras_models_to_attempt_tool_smoke · function · L243-L258 — fn allows_cerebras_models_to_attempt_tool_smoke()
+- run_provider_smoke_for_choice · function · L261-L277 — async fn run_provider_smoke_for_choice(
+- run_provider_tool_smoke_for_choice · function · L279-L323 — async fn run_provider_tool_smoke_for_choice(
+- validate_auth_test_tool_smoke_transcript · function · L325-L427 — fn validate_auth_test_tool_smoke_transcript(
+- ensure_auth_test_tool_count · function · L429-L435 — fn ensure_auth_test_tool_count(count: usize) -> Result<()>
+- run_auth_test_with_retry · function · L437-L466 — async fn run_auth_test_with_retry<F, Fut>(mut f: F) -> Result<String>
+- RETRY_DELAYS · constant · L442-L442 — const RETRY_DELAYS: &[Duration] = &[Duration::from_secs(3), Duration::from_secs(8)];
+- auth_test_error_is_retryable · function · L468-L504 — pub(crate) fn auth_test_error_is_retryable(err: &anyhow::Error) -> bool
+- auth_test_report_label · function · L512-L520 — fn auth_test_report_label(report: &AuthTestProviderReport) -> String
+- print_auth_test_reports · function · L522-L543 — fn print_auth_test_reports(reports: &[AuthTestProviderReport])
+- report_label_tests · module · L546-L590 — mod report_label_tests
+- report · function · L549-L558 — fn report(provider: &str) -> AuthTestProviderReport
+- named_profile_is_named_in_the_report_header · function · L564-L589 — fn named_profile_is_named_in_the_report_header()
+- auth_tool_smoke_tests · module · L593-L684 — mod auth_tool_smoke_tests
+- stored_message · function · L596-L609 — fn stored_message(
+- valid_tool_transcript · function · L611-L631 — fn valid_tool_transcript() -> Vec<crate::session::StoredMessage>
+- auth_test_tool_smoke_validation_accepts_real_successful_loop · function · L634-L637 — fn auth_test_tool_smoke_validation_accepts_real_successful_loop()
+- auth_test_tool_smoke_validation_rejects_no_tool_call · function · L640-L645 — fn auth_test_tool_smoke_validation_rejects_no_tool_call()
+- auth_test_tool_smoke_validation_rejects_empty_tool_name · function · L648-L657 — fn auth_test_tool_smoke_validation_rejects_empty_tool_name()
+- auth_test_tool_smoke_validation_rejects_unexpected_command · function · L660-L669 — fn auth_test_tool_smoke_validation_rejects_unexpected_command()
+- auth_test_tool_smoke_validation_rejects_tool_result_error · function · L672-L683 — fn auth_test_tool_smoke_validation_rejects_tool_result_error()

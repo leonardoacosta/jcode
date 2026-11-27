@@ -1,0 +1,27 @@
+# crates/jcode-base/src/provider/openrouter.rs
+
+- standard_catalog_lists_model · function · L35-L41 — pub fn standard_catalog_lists_model(model_id: &str) -> Option<bool>
+- maybe_schedule_openai_compatible_profile_catalog_refresh · function · L46-L51 — pub(crate) fn maybe_schedule_openai_compatible_profile_catalog_refresh(
+- maybe_schedule_standard_openrouter_catalog_refresh · function · L55-L57 — pub(crate) fn maybe_schedule_standard_openrouter_catalog_refresh(context: &'static str) -> bool
+- has_credentials · function · L60-L71 — pub fn has_credentials() -> bool
+- has_openrouter_credentials · function · L76-L78 — pub fn has_openrouter_credentials() -> bool
+- get_api_key · function · L81-L85 — pub fn get_api_key() -> Option<String>
+- DEFAULT_API_BASE · constant · L88-L88 — const DEFAULT_API_BASE: &str = "https://openrouter.ai/api/v1";
+- DEFAULT_API_KEY_NAME · constant · L89-L89 — const DEFAULT_API_KEY_NAME: &str = "OPENROUTER_API_KEY";
+- DEFAULT_ENV_FILE · constant · L90-L90 — const DEFAULT_ENV_FILE: &str = "openrouter.env";
+- OPENROUTER_TRANSPORT_STATE_ENV · constant · L91-L91 — const OPENROUTER_TRANSPORT_STATE_ENV: &str = "JCODE_OPENROUTER_TRANSPORT_STATE";
+- explicit_openrouter_runtime_configured · function · L93-L102 — fn explicit_openrouter_runtime_configured() -> bool
+- autodetected_openai_compatible_profile · function · L104-L137 — fn autodetected_openai_compatible_profile()
+- configured_api_base · function · L139-L153 — fn configured_api_base() -> String
+- configured_api_key_name · function · L155-L171 — fn configured_api_key_name() -> String
+- configured_env_file_name · function · L173-L189 — fn configured_env_file_name() -> String
+- parse_env_bool · function · L191-L197 — fn parse_env_bool(value: &str) -> Option<bool>
+- provider_features_enabled · function · L199-L210 — fn provider_features_enabled(api_base: &str) -> bool
+- configured_dynamic_bearer_provider · function · L212-L217 — fn configured_dynamic_bearer_provider() -> Option<String>
+- configured_allow_no_auth · function · L219-L233 — fn configured_allow_no_auth() -> bool
+- OpenRouterTransportState · enum · L236-L248 — pub enum OpenRouterTransportState
+- from_current_env · function · L251-L284 — pub fn from_current_env(runtime_provider: Option<&str>) -> Self
+- from_env_marker · function · L286-L310 — fn from_env_marker() -> Option<Self>
+- runtime_provider_is_direct_compatible · function · L312-L317 — fn runtime_provider_is_direct_compatible(runtime_provider: Option<&str>) -> bool
+- accrues_user_api_key_cost · function · L319-L321 — pub fn accrues_user_api_key_cost(self) -> bool
+- is_real_openrouter · function · L323-L325 — pub fn is_real_openrouter(self) -> bool

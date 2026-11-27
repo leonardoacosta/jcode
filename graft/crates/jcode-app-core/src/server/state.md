@@ -1,0 +1,67 @@
+# crates/jcode-app-core/src/server/state.rs
+
+- BACKGROUND_TOOL_SIGNALS · constant · L31-L32 — static BACKGROUND_TOOL_SIGNALS: LazyLock<StdMutex<HashMap<String, InterruptSignal>>> =
+- SESSION_PROVIDERS · constant · L38-L39 — static SESSION_PROVIDERS: LazyLock<StdMutex<HashMap<String, Weak<dyn Provider>>>> =
+- register_background_tool_signal · function · L42-L46 — pub(super) fn register_background_tool_signal(session_id: &str, signal: InterruptSignal)
+- background_tool_signal_for_session · function · L49-L54 — pub(super) fn background_tool_signal_for_session(session_id: &str) -> Option<InterruptSignal>
+- rename_background_tool_signal · function · L57-L71 — pub(super) fn rename_background_tool_signal(old_session_id: &str, new_session_id: &str)
+- remove_background_tool_signal · function · L74-L81 — pub(super) fn remove_background_tool_signal(session_id: &str)
+- FileAccess · struct · L85-L96 — pub struct FileAccess
+- latest_peer_touches · function · L98-L123 — pub(super) fn latest_peer_touches(
+- SwarmState · struct · L127-L132 — pub struct SwarmState
+- SwarmRuntime · struct · L136-L142 — pub struct SwarmRuntime
+- has_any_state · function · L145-L147 — pub fn has_any_state(&self) -> bool
+- LiveSessionAttachment · struct · L152-L155 — pub struct LiveSessionAttachment
+- new · function · L158-L170 — pub fn new(
+- load_runtime · function · L172-L202 — pub async fn load_runtime(&self, swarm_id: &str) -> SwarmRuntime
+- SwarmMember · struct · L207-L259 — pub struct SwarmMember
+- durable_record · function · L262-L277 — pub fn durable_record(&self) -> SwarmMemberRecord
+- live_attachments · function · L279-L287 — pub fn live_attachments(&self) -> Vec<LiveSessionAttachment>
+- from_record · function · L289-L315 — pub fn from_record(
+- SharedContext · struct · L320-L329 — pub struct SharedContext
+- SwarmEventType · enum · L334-L369 — pub enum SwarmEventType
+- SwarmEvent · struct · L373-L381 — pub struct SwarmEvent
+- MAX_EVENT_HISTORY · constant · L384-L384 — pub(super) const MAX_EVENT_HISTORY: usize = 5000;
+- SessionInterruptQueues · type · L386-L386 — pub(super) type SessionInterruptQueues = Arc<RwLock<HashMap<String, SoftInterruptQueue>>>;
+- register_session_event_sender · function · L388-L399 — pub(super) async fn register_session_event_sender(
+- unregister_session_event_sender · function · L401-L413 — pub(super) async fn unregister_session_event_sender(
+- send_event_to_targets · function · L417-L422 — pub(super) fn send_event_to_targets<'a>(
+- send_event_to_targets_recover · function · L426-L443 — fn send_event_to_targets_recover<'a>(
+- RecipientSnapshot · enum · L447-L451 — enum RecipientSnapshot
+- from_iter · function · L454-L467 — fn from_iter<T: IntoIterator<Item = mpsc::UnboundedSender<ServerEvent>>>(iter: T) -> Self
+- as_slice · function · L471-L477 — fn as_slice(&self) -> &[mpsc::UnboundedSender<ServerEvent>]
+- fanout_tests · module · L482-L482 — mod fanout_tests;
+- turn_delivery_tests · module · L486-L486 — mod turn_delivery_tests;
+- fanout_session_event · function · L488-L496 — pub(super) async fn fanout_session_event(
+- fanout_session_event_recover · function · L498-L528 — async fn fanout_session_event_recover(
+- fanout_live_client_event · function · L530-L550 — pub(super) async fn fanout_live_client_event(
+- fanout_peer_client_event · function · L554-L574 — pub(super) async fn fanout_peer_client_event(
+- turn_stop_log · module · L577-L577 — mod turn_stop_log;
+- TurnEventChannel · struct · L581-L585 — pub(super) struct TurnEventChannel
+- new · function · L588-L662 — pub(super) fn new(
+- sender · function · L664-L666 — pub(super) fn sender(&self) -> mpsc::UnboundedSender<ServerEvent>
+- finish · function · L668-L675 — pub(super) async fn finish(mut self)
+- drop · function · L679-L683 — fn drop(&mut self)
+- enqueue_soft_interrupt · function · L686-L694 — pub(super) fn enqueue_soft_interrupt(
+- enqueue_soft_interrupt_with_id · function · L696-L732 — pub(super) fn enqueue_soft_interrupt_with_id(
+- SessionControlHandle · struct · L741-L746 — pub struct SessionControlHandle
+- with_provider · function · L751-L757 — pub fn with_provider(self, provider: Arc<dyn Provider>) -> Self
+- provider_handle · function · L759-L768 — pub fn provider_handle(&self) -> Option<Arc<dyn Provider>>
+- new · function · L770-L788 — pub fn new(
+- cancel_only · function · L790-L801 — pub fn cancel_only(
+- queue_soft_interrupt · function · L803-L811 — pub fn queue_soft_interrupt(
+- queue_soft_interrupt_with_id · function · L813-L829 — pub fn queue_soft_interrupt_with_id(
+- pending_soft_interrupt_count · function · L832-L837 — pub fn pending_soft_interrupt_count(&self) -> usize
+- cancel_soft_interrupts_by_id · function · L845-L884 — pub fn cancel_soft_interrupts_by_id(
+- clear_soft_interrupts · function · L886-L900 — pub fn clear_soft_interrupts(&self)
+- request_cancel · function · L912-L938 — pub fn request_cancel(&self) -> u64
+- reset_cancel · function · L940-L946 — pub fn reset_cancel(&self)
+- reset_cancel_if_epoch · function · L954-L961 — pub fn reset_cancel_if_epoch(&self, epoch: u64) -> bool
+- request_background_current_tool · function · L963-L986 — pub fn request_background_current_tool(&self) -> bool
+- stop_current_turn_signal · function · L988-L990 — pub fn stop_current_turn_signal(&self) -> InterruptSignal
+- register_session_interrupt_queue · function · L993-L1000 — pub(super) async fn register_session_interrupt_queue(
+- rename_session_interrupt_queue · function · L1002-L1011 — pub(super) async fn rename_session_interrupt_queue(
+- remove_session_interrupt_queue · function · L1013-L1019 — pub(super) async fn remove_session_interrupt_queue(
+- queue_soft_interrupt_for_session · function · L1021-L1039 — pub(super) async fn queue_soft_interrupt_for_session(
+- replace_pending_soft_interrupt · function · L1044-L1065 — pub(super) async fn replace_pending_soft_interrupt(
+- queue_soft_interrupt_with_images_for_session · function · L1067-L1122 — pub(super) async fn queue_soft_interrupt_with_images_for_session(

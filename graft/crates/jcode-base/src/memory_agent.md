@@ -1,0 +1,35 @@
+# crates/jcode-base/src/memory_agent.rs
+
+- CONTEXT_CHANNEL_CAPACITY · constant · L14-L14 — const CONTEXT_CHANNEL_CAPACITY: usize = 16;
+- PERIODIC_EXTRACTION_INTERVAL · constant · L15-L15 — const PERIODIC_EXTRACTION_INTERVAL: usize = 12;
+- REPEAT_SUPPRESSION · constant · L16-L16 — const REPEAT_SUPPRESSION: Duration = Duration::from_secs(30);
+- FAILURE_BACKOFF · constant · L17-L17 — const FAILURE_BACKOFF: Duration = Duration::from_secs(60);
+- MEMORY_AGENT · constant · L18-L18 — static MEMORY_AGENT: tokio::sync::OnceCell<MemoryAgentHandle> = tokio::sync::OnceCell::const_new();
+- MemoryAgentStats · struct · L23-L27 — pub struct MemoryAgentStats
+- MEMORY_AGENT_STATS · constant · L28-L32 — static MEMORY_AGENT_STATS: Mutex<MemoryAgentStats> = Mutex::new(MemoryAgentStats
+- build_transcript_for_extraction · function · L34-L79 — pub fn build_transcript_for_extraction(messages: &[crate::message::Message]) -> String
+- manager_for_working_dir · function · L81-L86 — fn manager_for_working_dir(working_dir: Option<&str>) -> MemoryManager
+- run_final_extraction · function · L88-L104 — async fn run_final_extraction(transcript: String, session_id: String, working_dir: Option<String>)
+- MemoryAgentHandle · struct · L108-L111 — pub struct MemoryAgentHandle
+- update_context · function · L115-L122 — pub async fn update_context(
+- update_context_sync · function · L124-L126 — pub fn update_context_sync(&self, session_id: &str, messages: Arc<[crate::message::Message]>)
+- update_context_sync_with_dir · function · L128-L141 — pub fn update_context_sync_with_dir(
+- reset · function · L144-L146 — pub fn reset(&self)
+- AgentMessage · enum · L150-L158 — enum AgentMessage
+- SessionState · struct · L161-L167 — struct SessionState
+- MemoryAgent · struct · L169-L172 — pub struct MemoryAgent
+- new · function · L175-L180 — fn new(rx: mpsc::Receiver<AgentMessage>) -> Self
+- reset · function · L182-L189 — fn reset(&mut self)
+- run · function · L191-L231 — async fn run(mut self)
+- process_context · function · L233-L299 — async fn process_context(
+- init · function · L302-L316 — pub async fn init() -> Result<MemoryAgentHandle>
+- get · function · L319-L321 — pub fn get() -> Option<MemoryAgentHandle>
+- update_context · function · L324-L334 — pub async fn update_context(
+- update_context_sync · function · L338-L340 — pub fn update_context_sync(session_id: &str, messages: Arc<[crate::message::Message]>)
+- update_context_sync_with_dir · function · L342-L357 — pub fn update_context_sync_with_dir(
+- reset · function · L361-L365 — pub fn reset()
+- trigger_final_extraction · function · L371-L373 — pub fn trigger_final_extraction(transcript: String, session_id: String)
+- trigger_final_extraction_with_dir · function · L375-L404 — pub fn trigger_final_extraction_with_dir(
+- is_active · function · L407-L409 — pub fn is_active() -> bool
+- stats · function · L412-L417 — pub fn stats() -> MemoryAgentStats
+- tests · module · L421-L421 — mod tests;

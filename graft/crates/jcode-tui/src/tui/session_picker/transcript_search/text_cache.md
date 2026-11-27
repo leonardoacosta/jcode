@@ -1,0 +1,45 @@
+# crates/jcode-tui/src/tui/session_picker/transcript_search/text_cache.rs
+
+- MAX_FILE · constant · L17-L17 — const MAX_FILE: usize = 16 * 1024 * 1024;
+- MAX_TEXT · constant · L18-L18 — const MAX_TEXT: usize = 48 * 1024 * 1024;
+- MAX_TOTAL · constant · L19-L19 — const MAX_TOTAL: usize = 256 * 1024 * 1024;
+- MAX_ENTRIES · constant · L20-L20 — const MAX_ENTRIES: usize = 256;
+- Fingerprint · struct · L23-L28 — struct Fingerprint
+- read · function · L30-L49 — fn read(path: &Path) -> Option<Self>
+- Entry · struct · L51-L59 — struct Entry
+- Boundary · struct · L64-L67 — pub(super) struct Boundary
+- BOUNDARY_CHECK · constant · L68-L68 — const BOUNDARY_CHECK: usize = 256;
+- is_append_of · function · L71-L77 — fn is_append_of(&self, older: &Fingerprint) -> bool
+- Cache · struct · L80-L84 — struct Cache
+- remove · function · L86-L90 — fn remove(&mut self, path: &Path)
+- stale_prefix · function · L93-L102 — fn stale_prefix(
+- get · function · L103-L113 — fn get(&mut self, path: &Path, fingerprint: Option<&Fingerprint>) -> Option<Arc<Segments>>
+- insert · function · L114-L146 — fn insert(
+- cache · function · L148-L151 — fn cache() -> &'static Mutex<Cache>
+- CACHE · constant · L149-L149 — static CACHE: OnceLock<Mutex<Cache>> = OnceLock::new();
+- is_cached_hint · function · L155-L159 — pub(super) fn is_cached_hint(path: &Path) -> bool
+- cached_segments · function · L162-L168 — pub(super) fn cached_segments(path: &Path, cancel: &AtomicBool) -> Option<Arc<Segments>>
+- segments · function · L176-L210 — pub(super) fn segments(path: &Path, cancel: &AtomicBool) -> Option<Arc<Segments>>
+- NEVER_CANCEL · constant · L212-L212 — static NEVER_CANCEL: AtomicBool = AtomicBool::new(false);
+- DecodeClaim · struct · L215-L215 — struct DecodeClaim(PathBuf);
+- in_flight · function · L216-L225 — fn in_flight() -> &'static (
+- IN_FLIGHT · constant · L220-L223 — static IN_FLIGHT: OnceLock<(
+- try_acquire · function · L229-L239 — fn try_acquire(path: &Path) -> Option<Self>
+- drop · function · L242-L248 — fn drop(&mut self)
+- boundary_matches · function · L252-L261 — fn boundary_matches(file: &mut std::fs::File, boundary: &Boundary) -> bool
+- decode_and_publish · function · L263-L373 — fn decode_and_publish(
+- Segments · struct · L377-L380 — pub(crate) struct Segments
+- iter · function · L382-L387 — pub(crate) fn iter(&self) -> impl Iterator<Item = (&str, Source)>
+- from · function · L391-L394 — fn from(text: Vec<String>) -> Self
+- Collector · struct · L397-L402 — struct Collector<'a>
+- text · function · L404-L417 — fn text(&mut self, value: &str, source: Source) -> Result<(), &'static str>
+- decode · function · L419-L462 — fn decode(input: &[u8], jsonl: bool, cancel: &AtomicBool) -> Option<(Segments, usize)>
+- segments_bytes · function · L464-L468 — fn segments_bytes(text: &Segments) -> usize
+- tests · module · L471-L623 — mod tests
+- values_only_order_corrupt_records_and_snapshot_streams · function · L474-L489 — fn values_only_order_corrupt_records_and_snapshot_streams()
+- invalidation_reuse_deletion_and_cancellation · function · L491-L504 — fn invalidation_reuse_deletion_and_cancellation()
+- journal_appends_decode_only_new_whole_records · function · L506-L539 — fn journal_appends_decode_only_new_whole_records()
+- complete_unterminated_final_record_is_kept · function · L541-L547 — fn complete_unterminated_final_record_is_kept()
+- large_files_request_streaming_fallback · function · L549-L555 — fn large_files_request_streaming_fallback()
+- inode_replacement_invalidates_even_with_same_length_and_mtime · function · L559-L577 — fn inode_replacement_invalidates_even_with_same_length_and_mtime()
+- lru_and_limits · function · L580-L622 — fn lru_and_limits()

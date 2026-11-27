@@ -1,0 +1,36 @@
+# crates/jcode-app-core/src/server/background_tasks.rs
+
+- admit_runtime_delivery · function · L20-L45 — pub(super) async fn admit_runtime_delivery(
+- wake_revoked_for_task · function · L52-L67 — async fn wake_revoked_for_task(task_id: &str, session_id: &str) -> bool
+- reattach_background_tasks_on_startup · function · L77-L100 — pub(super) async fn reattach_background_tasks_on_startup()
+- emit_external_wake · function · L102-L129 — async fn emit_external_wake(
+- dispatch_background_task_completion · function · L135-L218 — pub(super) async fn dispatch_background_task_completion(
+- dispatch_background_task_stalled · function · L229-L306 — pub(super) async fn dispatch_background_task_stalled(
+- dispatch_swarm_await_completion · function · L316-L397 — pub(super) async fn dispatch_swarm_await_completion(
+- dispatch_swarm_worker_report · function · L401-L446 — pub(super) async fn dispatch_swarm_worker_report(
+- dispatch_background_task_progress · function · L448-L475 — pub(super) async fn dispatch_background_task_progress(
+- dispatch_swarm_output_tail · function · L480-L496 — pub(super) async fn dispatch_swarm_output_tail(
+- dispatch_swarm_todo_progress · function · L503-L555 — pub(super) async fn dispatch_swarm_todo_progress(
+- dispatch_swarm_tool_activity · function · L559-L578 — pub(super) async fn dispatch_swarm_tool_activity(
+- dispatch_swarm_runtime_status · function · L580-L606 — pub(super) async fn dispatch_swarm_runtime_status(
+- dispatch_swarm_batch_progress · function · L608-L629 — pub(super) async fn dispatch_swarm_batch_progress(
+- update_active_todo_batch_progress · function · L631-L656 — fn update_active_todo_batch_progress(
+- update_active_todo_tool · function · L658-L701 — fn update_active_todo_tool(
+- SWARM_TODO_ITEMS_CAP · constant · L704-L704 — const SWARM_TODO_ITEMS_CAP: usize = 12;
+- SWARM_TODO_CONTENT_CAP · constant · L706-L706 — const SWARM_TODO_CONTENT_CAP: usize = 120;
+- SWARM_TOOL_INTENTS_CAP · constant · L707-L707 — const SWARM_TOOL_INTENTS_CAP: usize = 3;
+- SWARM_TOOL_INTENT_CAP · constant · L708-L708 — const SWARM_TOOL_INTENT_CAP: usize = 120;
+- todo_display_status · function · L710-L716 — fn todo_display_status(todo: &crate::todo::TodoItem) -> String
+- todo_runtime_projection · function · L720-L742 — pub(super) fn todo_runtime_projection(
+- compact_todo_items · function · L748-L767 — pub(super) fn compact_todo_items(
+- cap_chars · function · L769-L776 — fn cap_chars(s: &str, cap: usize) -> String
+- dispatch_ui_activity · function · L778-L811 — pub(super) async fn dispatch_ui_activity(
+- tests · module · L814-L1144 — mod tests
+- write_owned_task · function · L818-L852 — async fn write_owned_task(task_id: &str, session_id: &str, generation: Option<u64>)
+- reattached_task_wake_is_suppressed_only_after_its_generation_is_revoked · function · L857-L891 — async fn reattached_task_wake_is_suppressed_only_after_its_generation_is_revoked()
+- silent_background_completion_fanouts_lifecycle_only · function · L894-L970 — async fn silent_background_completion_fanouts_lifecycle_only()
+- swarm_todo_statuses_include_items_outside_detail_window · function · L973-L1058 — async fn swarm_todo_statuses_include_items_outside_detail_window()
+- tool · function · L1060-L1070 — fn tool(id: &str, intent: &str, status: ToolStatus) -> ToolEvent
+- active_todo_keeps_last_three_tool_intents_and_updates_status_in_place · function · L1073-L1097 — fn active_todo_keeps_last_three_tool_intents_and_updates_status_in_place()
+- tool_intent_is_ignored_without_an_active_todo · function · L1100-L1111 — fn tool_intent_is_ignored_without_an_active_todo()
+- batch_progress_updates_the_correlated_active_tool · function · L1114-L1143 — fn batch_progress_updates_the_correlated_active_tool()

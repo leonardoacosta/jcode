@@ -1,0 +1,24 @@
+# crates/jcode-tui/src/tui/info_widget_commits.rs
+
+- SHORT_HASH · constant · L28-L28 — const SHORT_HASH: usize = 7;
+- COMMITS_MAX_ROWS · constant · L31-L31 — pub(super) const COMMITS_MAX_ROWS: usize = 5;
+- COMMITS_FRESH_SECS · constant · L35-L35 — const COMMITS_FRESH_SECS: i64 = 24 * 3600;
+- now_secs · function · L37-L42 — fn now_secs() -> i64
+- commits_has_data · function · L44-L46 — pub(super) fn commits_has_data(info: &GitInfo) -> bool
+- commits_has_data_at · function · L48-L52 — fn commits_has_data_at(info: &GitInfo, now: i64) -> bool
+- short_age · function · L54-L65 — fn short_age(secs: i64) -> String
+- render_commits_widget · function · L67-L69 — pub(super) fn render_commits_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render_commits_at · function · L71-L104 — fn render_commits_at(data: &InfoWidgetData, inner: Rect, now: i64) -> Framed
+- commit_line · function · L106-L177 — fn commit_line(commit: &RecentCommit, width: usize, now: i64) -> Line<'static>
+- tests · module · L180-L289 — mod tests
+- NOW · constant · L183-L183 — const NOW: i64 = 1_800_000_000;
+- commit · function · L185-L194 — fn commit(hash: &str, subject: &str, ago: i64, unpushed: bool) -> RecentCommit
+- data · function · L196-L205 — fn data(commits: Vec<RecentCommit>, ahead: usize) -> InfoWidgetData
+- text · function · L207-L209 — fn text(line: &Line) -> String
+- lists_commits_with_unpushed_marker_and_border_count · function · L212-L232 — fn lists_commits_with_unpushed_marker_and_border_count()
+- overflow_goes_to_footer · function · L235-L242 — fn overflow_goes_to_footer()
+- pushed_history_footer_reports_push_state_not_duplicate_age · function · L245-L256 — fn pushed_history_footer_reports_push_state_not_duplicate_age()
+- stale_pushed_history_hides_the_widget · function · L259-L265 — fn stale_pushed_history_hides_the_widget()
+- narrow_widths_drop_stats_then_age_and_never_overflow · function · L268-L288 — fn narrow_widths_drop_stats_then_age_and_never_overflow()
+- parse_tests · module · L292-L313 — mod parse_tests
+- parses_git_log_shortstat_records · function · L296-L312 — fn parses_git_log_shortstat_records()

@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/server/group_transfer.rs
+
+- INBOUND_HOST · constant · L20-L20 — const INBOUND_HOST: &str = "group-activation-pending";
+- TRANSFER_OPERATION · constant · L21-L22 — static TRANSFER_OPERATION: LazyLock<tokio::sync::Mutex<()>> =
+- GroupTransferSelection · struct · L25-L30 — pub struct GroupTransferSelection
+- GroupTransferSession · struct · L33-L37 — pub struct GroupTransferSession
+- GroupTransferBundle · struct · L40-L48 — pub struct GroupTransferBundle
+- PrepareRequest · struct · L51-L56 — struct PrepareRequest
+- is_production_command · function · L61-L82 — pub(super) fn is_production_command(command: &str) -> bool
+- valid_id · function · L84-L90 — fn valid_id(id: &str) -> bool
+- expand_selection · function · L94-L127 — fn expand_selection(
+- swarm_session_ids · function · L129-L150 — fn swarm_session_ids(swarm: &PersistedSwarmState) -> BTreeSet<String>
+- snapshots · function · L152-L172 — async fn snapshots(state: &SwarmState) -> Vec<PersistedSwarmState>
+- validate_bundle · function · L174-L235 — fn validate_bundle(bundle: &GroupTransferBundle) -> Result<()>
+- handle · function · L240-L246 — pub(super) async fn handle(
+- handle_with_gate · function · L248-L506 — async fn handle_with_gate(
+- ADMISSION_DRAIN_TIMEOUT · constant · L515-L515 — const ADMISSION_DRAIN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(45);
+- admission_drain_timeout · function · L517-L523 — fn admission_drain_timeout() -> std::time::Duration
+- admit_transfer · function · L525-L551 — async fn admit_transfer(
+- verify_source_fence · function · L553-L562 — fn verify_source_fence(session: &GroupTransferSession, host: &str) -> Result<()>
+- cancellation_path · function · L564-L568 — fn cancellation_path(bundle: &GroupTransferBundle) -> std::path::PathBuf
+- read_transfer_lease · function · L570-L581 — pub(super) fn read_transfer_lease(id: &str) -> Result<Option<SessionLease>>
+- same_preparation · function · L583-L602 — fn same_preparation(actual: &GroupTransferBundle, expected: &GroupTransferBundle) -> Result<bool>
+- transfer_lease · function · L604-L623 — fn transfer_lease(session: &GroupTransferSession, away_host: Option<String>) -> SessionLease
+- restore_previous · function · L625-L639 — fn restore_previous(session: &GroupTransferSession) -> Result<()>
+- validate_destination · function · L641-L694 — async fn validate_destination(
+- import_bundle · function · L696-L795 — async fn import_bundle(
+- tests · module · L799-L799 — mod tests;

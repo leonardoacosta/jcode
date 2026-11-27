@@ -1,0 +1,22 @@
+# crates/jcode-base/src/message.rs
+
+- notifications · module · L19-L19 — mod notifications;
+- is_background_task_notification_content · function · L34-L46 — pub fn is_background_task_notification_content(content: &str) -> bool
+- compile_static_regex · function · L48-L57 — fn compile_static_regex(pattern: &str) -> Option<Regex>
+- compile_static_regexes · function · L59-L64 — fn compile_static_regexes(patterns: &[&str]) -> Vec<Regex>
+- replace_redaction_matches · function · L66-L73 — fn replace_redaction_matches(text: &mut String, pattern: &Regex, replacement: &str)
+- redact_preview_secrets · function · L82-L129 — pub fn redact_preview_secrets(text: &str) -> String
+- INLINE_PATTERNS · constant · L83-L83 — static INLINE_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
+- PARTIAL_TOKEN_PATTERNS · constant · L84-L84 — static PARTIAL_TOKEN_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
+- redact_secrets · function · L136-L315 — pub fn redact_secrets(text: &str) -> String
+- DIRECT_PATTERNS · constant · L166-L166 — static DIRECT_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
+- ASSIGNMENT_PATTERNS · constant · L167-L167 — static ASSIGNMENT_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
+- GENERATED_IMAGE_TOOL_NAME · constant · L317-L317 — pub const GENERATED_IMAGE_TOOL_NAME: &str = "image_generation";
+- GENERATED_IMAGE_MAX_AUTO_VISION_BYTES · constant · L318-L318 — pub const GENERATED_IMAGE_MAX_AUTO_VISION_BYTES: u64 = 20 * 1024 * 1024;
+- push_reasoning_blocks · function · L329-L367 — pub fn push_reasoning_blocks(
+- generated_image_tool_input · function · L369-L386 — pub fn generated_image_tool_input(
+- generated_image_summary · function · L388-L408 — pub fn generated_image_summary(
+- generated_image_visual_context_blocks · function · L410-L445 — pub fn generated_image_visual_context_blocks(
+- generated_image_rendered_image · function · L450-L466 — pub fn generated_image_rendered_image(
+- generated_image_payload · function · L468-L503 — fn generated_image_payload(path: &str, output_format: &str) -> Option<(String, String)>
+- tests · module · L506-L506 — mod tests;

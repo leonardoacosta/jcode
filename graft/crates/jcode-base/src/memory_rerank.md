@@ -1,0 +1,47 @@
+# crates/jcode-base/src/memory_rerank.rs
+
+- LLM_RERANK_SYSTEM · constant · L27-L30 — pub const LLM_RERANK_SYSTEM: &str = "You re-rank stored MEMORIES by how useful each would be to surface to an AI coding agent for the CURRENT request. \
+- TRANSIENT_FAILURE_BACKOFF · constant · L32-L32 — const TRANSIENT_FAILURE_BACKOFF: Duration = Duration::from_secs(30);
+- FAILURE_BACKOFF_UNTIL · constant · L33-L33 — static FAILURE_BACKOFF_UNTIL: Mutex<Option<Instant>> = Mutex::new(None);
+- REPORTED_PERMANENT_FAILURES · constant · L34-L35 — static REPORTED_PERMANENT_FAILURES: LazyLock<Mutex<HashSet<String>>> =
+- failure_backoff_active · function · L37-L49 — fn failure_backoff_active() -> bool
+- record_failure_backoff · function · L51-L61 — fn record_failure_backoff()
+- report_permanent_failure_once · function · L63-L75 — fn report_permanent_failure_once(error: &anyhow::Error)
+- clear_failure_backoff · function · L78-L82 — pub(crate) fn clear_failure_backoff()
+- MAX_QUERY_CHARS · constant · L87-L87 — const MAX_QUERY_CHARS: usize = 4000;
+- MAX_CANDIDATE_CHARS · constant · L90-L90 — const MAX_CANDIDATE_CHARS: usize = 600;
+- truncate_tail · function · L92-L98 — fn truncate_tail(s: &str, max: usize) -> String
+- truncate_head · function · L100-L105 — fn truncate_head(s: &str, max: usize) -> String
+- build_rerank_prompt · function · L109-L114 — pub fn build_rerank_prompt(focused_query: &str, candidates: &[(String, String)]) -> String
+- build_rerank_prompt_from_contents · function · L118-L133 — fn build_rerank_prompt_from_contents<'a>(
+- extract_ranking · function · L143-L162 — pub fn extract_ranking(resp: &str, n: usize) -> Option<Vec<usize>>
+- parse_rerank_response · function · L168-L170 — pub fn parse_rerank_response(resp: &str, n: usize) -> Vec<usize>
+- RerankMode · enum · L184-L195 — pub enum RerankMode
+- rerank_candidates · function · L204-L210 — pub async fn rerank_candidates(
+- RerankOutcome · enum · L220-L232 — pub enum RerankOutcome
+- rerank_candidates_consensus · function · L247-L257 — pub async fn rerank_candidates_consensus(
+- rerank_candidates_consensus_attributed · function · L261-L351 — pub async fn rerank_candidates_consensus_attributed(
+- tally_consensus · function · L358-L376 — fn tally_consensus(ballots: &[Option<Vec<usize>>], n: usize, min_agree: usize) -> Vec<usize>
+- rerank_candidates_with_mode · function · L390-L399 — pub async fn rerank_candidates_with_mode(
+- rerank_candidates_with_mode_attributed · function · L403-L462 — pub async fn rerank_candidates_with_mode_attributed(
+- compose_reranked · function · L468-L496 — fn compose_reranked(
+- tests · module · L499-L719 — mod tests
+- parse_rerank_response_basic · function · L503-L505 — fn parse_rerank_response_basic()
+- parse_rerank_response_dedups_and_bounds · function · L508-L511 — fn parse_rerank_response_dedups_and_bounds()
+- parse_rerank_response_tolerates_prose · function · L514-L519 — fn parse_rerank_response_tolerates_prose()
+- parse_rerank_response_empty_on_garbage · function · L522-L525 — fn parse_rerank_response_empty_on_garbage()
+- extract_ranking_distinguishes_empty_array_from_no_array · function · L528-L537 — fn extract_ranking_distinguishes_empty_array_from_no_array()
+- mem · function · L539-L543 — fn mem(id: &str) -> MemoryEntry
+- cands · function · L545-L554 — fn cands(ids: &[&str]) -> Vec<(MemoryEntry, f32)>
+- compose_precision_keeps_only_ranked · function · L557-L567 — fn compose_precision_keeps_only_ranked()
+- compose_recall_appends_omitted_in_hybrid_order · function · L570-L576 — fn compose_recall_appends_omitted_in_hybrid_order()
+- build_prompt_numbers_candidates_one_based · function · L579-L588 — fn build_prompt_numbers_candidates_one_based()
+- legacy_prompt · function · L591-L603 — fn legacy_prompt(query: &str, candidates: &[(String, String)]) -> String
+- borrowed_prompt_matches_legacy_exactly · function · L606-L642 — fn borrowed_prompt_matches_legacy_exactly()
+- borrowed_prompt_owns_only_formatted_output · function · L645-L659 — fn borrowed_prompt_owns_only_formatted_output()
+- tally_consensus_requires_agreement · function · L662-L669 — fn tally_consensus_requires_agreement()
+- tally_consensus_orders_by_votes_then_rank · function · L672-L680 — fn tally_consensus_orders_by_votes_then_rank()
+- tally_consensus_ignores_failed_ballots · function · L683-L690 — fn tally_consensus_ignores_failed_ballots()
+- tally_consensus_empty_when_no_votes · function · L693-L696 — fn tally_consensus_empty_when_no_votes()
+- transient_judge_failure_backoff_arms_and_auth_invalidation_clears_it · function · L699-L706 — fn transient_judge_failure_backoff_arms_and_auth_invalidation_clears_it()
+- permanent_judge_failure_does_not_arm_backoff · function · L709-L718 — fn permanent_judge_failure_does_not_arm_backoff()

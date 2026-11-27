@@ -1,0 +1,18 @@
+# telemetry-worker/test/oauth-account.test.mjs
+
+- setup · function · L15-L32 — function setup()
+- prepare · method · L20-L28 — prepare(sql)
+- bind · method · L24-L24 — bind(...args)
+- first · method · L25-L25 — async first()
+- run · method · L26-L26 — async run()
+- writeDataPoint · method · L29-L29 — writeDataPoint()
+- request · function · L33-L37 — function request(body = base, path = "/check", options = {})
+- call · function · L38-L40 — async function call(env, body = base, path = "/check", options = {})
+- known · function · L41-L44 — function known(db, source = "events")
+- prepare · method · L139-L139 — prepare()
+- pull · method · L152-L155 — pull(controller)
+- cancel · method · L156-L156 — cancel()
+- all · method · L198-L198 — async all()
+- bind · method · L198-L198 — bind()
+- run · method · L198-L198 — async run()
+- waitUntil · method · L201-L201 — waitUntil(promise)

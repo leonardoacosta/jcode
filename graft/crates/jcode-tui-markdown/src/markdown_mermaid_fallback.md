@@ -1,0 +1,22 @@
+# crates/jcode-tui-markdown/src/markdown_mermaid_fallback.rs
+
+- INLINE_IMAGE_MARKER_PREFIX · constant · L3-L3 — const INLINE_IMAGE_MARKER_PREFIX: &str = "\x00IIMG:";
+- INLINE_IMAGE_MARKER_SUFFIX · constant · L4-L4 — const INLINE_IMAGE_MARKER_SUFFIX: &str = ":END";
+- RenderResult · enum · L8-L16 — pub enum RenderResult
+- is_mermaid_lang · function · L18-L20 — pub fn is_mermaid_lang(lang: &str) -> bool
+- image_protocol_available · function · L22-L24 — pub fn image_protocol_available() -> bool
+- native_image_protocol_available · function · L26-L28 — pub fn native_image_protocol_available() -> bool
+- with_image_protocol_override · function · L31-L33 — pub fn with_image_protocol_override<T>(_enabled: Option<bool>, f: impl FnOnce() -> T) -> T
+- get_font_size · function · L35-L37 — pub fn get_font_size() -> Option<(u16, u16)>
+- deferred_render_epoch · function · L41-L43 — pub fn deferred_render_epoch() -> u64
+- notify_deferred_render_completed · function · L46-L46 — pub fn notify_deferred_render_completed() {}
+- render_mermaid_deferred_with_stream_scope · function · L48-L56 — pub fn render_mermaid_deferred_with_stream_scope(
+- render_mermaid_deferred_with_registration · function · L58-L66 — pub fn render_mermaid_deferred_with_registration(
+- render_mermaid_untracked · function · L68-L70 — pub fn render_mermaid_untracked(_content: &str, _terminal_width: Option<u16>) -> RenderResult
+- render_mermaid_sized · function · L72-L74 — pub fn render_mermaid_sized(_content: &str, _terminal_width: Option<u16>) -> RenderResult
+- set_streaming_preview_diagram · function · L76-L82 — pub fn set_streaming_preview_diagram(
+- result_to_lines · function · L84-L89 — pub fn result_to_lines(result: RenderResult, _max_width: Option<usize>) -> Vec<Line<'static>>
+- parse_image_placeholder · function · L91-L93 — pub fn parse_image_placeholder(_line: &Line<'_>) -> Option<u64>
+- inline_image_placeholder_lines · function · L95-L103 — pub fn inline_image_placeholder_lines(hash: u64, rows: u16, cols: u16) -> Vec<Line<'static>>
+- parse_inline_image_placeholder · function · L105-L118 — pub fn parse_inline_image_placeholder(line: &Line<'_>) -> Option<(u64, u16, u16)>
+- register_external_image · function · L120-L122 — pub fn register_external_image(_path: &std::path::Path, _width: u32, _height: u32) -> u64

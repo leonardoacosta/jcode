@@ -1,0 +1,41 @@
+# crates/jcode-base/src/auth/google/setup.rs
+
+- DEFAULT_PROJECT_NAME · constant · L21-L21 — pub const DEFAULT_PROJECT_NAME: &str = "jcode";
+- project_create_url · function · L24-L26 — pub fn project_create_url() -> &'static str
+- with_project · function · L28-L36 — fn with_project(url: &str, project: Option<&str>) -> String
+- enable_apis_url · function · L39-L49 — pub fn enable_apis_url(services: &[GoogleService], project: Option<&str>) -> String
+- consent_screen_url · function · L52-L54 — pub fn consent_screen_url(project: Option<&str>) -> String
+- audience_url · function · L57-L59 — pub fn audience_url(project: Option<&str>) -> String
+- create_client_url · function · L62-L67 — pub fn create_client_url(project: Option<&str>) -> String
+- PUBLISH_APP_NOTE · constant · L70-L72 — pub const PUBLISH_APP_NOTE: &str = "Publish the app (Audience page > Publish app). While it stays in \
+- looks_like_expired_grant · function · L76-L81 — pub fn looks_like_expired_grant(error: &str) -> bool
+- GcloudStatus · struct · L89-L95 — pub struct GcloudStatus
+- usable · function · L98-L100 — pub fn usable(&self) -> bool
+- gcloud_output · function · L103-L109 — fn gcloud_output(args: &[&str]) -> Result<std::process::Output>
+- non_empty · function · L111-L114 — fn non_empty(value: &[u8]) -> Option<String>
+- gcloud_status · function · L117-L150 — pub fn gcloud_status() -> GcloudStatus
+- stderr_summary · function · L152-L154 — fn stderr_summary(output: &std::process::Output) -> String
+- summarize_gcloud_error · function · L159-L171 — fn summarize_gcloud_error(stderr: &str) -> String
+- suggest_project_id · function · L177-L194 — pub fn suggest_project_id(name: &str, suffix: u32) -> String
+- gcloud_create_project · function · L197-L206 — pub fn gcloud_create_project(project_id: &str, name: &str) -> Result<String>
+- gcloud_enable_apis · function · L209-L223 — pub fn gcloud_enable_apis(project: &str, services: &[GoogleService]) -> Result<()>
+- ClientFile · struct · L230-L233 — struct ClientFile
+- ClientInner · struct · L236-L241 — struct ClientInner
+- ClientJson · struct · L245-L251 — pub struct ClientJson
+- parse_client_json · function · L254-L272 — pub fn parse_client_json(data: &str) -> Result<ClientJson>
+- default_download_dirs · function · L275-L287 — pub fn default_download_dirs() -> Vec<PathBuf>
+- is_client_secret_name · function · L289-L293 — fn is_client_secret_name(path: &Path) -> bool
+- find_client_json · function · L296-L317 — pub fn find_client_json(
+- wait_for_client_json · function · L322-L338 — pub fn wait_for_client_json(
+- save_client_json · function · L341-L344 — pub fn save_client_json(parsed: &ClientJson) -> Result<PathBuf>
+- tests · module · L347-L490 — mod tests
+- DESKTOP_JSON · constant · L350-L350 — const DESKTOP_JSON: &str = r#"{"installed":{"client_id":"123-abc.apps.googleusercontent.com","project_id":"jcode-123456","auth_uri":"https://accounts.google.com/o/oauth2/auth","client_secret":"GOCSPX-x","redirect_uris":["http://localhost"]}}"#;
+- enable_url_lists_all_selected_apis_with_project · function · L353-L363 — fn enable_url_lists_all_selected_apis_with_project()
+- console_links_preselect_project · function · L366-L375 — fn console_links_preselect_project()
+- project_ids_match_gclouds_create_validator · function · L378-L401 — fn project_ids_match_gclouds_create_validator()
+- project_ids_are_valid · function · L404-L423 — fn project_ids_are_valid()
+- parses_desktop_and_web_clients · function · L426-L439 — fn parses_desktop_and_web_clients()
+- finds_newest_valid_client_json_since_cutoff · function · L442-L455 — fn finds_newest_valid_client_json_since_cutoff()
+- wait_returns_none_on_timeout · function · L458-L467 — fn wait_returns_none_on_timeout()
+- gcloud_error_summary_keeps_headline · function · L470-L481 — fn gcloud_error_summary_keeps_headline()
+- detects_expired_grant_errors · function · L484-L489 — fn detects_expired_grant_errors()

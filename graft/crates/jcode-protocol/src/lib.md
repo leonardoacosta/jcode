@@ -1,0 +1,74 @@
+# crates/jcode-protocol/src/lib.rs
+
+- ProviderOAuthEmail · struct · L16-L16 — pub struct ProviderOAuthEmail(String);
+- new · function · L19-L21 — pub fn new(value: impl Into<String>) -> Self
+- as_str · function · L23-L25 — pub fn as_str(&self) -> &str
+- into_string · function · L27-L29 — pub fn into_string(self) -> String
+- fmt · function · L33-L35 — fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- screen · module · L38-L38 — mod screen;
+- comm_format · module · L40-L40 — mod comm_format;
+- notifications · module · L41-L41 — mod notifications;
+- applets_is_empty · function · L52-L54 — fn applets_is_empty(applets: &jcode_applet_types::AgentApplets) -> bool
+- memory_snapshots · module · L58-L58 — mod memory_snapshots;
+- TranscriptMode · enum · L67-L73 — pub enum TranscriptMode
+- VoiceActivity · enum · L79-L97 — pub enum VoiceActivity
+- CommDeliveryMode · enum · L101-L105 — pub enum CommDeliveryMode
+- HistoryBase · struct · L110-L123 — pub struct HistoryBase
+- RECENT_HISTORY_MARKER_PREFIX · constant · L126-L126 — pub const RECENT_HISTORY_MARKER_PREFIX: &str = "Earlier remote history - ";
+- CLIENT_FOCUS_CAPABILITY · constant · L129-L129 — pub const CLIENT_FOCUS_CAPABILITY: &str = "client_focus";
+- recent · function · L134-L141 — pub fn recent(visible: usize) -> Self
+- history_images_fingerprint · function · L145-L159 — pub fn history_images_fingerprint(images: &[jcode_session_types::RenderedImage]) -> u64
+- history_prefix_fingerprint · function · L165-L173 — pub fn history_prefix_fingerprint<'a>(
+- HistoryFingerprinter · struct · L179-L182 — pub struct HistoryFingerprinter
+- default · function · L185-L192 — fn default() -> Self
+- feed · function · L196-L204 — fn feed(&mut self, bytes: &[u8])
+- push · function · L206-L227 — pub fn push(&mut self, message: HistoryMessageRef<'_>)
+- count · function · L230-L232 — pub fn count(&self) -> usize
+- finish · function · L236-L240 — pub fn finish(&self) -> u64
+- base · function · L242-L249 — pub fn base(&self) -> HistoryBase
+- HistoryMessageRef · struct · L255-L260 — pub struct HistoryMessageRef<'a>
+- from · function · L263-L270 — fn from(message: &'a HistoryMessage) -> Self
+- HistoryMessage · struct · L275-L284 — pub struct HistoryMessage
+- SessionActivitySnapshot · struct · L287-L291 — pub struct SessionActivitySnapshot
+- TokenUsageTotals · struct · L294-L308 — pub struct TokenUsageTotals
+- AuthProviderId · struct · L312-L312 — pub struct AuthProviderId(pub String);
+- new · function · L315-L317 — pub fn new(value: impl Into<String>) -> Self
+- as_str · function · L319-L321 — pub fn as_str(&self) -> &str
+- RuntimeProviderKey · struct · L326-L326 — pub struct RuntimeProviderKey(pub String);
+- new · function · L329-L331 — pub fn new(value: impl Into<String>) -> Self
+- as_str · function · L333-L335 — pub fn as_str(&self) -> &str
+- CatalogNamespace · struct · L340-L340 — pub struct CatalogNamespace(pub String);
+- new · function · L343-L345 — pub fn new(value: impl Into<String>) -> Self
+- as_str · function · L347-L349 — pub fn as_str(&self) -> &str
+- AuthCredentialSource · enum · L354-L360 — pub enum AuthCredentialSource
+- AuthMethod · enum · L364-L374 — pub enum AuthMethod
+- AuthChanged · struct · L377-L387 — pub struct AuthChanged
+- new · function · L390-L398 — pub fn new(provider: impl Into<String>) -> Self
+- ReloadRecoverySnapshot · type · L401-L401 — pub type ReloadRecoverySnapshot = jcode_selfdev_types::ReloadRecoveryDirective;
+- wire · module · L403-L403 — mod wire;
+- ToolCallSummary · struct · L411-L416 — pub struct ToolCallSummary
+- SwarmChannelInfo · struct · L419-L422 — pub struct SwarmChannelInfo
+- SwarmInfo · struct · L426-L439 — pub struct SwarmInfo
+- ContextEntry · struct · L443-L449 — pub struct ContextEntry
+- AgentInfo · struct · L453-L529 — pub struct AgentInfo
+- AgentStatusSnapshot · struct · L533-L575 — pub struct AgentStatusSnapshot
+- ControlStatusSnapshot · struct · L582-L598 — pub struct ControlStatusSnapshot
+- PlanGraphStatus · struct · L602-L636 — pub struct PlanGraphStatus
+- empty_for_swarm · function · L639-L655 — pub fn empty_for_swarm(swarm_id: impl Into<String>) -> Self
+- from_versioned_plan · function · L657-L689 — pub fn from_versioned_plan(
+- SwarmMemberStatus · struct · L694-L741 — pub struct SwarmMemberStatus
+- SwarmMemberRuntime · struct · L744-L787 — pub struct SwarmMemberRuntime
+- is_empty · function · L790-L805 — fn is_empty(&self) -> bool
+- SwarmLiveStatus · struct · L812-L827 — pub struct SwarmLiveStatus
+- SwarmTodoItem · struct · L832-L839 — pub struct SwarmTodoItem
+- SwarmToolIntent · struct · L843-L854 — pub struct SwarmToolIntent
+- SwarmToolProgress · struct · L857-L862 — pub struct SwarmToolProgress
+- AwaitedMemberStatus · struct · L866-L880 — pub struct AwaitedMemberStatus
+- id · function · L883-L980 — pub fn id(&self) -> u64
+- is_lightweight_control_request · function · L982-L1027 — pub fn is_lightweight_control_request(&self) -> bool
+- default_model_direction · function · L1030-L1032 — fn default_model_direction() -> i8
+- encode_event · function · L1035-L1039 — pub fn encode_event(event: &ServerEvent) -> String
+- encode_event_into · function · L1045-L1056 — pub fn encode_event_into(event: &ServerEvent, buffer: &mut Vec<u8>)
+- decode_request · function · L1069-L1080 — pub fn decode_request(line: &str) -> Result<Request, serde_json::Error>
+- decode_legacy_set_route_model · function · L1086-L1099 — fn decode_legacy_set_route_model(line: &str) -> Option<Request>
+- tests · module · L1103-L1103 — mod tests;

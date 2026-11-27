@@ -1,0 +1,22 @@
+# crates/jcode-base/src/subscription_notice.rs
+
+- QuotaExceeded · struct · L15-L22 — pub struct QuotaExceeded
+- plan_name · function · L24-L39 — fn plan_name(tier: &str) -> String
+- feature_name · function · L41-L47 — fn feature_name(feature: &str) -> &str
+- headline · function · L51-L60 — pub fn headline(&self) -> String
+- call_to_action · function · L63-L71 — pub fn call_to_action(&self) -> String
+- fmt · function · L75-L77 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- LATEST · constant · L82-L82 — static LATEST: Mutex<Option<QuotaExceeded>> = Mutex::new(None);
+- record · function · L85-L90 — pub fn record(notice: QuotaExceeded)
+- take · function · L94-L96 — pub fn take() -> Option<QuotaExceeded>
+- from_error · function · L99-L103 — pub fn from_error(error: &anyhow::Error) -> Option<&QuotaExceeded>
+- UPGRADE_CARD_ID · constant · L107-L107 — pub const UPGRADE_CARD_ID: &str = "jcode-plan-limit";
+- upgrade_card · function · L112-L155 — pub fn upgrade_card(notice: &QuotaExceeded, session_id: &str) -> jcode_applet_types::Instance
+- show_upgrade_card · function · L159-L164 — pub fn show_upgrade_card(notice: &QuotaExceeded, session_id: &str)
+- tests · module · L167-L242 — mod tests
+- notice · function · L170-L178 — fn notice(upgrade: bool) -> QuotaExceeded
+- upgrade_card_is_a_valid_applet_with_upgrade_button · function · L181-L202 — fn upgrade_card_is_a_valid_applet_with_upgrade_button()
+- top_tier_card_has_no_upgrade_button · function · L205-L216 — fn top_tier_card_has_no_upgrade_button()
+- upgrade_prompt_names_plan_feature_and_link · function · L219-L225 — fn upgrade_prompt_names_plan_feature_and_link()
+- top_tier_gets_reset_message_without_upsell · function · L228-L232 — fn top_tier_gets_reset_message_without_upsell()
+- notice_is_recoverable_from_anyhow_chain_and_taken_once · function · L235-L241 — fn notice_is_recoverable_from_anyhow_chain_and_taken_once()

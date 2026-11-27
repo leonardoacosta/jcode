@@ -1,0 +1,64 @@
+# crates/jcode-provider-anthropic-runtime/src/anthropic_tests.rs
+
+- EnvVarGuard · struct · L3-L6 — struct EnvVarGuard
+- set · function · L9-L13 — fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self
+- set_if_missing · function · L15-L20 — fn set_if_missing(key: &'static str, value: &str) -> Option<Self>
+- drop · function · L24-L30 — fn drop(&mut self)
+- collect_live_smoke_stream · function · L33-L61 — async fn collect_live_smoke_stream(
+- test_parse_sse_event · function · L64-L69 — fn test_parse_sse_event()
+- test_available_models · function · L72-L83 — async fn test_available_models()
+- test_effectively_1m_requires_explicit_suffix · function · L86-L91 — fn test_effectively_1m_requires_explicit_suffix()
+- test_oauth_beta_headers_require_explicit_1m_suffix · function · L94-L100 — fn test_oauth_beta_headers_require_explicit_1m_suffix()
+- reasoning_tests · module · L103-L103 — mod reasoning_tests;
+- message_start_warns_when_server_substitutes_a_different_model · function · L106-L155 — fn message_start_warns_when_server_substitutes_a_different_model()
+- resolved_model_uses_upstream_alias_target_and_deduplicates_metadata · function · L158-L175 — fn resolved_model_uses_upstream_alias_target_and_deduplicates_metadata()
+- resolved_model_does_not_infer_missing_or_empty_metadata · function · L178-L194 — fn resolved_model_does_not_infer_missing_or_empty_metadata()
+- test_anthropic_thinking_sse_events · function · L197-L247 — fn test_anthropic_thinking_sse_events()
+- test_anthropic_signed_thinking_replayed_in_request_blocks · function · L250-L271 — fn test_anthropic_signed_thinking_replayed_in_request_blocks()
+- live_anthropic_reasoning_smoke · function · L275-L339 — async fn live_anthropic_reasoning_smoke() -> Result<()>
+- test_dangling_tool_use_repair · function · L342-L418 — async fn test_dangling_tool_use_repair()
+- test_orphaned_tool_result_is_rewritten_as_text · function · L421-L483 — async fn test_orphaned_tool_result_is_rewritten_as_text()
+- assert_tool_uses_answered_in_next_message · function · L487-L513 — fn assert_tool_uses_answered_in_next_message(formatted: &[ApiMessage])
+- test_displaced_tool_result_still_answers_tool_use_in_place · function · L516-L578 — async fn test_displaced_tool_result_still_answers_tool_use_in_place()
+- test_no_repair_when_tool_results_present · function · L581-L636 — async fn test_no_repair_when_tool_results_present()
+- test_parallel_image_tool_results_stay_contiguous · function · L639-L756 — async fn test_parallel_image_tool_results_stay_contiguous()
+- test_cache_breakpoint_no_messages · function · L759-L764 — fn test_cache_breakpoint_no_messages()
+- test_cache_breakpoint_too_few_messages · function · L767-L793 — fn test_cache_breakpoint_too_few_messages()
+- test_cache_breakpoint_adds_to_assistant_message · function · L796-L852 — fn test_cache_breakpoint_adds_to_assistant_message()
+- test_cache_breakpoint_finds_text_in_mixed_content · function · L855-L914 — fn test_cache_breakpoint_finds_text_in_mixed_content()
+- test_system_param_split_oauth · function · L917-L950 — fn test_system_param_split_oauth()
+- test_system_param_split_non_oauth · function · L953-L971 — fn test_system_param_split_non_oauth()
+- count_message_cache_breakpoints · function · L977-L994 — fn count_message_cache_breakpoints(messages: &[ApiMessage]) -> usize
+- cached_message_indices · function · L996-L1016 — fn cached_message_indices(messages: &[ApiMessage]) -> Vec<usize>
+- build_conversation · function · L1020-L1053 — fn build_conversation(exchanges: usize) -> Vec<ApiMessage>
+- test_cache_one_exchange_single_marker · function · L1056-L1065 — fn test_cache_one_exchange_single_marker()
+- test_cache_two_exchanges_two_markers · function · L1068-L1088 — fn test_cache_two_exchanges_two_markers()
+- test_cache_many_exchanges_still_two_markers · function · L1091-L1101 — fn test_cache_many_exchanges_still_two_markers()
+- test_cache_cross_turn_read_marker_preserved · function · L1104-L1157 — fn test_cache_cross_turn_read_marker_preserved()
+- test_cache_non_oauth_path_gets_breakpoints · function · L1160-L1194 — fn test_cache_non_oauth_path_gets_breakpoints()
+- test_cache_total_breakpoints_within_api_limit · function · L1197-L1214 — fn test_cache_total_breakpoints_within_api_limit()
+- test_sanitize_tool_ids_with_dots · function · L1217-L1272 — async fn test_sanitize_tool_ids_with_dots()
+- test_sanitize_dangling_tool_ids_with_dots · function · L1275-L1319 — async fn test_sanitize_dangling_tool_ids_with_dots()
+- credential_mode_runtime_provider_identity_round_trips · function · L1327-L1349 — fn credential_mode_runtime_provider_identity_round_trips()
+- auto_mode_falls_back_to_api_key_when_oauth_is_expired · function · L1352-L1391 — async fn auto_mode_falls_back_to_api_key_when_oauth_is_expired()
+- explicit_oauth_mode_does_not_silently_fall_back_to_api_key · function · L1394-L1424 — async fn explicit_oauth_mode_does_not_silently_fall_back_to_api_key()
+- rejected_refresh_preserves_access_until_real_expiry · function · L1427-L1460 — async fn rejected_refresh_preserves_access_until_real_expiry()
+- test_anthropic_fable_5_sends_reasoning_fields · function · L1463-L1497 — fn test_anthropic_fable_5_sends_reasoning_fields()
+- detects_anthropic_reasoning_unsupported_errors · function · L1500-L1519 — fn detects_anthropic_reasoning_unsupported_errors()
+- detects_anthropic_model_not_found_errors · function · L1522-L1542 — fn detects_anthropic_model_not_found_errors()
+- anthropic_fallback_prefers_best_available_and_skips_tried_and_retired · function · L1545-L1583 — fn anthropic_fallback_prefers_best_available_and_skips_tried_and_retired()
+- anthropic_fallback_honors_server_recommendation · function · L1586-L1630 — fn anthropic_fallback_honors_server_recommendation()
+- anthropic_quality_rank_orders_opus_before_haiku_and_retired_last · function · L1633-L1662 — fn anthropic_quality_rank_orders_opus_before_haiku_and_retired_last()
+- fable_quota_fallback_selects_the_best_available_opus · function · L1665-L1683 — fn fable_quota_fallback_selects_the_best_available_opus()
+- model_scoped_usage_routes_only_exhausted_fable_to_opus · function · L1686-L1718 — fn model_scoped_usage_routes_only_exhausted_fable_to_opus()
+- detects_live_fable_scoped_limit_errors_without_misrouting_other_limits · function · L1721-L1742 — fn detects_live_fable_scoped_limit_errors_without_misrouting_other_limits()
+- ping_keepalive_emits_streaming_phase_event · function · L1745-L1764 — fn ping_keepalive_emits_streaming_phase_event()
+- test_anthropic_opus_5_low_effort_reaches_the_wire · function · L1767-L1816 — fn test_anthropic_opus_5_low_effort_reaches_the_wire()
+- test_anthropic_unknown_content_block_start_does_not_drop_event · function · L1823-L1851 — fn test_anthropic_unknown_content_block_start_does_not_drop_event()
+- configured_swarm_root_effort_controls_adaptive_and_manual_thinking · function · L1854-L1913 — fn configured_swarm_root_effort_controls_adaptive_and_manual_thinking()
+- configured_swarm_root_effort_reads_real_config · function · L1916-L1966 — fn configured_swarm_root_effort_reads_real_config()
+- opus_55_request_json_supports_api_and_oauth_without_forced_tools · function · L1969-L2016 — fn opus_55_request_json_supports_api_and_oauth_without_forced_tools()
+- opus_55_empty_signed_thinking_is_replayed_unchanged · function · L2019-L2036 — fn opus_55_empty_signed_thinking_is_replayed_unchanged()
+- taxonomy_blocks_quota_revocation_and_permanent_retries · function · L2039-L2052 — fn taxonomy_blocks_quota_revocation_and_permanent_retries()
+- auto_mode_revoked_oauth_does_not_substitute_api_key · function · L2055-L2085 — async fn auto_mode_revoked_oauth_does_not_substitute_api_key()
+- additional_direct_api_url_supports_standard_and_profile_overrides · module · L2088-L2088 — mod additional_direct_api_url_supports_standard_and_profile_overrides;

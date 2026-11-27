@@ -1,0 +1,23 @@
+# crates/jcode-tui/src/tui/session_picker/performance_tests.rs
+
+- session · function · L4-L47 — pub(super) fn session(id: usize, turns: usize) -> SessionInfo
+- median · function · L49-L52 — fn median(mut samples: Vec<Duration>) -> Duration
+- cold_preview_viewport_matches_full_wide_then_narrow_layout · function · L55-L97 — fn cold_preview_viewport_matches_full_wide_then_narrow_layout()
+- benchmark_resume_stable_frames · function · L101-L160 — fn benchmark_resume_stable_frames()
+- draw_preview · function · L162-L169 — fn draw_preview(
+- prepared_preview_revisits_reuse_allocations_and_pixels · function · L172-L206 — fn prepared_preview_revisits_reuse_allocations_and_pixels()
+- memoized_transcript_hash_invalidates_on_load_mutation_and_reseed · function · L209-L259 — fn memoized_transcript_hash_invalidates_on_load_mutation_and_reseed()
+- stale_preview_selection_renders_empty_and_does_not_fingerprint · function · L262-L280 — fn stale_preview_selection_renders_empty_and_does_not_fingerprint()
+- missing_preview_is_a_cache_miss_and_rebuilds_on_render · function · L283-L293 — fn missing_preview_is_a_cache_miss_and_rebuilds_on_render()
+- query_edits_reuse_transcript_messages_and_refresh_jump_target · function · L296-L314 — fn query_edits_reuse_transcript_messages_and_refresh_jump_target()
+- tiny_cache · function · L316-L332 — fn tiny_cache(id: u64, bytes: usize) -> PreviewRenderCache
+- retained_previews_have_byte_and_entry_bounds_and_evict_lru · function · L335-L369 — fn retained_previews_have_byte_and_entry_bounds_and_evict_lru()
+- self_dev_entries_keep_here_marker_on_directory_row · function · L372-L389 — fn self_dev_entries_keep_here_marker_on_directory_row()
+- compact_session_entries_keep_context_without_spacer_rows · function · L392-L431 — fn compact_session_entries_keep_context_without_spacer_rows()
+- resume_todo_dots_follow_item_statuses · function · L434-L455 — fn resume_todo_dots_follow_item_statuses()
+- session_entry_reserves_todo_dots_and_activity_for_long_names_and_directories · function · L458-L479 — fn session_entry_reserves_todo_dots_and_activity_for_long_names_and_directories()
+- compact_session_list_fits_ten_sessions_in_twenty_two_rows · function · L482-L499 — fn compact_session_list_fits_ten_sessions_in_twenty_two_rows()
+- compact_rows_truncate_wide_text_without_wrapping · function · L502-L531 — fn compact_rows_truncate_wide_text_without_wrapping()
+- session_list_stripes_cover_whole_entries · function · L534-L559 — fn session_list_stripes_cover_whole_entries()
+- session_selection_has_stable_rail_and_blended_background · function · L562-L597 — fn session_selection_has_stable_rail_and_blended_background()
+- virtualized_session_list_matches_full_ratatui_list · function · L600-L655 — fn virtualized_session_list_matches_full_ratatui_list()

@@ -1,0 +1,18 @@
+# crates/jcode-app-core/src/tool/config_edit_notice_tests.rs
+
+- temp_jcode_home · function · L5-L11 — fn temp_jcode_home() -> (tempfile::TempDir, Option<std::ffi::OsString>)
+- restore_jcode_home · function · L13-L20 — fn restore_jcode_home(prev: Option<std::ffi::OsString>)
+- writing_the_active_config_reports_what_changed · function · L23-L42 — fn writing_the_active_config_reports_what_changed()
+- writing_an_unrelated_file_reports_nothing · function · L45-L58 — fn writing_an_unrelated_file_reports_nothing()
+- comment_only_config_edit_reports_nothing · function · L61-L76 — fn comment_only_config_edit_reports_nothing()
+- restart_required_sections_say_so · function · L79-L96 — fn restart_required_sections_say_so()
+- the_notice_leaves_the_config_cache_current · function · L99-L122 — fn the_notice_leaves_the_config_cache_current()
+- a_config_write_that_breaks_toml_syntax_is_reported_loudly · function · L125-L141 — fn a_config_write_that_breaks_toml_syntax_is_reported_loudly()
+- the_write_tool_reports_config_changes_end_to_end · function · L146-L195 — async fn the_write_tool_reports_config_changes_end_to_end()
+- apply_patch_reports_config_changes · function · L200-L239 — async fn apply_patch_reports_config_changes()
+- fragment_edit_is_reported_and_broken_fragment_warns · function · L242-L275 — fn fragment_edit_is_reported_and_broken_fragment_warns()
+- config_edit_watch_covers_fragments_and_new_includes · function · L278-L312 — fn config_edit_watch_covers_fragments_and_new_includes()
+- masked_fragment_edit_does_not_claim_live_effect · function · L315-L366 — fn masked_fragment_edit_does_not_claim_live_effect()
+- masking_compares_the_exact_key_not_a_prefix_overlap · function · L369-L414 — fn masking_compares_the_exact_key_not_a_prefix_overlap()
+- removing_a_fragment_from_the_manifest_reports_and_deactivates_it · function · L417-L464 — fn removing_a_fragment_from_the_manifest_reports_and_deactivates_it()
+- valid_edit_notices_never_echo_secret_values · function · L467-L513 — fn valid_edit_notices_never_echo_secret_values()

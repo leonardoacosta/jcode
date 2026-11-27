@@ -1,0 +1,61 @@
+# crates/jcode-tui/src/tui/app/commands_overnight.rs
+
+- OVERNIGHT_STALL_LIMIT · constant · L11-L11 — const OVERNIGHT_STALL_LIMIT: u8 = 3;
+- OVERNIGHT_ERROR_LIMIT · constant · L12-L12 — const OVERNIGHT_ERROR_LIMIT: u8 = 2;
+- OVERNIGHT_MAX_POKES · constant · L13-L13 — const OVERNIGHT_MAX_POKES: u16 = 48;
+- handle_overnight_command · function · L15-L73 — pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool
+- refuse_duplicate_overnight_start · function · L77-L105 — fn refuse_duplicate_overnight_start(app: &mut App) -> bool
+- start_visible_overnight_turn · function · L107-L151 — fn start_visible_overnight_turn(app: &mut App, content: String)
+- show_overnight_help · function · L153-L157 — fn show_overnight_help(app: &mut App)
+- overnight_provider_for_app · function · L159-L186 — fn overnight_provider_for_app(app: &mut App) -> Arc<dyn Provider>
+- show_overnight_status · function · L188-L206 — fn show_overnight_status(app: &mut App)
+- show_overnight_log · function · L208-L224 — fn show_overnight_log(app: &mut App)
+- open_overnight_review · function · L226-L259 — fn open_overnight_review(app: &mut App)
+- cancel_overnight · function · L261-L278 — fn cancel_overnight(app: &mut App)
+- cancel_overnight_for_interrupt · function · L281-L315 — pub(super) fn cancel_overnight_for_interrupt(&mut self) -> bool
+- enable_overnight_auto_poke · function · L317-L332 — pub(super) fn enable_overnight_auto_poke(
+- stop_overnight_auto_poke_for_non_retryable_error · function · L334-L358 — pub(super) fn stop_overnight_auto_poke_for_non_retryable_error(&mut self, error: &str) -> bool
+- finalize_cancelled_overnight_auto_poke · function · L363-L373 — fn finalize_cancelled_overnight_auto_poke(&mut self, cancelled_run_id: &str)
+- clear_overnight_auto_poke · function · L377-L381 — pub(super) fn clear_overnight_auto_poke(&mut self, reason: &'static str)
+- finalize_overnight_auto_poke · function · L387-L394 — fn finalize_overnight_auto_poke(&mut self, run_id: &str, reason: &'static str)
+- schedule_overnight_poke_followup_if_needed · function · L396-L528 — pub(super) fn schedule_overnight_poke_followup_if_needed(&mut self) -> bool
+- record_overnight_poke_event · function · L532-L541 — fn record_overnight_poke_event(
+- finalize_overnight_run · function · L543-L573 — fn finalize_overnight_run(run_id: &str, reason: &'static str) -> anyhow::Result<()>
+- is_overnight_auto_poke_message · function · L575-L577 — fn is_overnight_auto_poke_message(message: &str) -> bool
+- OvernightPokePhase · enum · L580-L588 — enum OvernightPokePhase
+- overnight_poke_phase · function · L590-L616 — fn overnight_poke_phase(
+- overnight_phase_label · function · L618-L628 — fn overnight_phase_label(phase: OvernightPokePhase) -> &'static str
+- overnight_status_label · function · L630-L639 — fn overnight_status_label(status: &OvernightRunStatus) -> &'static str
+- build_overnight_poke_message · function · L641-L666 — fn build_overnight_poke_message(
+- overnight_fingerprint_for_app · function · L668-L695 — fn overnight_fingerprint_for_app(
+- overnight_poke_budget · function · L697-L705 — fn overnight_poke_budget(manifest: &crate::overnight::OvernightManifest) -> u16
+- file_mtime_secs · function · L707-L715 — fn file_mtime_secs(path: &std::path::Path) -> Option<u64>
+- count_files · function · L717-L729 — fn count_files(path: &std::path::Path) -> usize
+- tests · module · L732-L1234 — mod tests
+- test_manifest_with_times · function · L737-L775 — fn test_manifest_with_times(
+- test_state · function · L777-L801 — fn test_state(manifest: &crate::overnight::OvernightManifest) -> OvernightAutoPokeState
+- overnight_poke_phase_requests_morning_report_at_target_once · function · L804-L821 — fn overnight_poke_phase_requests_morning_report_at_target_once()
+- overnight_poke_phase_stops_after_final_wrap_requested · function · L824-L841 — fn overnight_poke_phase_stops_after_final_wrap_requested()
+- overnight_poke_phase_sends_one_diagnostic_on_stall · function · L844-L862 — fn overnight_poke_phase_sends_one_diagnostic_on_stall()
+- overnight_poke_budget_is_bounded_by_duration_and_cap · function · L865-L879 — fn overnight_poke_budget_is_bounded_by_duration_and_cap()
+- HomeGuard · struct · L881-L885 — struct HomeGuard
+- new · function · L888-L898 — fn new() -> Self
+- drop · function · L902-L907 — fn drop(&mut self)
+- saved_manifest · function · L911-L938 — fn saved_manifest(
+- event_reasons · function · L940-L952 — fn event_reasons(manifest: &crate::overnight::OvernightManifest, kind: &str) -> Vec<String>
+- finalize_reasons_set_expected_status_and_record_event · function · L955-L984 — fn finalize_reasons_set_expected_status_and_record_event()
+- finalize_keeps_cancel_requested_status · function · L987-L996 — fn finalize_keeps_cancel_requested_status()
+- finalize_missing_manifest_reports_system_message_without_panic · function · L999-L1005 — fn finalize_missing_manifest_reports_system_message_without_panic()
+- poke_followup_records_auto_poke_sent · function · L1008-L1023 — fn poke_followup_records_auto_poke_sent()
+- poke_followup_stops_and_fails_run_on_budget_exhaustion · function · L1026-L1040 — fn poke_followup_stops_and_fails_run_on_budget_exhaustion()
+- poke_followup_run_mismatch_finalizes_tracked_run · function · L1043-L1059 — fn poke_followup_run_mismatch_finalizes_tracked_run()
+- non_retryable_error_records_turn_error_and_fails_run · function · L1062-L1081 — fn non_retryable_error_records_turn_error_and_fails_run()
+- start_guard_refuses_live_duplicate_in_same_session · function · L1084-L1100 — fn start_guard_refuses_live_duplicate_in_same_session()
+- start_guard_allows_stale_run_and_names_it · function · L1103-L1111 — fn start_guard_allows_stale_run_and_names_it()
+- start_guard_ignores_other_sessions · function · L1114-L1121 — fn start_guard_ignores_other_sessions()
+- start_guard_scans_past_other_sessions_and_corrupt_manifests · function · L1124-L1145 — fn start_guard_scans_past_other_sessions_and_corrupt_manifests()
+- start_guard_live_older_run_beats_newer_stale_run · function · L1148-L1158 — fn start_guard_live_older_run_beats_newer_stale_run()
+- finalize_persists_status_when_event_write_fails · function · L1161-L1175 — fn finalize_persists_status_when_event_write_fails()
+- finalize_does_not_claim_final_done_or_change_terminal_runs · function · L1178-L1202 — fn finalize_does_not_claim_final_done_or_change_terminal_runs()
+- clear_overnight_auto_poke_fails_tracked_run_and_is_noop_when_untracked · function · L1205-L1221 — fn clear_overnight_auto_poke_fails_tracked_run_and_is_noop_when_untracked()
+- cancel_failure_keeps_tracked_auto_poke · function · L1224-L1233 — fn cancel_failure_keeps_tracked_auto_poke()

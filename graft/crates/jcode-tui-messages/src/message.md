@@ -1,0 +1,44 @@
+# crates/jcode-tui-messages/src/message.rs
+
+- DisplayMessage · struct · L9-L17 — pub struct DisplayMessage
+- error · function · L21-L30 — pub fn error(content: impl Into<String>) -> Self
+- system · function · L33-L42 — pub fn system(content: impl Into<String>) -> Self
+- background_task · function · L45-L54 — pub fn background_task(content: impl Into<String>) -> Self
+- usage · function · L58-L67 — pub fn usage(content: impl Into<String>) -> Self
+- overnight · function · L71-L80 — pub fn overnight(content: impl Into<String>) -> Self
+- todos · function · L86-L95 — pub fn todos(content: impl Into<String>) -> Self
+- memory · function · L98-L107 — pub fn memory(title: impl Into<String>, content: impl Into<String>) -> Self
+- swarm · function · L110-L119 — pub fn swarm(title: impl Into<String>, content: impl Into<String>) -> Self
+- user · function · L122-L131 — pub fn user(content: impl Into<String>) -> Self
+- assistant · function · L134-L143 — pub fn assistant(content: impl Into<String>) -> Self
+- assistant_with_duration · function · L146-L155 — pub fn assistant_with_duration(content: impl Into<String>, duration_secs: f32) -> Self
+- tool · function · L158-L167 — pub fn tool(content: impl Into<String>, tool_data: ToolCall) -> Self
+- tool_text · function · L170-L179 — pub fn tool_text(content: impl Into<String>) -> Self
+- meta · function · L182-L191 — pub fn meta(content: impl Into<String>) -> Self
+- spacer · function · L197-L206 — pub fn spacer(rows: usize) -> Self
+- reasoning · function · L211-L220 — pub fn reasoning(content: impl Into<String>) -> Self
+- from_rendered_message · function · L223-L239 — pub fn from_rendered_message(item: RenderedMessage) -> Self
+- tool_with_title · function · L242-L255 — pub fn tool_with_title(
+- with_tool_calls · function · L258-L261 — pub fn with_tool_calls(mut self, tool_calls: Vec<String>) -> Self
+- with_title · function · L264-L267 — pub fn with_title(mut self, title: impl Into<String>) -> Self
+- tool_duration_from_output · function · L271-L294 — pub fn tool_duration_from_output(output: &str) -> Option<f32>
+- stable_cache_hash · function · L296-L311 — pub fn stable_cache_hash(&self) -> u64
+- display_messages_from_rendered_messages · function · L314-L321 — pub fn display_messages_from_rendered_messages(
+- TranscriptPreviewLabels · struct · L324-L331 — pub struct TranscriptPreviewLabels<'a>
+- DESKTOP · constant · L334-L341 — pub const DESKTOP: Self = Self
+- label_for_role · function · L345-L355 — fn label_for_role(self, role: &str) -> Option<&'a str>
+- transcript_preview_line · function · L358-L374 — pub fn transcript_preview_line(
+- transcript_preview_lines · function · L376-L389 — pub fn transcript_preview_lines<'a>(
+- latest_user_transcript_preview · function · L391-L401 — pub fn latest_user_transcript_preview<'a>(
+- normalize_transcript_preview_text · function · L403-L405 — pub fn normalize_transcript_preview_text(text: &str) -> String
+- truncate_transcript_preview · function · L407-L413 — pub fn truncate_transcript_preview(text: &str, max_chars: usize) -> String
+- hash_json_value · function · L415-L446 — fn hash_json_value(value: &Value, hasher: &mut DefaultHasher)
+- parse_timing_number · function · L449-L460 — fn parse_timing_number<T: std::str::FromStr>(value: &str) -> Option<T>
+- tests · module · L463-L607 — mod tests
+- message_with_input · function · L467-L482 — fn message_with_input(input: Value) -> DisplayMessage
+- stable_cache_hash_includes_tool_input · function · L485-L489 — fn stable_cache_hash_includes_tool_input()
+- stable_cache_hash_tracks_tool_duration_but_ignores_assistant_duration · function · L492-L501 — fn stable_cache_hash_tracks_tool_duration_but_ignores_assistant_duration()
+- tool_duration_headers_accept_runner_formats_only · function · L504-L528 — fn tool_duration_headers_accept_runner_formats_only()
+- tool_duration_restored_metadata_wins_and_missing_stays_unknown · function · L531-L561 — fn tool_duration_restored_metadata_wins_and_missing_stays_unknown()
+- rendered_messages_convert_to_display_messages · function · L564-L580 — fn rendered_messages_convert_to_display_messages()
+- transcript_preview_lines_share_desktop_labeling · function · L583-L606 — fn transcript_preview_lines_share_desktop_labeling()

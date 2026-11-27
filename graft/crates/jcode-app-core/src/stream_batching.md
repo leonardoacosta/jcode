@@ -1,0 +1,38 @@
+# crates/jcode-app-core/src/stream_batching.rs
+
+- UNFOCUSED_TEXT_BATCH · constant · L23-L23 — pub(crate) const UNFOCUSED_TEXT_BATCH: Duration = Duration::from_millis(250);
+- HIDDEN_TEXT_BATCH · constant · L28-L28 — pub(crate) const HIDDEN_TEXT_BATCH: Duration = Duration::from_secs(1);
+- Attention · enum · L32-L38 — enum Attention
+- State · struct · L41-L47 — struct State
+- STATE · constant · L49-L49 — static STATE: LazyLock<Mutex<State>> = LazyLock::new(|| Mutex::new(State::default()));
+- state · function · L51-L53 — fn state() -> std::sync::MutexGuard<'static, State>
+- set_connection_focus · function · L60-L84 — pub(crate) fn set_connection_focus(
+- forget_connection · function · L86-L88 — pub(crate) fn forget_connection(connection_id: &str)
+- ConnectionFocusGuard · struct · L91-L91 — pub(crate) struct ConnectionFocusGuard(pub String);
+- drop · function · L94-L96 — fn drop(&mut self)
+- note_session_targets · function · L102-L134 — pub(crate) fn note_session_targets<'a>(
+- session_batch_period · function · L137-L139 — pub(crate) fn session_batch_period(session_id: &str) -> Option<Duration>
+- session_batches · function · L142-L144 — pub(crate) fn session_batches(session_id: &str) -> bool
+- Kind · enum · L147-L153 — enum Kind
+- event · function · L156-L162 — fn event(self, text: String) -> ServerEvent
+- Pending · struct · L165-L169 — struct Pending
+- BatchingSender · struct · L174-L180 — pub(crate) struct BatchingSender
+- new · function · L183-L189 — pub(crate) fn new(tx: mpsc::UnboundedSender<ServerEvent>, session_id: String) -> Self
+- pending · function · L191-L193 — fn pending(&self) -> std::sync::MutexGuard<'_, Option<Pending>>
+- flush_locked · function · L195-L204 — fn flush_locked(&self, pending: &mut Option<Pending>)
+- raw · function · L207-L209 — pub(crate) fn raw(&self) -> &mpsc::UnboundedSender<ServerEvent>
+- deadline · function · L212-L214 — pub(crate) fn deadline(&self) -> Option<Instant>
+- flush · function · L216-L219 — pub(crate) fn flush(&self)
+- send · function · L221-L267 — pub(crate) fn send(
+- drop · function · L271-L273 — fn drop(&mut self)
+- tests · module · L277-L503 — mod tests
+- text · function · L280-L290 — fn text(event: ServerEvent) -> String
+- delta · function · L292-L294 — fn delta(text: &str) -> ServerEvent
+- ids · function · L296-L298 — fn ids(names: &[&str]) -> Vec<String>
+- disconnected_sender_returns_original_payload_for_all_send_paths · function · L301-L330 — fn disconnected_sender_returns_original_payload_for_all_send_paths()
+- unreported_or_focused_clients_keep_every_delta · function · L333-L350 — async fn unreported_or_focused_clients_keep_every_delta()
+- unfocused_session_coalesces_text_until_the_deadline · function · L353-L380 — async fn unfocused_session_coalesces_text_until_the_deadline()
+- other_events_and_kind_changes_flush_held_text_in_order · function · L383-L404 — async fn other_events_and_kind_changes_flush_held_text_in_order()
+- tool_input_coalesces_per_tool_and_never_merges_across_tools · function · L407-L432 — async fn tool_input_coalesces_per_tool_and_never_merges_across_tools()
+- gaining_focus_or_detaching_stops_batching · function · L435-L463 — async fn gaining_focus_or_detaching_stops_batching()
+- hidden_sessions_batch_longer_until_any_window_is_in_view · function · L466-L502 — async fn hidden_sessions_batch_longer_until_any_window_is_in_view()

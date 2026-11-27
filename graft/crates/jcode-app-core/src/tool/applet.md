@@ -1,0 +1,21 @@
+# crates/jcode-app-core/src/tool/applet.rs
+
+- MAX_ACTION_MESSAGE · constant · L17-L17 — const MAX_ACTION_MESSAGE: usize = 4000;
+- WaiterMap · type · L19-L19 — type WaiterMap = HashMap<(String, String), oneshot::Sender<String>>;
+- waiters · function · L21-L24 — fn waiters() -> &'static Mutex<WaiterMap>
+- WAITERS · constant · L22-L22 — static WAITERS: OnceLock<Mutex<WaiterMap>> = OnceLock::new();
+- deliver_to_waiter · function · L28-L34 — pub fn deliver_to_waiter(session_id: &str, instance: &str, message: String) -> bool
+- cap · function · L36-L46 — fn cap(mut s: String, max: usize) -> String
+- format_action_message · function · L49-L71 — pub fn format_action_message(
+- publish · function · L74-L76 — pub fn publish(session_id: &str, snapshot: AgentApplets)
+- generate_instance_id · function · L79-L94 — pub fn generate_instance_id(title: &str) -> String
+- AppletTool · struct · L97-L97 — pub struct AppletTool;
+- new · function · L100-L102 — pub fn new() -> Self
+- AppletInput · struct · L106-L131 — struct AppletInput
+- resolve_placement · function · L133-L184 — fn resolve_placement(raw: Option<&Value>, ctx: &ToolContext) -> Result<Placement>
+- parse_view · function · L186-L193 — fn parse_view(view: Value) -> Result<View>
+- name · function · L197-L199 — fn name(&self) -> &str
+- description · function · L201-L210 — fn description(&self) -> &str
+- parameters_schema · function · L212-L231 — fn parameters_schema(&self) -> Value
+- execute · function · L233-L419 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L424-L424 — mod tests;

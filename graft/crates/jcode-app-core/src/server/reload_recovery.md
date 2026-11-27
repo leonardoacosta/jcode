@@ -1,0 +1,37 @@
+# crates/jcode-app-core/src/server/reload_recovery.rs
+
+- PENDING_RECORD_MAX_AGE · constant · L7-L7 — const PENDING_RECORD_MAX_AGE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+- ReloadRecoveryRole · enum · L11-L15 — pub(super) enum ReloadRecoveryRole
+- as_str · function · L18-L24 — fn as_str(&self) -> &'static str
+- ReloadRecoveryStatus · enum · L29-L32 — pub(super) enum ReloadRecoveryStatus
+- ReloadRecoveryRecord · struct · L35-L45 — pub(super) struct ReloadRecoveryRecord
+- GarbageCollectionStats · struct · L48-L52 — pub(super) struct GarbageCollectionStats
+- sanitize_session_id · function · L54-L65 — fn sanitize_session_id(session_id: &str) -> String
+- recovery_dir · function · L67-L69 — fn recovery_dir() -> Result<PathBuf>
+- path_for_session · function · L71-L73 — pub(super) fn path_for_session(session_id: &str) -> Result<PathBuf>
+- remove_record_files · function · L75-L89 — fn remove_record_files(path: &std::path::Path) -> Result<()>
+- pending_record_is_expired · function · L91-L99 — fn pending_record_is_expired(record: &ReloadRecoveryRecord, now: SystemTime) -> Option<bool>
+- file_is_expired · function · L101-L108 — fn file_is_expired(path: &std::path::Path, now: SystemTime) -> bool
+- collect_garbage · function · L115-L117 — pub(super) fn collect_garbage() -> Result<GarbageCollectionStats>
+- collect_garbage_at · function · L119-L183 — fn collect_garbage_at(now: SystemTime) -> Result<GarbageCollectionStats>
+- persist_intent · function · L185-L213 — pub(super) fn persist_intent(
+- peek_for_session · function · L215-L221 — pub(super) fn peek_for_session(session_id: &str) -> Result<Option<ReloadRecoveryRecord>>
+- has_pending_for_session · function · L223-L233 — pub(super) fn has_pending_for_session(session_id: &str) -> bool
+- pending_directive_for_session · function · L243-L285 — pub(super) fn pending_directive_for_session(
+- is_delivered_continuation · function · L288-L293 — pub(super) fn is_delivered_continuation(session_id: &str, reminder: &str) -> Result<bool>
+- mark_delivered_if_matching_continuation · function · L295-L371 — pub(super) fn mark_delivered_if_matching_continuation(
+- tests · module · L374-L690 — mod tests
+- IsolatedHome · struct · L377-L380 — struct IsolatedHome
+- new · function · L383-L391 — fn new() -> Self
+- drop · function · L395-L401 — fn drop(&mut self)
+- directive · function · L404-L409 — fn directive(message: &str) -> ReloadRecoveryDirective
+- sanitize_session_id_strips_path_traversal_and_separators · function · L412-L420 — fn sanitize_session_id_strips_path_traversal_and_separators()
+- path_for_session_stays_inside_recovery_dir · function · L423-L440 — fn path_for_session_stays_inside_recovery_dir() -> Result<()>
+- persist_then_peek_roundtrips_record · function · L443-L468 — fn persist_then_peek_roundtrips_record() -> Result<()>
+- peek_for_missing_session_is_none · function · L471-L478 — fn peek_for_missing_session_is_none() -> Result<()>
+- pending_directive_does_not_consume_intent · function · L481-L502 — fn pending_directive_does_not_consume_intent() -> Result<()>
+- mark_delivered_is_idempotent_and_matches_exact_continuation · function · L505-L553 — fn mark_delivered_is_idempotent_and_matches_exact_continuation() -> Result<()>
+- garbage_collection_removes_delivered_and_stale_records · function · L556-L616 — fn garbage_collection_removes_delivered_and_stale_records() -> Result<()>
+- garbage_collection_uses_file_age_for_malformed_and_orphaned_records · function · L619-L648 — fn garbage_collection_uses_file_age_for_malformed_and_orphaned_records() -> Result<()>
+- mark_delivered_for_missing_session_is_false · function · L651-L660 — fn mark_delivered_for_missing_session_is_false() -> Result<()>
+- persist_intent_overwrites_prior_record_for_same_session · function · L663-L689 — fn persist_intent_overwrites_prior_record_for_same_session() -> Result<()>

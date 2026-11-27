@@ -1,0 +1,21 @@
+# crates/jcode-base/src/scratch_maintenance.rs
+
+- DEFAULT_SCRATCH_RETENTION_DAYS · constant · L18-L18 — pub const DEFAULT_SCRATCH_RETENTION_DAYS: u64 = 7;
+- SCRATCH_RETENTION_ENV · constant · L21-L21 — pub const SCRATCH_RETENTION_ENV: &str = "JCODE_SCRATCH_RETENTION_DAYS";
+- PRUNE_INTERVAL_SECS · constant · L24-L24 — const PRUNE_INTERVAL_SECS: u64 = 24 * 60 * 60;
+- PRUNE_MARKER · constant · L26-L26 — const PRUNE_MARKER: &str = "scratch-prune.stamp";
+- ScratchPruneReport · struct · L30-L33 — pub struct ScratchPruneReport
+- retention_from_env · function · L35-L41 — fn retention_from_env() -> Option<Duration>
+- prune_stale_scratch · function · L48-L77 — pub fn prune_stale_scratch()
+- prune_due · function · L83-L92 — fn prune_due(dir: &Path) -> bool
+- mark_pruned · function · L94-L96 — fn mark_pruned(dir: &Path)
+- prune_stale_scratch_in · function · L102-L134 — pub fn prune_stale_scratch_in(
+- modified_since · function · L138-L157 — fn modified_since(path: &Path, cutoff: SystemTime) -> bool
+- busy_process_dirs · function · L162-L176 — fn busy_process_dirs() -> Vec<PathBuf>
+- busy_process_dirs · function · L179-L181 — fn busy_process_dirs() -> Vec<PathBuf>
+- tests · module · L184-L276 — mod tests
+- DAY · constant · L188-L188 — const DAY: Duration = Duration::from_secs(24 * 60 * 60);
+- age · function · L190-L197 — fn age(path: &Path, by: Duration)
+- removes_only_entries_with_no_recent_files · function · L200-L233 — fn removes_only_entries_with_no_recent_files()
+- keeps_entries_used_by_live_processes · function · L236-L253 — fn keeps_entries_used_by_live_processes()
+- never_follows_symlinks_out_of_scratch · function · L257-L275 — fn never_follows_symlinks_out_of_scratch()

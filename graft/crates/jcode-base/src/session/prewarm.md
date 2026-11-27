@@ -1,0 +1,34 @@
+# crates/jcode-base/src/session/prewarm.rs
+
+- MIN_PREWARM_BYTES · constant · L25-L25 — const MIN_PREWARM_BYTES: u64 = 2 * 1024 * 1024;
+- MAX_PREWARM_SESSIONS · constant · L26-L26 — const MAX_PREWARM_SESSIONS: usize = 64;
+- PREWARM_WORKERS · constant · L27-L27 — const PREWARM_WORKERS: usize = 2;
+- ENTRY_TTL · constant · L29-L29 — const ENTRY_TTL: Duration = Duration::from_secs(30);
+- MAX_WAIT_FOR_IN_FLIGHT · constant · L31-L31 — const MAX_WAIT_FOR_IN_FLIGHT: Duration = Duration::from_secs(2);
+- FileStamp · struct · L34-L37 — struct FileStamp
+- stamp · function · L39-L51 — fn stamp(path: &std::path::Path) -> Option<FileStamp>
+- Fingerprint · struct · L54-L57 — struct Fingerprint
+- fingerprint · function · L59-L66 — fn fingerprint(session_id: &str) -> Option<Fingerprint>
+- Entry · enum · L68-L79 — enum Entry
+- Prewarm · struct · L81-L84 — struct Prewarm
+- PREWARM · constant · L86-L89 — static PREWARM: LazyLock<Prewarm> = LazyLock::new(|| Prewarm
+- lock_entries · function · L91-L96 — fn lock_entries() -> std::sync::MutexGuard<'static, HashMap<String, Entry>>
+- sessions_owned_by · function · L100-L117 — pub fn sessions_owned_by(pid: u32) -> Vec<String>
+- spawn_prewarm · function · L120-L122 — pub fn spawn_prewarm(session_ids: Vec<String>)
+- spawn_prewarm_with_min_bytes · function · L124-L187 — fn spawn_prewarm_with_min_bytes(session_ids: Vec<String>, min_bytes: u64)
+- prewarm_one · function · L189-L222 — fn prewarm_one(session_id: &str)
+- expire_stale · function · L224-L230 — fn expire_stale()
+- take · function · L236-L273 — pub(super) fn take(session_id: &str) -> Option<Session>
+- tests · module · L276-L448 — mod tests
+- Home · struct · L281-L285 — struct Home
+- new · function · L288-L299 — fn new() -> Self
+- drop · function · L303-L309 — fn drop(&mut self)
+- saved_session · function · L312-L329 — fn saved_session(id: &str, text: &str) -> Session
+- wait_ready · function · L331-L340 — fn wait_ready(id: &str)
+- first_text · function · L342-L347 — fn first_text(session: &Session) -> String
+- resume_uses_prewarmed_copy_once · function · L350-L362 — fn resume_uses_prewarmed_copy_once()
+- a_write_after_prewarm_invalidates_the_copy · function · L365-L389 — fn a_write_after_prewarm_invalidates_the_copy()
+- several_sessions_are_all_prewarmed_by_the_worker_pool · function · L392-L409 — fn several_sessions_are_all_prewarmed_by_the_worker_pool()
+- a_queued_session_is_claimed_not_waited_on · function · L412-L426 — fn a_queued_session_is_claimed_not_waited_on()
+- small_and_unknown_sessions_are_not_prewarmed · function · L429-L439 — fn small_and_unknown_sessions_are_not_prewarmed()
+- sessions_owned_by_reads_only_matching_markers · function · L442-L447 — fn sessions_owned_by_reads_only_matching_markers()

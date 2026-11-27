@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/tool/open.rs
+
+- COMPANION_TIMEOUT · constant · L10-L10 — const COMPANION_TIMEOUT: Duration = Duration::from_secs(10);
+- URL_SCHEMES · constant · L11-L11 — const URL_SCHEMES: &[&str] = &["http", "https", "mailto", "file"];
+- OpenTool · struct · L13-L13 — pub struct OpenTool;
+- new · function · L16-L18 — pub fn new() -> Self
+- OpenInput · struct · L22-L26 — struct OpenInput
+- OpenAction · enum · L29-L32 — enum OpenAction
+- parse · function · L35-L44 — fn parse(raw: Option<&str>) -> Result<Self>
+- as_str · function · L46-L51 — fn as_str(self) -> &'static str
+- ParsedTarget · enum · L55-L58 — enum ParsedTarget
+- ResolvedTarget · enum · L61-L67 — enum ResolvedTarget
+- LocalTargetKind · enum · L70-L73 — enum LocalTargetKind
+- as_str · function · L76-L81 — fn as_str(self) -> &'static str
+- OpenOutcome · struct · L84-L88 — struct OpenOutcome
+- name · function · L92-L94 — fn name(&self) -> &str
+- description · function · L96-L98 — fn description(&self) -> &str
+- parameters_schema · function · L100-L117 — fn parameters_schema(&self) -> Value
+- execute · function · L119-L155 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- resolve_target · function · L158-L174 — fn resolve_target(target: &str, ctx: &ToolContext) -> Result<ResolvedTarget>
+- resolve_local_target · function · L176-L191 — fn resolve_local_target(resolved: PathBuf) -> Result<ResolvedTarget>
+- parse_target · function · L193-L232 — fn parse_target(target: &str) -> Result<Option<ParsedTarget>>
+- expand_home · function · L234-L246 — fn expand_home(path: &str) -> Result<PathBuf>
+- dispatch · function · L251-L268 — async fn dispatch(
+- desktop_target · function · L270-L278 — fn desktop_target(target: &ResolvedTarget) -> jcode_desktop_open::Target
+- desktop_kind · function · L280-L285 — fn desktop_kind(kind: LocalTargetKind) -> jcode_desktop_open::LocalTargetKind
+- perform_open · function · L287-L334 — async fn perform_open(target: &ResolvedTarget) -> Result<OpenOutcome>
+- perform_reveal · function · L336-L387 — async fn perform_reveal(target: &ResolvedTarget) -> Result<OpenOutcome>
+- open_tests · module · L391-L391 — mod open_tests;

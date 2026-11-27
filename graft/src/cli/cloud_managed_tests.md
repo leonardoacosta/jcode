@@ -1,0 +1,37 @@
+# src/cli/cloud_managed_tests.rs
+
+- release_policy_is_exact_and_development_has_no_fallback · function · L7-L37 — fn release_policy_is_exact_and_development_has_no_fallback()
+- shell · module · L40-L817 — mod shell
+- Fixture · struct · L44-L46 — struct Fixture
+- executable · function · L48-L51 — fn executable(path: &Path, text: &str)
+- binary · function · L53-L72 — fn binary(version: &str, credentials: bool, fail_after_switch: bool) -> String
+- new · function · L75-L110 — fn new() -> Self
+- cli · function · L112-L114 — fn cli(&self) -> PathBuf
+- backend · function · L116-L118 — fn backend(&self) -> PathBuf
+- installed · function · L120-L126 — fn installed(&self, credentials: bool)
+- artifact · function · L128-L161 — fn artifact(&self, credentials: bool, fail_after_switch: bool, extra: Option<&str>)
+- checksum · function · L163-L171 — fn checksum(&self)
+- run · function · L173-L175 — fn run(&self, target: Option<&str>) -> std::process::Output
+- run_candidate · function · L177-L192 — fn run_candidate(
+- prepared_command · function · L194-L206 — fn prepared_command(&self) -> Command
+- assert_old · function · L208-L227 — fn assert_old(&self)
+- warm_preparation_reuses_only_verified_unchanged_capabilities · function · L231-L304 — fn warm_preparation_reuses_only_verified_unchanged_capabilities()
+- concurrent_remote_preparation_probes_once_then_reuses_verified_install · function · L307-L339 — fn concurrent_remote_preparation_probes_once_then_reuses_verified_install()
+- warm_preparation_expiry_corruption_and_failure_invalidate_evidence · function · L342-L383 — fn warm_preparation_expiry_corruption_and_failure_invalidate_evidence()
+- managed_policy_keeps_capable_runtime_despite_newer_client_release · function · L386-L401 — fn managed_policy_keeps_capable_runtime_despite_newer_client_release()
+- managed_policy_rejects_implicit_dev_upload_and_missing_capabilities · function · L404-L423 — fn managed_policy_rejects_implicit_dev_upload_and_missing_capabilities()
+- development_keeps_capable_cli_without_downloading · function · L426-L437 — fn development_keeps_capable_cli_without_downloading()
+- development_candidate_is_probed_and_installed_without_a_release · function · L440-L469 — fn development_candidate_is_probed_and_installed_without_a_release()
+- development_bundle_keeps_wrapper_binary_and_private_libraries_together · function · L472-L487 — fn development_bundle_keeps_wrapper_binary_and_private_libraries_together()
+- development_candidate_rolls_back_when_effective_cli_is_broken · function · L490-L505 — fn development_candidate_rolls_back_when_effective_cli_is_broken()
+- development_upgrades_incompatible_cli_to_verified_latest · function · L508-L528 — fn development_upgrades_incompatible_cli_to_verified_latest()
+- development_rejects_invalid_latest_redirects_without_switching · function · L531-L546 — fn development_rejects_invalid_latest_redirects_without_switching()
+- missing_replace_or_group_capability_triggers_development_upgrade · function · L549-L567 — fn missing_replace_or_group_capability_triggers_development_upgrade()
+- latest_without_required_replace_capability_never_switches_backend · function · L570-L600 — fn latest_without_required_replace_capability_never_switches_backend()
+- published_release_upgrades_effective_cli_and_preserves_previous · function · L603-L645 — fn published_release_upgrades_effective_cli_and_preserves_previous()
+- published_policy_keeps_newer_capable_stable_releases · function · L648-L673 — fn published_policy_keeps_newer_capable_stable_releases()
+- rejects_missing_credentials_wrong_checksum_and_unexpected_members · function · L676-L733 — fn rejects_missing_credentials_wrong_checksum_and_unexpected_members()
+- failed_post_switch_verification_restores_previous_binary · function · L736-L744 — fn failed_post_switch_verification_restores_previous_binary()
+- failed_effective_cli_verification_restores_relative_backend_symlink · function · L747-L774 — fn failed_effective_cli_verification_restores_relative_backend_symlink()
+- rollback_failure_retains_recovery_files_without_claiming_success · function · L777-L804 — fn rollback_failure_retains_recovery_files_without_claiming_success()
+- home_shell_metacharacters_are_quoted_without_loss · function · L807-L816 — fn home_shell_metacharacters_are_quoted_without_loss()

@@ -1,0 +1,53 @@
+# crates/jcode-base/src/usage/disk_cache.rs
+
+- LAST_GOOD_MAX_AGE · constant · L22-L22 — const LAST_GOOD_MAX_AGE: Duration = Duration::from_secs(24 * 60 * 60);
+- Snapshot · struct · L25-L35 — struct Snapshot
+- Entry · struct · L38-L51 — struct Entry
+- path · function · L53-L59 — fn path() -> Option<PathBuf>
+- now_ms · function · L61-L63 — fn now_ms() -> i64
+- age · function · L65-L67 — fn age(unix_ms: i64) -> Duration
+- instant_for · function · L69-L72 — fn instant_for(unix_ms: i64) -> Instant
+- load · function · L74-L79 — fn load() -> HashMap<String, Entry>
+- open_lock · function · L81-L93 — fn open_lock(path: &Path) -> std::io::Result<File>
+- map_lock · function · L97-L101 — fn map_lock(path: &Path) -> std::io::Result<File>
+- lock_probe · function · L105-L122 — pub(super) async fn lock_probe(key: &str) -> anyhow::Result<File>
+- update · function · L124-L153 — fn update(key: &str, change: impl FnOnce(&mut Entry)) -> Entry
+- is_rate_limit · function · L155-L157 — fn is_rate_limit(error: &str) -> bool
+- to_usage · function · L159-L183 — fn to_usage(snapshot: &Snapshot, last_error: Option<String>) -> UsageData
+- interval · function · L188-L194 — fn interval(entry: &Entry) -> Duration
+- deadline · function · L196-L218 — fn deadline(entry: &Entry) -> Option<i64>
+- entry_usage · function · L220-L242 — fn entry_usage(entry: &Entry) -> UsageData
+- reset_status · function · L244-L251 — pub(super) fn reset_status(key: &str) -> Option<serde_json::Value>
+- fresh · function · L253-L256 — pub(super) fn fresh(key: &str) -> Option<UsageData>
+- saved_account_last_good · function · L261-L273 — pub(super) fn saved_account_last_good() -> HashMap<String, UsageData>
+- last_good · function · L277-L280 — pub(super) fn last_good(key: &str) -> Option<UsageData>
+- store_success · function · L283-L285 — pub(super) fn store_success(key: &str, data: &UsageData) -> UsageData
+- store_response_limits · function · L290-L317 — pub(super) fn store_response_limits(
+- clear_auth_failure · function · L319-L348 — pub(super) fn clear_auth_failure(key: &str)
+- store_success_with_reset_status · function · L350-L381 — pub(super) fn store_success_with_reset_status(
+- retry_after_ms · function · L384-L397 — fn retry_after_ms(value: &str, now: i64) -> Option<i64>
+- store_error · function · L400-L402 — pub(super) fn store_error(key: &str, error: &str)
+- store_error_with_hint · function · L404-L430 — pub(super) fn store_error_with_hint(key: &str, error: &str, hint: Option<&str>) -> UsageData
+- export_last_good · function · L434-L451 — pub fn export_last_good() -> Vec<u8>
+- import_last_good · function · L454-L475 — pub fn import_last_good(bytes: &[u8])
+- invalidate · function · L478-L495 — pub(super) fn invalidate(matches: impl Fn(&str) -> bool)
+- tests · module · L498-L974 — mod tests
+- WORKER_ENV · constant · L501-L501 — const WORKER_ENV: &str = "JCODE_USAGE_CACHE_TEST_WORKER";
+- subprocess_worker · function · L506-L548 — fn subprocess_worker()
+- run_workers · function · L550-L579 — fn run_workers(mode: &str, count: usize)
+- subprocess_updates_preserve_every_account · function · L582-L593 — fn subprocess_updates_preserve_every_account()
+- subprocess_probes_coalesce_and_share_rate_limit_backoff · function · L596-L621 — fn subprocess_probes_coalesce_and_share_rate_limit_backoff()
+- equal_timestamp_failure_takes_precedence_over_success · function · L624-L648 — fn equal_timestamp_failure_takes_precedence_over_success()
+- with_home · function · L650-L661 — fn with_home<T>(f: impl FnOnce() -> T) -> T
+- sample · function · L663-L670 — fn sample() -> UsageData
+- routing_hydration_only_imports_recent_saved_last_good_samples · function · L673-L706 — fn routing_hydration_only_imports_recent_saved_last_good_samples()
+- anthropic_normal_polling_is_fifteen_minutes_and_openai_stays_five · function · L709-L721 — fn anthropic_normal_polling_is_fifteen_minutes_and_openai_stays_five()
+- new_credentials_clear_auth_errors_but_not_inherited_rate_limit_deadlines · function · L724-L748 — fn new_credentials_clear_auth_errors_but_not_inherited_rate_limit_deadlines()
+- slowdown_survives_success_and_restart_with_matching_ram_deadline · function · L751-L776 — fn slowdown_survives_success_and_restart_with_matching_ram_deadline()
+- retry_hints_respect_policy_floor_and_can_extend_beyond_adaptive_cap · function · L779-L830 — fn retry_hints_respect_policy_floor_and_can_extend_beyond_adaptive_cap()
+- reset_and_expired_windows_never_bypass_provider_deadline · function · L833-L850 — fn reset_and_expired_windows_never_bypass_provider_deadline()
+- legacy_rate_limit_history_is_retained_after_success · function · L853-L868 — fn legacy_rate_limit_history_is_retained_after_success()
+- old_good_provenance_is_not_resurrected_by_a_long_retry_hint · function · L871-L883 — fn old_good_provenance_is_not_resurrected_by_a_long_retry_hint()
+- success_is_shared_and_rate_limit_keeps_last_good_limits · function · L886-L909 — fn success_is_shared_and_rate_limit_keeps_last_good_limits()
+- errors_without_data_back_off_and_invalidate_preserves_cooldown · function · L912-L926 — fn errors_without_data_back_off_and_invalidate_preserves_cooldown()
+- expired_backoff_allows_one_new_probe_and_failure_keeps_limits_unknown · function · L929-L973 — fn expired_backoff_allows_one_new_probe_and_failure_keeps_limits_unknown()

@@ -1,0 +1,37 @@
+# crates/jcode-tui/src/tui/info_widget_swarm_background.rs
+
+- render_swarm_widget · function · L10-L68 — pub(super) fn render_swarm_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render_background_widget · function · L73-L121 — pub(super) fn render_background_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render_background_compact · function · L123-L125 — pub(super) fn render_background_compact(info: &BackgroundInfo, width: usize) -> Vec<Line<'static>>
+- swarm_member_label · function · L127-L132 — fn swarm_member_label(member: &SwarmMemberStatus) -> String
+- swarm_status_style · function · L134-L146 — fn swarm_status_style(status: &str) -> (Color, &'static str)
+- swarm_role_prefix · function · L148-L153 — fn swarm_role_prefix(member: &SwarmMemberStatus) -> &'static str
+- swarm_member_line · function · L157-L178 — fn swarm_member_line(member: &SwarmMemberStatus, row_width: usize) -> Line<'static>
+- render_swarm_stats_line · function · L182-L193 — fn render_swarm_stats_line(info: &SwarmInfo) -> Line<'static>
+- render_swarm_name_line · function · L195-L203 — fn render_swarm_name_line(name: &str, max_name_len: usize) -> Line<'static>
+- render_background_lines · function · L205-L225 — fn render_background_lines(info: &BackgroundInfo, width: usize) -> Vec<Line<'static>>
+- WIDGET_MAX_TASK_ROWS · constant · L228-L228 — const WIDGET_MAX_TASK_ROWS: usize = 6;
+- COMPACT_MAX_TASK_ROWS · constant · L231-L231 — const COMPACT_MAX_TASK_ROWS: usize = 3;
+- background_task_rows · function · L236-L287 — fn background_task_rows(
+- background_task_row_line · function · L291-L347 — pub(crate) fn background_task_row_line(
+- BAR_WIDTH · constant · L296-L296 — const BAR_WIDTH: usize = 6;
+- truncate_task_label · function · L349-L352 — fn truncate_task_label(label: &str, max_width: usize) -> String
+- background_summary · function · L354-L370 — fn background_summary(info: &BackgroundInfo) -> Option<String>
+- DOCK_MAX_ROWS · constant · L373-L373 — const DOCK_MAX_ROWS: usize = 6;
+- dock_status_rank · function · L375-L382 — fn dock_status_rank(status: &str) -> u8
+- dock_is_finished · function · L384-L386 — fn dock_is_finished(status: &str) -> bool
+- dock_is_attention · function · L388-L390 — fn dock_is_attention(status: &str) -> bool
+- dock_activity · function · L394-L436 — fn dock_activity(member: &SwarmMemberStatus) -> String
+- dock_member_label · function · L440-L442 — fn dock_member_label(member: &SwarmMemberStatus) -> String
+- render_swarm_dock · function · L444-L604 — fn render_swarm_dock(info: &SwarmInfo, inner: Rect) -> Framed
+- cell_width_tests · module · L607-L628 — mod cell_width_tests
+- member_row_fits_narrow_width · function · L612-L627 — fn member_row_fits_narrow_width()
+- substantive_footer_tests · module · L631-L778 — mod substantive_footer_tests
+- member · function · L634-L641 — fn member(name: &str, status: &str) -> SwarmMemberStatus
+- swarm_no_overflow_moves_clients_to_footer · function · L644-L658 — fn swarm_no_overflow_moves_clients_to_footer()
+- swarm_unnamed_sessions_keep_body_and_scope_footer · function · L661-L672 — fn swarm_unnamed_sessions_keep_body_and_scope_footer()
+- dock_no_overflow_preserves_headline_and_adds_scope · function · L675-L690 — fn dock_no_overflow_preserves_headline_and_adds_scope()
+- dock_wait_has_clock_and_reason_instead_of_false_quiet_alert · function · L693-L715 — fn dock_wait_has_clock_and_reason_instead_of_false_quiet_alert()
+- background_no_overflow_explains_completion_glyph · function · L718-L735 — fn background_no_overflow_explains_completion_glyph()
+- dock_output_footer_does_not_repeat_headline_or_rows · function · L738-L758 — fn dock_output_footer_does_not_repeat_headline_or_rows()
+- background_overflow_keeps_more_and_missing_details_keep_body · function · L761-L777 — fn background_overflow_keeps_more_and_missing_details_keep_body()

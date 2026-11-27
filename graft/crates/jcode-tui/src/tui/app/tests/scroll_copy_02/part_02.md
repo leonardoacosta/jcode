@@ -1,0 +1,52 @@
+# crates/jcode-tui/src/tui/app/tests/scroll_copy_02/part_02.rs
+
+- test_copy_badge_requires_prior_combo_progress · function · L2-L28 — fn test_copy_badge_requires_prior_combo_progress()
+- test_expand_badge_shortcut_toggles_inline_diff_and_pulses_key · function · L31-L44 — fn test_expand_badge_shortcut_toggles_inline_diff_and_pulses_key()
+- test_alt_shift_i_toggles_inline_images_and_persists · function · L47-L103 — fn test_alt_shift_i_toggles_inline_images_and_persists()
+- text_only_transcript_updates_keep_inline_image_signature_cached · function · L106-L137 — fn text_only_transcript_updates_keep_inline_image_signature_cached()
+- inline_image_signature_distinguishes_labels_and_same_prefix_payloads · function · L140-L172 — fn inline_image_signature_distinguishes_labels_and_same_prefix_payloads()
+- test_alt_shift_i_is_inert_without_inline_images · function · L175-L192 — fn test_alt_shift_i_is_inert_without_inline_images()
+- test_expand_badge_shortcut_does_not_collapse_full_inline_diff · function · L195-L212 — fn test_expand_badge_shortcut_does_not_collapse_full_inline_diff()
+- make_edit_badge_test_app · function · L214-L258 — fn make_edit_badge_test_app(
+- assert_rendered_expand_badge_shortcut_expands_to_full_diff · function · L260-L317 — fn assert_rendered_expand_badge_shortcut_expands_to_full_diff(
+- test_expand_badge_rendered_shortcut_expands_with_explicit_shift_event · function · L320-L329 — fn test_expand_badge_rendered_shortcut_expands_with_explicit_shift_event()
+- test_expand_badge_rendered_shortcut_expands_with_alt_uppercase_event · function · L332-L341 — fn test_expand_badge_rendered_shortcut_expands_with_alt_uppercase_event()
+- test_expand_badge_rendered_shortcut_expands_with_alt_lowercase_event · function · L344-L353 — fn test_expand_badge_rendered_shortcut_expands_with_alt_lowercase_event()
+- test_expand_badge_brackets_match_dim_shortcut_color · function · L356-L378 — fn test_expand_badge_brackets_match_dim_shortcut_color()
+- test_clicking_expand_edit_badge_expands_to_full_diff · function · L381-L416 — fn test_clicking_expand_edit_badge_expands_to_full_diff()
+- test_expand_badge_shortcut_works_while_diff_pane_focused · function · L419-L442 — fn test_expand_badge_shortcut_works_while_diff_pane_focused()
+- test_remote_expand_badge_rendered_shortcut_expands_with_alt_uppercase_event · function · L445-L468 — fn test_remote_expand_badge_rendered_shortcut_expands_with_alt_uppercase_event()
+- test_remote_expand_badge_rendered_shortcut_expands_with_alt_lowercase_event · function · L471-L494 — fn test_remote_expand_badge_rendered_shortcut_expands_with_alt_lowercase_event()
+- test_expand_badge_does_not_render_for_short_untruncated_edit_diff · function · L497-L506 — fn test_expand_badge_does_not_render_for_short_untruncated_edit_diff()
+- test_expand_badge_renders_when_diffs_are_hidden · function · L509-L525 — fn test_expand_badge_renders_when_diffs_are_hidden()
+- test_expand_badge_shortcut_opens_full_inline_from_non_inline_mode · function · L528-L556 — fn test_expand_badge_shortcut_opens_full_inline_from_non_inline_mode()
+- test_expand_badge_shortcut_uses_display_messages_when_edit_count_is_stale · function · L559-L588 — fn test_expand_badge_shortcut_uses_display_messages_when_edit_count_is_stale()
+- test_try_open_link_at_opens_clicked_url_and_sets_notice · function · L591-L627 — fn test_try_open_link_at_opens_clicked_url_and_sets_notice()
+- test_repository_markdown_link_opens_in_focused_side_panel · function · L630-L680 — fn test_repository_markdown_link_opens_in_focused_side_panel()
+- test_rendered_markdown_link_labels_open_their_own_message_targets · function · L683-L716 — fn test_rendered_markdown_link_labels_open_their_own_message_targets()
+- test_rendered_wrapped_markdown_link_label_is_clickable · function · L719-L739 — fn test_rendered_wrapped_markdown_link_label_is_clickable()
+- test_side_pane_markdown_link_label_is_clickable · function · L742-L758 — fn test_side_pane_markdown_link_label_is_clickable()
+- test_repository_markdown_link_cannot_escape_working_directory · function · L761-L775 — fn test_repository_markdown_link_cannot_escape_working_directory()
+- rendered_repository_markdown_destination_opens_with_keyboard · function · L778-L826 — fn rendered_repository_markdown_destination_opens_with_keyboard()
+- rendered_markdown_mouse_keyboard_parity_and_containment · function · L829-L910 — fn rendered_markdown_mouse_keyboard_parity_and_containment()
+- test_mouse_click_in_input_moves_cursor_to_clicked_position · function · L913-L944 — fn test_mouse_click_in_input_moves_cursor_to_clicked_position()
+- test_mouse_click_in_main_chat_switches_focus_from_side_panel · function · L947-L987 — fn test_mouse_click_in_main_chat_switches_focus_from_side_panel()
+- test_side_panel_dismiss_survives_local_page_refresh · function · L990-L1030 — fn test_side_panel_dismiss_survives_local_page_refresh()
+- test_side_panel_close_keeps_visible_file_diff_focused_and_scrollable · function · L1033-L1077 — fn test_side_panel_close_keeps_visible_file_diff_focused_and_scrollable()
+- test_side_panel_close_in_file_mode_without_edits_restores_composer · function · L1080-L1122 — fn test_side_panel_close_in_file_mode_without_edits_restores_composer()
+- test_mouse_click_in_input_switches_focus_from_side_panel · function · L1125-L1176 — fn test_mouse_click_in_input_switches_focus_from_side_panel()
+- test_mouse_click_in_wrapped_input_moves_cursor_to_second_visual_line · function · L1179-L1209 — fn test_mouse_click_in_wrapped_input_moves_cursor_to_second_visual_line()
+- test_click_on_inline_image_label_line_cycles_level · function · L1218-L1313 — fn test_click_on_inline_image_label_line_cycles_level()
+- IMAGE_ID · constant · L1227-L1227 — const IMAGE_ID: u64 = 0xFEED;
+- test_collapsed_width_bound_image_can_open · function · L1316-L1324 — fn test_collapsed_width_bound_image_can_open()
+- test_kitty_jitter_click_on_image_label_still_cycles_level · function · L1332-L1411 — fn test_kitty_jitter_click_on_image_label_still_cycles_level()
+- IMAGE_ID · constant · L1341-L1341 — const IMAGE_ID: u64 = 0xF00D;
+- REPRO_TINY_PNG_B64 · constant · L1415-L1415 — const REPRO_TINY_PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+- test_real_draw_click_on_body_anchored_image_label_cycles_level · function · L1428-L1592 — fn test_real_draw_click_on_body_anchored_image_label_cycles_level()
+- TOOL_ID · constant · L1436-L1436 — const TOOL_ID: &str = "read-shot-1";
+- test_real_draw_never_emits_inline_image_marker_text · function · L1602-L1681 — fn test_real_draw_never_emits_inline_image_marker_text()
+- TOOL_ID · constant · L1609-L1609 — const TOOL_ID: &str = "read-shot-marker";
+- test_click_on_inline_image_body_cycles_level · function · L1687-L1778 — fn test_click_on_inline_image_body_cycles_level()
+- IMAGE_ID · constant · L1696-L1696 — const IMAGE_ID: u64 = 0xBEEF;
+- image_zoom · module · L1783-L1783 — mod image_zoom;
+- additional_test_copy_badge_modifier_highlights_while_held · module · L1789-L1789 — mod additional_test_copy_badge_modifier_highlights_while_held;

@@ -1,0 +1,31 @@
+# crates/jcode-tui-mermaid/src/mermaid_tests/part_02.rs
+
+- precise_viewport_accepts_high_auto_zoom_without_panicking · function · L2-L13 — fn precise_viewport_accepts_high_auto_zoom_without_panicking()
+- viewport_crop_resize_scales_complete_zoomed_crops_to_fill_destination · function · L16-L33 — fn viewport_crop_resize_scales_complete_zoomed_crops_to_fill_destination()
+- preferred_aspect_ratio_context_is_scoped_and_bucketed · function · L36-L49 — fn preferred_aspect_ratio_context_is_scoped_and_bucketed()
+- preferred_aspect_ratio_adjusts_render_height_without_changing_width_bucket · function · L52-L64 — fn preferred_aspect_ratio_adjusts_render_height_without_changing_width_bucket()
+- deferred_render_supersedes_prefix_stream_updates_only · function · L67-L86 — fn deferred_render_supersedes_prefix_stream_updates_only()
+- mmdr_size_api_fits_natural_aspect_into_target_canvas · function · L90-L139 — fn mmdr_size_api_fits_natural_aspect_into_target_canvas()
+- image_scroll_steady_state_has_no_per_frame_stats_or_rebuilds · function · L150-L187 — fn image_scroll_steady_state_has_no_per_frame_stats_or_rebuilds()
+- warm_fit_draws_do_not_stat_the_render_cache · function · L190-L218 — fn warm_fit_draws_do_not_stat_the_render_cache()
+- cache_eviction_recognizes_every_inline_extension · function · L225-L242 — fn cache_eviction_recognizes_every_inline_extension()
+- bounded_bookkeeping_insert_caps_map_growth · function · L247-L263 — fn bounded_bookkeeping_insert_caps_map_growth()
+- source_image_cache_enforces_decoded_byte_budget · function · L266-L293 — fn source_image_cache_enforces_decoded_byte_budget()
+- fitted_source_cache_enforces_budget_and_replaces_resize_variants · function · L296-L335 — fn fitted_source_cache_enforces_budget_and_replaces_resize_variants()
+- fitted_scroll_crop_tracks_arbitrary_middle_rows_without_rescaling · function · L338-L356 — fn fitted_scroll_crop_tracks_arbitrary_middle_rows_without_rescaling()
+- image_state_cache_enforces_source_byte_budget · function · L359-L385 — fn image_state_cache_enforces_source_byte_budget()
+- png_dimension_probe_needs_only_the_header · function · L388-L401 — fn png_dimension_probe_needs_only_the_header()
+- inline_fit_geometry_and_marker_roundtrip · function · L407-L437 — fn inline_fit_geometry_and_marker_roundtrip()
+- inline_transcript_aspect_goal_produces_expected_bucketed_profile · function · L443-L466 — fn inline_transcript_aspect_goal_produces_expected_bucketed_profile()
+- inline_transcript_aspect_goal_is_stable_under_resize_jitter · function · L473-L486 — fn inline_transcript_aspect_goal_is_stable_under_resize_jitter()
+- inline_transcript_aspect_goal_no_geometry_yields_none · function · L490-L506 — fn inline_transcript_aspect_goal_no_geometry_yields_none()
+- transcript_profile_keeps_pinned_pane_aspect_when_present · function · L513-L527 — fn transcript_profile_keeps_pinned_pane_aspect_when_present()
+- render_stats_test_lock · function · L532-L536 — fn render_stats_test_lock() -> std::sync::MutexGuard<'static, ()>
+- layout_cache_reuses_layout_across_terminal_widths · function · L544-L588 — fn layout_cache_reuses_layout_across_terminal_widths()
+- layout_cache_keys_on_aspect_profile · function · L595-L634 — fn layout_cache_keys_on_aspect_profile()
+- layout_cache_hit_renders_byte_identical_png · function · L640-L678 — fn layout_cache_hit_renders_byte_identical_png()
+- layout_cache_evicts_lru_and_clears_on_theme_change · function · L684-L740 — fn layout_cache_evicts_lru_and_clears_on_theme_change()
+- streaming_preview_then_final_registration_does_not_double_count · function · L743-L808 — fn streaming_preview_then_final_registration_does_not_double_count()
+- HASH · constant · L750-L750 — const HASH: u64 = 0xDEAD_BEEF_CAFE_0001;
+- aspect_profile_cache_entry_is_visible_to_profile_agnostic_probes · function · L819-L845 — fn aspect_profile_cache_entry_is_visible_to_profile_agnostic_probes()
+- HASH · constant · L820-L820 — const HASH: u64 = 0x51AB_1E5C_AFE0_0001;

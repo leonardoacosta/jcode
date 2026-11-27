@@ -1,0 +1,27 @@
+# crates/jcode-tui/src/tui/info_widget_model.rs
+
+- runtime_height · function · L16-L18 — pub(super) fn runtime_height(data: &InfoWidgetData) -> u16
+- overview_runtime_height · function · L21-L23 — pub(super) fn overview_runtime_height(data: &InfoWidgetData) -> u16
+- runtime_has_data · function · L25-L27 — pub(super) fn runtime_has_data(data: &InfoWidgetData) -> bool
+- render_model_widget · function · L30-L37 — pub(super) fn render_model_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- render_model_info · function · L40-L46 — pub(super) fn render_model_info(data: &InfoWidgetData, inner: Rect) -> Vec<Line<'static>>
+- TPS_ICON · constant · L48-L48 — const TPS_ICON: &str = "⏱";
+- runtime_frame_rows · function · L52-L77 — fn runtime_frame_rows(data: &InfoWidgetData) -> (Vec<RuntimeRow>, RuntimeRow)
+- RuntimeRow · struct · L79-L84 — struct RuntimeRow
+- into_line · function · L87-L103 — fn into_line(self, max_len: usize) -> Line<'static>
+- runtime_rows · function · L106-L193 — fn runtime_rows(data: &InfoWidgetData) -> Vec<RuntimeRow>
+- non_empty · function · L195-L197 — fn non_empty(value: Option<&str>) -> Option<&str>
+- short_service_tier · function · L199-L210 — fn short_service_tier(service_tier: &str) -> Option<&str>
+- tests · module · L213-L400 — mod tests
+- data · function · L217-L227 — fn data() -> InfoWidgetData
+- text · function · L229-L240 — fn text(lines: Vec<Line<'static>>) -> String
+- runtime_widget_never_repeats_status_line_identity · function · L243-L257 — fn runtime_widget_never_repeats_status_line_identity()
+- compact_tier_reports_keep_reported_tier_visible · function · L260-L279 — fn compact_tier_reports_keep_reported_tier_visible()
+- service_tier_only_for_openai · function · L282-L293 — fn service_tier_only_for_openai()
+- identity_only_session_has_no_runtime_widget · function · L296-L301 — fn identity_only_session_has_no_runtime_widget()
+- footer_moves_facts_once_and_preserves_overview · function · L304-L324 — fn footer_moves_facts_once_and_preserves_overview()
+- single_facts_keep_body_and_use_distinct_unavailable_metric · function · L327-L342 — fn single_facts_keep_body_and_use_distinct_unavailable_metric()
+- startup_slots_keep_height_and_report_pending_throughput · function · L345-L356 — fn startup_slots_keep_height_and_report_pending_throughput()
+- invalid_throughput_is_unavailable_not_a_live_metric · function · L359-L367 — fn invalid_throughput_is_unavailable_not_a_live_metric()
+- overview_height_counts_all_facts_including_moved_footer · function · L370-L388 — fn overview_height_counts_all_facts_including_moved_footer()
+- height_matches_rendered_rows · function · L391-L399 — fn height_matches_rendered_rows()

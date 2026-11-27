@@ -1,0 +1,27 @@
+# crates/jcode-base/src/memory_log.rs
+
+- MEMORY_LOGGER · constant · L20-L20 — static MEMORY_LOGGER: Mutex<Option<MemoryLogger>> = Mutex::new(None);
+- MemoryLogger · struct · L22-L26 — struct MemoryLogger
+- open · function · L29-L43 — fn open(date: &str) -> Option<Self>
+- write_entry · function · L45-L50 — fn write_entry(&mut self, entry: &LogEntry)
+- log_dir · function · L53-L55 — fn log_dir() -> Option<PathBuf>
+- ensure_logger · function · L57-L71 — fn ensure_logger(date: &str) -> bool
+- LogEntry · struct · L74-L80 — struct LogEntry
+- current_session_id · function · L82-L84 — fn current_session_id() -> Option<String>
+- write_log · function · L86-L106 — fn write_log(event: &str, detail: Option<serde_json::Value>)
+- injected_detail · function · L108-L124 — fn injected_detail(
+- log_event · function · L127-L291 — pub fn log_event(kind: &MemoryEventKind)
+- log_pending_prepared · function · L294-L305 — pub fn log_pending_prepared(session_id: &str, prompt: &str, count: usize, memory_ids: &[String])
+- log_marked_injected · function · L308-L319 — pub fn log_marked_injected(session_id: &str, ids: &[String])
+- log_marked_known · function · L323-L335 — pub fn log_marked_known(session_id: &str, ids: &[String], reason: &str)
+- log_pending_consumed · function · L338-L348 — pub fn log_pending_consumed(session_id: &str, count: usize, age_ms: u64, prompt_chars: usize)
+- log_pending_discarded · function · L351-L359 — pub fn log_pending_discarded(session_id: &str, reason: &str)
+- log_topic_change · function · L362-L371 — pub fn log_topic_change(session_id: &str, old_topic: &str, new_topic: &str)
+- log_final_extraction · function · L374-L382 — pub fn log_final_extraction(session_id: &str, transcript_chars: usize)
+- log_candidate_filter · function · L385-L400 — pub fn log_candidate_filter(
+- log_judge_decision · function · L405-L422 — pub fn log_judge_decision(
+- cleanup_old_memory_logs · function · L428-L432 — pub fn cleanup_old_memory_logs()
+- cleanup_old_memory_logs_in · function · L436-L457 — fn cleanup_old_memory_logs_in(dir: &std::path::Path, now: chrono::DateTime<Local>)
+- tests · module · L460-L544 — mod tests
+- memory_injected_old_and_new_log_lines_parse · function · L468-L501 — fn memory_injected_old_and_new_log_lines_parse()
+- memory_log_cleanup_respects_14_day_window · function · L504-L543 — fn memory_log_cleanup_respects_14_day_window()

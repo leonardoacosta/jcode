@@ -1,0 +1,51 @@
+# crates/jcode-base/src/provider/jcode.rs
+
+- JcodeProvider · struct · L8-L11 — pub struct JcodeProvider
+- runtime_model_spec · function · L14-L19 — fn runtime_model_spec(model: &str) -> String
+- new · function · L21-L31 — pub fn new() -> Self
+- apply_runtime_profile · function · L33-L38 — fn apply_runtime_profile()
+- ensure_runtime_mode · function · L40-L45 — fn ensure_runtime_mode(&self)
+- entitled_models_for · function · L47-L53 — fn entitled_models_for(
+- entitled_models · function · L55-L58 — fn entitled_models() -> impl Iterator<Item = &'static crate::subscription_catalog::CuratedModel>
+- model_routes_for · function · L60-L72 — fn model_routes_for(tier: crate::subscription_catalog::JcodeTier) -> Vec<ModelRoute>
+- default · function · L76-L78 — fn default() -> Self
+- complete · function · L83-L94 — async fn complete(
+- complete_split · function · L96-L114 — async fn complete_split(
+- name · function · L116-L118 — fn name(&self) -> &str
+- model · function · L120-L125 — fn model(&self) -> String
+- set_model · function · L127-L138 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L140-L143 — fn available_models(&self) -> Vec<&'static str>
+- available_models_display · function · L145-L150 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L152-L157 — fn available_models_for_switching(&self) -> Vec<String>
+- available_providers_for_model · function · L159-L161 — fn available_providers_for_model(&self, model: &str) -> Vec<String>
+- provider_details_for_model · function · L163-L165 — fn provider_details_for_model(&self, model: &str) -> Vec<(String, String)>
+- preferred_provider · function · L167-L169 — fn preferred_provider(&self) -> Option<String>
+- model_routes · function · L171-L174 — fn model_routes(&self) -> Vec<ModelRoute>
+- prefetch_models · function · L176-L179 — async fn prefetch_models(&self) -> Result<()>
+- on_auth_changed · function · L181-L188 — fn on_auth_changed(&self)
+- auth_model_refresh_pending · function · L190-L192 — fn auth_model_refresh_pending(&self) -> bool
+- reasoning_effort · function · L194-L196 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L198-L200 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L202-L204 — fn available_efforts(&self) -> Vec<&'static str>
+- native_compaction_mode · function · L206-L208 — fn native_compaction_mode(&self) -> Option<String>
+- native_compaction_threshold_tokens · function · L210-L212 — fn native_compaction_threshold_tokens(&self) -> Option<usize>
+- transport · function · L214-L216 — fn transport(&self) -> Option<String>
+- set_transport · function · L218-L220 — fn set_transport(&self, transport: &str) -> Result<()>
+- available_transports · function · L222-L224 — fn available_transports(&self) -> Vec<&'static str>
+- handles_tools_internally · function · L226-L228 — fn handles_tools_internally(&self) -> bool
+- invalidate_credentials · function · L230-L232 — async fn invalidate_credentials(&self)
+- set_premium_mode · function · L234-L236 — fn set_premium_mode(&self, mode: copilot::PremiumMode)
+- premium_mode · function · L238-L240 — fn premium_mode(&self) -> copilot::PremiumMode
+- supports_compaction · function · L242-L244 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L246-L248 — fn uses_jcode_compaction(&self) -> bool
+- native_compact · function · L250-L263 — async fn native_compact(
+- context_window · function · L265-L267 — fn context_window(&self) -> usize
+- fork · function · L269-L275 — fn fork(&self) -> Arc<dyn Provider>
+- native_result_sender · function · L277-L279 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- drain_startup_notices · function · L281-L283 — fn drain_startup_notices(&self) -> Vec<String>
+- switch_active_provider_to · function · L285-L288 — fn switch_active_provider_to(&self, provider: &str) -> Result<()>
+- tests · module · L292-L405 — mod tests
+- jcode_provider_enables_subscription_runtime_mode · function · L296-L313 — fn jcode_provider_enables_subscription_runtime_mode()
+- jcode_provider_name_and_default_model_are_curated · function · L316-L332 — fn jcode_provider_name_and_default_model_are_curated()
+- jcode_models_are_pinned_to_the_managed_transport · function · L335-L348 — fn jcode_models_are_pinned_to_the_managed_transport()
+- jcode_provider_exposes_only_explicit_subscription_routes · function · L351-L404 — fn jcode_provider_exposes_only_explicit_subscription_routes()

@@ -1,0 +1,27 @@
+# crates/jcode-sdk/src/sdk_tests/turn_retry.rs
+
+- error · function · L3-L8 — fn error(message: &str) -> ApiEvent
+- stopped · function · L10-L17 — fn stopped(reason: TurnStopReason) -> ApiEvent
+- done · function · L19-L24 — fn done() -> ApiEvent
+- scheduled · function · L26-L31 — fn scheduled(decision: &RetryDecision) -> Option<(u32, Duration)>
+- transient_failures_are_retried · function · L34-L50 — fn transient_failures_are_retried()
+- deterministic_failures_are_never_retried · function · L53-L73 — fn deterministic_failures_are_never_retried()
+- credential_markers_win_over_transient_ones · function · L76-L81 — fn credential_markers_win_over_transient_ones()
+- status_codes_must_stand_alone · function · L84-L93 — fn status_codes_must_stand_alone()
+- rate_limits_parse_retry_hints · function · L96-L115 — fn rate_limits_parse_retry_hints()
+- failed_turn_schedules_backoff_then_gives_up · function · L118-L140 — fn failed_turn_schedules_backoff_then_gives_up()
+- bridge_turn_done_after_failure_keeps_the_retry · function · L143-L158 — fn bridge_turn_done_after_failure_keeps_the_retry()
+- lost_close_event_does_not_hold_the_retry_forever · function · L161-L167 — fn lost_close_event_does_not_hold_the_retry_forever()
+- completed_turn_and_user_input_reset_the_budget · function · L170-L183 — fn completed_turn_and_user_input_reset_the_budget()
+- cancellation_and_other_clients_drop_a_pending_retry · function · L186-L205 — fn cancellation_and_other_clients_drop_a_pending_retry()
+- interrupted_crashed_and_guardrail_turns_are_not_retried · function · L208-L229 — fn interrupted_crashed_and_guardrail_turns_are_not_retried()
+- request_errors_and_busy_rejections_are_ignored · function · L232-L245 — fn request_errors_and_busy_rejections_are_ignored()
+- long_rate_limits_are_left_to_the_user · function · L248-L257 — fn long_rate_limits_are_left_to_the_user()
+- disabled_policy_never_schedules · function · L260-L273 — fn disabled_policy_never_schedules()
+- failed_send_reschedules · function · L276-L286 — fn failed_send_reschedules()
+- structured_rate_limit_hints_ignore_sibling_limits · function · L289-L317 — fn structured_rate_limit_hints_ignore_sibling_limits()
+- day_hints_do_not_become_short_retries · function · L320-L337 — fn day_hints_do_not_become_short_retries()
+- failover_consent_and_invalid_requests_override_transient_words · function · L340-L355 — fn failover_consent_and_invalid_requests_override_transient_words()
+- cancellation_stays_cancelled_when_late_errors_arrive · function · L358-L386 — fn cancellation_stays_cancelled_when_late_errors_arrive()
+- terminal_stop_drops_existing_retry_without_needing_an_error · function · L389-L405 — fn terminal_stop_drops_existing_retry_without_needing_an_error()
+- permanent_error_disarms_previously_scheduled_retry · function · L408-L415 — fn permanent_error_disarms_previously_scheduled_retry()

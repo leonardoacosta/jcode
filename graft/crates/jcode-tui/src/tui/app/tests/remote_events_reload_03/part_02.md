@@ -1,0 +1,23 @@
+# crates/jcode-tui/src/tui/app/tests/remote_events_reload_03/part_02.rs
+
+- compacted_prompt_marker_hydrates_remote_stub_and_composer_numbering · function · L2-L55 — fn compacted_prompt_marker_hydrates_remote_stub_and_composer_numbering()
+- ordinary_system_text_cannot_set_compacted_prompt_offset · function · L58-L66 — fn ordinary_system_text_cannot_set_compacted_prompt_offset()
+- test_metadata_only_history_preserves_fast_restored_startup_state · function · L69-L168 — fn test_metadata_only_history_preserves_fast_restored_startup_state()
+- test_duplicate_history_for_same_session_is_ignored_after_fast_path_restore · function · L171-L253 — fn test_duplicate_history_for_same_session_is_ignored_after_fast_path_restore()
+- test_compacted_history_marker_scroll_queues_lazy_load · function · L256-L274 — fn test_compacted_history_marker_scroll_queues_lazy_load()
+- test_local_compacted_history_marker_scroll_expands_from_session · function · L277-L374 — fn test_local_compacted_history_marker_scroll_expands_from_session()
+- TURNS · constant · L283-L283 — const TURNS: usize = 7;
+- MESSAGES_PER_TURN · constant · L284-L284 — const MESSAGES_PER_TURN: usize = 14;
+- test_compacted_history_event_applies_expanded_window · function · L377-L437 — fn test_compacted_history_event_applies_expanded_window()
+- test_remote_error_with_retry_after_keeps_pending_for_auto_retry · function · L440-L482 — fn test_remote_error_with_retry_after_keeps_pending_for_auto_retry()
+- test_service_tier_reported_deduplicates_and_does_not_confirm_old_request · function · L484-L540 — fn test_service_tier_reported_deduplicates_and_does_not_confirm_old_request()
+- test_service_tier_reported_match_notification_is_only_a_report · function · L543-L562 — fn test_service_tier_reported_match_notification_is_only_a_report()
+- test_service_tier_reported_default_is_quiet_without_explicit_change · function · L565-L579 — fn test_service_tier_reported_default_is_quiet_without_explicit_change()
+- test_service_tier_reported_fast_alias_matches_and_badge_tracks_reports · function · L582-L628 — fn test_service_tier_reported_fast_alias_matches_and_badge_tracks_reports()
+- check_history_panel_snapshot · function · L630-L695 — fn check_history_panel_snapshot(authoritative: bool, session_changed: bool)
+- test_catalog_history_preserves_restored_panels_and_images · function · L698-L700 — fn test_catalog_history_preserves_restored_panels_and_images()
+- test_authoritative_same_session_history_clears_panels_and_images · function · L703-L705 — fn test_authoritative_same_session_history_clears_panels_and_images()
+- test_session_switch_history_clears_panels_and_images · function · L708-L710 — fn test_session_switch_history_clears_panels_and_images()
+- delta_history_event · function · L712-L761 — fn delta_history_event(
+- test_delta_history_rebuilds_transcript_from_advertised_prefix · function · L764-L817 — fn test_delta_history_rebuilds_transcript_from_advertised_prefix()
+- test_delta_history_without_prefix_requests_full_history · function · L820-L831 — fn test_delta_history_without_prefix_requests_full_history()

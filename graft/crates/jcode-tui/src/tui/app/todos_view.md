@@ -1,0 +1,68 @@
+# crates/jcode-tui/src/tui/app/todos_view.rs
+
+- TODOS_VIEW_PAGE_ID · constant · L10-L10 — pub(super) const TODOS_VIEW_PAGE_ID: &str = "session_todos";
+- TODOS_VIEW_TITLE · constant · L11-L11 — const TODOS_VIEW_TITLE: &str = "Todos";
+- TODO_CARD_ROLE · constant · L13-L13 — const TODO_CARD_ROLE: &str = "todos";
+- remote_cache · module · L16-L16 — pub(super) mod remote_cache;
+- current_todo_state · function · L19-L44 — fn current_todo_state(
+- remote_todos_refresh_due · function · L46-L63 — pub(super) fn remote_todos_refresh_due(&mut self) -> bool
+- remote_todos_poll_interval · function · L75-L88 — fn remote_todos_poll_interval(&self) -> std::time::Duration
+- request_remote_todos_refresh_soon · function · L91-L93 — pub(super) fn request_remote_todos_refresh_soon(&mut self)
+- receive_remote_todos · function · L102-L121 — pub(super) fn receive_remote_todos(&mut self, session_id: String, payload: String) -> bool
+- todos_view_enabled · function · L123-L125 — pub(super) fn todos_view_enabled(&self) -> bool
+- latest_todo_card_index · function · L127-L131 — fn latest_todo_card_index(&self) -> Option<usize>
+- toggle_todo_card · function · L135-L145 — pub(super) fn toggle_todo_card(&mut self)
+- show_todo_card · function · L149-L168 — pub(super) fn show_todo_card(&mut self)
+- refresh_todo_card_if_needed · function · L172-L188 — pub(super) fn refresh_todo_card_if_needed(&mut self) -> bool
+- refresh_pinned_todos_if_needed · function · L193-L239 — pub(super) fn refresh_pinned_todos_if_needed(&mut self) -> bool
+- REFRESH_INTERVAL · constant · L207-L207 — const REFRESH_INTERVAL: std::time::Duration = std::time::Duration::from_secs(1);
+- todo_card_background_tasks · function · L241-L285 — pub(super) fn todo_card_background_tasks(
+- todo_card_agents · function · L289-L313 — fn todo_card_agents(&self, todos: &[TodoItem]) -> Vec<crate::tui::ui::TodoCardAgent>
+- pinned_todos_payload_ref · function · L318-L320 — pub(super) fn pinned_todos_payload_ref(&self) -> Option<&str>
+- refresh_pinned_todos_now · function · L324-L327 — pub(super) fn refresh_pinned_todos_now(&mut self)
+- set_todos_view_enabled · function · L329-L352 — pub(super) fn set_todos_view_enabled(&mut self, enabled: bool, focus: bool)
+- decorate_side_panel_with_todos_view · function · L354-L374 — pub(super) fn decorate_side_panel_with_todos_view(
+- snapshot_without_todos_view · function · L376-L383 — pub(super) fn snapshot_without_todos_view(&self) -> SidePanelSnapshot
+- refresh_todos_view_if_needed · function · L385-L395 — pub(super) fn refresh_todos_view_if_needed(&mut self) -> bool
+- refresh_todos_view_now · function · L397-L404 — pub(super) fn refresh_todos_view_now(&mut self) -> bool
+- clear_todos_view_cache · function · L406-L411 — fn clear_todos_view_cache(&mut self)
+- refresh_todos_view_page · function · L413-L422 — fn refresh_todos_view_page(&mut self)
+- refresh_todos_view_cache · function · L424-L437 — fn refresh_todos_view_cache(&mut self, force: bool) -> bool
+- todos_view_page · function · L439-L454 — fn todos_view_page(&self) -> SidePanelPage
+- todos_view_status_message · function · L457-L472 — pub(super) fn todos_view_status_message(app: &App) -> String
+- handle_todos_view_command · function · L474-L569 — pub(super) fn handle_todos_view_command(app: &mut App, trimmed: &str) -> bool
+- pinned_todos_payload_for_session · function · L574-L582 — pub(crate) fn pinned_todos_payload_for_session(session_id: &str) -> Option<String>
+- load_current_session_todos · function · L584-L592 — fn load_current_session_todos(session_id: Option<&str>) -> Vec<TodoItem>
+- load_current_session_goals · function · L594-L599 — fn load_current_session_goals(session_id: Option<&str>) -> Vec<crate::todo::TodoGoal>
+- load_current_session_plan · function · L601-L606 — fn load_current_session_plan(session_id: Option<&str>) -> crate::todo::TodoPlan
+- todo_card_payload_json · function · L608-L614 — fn todo_card_payload_json(
+- with_background_tasks · function · L616-L631 — fn with_background_tasks(
+- hash_background_tasks · function · L633-L649 — fn hash_background_tasks(tasks: &[crate::tui::ui::TodoCardBackgroundTask]) -> u64
+- todo_card_payload_json_with_agents · function · L651-L671 — fn todo_card_payload_json_with_agents(
+- advance_todo_agent_elapsed · function · L673-L692 — fn advance_todo_agent_elapsed(
+- hash_todo_card_agents · function · L694-L714 — fn hash_todo_card_agents(agents: &[crate::tui::ui::TodoCardAgent]) -> u64
+- build_todos_view_markdown · function · L716-L793 — fn build_todos_view_markdown(
+- MAX_VISIBLE_TODOS · constant · L766-L766 — const MAX_VISIBLE_TODOS: usize = 8;
+- format_todo_compact_markdown · function · L795-L823 — fn format_todo_compact_markdown(todo: &TodoItem) -> String
+- sorted_todos_for_status · function · L825-L834 — fn sorted_todos_for_status<'a>(todos: &'a [TodoItem], status: &str) -> Vec<&'a TodoItem>
+- status_badge · function · L836-L846 — fn status_badge(status: &str, blocked: bool) -> &'static str
+- priority_rank · function · L848-L854 — fn priority_rank(priority: &str) -> u8
+- hash_todos_payload · function · L856-L898 — fn hash_todos_payload(
+- todos_view_placeholder_markdown · function · L900-L902 — fn todos_view_placeholder_markdown() -> String
+- now_ms · function · L904-L909 — fn now_ms() -> u64
+- tests · module · L912-L1202 — mod tests
+- live_status_elapsed_and_tokens_invalidate_pinned_payload · function · L916-L935 — fn live_status_elapsed_and_tokens_invalidate_pinned_payload()
+- shortcut_changes_invalidate_pinned_payload · function · L938-L946 — fn shortcut_changes_invalidate_pinned_payload()
+- worker_item_status_changes_invalidate_pinned_payload · function · L949-L957 — fn worker_item_status_changes_invalidate_pinned_payload()
+- wait_and_activity_changes_invalidate_pinned_payload · function · L960-L975 — fn wait_and_activity_changes_invalidate_pinned_payload()
+- plan · function · L978-L984 — fn plan() -> crate::todo::TodoPlan
+- todo · function · L986-L1014 — fn todo(
+- complete_blocker_panel_preserves_reason_and_invalidates_cache · function · L1017-L1040 — fn complete_blocker_panel_preserves_reason_and_invalidates_cache()
+- todos_view_markdown_keeps_status_but_omits_internal_metadata · function · L1043-L1072 — fn todos_view_markdown_keeps_status_but_omits_internal_metadata()
+- todos_view_hash_changes_when_confidence_changes · function · L1075-L1089 — fn todos_view_hash_changes_when_confidence_changes()
+- todos_view_markdown_is_bounded_and_keeps_group_context · function · L1092-L1147 — fn todos_view_markdown_is_bounded_and_keeps_group_context()
+- todos_view_hash_changes_when_group_changes · function · L1150-L1156 — fn todos_view_hash_changes_when_group_changes()
+- todos_view_hash_changes_when_goals_change · function · L1159-L1168 — fn todos_view_hash_changes_when_goals_change()
+- todos_view_hash_changes_when_feedback_loop_changes · function · L1171-L1181 — fn todos_view_hash_changes_when_feedback_loop_changes()
+- todos_view_hash_changes_when_user_intention_changes · function · L1184-L1191 — fn todos_view_hash_changes_when_user_intention_changes()
+- todos_view_hash_changes_when_intent_understanding_changes · function · L1194-L1201 — fn todos_view_hash_changes_when_intent_understanding_changes()

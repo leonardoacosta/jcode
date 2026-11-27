@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/tool/computer/mod.rs
+
+- ax · module · L37-L37 — mod ax;
+- discover · module · L39-L39 — mod discover;
+- input · module · L41-L41 — mod input;
+- keys · module · L43-L43 — mod keys;
+- osa · module · L45-L45 — mod osa;
+- screen · module · L47-L47 — mod screen;
+- setup · module · L49-L49 — mod setup;
+- sys · module · L51-L51 — mod sys;
+- win · module · L53-L53 — mod win;
+- ComputerTool · struct · L55-L55 — pub struct ComputerTool;
+- new · function · L58-L60 — pub fn new() -> Self
+- ComputerInput · struct · L64-L125 — struct ComputerInput
+- cap_output · function · L130-L141 — fn cap_output(mut out: ToolOutput, max_chars: usize) -> ToolOutput
+- is_mutating · function · L145-L176 — fn is_mutating(action: &str) -> bool
+- name · function · L180-L182 — fn name(&self) -> &str
+- description · function · L184-L193 — fn description(&self) -> &str
+- parameters_schema · function · L195-L251 — fn parameters_schema(&self) -> Value
+- execute · function · L253-L259 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- run · function · L263-L265 — fn run(_input: ComputerInput) -> Result<ToolOutput>
+- run · function · L268-L282 — fn run(input: ComputerInput) -> Result<ToolOutput>
+- dispatch · function · L285-L499 — fn dispatch(action: &str, input: &ComputerInput) -> Result<ToolOutput>
+- require_xy · function · L502-L507 — fn require_xy(input: &ComputerInput) -> Result<(f64, f64)>
+- req_app · function · L510-L515 — fn req_app(input: &ComputerInput) -> Result<&str>
+- parse_element · function · L518-L523 — fn parse_element(input: &ComputerInput) -> Result<ax::ElementHandle>
+- coverage_tests · module · L526-L526 — mod coverage_tests;
+- tests · module · L528-L528 — mod tests;

@@ -1,0 +1,21 @@
+# crates/jcode-base/src/session/retention.rs
+
+- TRASH_DIR · constant · L17-L17 — pub const TRASH_DIR: &str = ".trash";
+- TRASH_RETENTION_DAYS · constant · L18-L18 — pub const TRASH_RETENTION_DAYS: i64 = 7;
+- SAMPLE_IDS · constant · L19-L19 — const SAMPLE_IDS: usize = 10;
+- Reason · enum · L23-L30 — pub enum Reason
+- Verdict · enum · L33-L36 — pub enum Verdict
+- SessionMeta · struct · L40-L44 — pub struct SessionMeta
+- ParsedMeta · struct · L47-L52 — pub struct ParsedMeta
+- classify · function · L54-L76 — pub fn classify(
+- days · function · L78-L80 — fn days(n: u64) -> Duration
+- RawMeta · struct · L83-L94 — struct RawMeta
+- read_meta · function · L96-L118 — fn read_meta(path: &Path, modified: DateTime<Utc>) -> SessionMeta
+- GcReport · struct · L121-L132 — pub struct GcReport
+- run_gc_in · function · L136-L202 — pub fn run_gc_in(
+- move_to_trash · function · L206-L222 — fn move_to_trash(sessions_dir: &Path, path: &Path, now: DateTime<Utc>) -> std::io::Result<()>
+- purge_trash · function · L224-L237 — fn purge_trash(sessions_dir: &Path, now: DateTime<Utc>)
+- sessions_dir · function · L239-L241 — pub fn sessions_dir() -> Result<PathBuf>
+- run_gc · function · L243-L246 — pub fn run_gc(apply: bool) -> Result<GcReport>
+- auto_gc_on_startup · function · L249-L257 — pub fn auto_gc_on_startup()
+- tests · module · L261-L261 — mod tests;

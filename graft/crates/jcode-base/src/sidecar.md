@@ -1,0 +1,103 @@
+# crates/jcode-base/src/sidecar.rs
+
+- SIDECAR_OPENAI_MODEL · constant · L18-L18 — pub const SIDECAR_OPENAI_MODEL: &str = "gpt-5.6-luna";
+- SIDECAR_OPENAI_REASONING · constant · L19-L19 — const SIDECAR_OPENAI_REASONING: &str = "none";
+- SIDECAR_OPENAI_OAUTH_FALLBACK_MODEL · constant · L20-L20 — const SIDECAR_OPENAI_OAUTH_FALLBACK_MODEL: &str = "gpt-5.4";
+- SIDECAR_OPENAI_OAUTH_FALLBACK_REASONING · constant · L21-L21 — const SIDECAR_OPENAI_OAUTH_FALLBACK_REASONING: &str = "low";
+- SIDECAR_CLAUDE_MODEL · constant · L24-L24 — const SIDECAR_CLAUDE_MODEL: &str = "claude-haiku-4-5-20251001";
+- OPENAI_API_BASE · constant · L27-L27 — const OPENAI_API_BASE: &str = "https://api.openai.com/v1";
+- CHATGPT_API_BASE · constant · L28-L28 — const CHATGPT_API_BASE: &str = "https://chatgpt.com/backend-api/codex";
+- OPENAI_RESPONSES_PATH · constant · L29-L29 — const OPENAI_RESPONSES_PATH: &str = "responses";
+- OPENAI_ORIGINATOR · constant · L31-L31 — const OPENAI_ORIGINATOR: &str = "jcode";
+- CLAUDE_API_URL · constant · L34-L34 — const CLAUDE_API_URL: &str = "https://api.anthropic.com/v1/messages?beta=true";
+- CLAUDE_API_KEY_URL · constant · L37-L37 — const CLAUDE_API_KEY_URL: &str = "https://api.anthropic.com/v1/messages";
+- OAUTH_BETA_HEADERS · constant · L41-L41 — const OAUTH_BETA_HEADERS: &str = "oauth-2025-04-20";
+- CLAUDE_OAUTH_BILLING_BLOCK · constant · L46-L47 — const CLAUDE_OAUTH_BILLING_BLOCK: &str =
+- DEFAULT_MAX_TOKENS · constant · L50-L50 — const DEFAULT_MAX_TOKENS: u32 = 1024;
+- SidecarErrorKind · enum · L55-L58 — pub enum SidecarErrorKind
+- SidecarHttpError · struct · L61-L65 — struct SidecarHttpError
+- fmt · function · L68-L74 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- classify_error · function · L82-L114 — pub fn classify_error(error: &anyhow::Error) -> SidecarErrorKind
+- classify_http_status · function · L116-L124 — fn classify_http_status(status: StatusCode) -> SidecarErrorKind
+- SidecarBackend · enum · L128-L137 — enum SidecarBackend
+- Sidecar · struct · L141-L156 — pub struct Sidecar
+- new · function · L161-L164 — pub fn new() -> Self
+- for_session · function · L166-L208 — pub fn for_session(session: &crate::session::Session) -> Self
+- with_configured_model · function · L210-L235 — fn with_configured_model(configured_model: Option<String>) -> Self
+- auto_select_backend · function · L248-L279 — fn auto_select_backend() -> (
+- llm_backend_available · function · L292-L296 — pub fn llm_backend_available() -> bool
+- model_name · function · L299-L301 — pub fn model_name(&self) -> &str
+- with_claude_model · function · L306-L315 — pub fn with_claude_model(model: impl Into<String>) -> Self
+- with_openai_model · function · L320-L329 — pub fn with_openai_model(model: impl Into<String>, reasoning_effort: Option<String>) -> Self
+- backend_name · function · L332-L338 — pub fn backend_name(&self) -> &'static str
+- complete · function · L342-L348 — pub async fn complete(&self, system: &str, user_message: &str) -> Result<String>
+- complete_via_provider · function · L356-L382 — async fn complete_via_provider(&self, system: &str, user_message: &str) -> Result<String>
+- complete_openai · function · L390-L497 — async fn complete_openai(&self, system: &str, user_message: &str) -> Result<String>
+- complete_openai_with_model · function · L503-L564 — async fn complete_openai_with_model(
+- complete_claude · function · L567-L601 — async fn complete_claude(&self, system: &str, user_message: &str) -> Result<String>
+- complete_claude_oauth · function · L604-L639 — async fn complete_claude_oauth(&self, system: &str, user_message: &str) -> Result<String>
+- complete_claude_api_key · function · L646-L677 — async fn complete_claude_api_key(
+- parse_claude_response · function · L680-L727 — async fn parse_claude_response(response: reqwest::Response, model: &str) -> Result<String>
+- check_relevance · function · L731-L769 — pub async fn check_relevance(
+- check_contradiction · function · L773-L788 — pub async fn check_contradiction(
+- extract_memories · function · L791-L793 — pub async fn extract_memories(&self, transcript: &str) -> Result<Vec<ExtractedMemory>>
+- extract_memories_with_existing · function · L796-L864 — pub async fn extract_memories_with_existing(
+- default · function · L868-L870 — fn default() -> Self
+- SIDECAR_FAST_MODEL · constant · L875-L875 — pub const SIDECAR_FAST_MODEL: &str = SIDECAR_OPENAI_MODEL;
+- response_helpers · module · L878-L878 — mod response_helpers;
+- OpenAiSidecarError · enum · L887-L890 — enum OpenAiSidecarError
+- other · function · L893-L895 — fn other(err: anyhow::Error) -> Self
+- into_anyhow · function · L897-L907 — fn into_anyhow(self) -> anyhow::Error
+- ExtractedMemory · struct · L912-L916 — pub struct ExtractedMemory
+- SseEvent · struct · L919-L926 — struct SseEvent
+- ClaudeMessagesRequest · struct · L931-L937 — struct ClaudeMessagesRequest<'a>
+- ClaudeMessage · struct · L940-L943 — struct ClaudeMessage<'a>
+- ClaudeApiSystem · enum · L947-L949 — enum ClaudeApiSystem<'a>
+- ClaudeApiSystemBlock · struct · L952-L956 — struct ClaudeApiSystemBlock<'a>
+- ClaudeMessagesResponse · struct · L959-L963 — struct ClaudeMessagesResponse
+- ClaudeContentBlock · enum · L967-L972 — enum ClaudeContentBlock
+- ClaudeUsage · struct · L975-L984 — struct ClaudeUsage
+- tests · module · L987-L1769 — mod tests
+- openai_private_request_preserves_wire_body_headers_and_results · function · L993-L1137 — async fn openai_private_request_preserves_wire_body_headers_and_results()
+- sidecar_model_metadata_never_infers_configured_identity · function · L1140-L1169 — fn sidecar_model_metadata_never_infers_configured_identity()
+- parses_openai_responses_usage_with_cached_subset · function · L1172-L1185 — fn parses_openai_responses_usage_with_cached_subset()
+- sse_completed_event_exposes_response_usage · function · L1188-L1203 — fn sse_completed_event_exposes_response_usage()
+- claude_response_usage_includes_cache_buckets · function · L1206-L1214 — fn claude_response_usage_includes_cache_buckets()
+- EnvVarGuard · struct · L1216-L1219 — struct EnvVarGuard
+- set_path · function · L1222-L1226 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- unset · function · L1228-L1232 — fn unset(key: &'static str) -> Self
+- drop · function · L1236-L1242 — fn drop(&mut self)
+- test_sidecar_fast_model · function · L1246-L1249 — fn test_sidecar_fast_model()
+- sidecar_http_error_classifies_permanent_client_failures · function · L1252-L1267 — fn sidecar_http_error_classifies_permanent_client_failures()
+- sidecar_http_error_classifies_retryable_failures · function · L1270-L1284 — fn sidecar_http_error_classifies_retryable_failures()
+- test_backend_selection_prefers_openai · function · L1287-L1312 — fn test_backend_selection_prefers_openai()
+- test_chatgpt_oauth_uses_luna_with_no_reasoning_when_available · function · L1315-L1331 — fn test_chatgpt_oauth_uses_luna_with_no_reasoning_when_available()
+- test_chatgpt_oauth_falls_back_to_gpt_5_4_low_when_luna_unavailable · function · L1334-L1349 — fn test_chatgpt_oauth_falls_back_to_gpt_5_4_low_when_luna_unavailable()
+- test_build_openai_request_uses_configured_default_and_fallback_reasoning · function · L1352-L1378 — fn test_build_openai_request_uses_configured_default_and_fallback_reasoning()
+- test_openai_api_key_mode_uses_luna_with_no_reasoning · function · L1381-L1385 — fn test_openai_api_key_mode_uses_luna_with_no_reasoning()
+- StubProvider · struct · L1392-L1395 — struct StubProvider
+- complete · function · L1399-L1411 — async fn complete(
+- name · function · L1413-L1415 — fn name(&self) -> &str
+- model · function · L1417-L1419 — fn model(&self) -> String
+- fork · function · L1421-L1426 — fn fork(&self) -> std::sync::Arc<dyn crate::provider::Provider>
+- memory_input_compression_is_conservative_without_mutating_caller · function · L1430-L1484 — async fn memory_input_compression_is_conservative_without_mutating_caller()
+- PolicyProvider · struct · L1435-L1435 — struct PolicyProvider(std::sync::Mutex<InputCompressionProfile>);
+- set_input_compression_profile · function · L1438-L1441 — fn set_input_compression_profile(&self, profile: InputCompressionProfile) -> bool
+- complete · function · L1442-L1453 — async fn complete(
+- name · function · L1454-L1456 — fn name(&self) -> &str
+- model · function · L1457-L1459 — fn model(&self) -> String
+- fork · function · L1460-L1462 — fn fork(&self) -> Arc<dyn Provider>
+- SwitchableProvider · struct · L1487-L1487 — struct SwitchableProvider(std::sync::Mutex<String>);
+- complete · function · L1491-L1499 — async fn complete(
+- name · function · L1501-L1503 — fn name(&self) -> &str
+- model · function · L1505-L1507 — fn model(&self) -> String
+- set_model · function · L1509-L1512 — fn set_model(&self, model: &str) -> Result<()>
+- fork · function · L1514-L1516 — fn fork(&self) -> std::sync::Arc<dyn crate::provider::Provider>
+- session_sidecar_uses_session_memory_model_override · function · L1523-L1550 — fn session_sidecar_uses_session_memory_model_override()
+- sidecar_uses_active_provider_when_no_oauth_creds · function · L1556-L1583 — fn sidecar_uses_active_provider_when_no_oauth_creds()
+- provider_sidecar_keeps_the_route_selected_at_construction · function · L1586-L1616 — fn provider_sidecar_keeps_the_route_selected_at_construction()
+- sidecar_provider_path_works_for_all_providers · function · L1622-L1658 — fn sidecar_provider_path_works_for_all_providers()
+- test_is_anthropic_oauth_forbidden · function · L1661-L1680 — fn test_is_anthropic_oauth_forbidden()
+- claude_serialized_builder_body_survives_request_drop · function · L1683-L1725 — fn claude_serialized_builder_body_survives_request_drop()
+- test_build_claude_api_key_system_param_omits_identity_spoof · function · L1728-L1750 — fn test_build_claude_api_key_system_param_omits_identity_spoof()
+- test_anthropic_sidecar_prefers_api_key_respects_pinned_mode · function · L1753-L1768 — fn test_anthropic_sidecar_prefers_api_key_respects_pinned_mode()

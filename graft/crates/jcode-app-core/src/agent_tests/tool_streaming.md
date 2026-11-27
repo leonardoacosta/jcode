@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/agent_tests/tool_streaming.rs
+
+- InputLog · type · L5-L5 — type InputLog = Arc<Mutex<Vec<Value>>>;
+- ChannelProvider · struct · L8-L8 — struct ChannelProvider(Arc<Mutex<Option<tokio_mpsc::Receiver<Result<StreamEvent>>>>>);
+- complete · function · L12-L29 — async fn complete(
+- name · function · L30-L32 — fn name(&self) -> &str
+- supports_compaction · function · L33-L35 — fn supports_compaction(&self) -> bool
+- fork · function · L36-L38 — fn fork(&self) -> Arc<dyn Provider>
+- CaptureTool · struct · L41-L41 — struct CaptureTool(InputLog);
+- name · function · L44-L46 — fn name(&self) -> &str
+- description · function · L47-L49 — fn description(&self) -> &str
+- parameters_schema · function · L50-L52 — fn parameters_schema(&self) -> Value
+- execute · function · L53-L56 — async fn execute(&self, input: Value, _: crate::tool::ToolContext) -> Result<ToolOutput>
+- setup · function · L59-L76 — async fn setup() -> (Agent, tokio_mpsc::Sender<Result<StreamEvent>>, InputLog)
+- streaming_bash_preserves_requesting_client_terminal_context · function · L80-L127 — async fn streaming_bash_preserves_requesting_client_terminal_context()
+- start · function · L129-L134 — fn start(id: &str) -> StreamEvent
+- delta · function · L135-L140 — fn delta(id: &str, delta: &str) -> StreamEvent
+- end · function · L141-L143 — fn end(id: &str) -> StreamEvent
+- finish · function · L144-L148 — fn finish() -> StreamEvent
+- next_tool_event · function · L150-L166 — async fn next_tool_event(rx: &mut tokio_mpsc::UnboundedReceiver<ServerEvent>) -> ServerEvent
+- keyed_tool_streaming_emits_each_name_before_args_and_executes_once · function · L169-L238 — async fn keyed_tool_streaming_emits_each_name_before_args_and_executes_once()
+- keyed_tool_streaming_blocking_loop_isolates_inputs_and_legacy_fallback · function · L241-L267 — async fn keyed_tool_streaming_blocking_loop_isolates_inputs_and_legacy_fallback()
+- keyed_tool_streaming_rollback_discards_all_partial_calls · function · L270-L297 — async fn keyed_tool_streaming_rollback_discards_all_partial_calls()
+- native_citation_events · function · L299-L317 — fn native_citation_events() -> Vec<StreamEvent>
+- native_citation_corrections_preserve_earlier_text_and_native_replay · function · L320-L368 — async fn native_citation_corrections_preserve_earlier_text_and_native_replay()
+- retry_after_native_citation_correction_discards_the_entire_attempt · function · L371-L401 — async fn retry_after_native_citation_correction_discards_the_entire_attempt()

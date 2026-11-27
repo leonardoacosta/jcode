@@ -1,0 +1,70 @@
+# crates/jcode-provider-gemini/src/lib.rs
+
+- DEFAULT_MODEL · constant · L11-L11 — pub const DEFAULT_MODEL: &str = "gemini-pro-latest";
+- AVAILABLE_MODELS · constant · L12-L23 — pub const AVAILABLE_MODELS: &[&str] = &[
+- FALLBACK_MODELS · constant · L24-L32 — pub const FALLBACK_MODELS: &[&str] = &[
+- CODE_ASSIST_ENDPOINT · constant · L33-L33 — pub const CODE_ASSIST_ENDPOINT: &str = "https://cloudcode-pa.googleapis.com";
+- CODE_ASSIST_API_VERSION · constant · L34-L34 — pub const CODE_ASSIST_API_VERSION: &str = "v1internal";
+- GEMINI_API_ENDPOINT · constant · L37-L37 — pub const GEMINI_API_ENDPOINT: &str = "https://generativelanguage.googleapis.com";
+- GEMINI_API_VERSION · constant · L38-L38 — pub const GEMINI_API_VERSION: &str = "v1beta";
+- USER_TIER_FREE · constant · L39-L39 — pub const USER_TIER_FREE: &str = "free-tier";
+- USER_TIER_LEGACY · constant · L40-L40 — pub const USER_TIER_LEGACY: &str = "legacy-tier";
+- GeminiRuntimeState · struct · L43-L46 — pub struct GeminiRuntimeState
+- ClientMetadata · struct · L50-L56 — pub struct ClientMetadata
+- LoadCodeAssistRequest · struct · L60-L66 — pub struct LoadCodeAssistRequest
+- LoadCodeAssistResponse · struct · L70-L81 — pub struct LoadCodeAssistResponse
+- GeminiUserTier · struct · L85-L92 — pub struct GeminiUserTier
+- IneligibleTier · struct · L96-L103 — pub struct IneligibleTier
+- OnboardUserRequest · struct · L107-L114 — pub struct OnboardUserRequest
+- LongRunningOperationResponse · struct · L118-L125 — pub struct LongRunningOperationResponse
+- OnboardUserResponse · struct · L129-L132 — pub struct OnboardUserResponse
+- ProjectRef · struct · L135-L138 — pub struct ProjectRef
+- CodeAssistGenerateRequest · struct · L141-L146 — pub struct CodeAssistGenerateRequest
+- VertexGenerateContentRequest · struct · L150-L160 — pub struct VertexGenerateContentRequest
+- GeminiContent · struct · L163-L173 — pub struct GeminiContent
+- GeminiPart · struct · L177-L191 — pub struct GeminiPart
+- InlineData · struct · L195-L198 — pub struct InlineData
+- GeminiFunctionCall · struct · L201-L207 — pub struct GeminiFunctionCall
+- GeminiFunctionResponse · struct · L210-L215 — pub struct GeminiFunctionResponse
+- build_system_instruction · function · L217-L230 — pub fn build_system_instruction(system: &str) -> Option<GeminiContent>
+- GEMINI_FUNCTION_CALL_GUARD · constant · L239-L244 — const GEMINI_FUNCTION_CALL_GUARD: &str = "\n\n## Function calling\n\
+- build_system_instruction_with_tool_guard · function · L249-L259 — pub fn build_system_instruction_with_tool_guard(
+- build_contents · function · L261-L263 — pub fn build_contents(messages: &[Message]) -> Vec<GeminiContent>
+- SignaturePolicy · enum · L268-L278 — pub enum SignaturePolicy
+- is_missing_thought_signature_error · function · L282-L285 — pub fn is_missing_thought_signature_error(message: &str) -> bool
+- build_contents_with_signature_policy · function · L287-L426 — pub fn build_contents_with_signature_policy(
+- tool_name_from_tool_result · function · L428-L439 — fn tool_name_from_tool_result(tool_use_id: &str, messages: &[Message]) -> String
+- build_tools · function · L441-L458 — pub fn build_tools(tools: &[ToolDefinition]) -> Option<Vec<GeminiTool>>
+- gemini_compatible_schema · function · L471-L473 — pub fn gemini_compatible_schema(schema: &Value) -> Value
+- GeminiTool · struct · L476-L479 — pub struct GeminiTool
+- GeminiFunctionDeclaration · struct · L482-L486 — pub struct GeminiFunctionDeclaration
+- GeminiToolConfig · struct · L490-L492 — pub struct GeminiToolConfig
+- GeminiFunctionCallingConfig · struct · L496-L498 — pub struct GeminiFunctionCallingConfig
+- CodeAssistGenerateResponse · struct · L502-L507 — pub struct CodeAssistGenerateResponse
+- VertexGenerateContentResponse · struct · L511-L521 — pub struct VertexGenerateContentResponse
+- resolved_model_event · function · L525-L533 — pub fn resolved_model_event(&self) -> Option<jcode_message_types::StreamEvent>
+- GeminiCandidate · struct · L538-L545 — pub struct GeminiCandidate
+- GeminiPromptFeedback · struct · L549-L554 — pub struct GeminiPromptFeedback
+- GeminiUsageMetadata · struct · L558-L569 — pub struct GeminiUsageMetadata
+- input_token_count · function · L573-L578 — pub fn input_token_count(&self) -> Option<u64>
+- output_token_count · function · L582-L587 — pub fn output_token_count(&self) -> Option<u64>
+- gemini_fallback_models · function · L590-L596 — pub fn gemini_fallback_models(current_model: &str) -> Vec<&'static str>
+- google_cloud_project_from_env · function · L598-L604 — pub fn google_cloud_project_from_env() -> Option<String>
+- load_code_assist_request · function · L606-L615 — pub fn load_code_assist_request(
+- merge_gemini_model_lists · function · L617-L635 — pub fn merge_gemini_model_lists(models: Vec<String>) -> Vec<String>
+- extract_gemini_model_ids · function · L637-L641 — pub fn extract_gemini_model_ids(value: &Value) -> Vec<String>
+- collect_gemini_model_ids · function · L643-L663 — fn collect_gemini_model_ids(value: &Value, found: &mut HashSet<String>)
+- is_gemini_model_id · function · L665-L672 — pub fn is_gemini_model_id(value: &str) -> bool
+- client_metadata · function · L674-L681 — pub fn client_metadata(project_id: Option<String>) -> ClientMetadata
+- validate_load_code_assist_response · function · L683-L700 — pub fn validate_load_code_assist_response(res: &LoadCodeAssistResponse) -> Result<()>
+- ineligible_or_project_error · function · L702-L719 — pub fn ineligible_or_project_error(res: &LoadCodeAssistResponse) -> anyhow::Error
+- choose_onboard_tier · function · L721-L736 — pub fn choose_onboard_tier(res: &LoadCodeAssistResponse) -> GeminiUserTier
+- tests · module · L739-L957 — mod tests
+- resolved_model_only_uses_returned_model_version · function · L741-L760 — fn resolved_model_only_uses_returned_model_version()
+- response_usage_counts_tool_use_prompts_without_inventing_input · function · L766-L798 — fn response_usage_counts_tool_use_prompts_without_inventing_input()
+- response_usage_counts_thinking_without_inventing_output · function · L801-L845 — fn response_usage_counts_thinking_without_inventing_output()
+- compatible_schema_strips_nested_property_names · function · L848-L867 — fn compatible_schema_strips_nested_property_names()
+- fallback_models_skip_current_model · function · L870-L882 — fn fallback_models_skip_current_model()
+- extract_gemini_model_ids_discovers_nested_models · function · L885-L906 — fn extract_gemini_model_ids_discovers_nested_models()
+- candidate_content_decodes_without_role · function · L909-L936 — fn candidate_content_decodes_without_role()
+- candidate_content_decodes_without_parts · function · L939-L956 — fn candidate_content_decodes_without_parts()

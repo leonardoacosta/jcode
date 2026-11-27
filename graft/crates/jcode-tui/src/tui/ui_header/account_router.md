@@ -1,0 +1,50 @@
+# crates/jcode-tui/src/tui/ui_header/account_router.rs
+
+- inventory · module · L4-L4 — mod inventory;
+- GENERATION · constant · L17-L17 — static GENERATION: AtomicU64 = AtomicU64::new(0);
+- generation · function · L19-L22 — pub(super) fn generation() -> u64
+- Inventory · struct · L25-L29 — struct Inventory
+- InventoryCache · struct · L32-L36 — struct InventoryCache
+- snapshot · function · L39-L41 — fn snapshot(&self) -> Arc<Inventory>
+- replace_inventory · function · L43-L49 — fn replace_inventory(&mut self, inventory: Inventory) -> bool
+- cached_inventory · function · L52-L84 — fn cached_inventory() -> Arc<Inventory>
+- CACHE · constant · L53-L53 — static CACHE: OnceLock<Mutex<InventoryCache>> = OnceLock::new();
+- EMPTY · constant · L54-L54 — static EMPTY: OnceLock<Arc<Inventory>> = OnceLock::new();
+- masked_identity · function · L86-L101 — fn masked_identity(email: Option<&str>) -> String
+- lines · function · L103-L116 — pub(super) fn lines(
+- remote_lines · function · L120-L131 — pub(super) fn remote_lines(
+- QUOTA_SEPARATOR · constant · L133-L133 — const QUOTA_SEPARATOR: &str = "  ";
+- inline_account_row · function · L135-L151 — fn inline_account_row(mut identity: Line<'static>, quotas: Vec<Line<'static>>) -> Line<'static>
+- priority_row · function · L153-L175 — fn priority_row(mut row: Line<'static>, priority: u32, tiers: &[u32]) -> Line<'static>
+- header_account_banked_resets · function · L179-L188 — fn header_account_banked_resets(
+- banked_expiry_color · function · L191-L206 — fn banked_expiry_color(expires_at: Option<&str>, now: chrono::DateTime<chrono::Utc>) -> Color
+- banked_resets_span · function · L210-L235 — fn banked_resets_span(banked: &crate::usage::AccountBankedResets) -> Option<Span<'static>>
+- usage_status_label · function · L238-L254 — fn usage_status_label(usage: Option<&crate::usage::AccountUsageSnapshot>) -> String
+- remaining_bar · function · L257-L273 — fn remaining_bar(
+- CredentialStatus · enum · L276-L281 — enum CredentialStatus
+- from · function · L284-L290 — fn from(state: AuthState) -> Self
+- oauth_credential_status · function · L293-L340 — fn oauth_credential_status(
+- detail · function · L342-L357 — fn detail(state: impl Into<CredentialStatus>, label: String, selected: bool) -> Line<'static>
+- tests · module · L360-L1150 — mod tests
+- text · function · L364-L375 — fn text(lines: Vec<Line<'static>>) -> String
+- remote_rows_mask_email_and_show_quota · function · L378-L401 — fn remote_rows_mask_email_and_show_quota()
+- inline_account_rows_prioritize_all_limits_at_80_cells · function · L404-L451 — fn inline_account_rows_prioritize_all_limits_at_80_cells()
+- account_headers_render_all_usage_windows_and_fit_unicode_widths · function · L454-L539 — fn account_headers_render_all_usage_windows_and_fit_unicode_widths()
+- auth · function · L541-L556 — fn auth() -> AuthStatus
+- login · function · L558-L565 — fn login(provider: &'static str, label: &str, email: &str) -> OAuthLogin
+- snapshot_fixture · function · L567-L577 — fn snapshot_fixture() -> Inventory
+- inventory_snapshots_share_storage_instead_of_deep_copying · function · L580-L602 — fn inventory_snapshots_share_storage_instead_of_deep_copying()
+- inventory_snapshot_publication_preserves_exact_invalidation · function · L605-L626 — fn inventory_snapshot_publication_preserves_exact_invalidation()
+- inventory_shared_snapshot_preserves_header_output · function · L629-L651 — fn inventory_shared_snapshot_preserves_header_output()
+- router_inventory_follows_pool_order_within_priority_without_promoting_active · function · L654-L713 — fn router_inventory_follows_pool_order_within_priority_without_promoting_active()
+- router_inventory_hides_excluded_and_manual_credentials_even_if_active · function · L716-L745 — fn router_inventory_hides_excluded_and_manual_credentials_even_if_active()
+- router_inventory_default_subscriptions_and_expiry_are_account_scoped · function · L748-L783 — fn router_inventory_default_subscriptions_and_expiry_are_account_scoped()
+- router_inventory_selection_is_independent_of_status · function · L786-L800 — fn router_inventory_selection_is_independent_of_status()
+- router_priorities_only_dim_original_identity_colors_and_fit_narrow_headers · function · L803-L844 — fn router_priorities_only_dim_original_identity_colors_and_fit_narrow_headers()
+- router_inventory_usability_requires_account_scoped_evidence · function · L847-L953 — fn router_inventory_usability_requires_account_scoped_evidence()
+- router_inventory_empty_and_unknown_identities_remain_private · function · L956-L973 — fn router_inventory_empty_and_unknown_identities_remain_private()
+- router_inventory_missing_usage_has_explicit_safe_status · function · L976-L1015 — fn router_inventory_missing_usage_has_explicit_safe_status()
+- banked_expiry_colors_cover_boundaries_and_unknown · function · L1018-L1037 — fn banked_expiry_colors_cover_boundaries_and_unknown()
+- banked_resets_suffix_shows_count_or_next_unlock · function · L1040-L1075 — fn banked_resets_suffix_shows_count_or_next_unlock()
+- router_inventory_weekly_only_usage_shows_reported_window · function · L1078-L1106 — fn router_inventory_weekly_only_usage_shows_reported_window()
+- router_inventory_remaining_bar_rejects_unknown_and_invalid_usage · function · L1109-L1149 — fn router_inventory_remaining_bar_rejects_unknown_and_invalid_usage()

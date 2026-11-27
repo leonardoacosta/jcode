@@ -1,0 +1,65 @@
+# crates/jcode-transport/src/windows.rs
+
+- path_to_pipe_name · function · L13-L30 — fn path_to_pipe_name(path: &Path) -> String
+- Listener · struct · L34-L37 — pub struct Listener
+- bind · function · L40-L67 — pub fn bind(path: &Path) -> io::Result<Self>
+- accept · function · L69-L78 — pub async fn accept(&mut self) -> io::Result<(Stream, PipeAddr)>
+- PipeAddr · struct · L82-L82 — pub struct PipeAddr;
+- Stream · enum · L86-L89 — pub enum Stream
+- connect · function · L92-L106 — pub async fn connect(path: impl AsRef<Path>) -> io::Result<Self>
+- into_split · function · L108-L111 — pub fn into_split(self) -> (ReadHalf, WriteHalf)
+- split · function · L113-L116 — pub fn split(&mut self) -> (SplitReadRef<'_>, SplitWriteRef<'_>)
+- pair · function · L118-L160 — pub fn pair() -> io::Result<(Self, Self)>
+- PAIR_COUNTER · constant · L120-L120 — static PAIR_COUNTER: AtomicU64 = AtomicU64::new(0);
+- dummy_raw_waker · function · L137-L144 — fn dummy_raw_waker() -> RawWaker
+- no_op · function · L138-L138 — fn no_op(_: *const ()) {}
+- clone · function · L139-L141 — fn clone(p: *const ()) -> RawWaker
+- VTABLE · constant · L142-L142 — const VTABLE: RawWakerVTable = RawWakerVTable::new(clone, no_op, no_op, no_op);
+- poll_read · function · L164-L173 — fn poll_read(
+- poll_write · function · L177-L186 — fn poll_write(
+- poll_flush · function · L188-L196 — fn poll_flush(
+- poll_shutdown · function · L198-L206 — fn poll_shutdown(
+- ReadHalf · struct · L210-L212 — pub struct ReadHalf
+- poll_read · function · L215-L221 — fn poll_read(
+- WriteHalf · struct · L225-L227 — pub struct WriteHalf
+- poll_write · function · L230-L236 — fn poll_write(
+- poll_flush · function · L238-L243 — fn poll_flush(
+- poll_shutdown · function · L245-L250 — fn poll_shutdown(
+- SplitReadRef · struct · L254-L256 — pub struct SplitReadRef<'a>
+- poll_read · function · L259-L265 — fn poll_read(
+- SplitWriteRef · struct · L269-L271 — pub struct SplitWriteRef<'a>
+- poll_write · function · L274-L280 — fn poll_write(
+- poll_flush · function · L282-L287 — fn poll_flush(
+- poll_shutdown · function · L289-L294 — fn poll_shutdown(
+- SyncStream · struct · L301-L303 — pub struct SyncStream
+- SyncPipe · struct · L305-L309 — struct SyncPipe
+- SyncPipeState · struct · L312-L315 — struct SyncPipeState
+- connect · function · L318-L333 — pub fn connect(path: &Path) -> io::Result<Self>
+- try_clone · function · L335-L339 — pub fn try_clone(&self) -> io::Result<Self>
+- set_read_timeout · function · L345-L354 — pub fn set_read_timeout(&self, timeout: Option<std::time::Duration>) -> io::Result<()>
+- shutdown · function · L359-L382 — pub fn shutdown(&self, how: std::net::Shutdown) -> io::Result<()>
+- state · function · L384-L389 — fn state(&self) -> io::Result<std::sync::MutexGuard<'_, SyncPipeState>>
+- transfer · function · L391-L429 — fn transfer(
+- SyncPipeOperation · struct · L434-L441 — struct SyncPipeOperation<'a>
+- new · function · L444-L464 — fn new(handle: &'a std::fs::File) -> io::Result<Self>
+- cancel · function · L466-L472 — fn cancel(&self)
+- complete · function · L474-L546 — fn complete(&mut self, timeout: Option<std::time::Duration>) -> io::Result<usize>
+- drop · function · L550-L555 — fn drop(&mut self)
+- read · function · L559-L588 — fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>
+- write · function · L592-L602 — fn write(&mut self, buf: &[u8]) -> io::Result<usize>
+- flush · function · L604-L608 — fn flush(&mut self) -> io::Result<()>
+- is_socket_path · function · L611-L626 — pub fn is_socket_path(path: &Path) -> bool
+- remove_socket · function · L628-L636 — pub fn remove_socket(path: &Path)
+- probe_pipe · function · L646-L652 — fn probe_pipe(pipe_name: &str) -> io::Result<()>
+- stream_pair · function · L654-L656 — pub fn stream_pair() -> io::Result<(Stream, Stream)>
+- tests · module · L659-L897 — mod tests
+- BUSY_PIPE_TEST_COUNTER · constant · L665-L665 — static BUSY_PIPE_TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+- sync_pipe_probes_do_not_panic_without_a_tokio_reactor · function · L680-L718 — async fn sync_pipe_probes_do_not_panic_without_a_tokio_reactor()
+- pipe_name_matches_the_typescript_sdk · function · L725-L739 — fn pipe_name_matches_the_typescript_sdk()
+- pipe_name_is_stable_and_normalizes_case_and_separators · function · L742-L751 — fn pipe_name_is_stable_and_normalizes_case_and_separators()
+- pipe_name_falls_back_when_stem_is_empty · function · L754-L761 — fn pipe_name_falls_back_when_stem_is_empty()
+- stream_pair_round_trips_bytes · function · L764-L772 — async fn stream_pair_round_trips_bytes()
+- split_stream_supports_concurrent_read_and_write · function · L775-L799 — async fn split_stream_supports_concurrent_read_and_write()
+- accept_survives_closed_readiness_probes · function · L804-L856 — async fn accept_survives_closed_readiness_probes()
+- accepted_client_disconnect_does_not_stop_listener · function · L859-L880 — async fn accepted_client_disconnect_does_not_stop_listener()
+- busy_pipe_is_reported_as_a_live_socket_path · function · L883-L896 — async fn busy_pipe_is_reported_as_a_live_socket_path()

@@ -1,0 +1,60 @@
+# crates/jcode-provider-anthropic/src/lib.rs
+
+- history_repair · module · L10-L10 — mod history_repair;
+- OAUTH_BILLING_HEADER · constant · L38-L38 — pub const OAUTH_BILLING_HEADER: &str = "cc_version=2.1.280; cc_entrypoint=sdk-cli; cch=33f85;";
+- CONTINUATION_USER_TURN · constant · L42-L42 — pub(crate) const CONTINUATION_USER_TURN: &str = "Continue.";
+- format_messages · function · L44-L46 — pub fn format_messages(messages: &[Message], is_oauth: bool) -> Vec<ApiMessage>
+- format_messages_with_tools · function · L55-L61 — pub fn format_messages_with_tools(
+- format_messages_with_native · function · L71-L316 — pub fn format_messages_with_native(
+- is_invalid_native_replay_error · function · L322-L326 — pub fn is_invalid_native_replay_error(error: &str) -> bool
+- downgrade_native_replay · function · L331-L373 — pub fn downgrade_native_replay(messages: &mut [ApiMessage]) -> bool
+- format_content_blocks · function · L376-L378 — pub fn format_content_blocks(blocks: &[ContentBlock], is_oauth: bool) -> Vec<ApiContentBlock>
+- is_paused_server_tool_turn · function · L385-L387 — fn is_paused_server_tool_turn(message: &ApiMessage) -> bool
+- format_content_blocks_with_native · function · L390-L549 — pub fn format_content_blocks_with_native(
+- tool_schema · module · L552-L552 — mod tool_schema;
+- ApiRequest · struct · L556-L575 — pub struct ApiRequest
+- ApiThinking · enum · L579-L589 — pub enum ApiThinking
+- ApiThinkingBlockBinding · struct · L594-L596 — pub struct ApiThinkingBlockBinding
+- ApiOutputConfig · struct · L599-L601 — pub struct ApiOutputConfig
+- ApiMetadata · struct · L604-L606 — pub struct ApiMetadata
+- ApiSystem · enum · L610-L612 — pub enum ApiSystem
+- CacheControlParam · struct · L616-L621 — pub struct CacheControlParam
+- ephemeral · function · L624-L633 — fn ephemeral(cache_ttl_1h: bool) -> Self
+- ephemeral_1h · function · L635-L640 — fn ephemeral_1h() -> Self
+- ApiSystemBlock · struct · L644-L650 — pub struct ApiSystemBlock
+- build_system_param · function · L652-L654 — pub fn build_system_param(system: &str, is_oauth: bool, cache_ttl_1h: bool) -> Option<ApiSystem>
+- build_system_param_split · function · L657-L715 — pub fn build_system_param_split(
+- format_messages_with_identity · function · L717-L728 — pub fn format_messages_with_identity(
+- add_message_cache_breakpoint · function · L740-L805 — pub fn add_message_cache_breakpoint(messages: &mut [ApiMessage], cache_ttl_1h: bool)
+- ApiMessage · struct · L808-L811 — pub struct ApiMessage
+- ApiContentBlock · enum · L815-L846 — pub enum ApiContentBlock
+- ToolResultContent · enum · L850-L853 — pub enum ToolResultContent
+- ToolResultContentBlock · enum · L857-L866 — pub enum ToolResultContentBlock
+- ApiImageSource · struct · L869-L874 — pub struct ApiImageSource
+- ApiTool · struct · L877-L885 — pub struct ApiTool
+- ApiToolParam · enum · L891-L894 — pub enum ApiToolParam
+- request_tools · function · L900-L907 — pub fn request_tools(custom: Vec<ApiTool>, server: Vec<Value>) -> Option<Vec<ApiToolParam>>
+- cache_prefix_invariant_tests · module · L910-L1210 — mod cache_prefix_invariant_tests
+- text_msg · function · L925-L936 — fn text_msg(role: Role, text: &str) -> Message
+- base_conversation · function · L939-L947 — fn base_conversation() -> Vec<Message>
+- breakpoint_anchors · function · L951-L971 — fn breakpoint_anchors(messages: &[ApiMessage]) -> Vec<(usize, String)>
+- cached_prefix_json · function · L976-L982 — fn cached_prefix_json(messages: &[ApiMessage]) -> String
+- formatted_with_breakpoints · function · L984-L988 — fn formatted_with_breakpoints(messages: &[Message]) -> Vec<ApiMessage>
+- breakpoints_anchor_on_assistant_messages_only · function · L991-L1001 — fn breakpoints_anchor_on_assistant_messages_only()
+- trailing_memory_message_does_not_move_breakpoints · function · L1004-L1022 — fn trailing_memory_message_does_not_move_breakpoints()
+- cached_prefix_is_byte_identical_with_and_without_memory · function · L1025-L1040 — fn cached_prefix_is_byte_identical_with_and_without_memory()
+- different_memory_each_turn_keeps_identical_cached_prefix · function · L1043-L1065 — fn different_memory_each_turn_keeps_identical_cached_prefix()
+- tool_def · function · L1067-L1074 — fn tool_def(name: &str) -> ToolDefinition
+- format_tools_removes_top_level_combinators_for_anthropic_api · function · L1077-L1120 — fn format_tools_removes_top_level_combinators_for_anthropic_api()
+- oauth_format_tools_keeps_full_custom_toolset · function · L1123-L1167 — fn oauth_format_tools_keeps_full_custom_toolset()
+- oauth_format_tools_drops_builtins_missing_from_registry · function · L1170-L1192 — fn oauth_format_tools_drops_builtins_missing_from_registry()
+- oauth_format_tools_places_single_cache_breakpoint_on_last_tool · function · L1195-L1209 — fn oauth_format_tools_places_single_cache_breakpoint_on_last_tool()
+- oauth_tool_schema_tests · module · L1214-L1214 — mod oauth_tool_schema_tests;
+- trailing_assistant_repair_tests · module · L1218-L1218 — mod trailing_assistant_repair_tests;
+- duplicate_tool_result_tests · module · L1222-L1222 — mod duplicate_tool_result_tests;
+- wedge_fixture_check · module · L1226-L1226 — mod wedge_fixture_check;
+- native_web_search_repair_tests · module · L1230-L1230 — mod native_web_search_repair_tests;
+- deferred_tools_tests · module · L1234-L1234 — mod deferred_tools_tests;
+- native_display_accepted · module · L1237-L1237 — mod native_display_accepted;
+- native_display_legacy · module · L1239-L1239 — mod native_display_legacy;
+- native_display_probe · module · L1241-L1241 — mod native_display_probe;

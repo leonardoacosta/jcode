@@ -1,0 +1,73 @@
+# src/cli/ssh_transport.rs
+
+- timing · module · L22-L22 — mod timing;
+- PROTOCOL · constant · L24-L24 — const PROTOCOL: u32 = 1;
+- HANDSHAKE_LIMIT · constant · L25-L25 — const HANDSHAKE_LIMIT: usize = 8192;
+- STDERR_LIMIT · constant · L26-L26 — const STDERR_LIMIT: usize = 16 * 1024;
+- STARTUP_TIMEOUT · constant · L27-L27 — const STARTUP_TIMEOUT: Duration = Duration::from_secs(30);
+- CLOUD_WAKE_TIMEOUT · constant · L28-L28 — const CLOUD_WAKE_TIMEOUT: Duration = Duration::from_secs(150);
+- MAX_CONNECTIONS · constant · L29-L29 — const MAX_CONNECTIONS: usize = 32;
+- RECONNECT_BACKOFF_MAX · constant · L30-L30 — const RECONNECT_BACKOFF_MAX: Duration = Duration::from_secs(30);
+- ReconnectBackoff · struct · L36-L39 — struct ReconnectBackoff
+- delay · function · L42-L45 — fn delay(failures: u32) -> Duration
+- blocked · function · L46-L48 — fn blocked(&self, now: std::time::Instant) -> bool
+- should_defer · function · L49-L51 — fn should_defer(&self, now: std::time::Instant, user_requested_retry: bool) -> bool
+- fail · function · L54-L58 — fn fail(&mut self, now: std::time::Instant) -> bool
+- succeed · function · L59-L63 — fn succeed(&mut self) -> Option<u32>
+- private_directory · function · L66-L78 — fn private_directory() -> Result<tempfile::TempDir>
+- NativeHandshake · struct · L81-L87 — pub(crate) struct NativeHandshake
+- NativeSsh · struct · L90-L97 — pub(crate) struct NativeSsh
+- connect_with_workspace · function · L100-L141 — pub async fn connect_with_workspace(
+- socket_path · function · L143-L145 — pub fn socket_path(&self) -> &Path
+- host · function · L146-L148 — pub fn host(&self) -> &str
+- handshake · function · L149-L151 — pub fn handshake(&self) -> &NativeHandshake
+- remote_working_dir · function · L152-L154 — pub fn remote_working_dir(&self) -> &str
+- close · function · L158-L173 — pub async fn close(&mut self) -> Result<()>
+- drop · function · L177-L181 — fn drop(&mut self)
+- SshOptions · struct · L185-L190 — struct SshOptions
+- new · function · L193-L227 — fn new(host: &str, remote_binary: &str) -> Result<Self>
+- command · function · L229-L261 — fn command(&self) -> Command
+- configure_transport · function · L264-L305 — fn configure_transport(command: &mut Command, managed_config: bool)
+- OwnedChild · struct · L307-L307 — struct OwnedChild(Child);
+- kill · function · L309-L317 — fn kill(&mut self)
+- drop · function · L320-L322 — fn drop(&mut self)
+- SshConnection · struct · L325-L332 — struct SshConnection
+- connect · function · L335-L354 — async fn connect(options: &SshOptions) -> Result<Self>
+- spawn · function · L356-L365 — async fn spawn(command: Command, deadline: Duration) -> Result<Self>
+- spawn_process · function · L367-L425 — fn spawn_process(mut command: Command) -> Result<Self>
+- establish · function · L427-L432 — async fn establish(&mut self, deadline: Duration) -> Result<()>
+- diagnostic · function · L434-L443 — fn diagnostic(&self) -> String
+- shutdown · function · L445-L454 — async fn shutdown(&mut self)
+- drop · function · L458-L460 — fn drop(&mut self)
+- read_handshake · function · L463-L481 — async fn read_handshake<R: AsyncBufRead + Unpin>(reader: &mut R) -> Result<NativeHandshake>
+- read_bounded_line · function · L483-L502 — async fn read_bounded_line<R: AsyncBufRead + Unpin>(reader: &mut R) -> Result<Vec<u8>>
+- verify_daemon_protocol · function · L504-L520 — async fn verify_daemon_protocol<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin>(
+- accept_connections · function · L522-L597 — async fn accept_connections(
+- record_reconnect_failure · function · L599-L607 — fn record_reconnect_failure(backoff: &Mutex<ReconnectBackoff>) -> (bool, u32)
+- run_stdio · function · L610-L625 — pub(crate) async fn run_stdio(socket: PathBuf) -> Result<()>
+- bridge_stream · function · L627-L675 — async fn bridge_stream<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
+- tests · module · L678-L1297 — mod tests
+- managed_mux_only_borrows_existing_master_and_enables_compression · function · L682-L703 — fn managed_mux_only_borrows_existing_master_and_enables_compression()
+- accepted_socket_reuses_probe_and_preserves_buffered_bytes · function · L706-L744 — async fn accepted_socket_reuses_probe_and_preserves_buffered_bytes()
+- unused_probe_is_reaped_when_manager_stops · function · L747-L771 — async fn unused_probe_is_reaped_when_manager_stops()
+- reconnect_backoff_grows_caps_and_throttles_logs · function · L774-L787 — fn reconnect_backoff_grows_caps_and_throttles_logs()
+- reconnect_backoff_user_submission_bypasses_only_one_attempt · function · L790-L800 — fn reconnect_backoff_user_submission_bypasses_only_one_attempt()
+- hello · function · L802-L812 — fn hello() -> String
+- shell · function · L814-L818 — fn shell(script: &str) -> Command
+- rejects_option_and_shell_injection · function · L821-L839 — fn rejects_option_and_shell_injection()
+- ephemeral_command_uses_its_own_config_and_pinned_binary · function · L842-L858 — fn ephemeral_command_uses_its_own_config_and_pinned_binary()
+- command_is_owned_noninteractive_and_quotes_literal_paths · function · L861-L889 — fn command_is_owned_noninteractive_and_quotes_literal_paths()
+- handshake_preserves_following_native_bytes · function · L892-L900 — async fn handshake_preserves_following_native_bytes()
+- handshake_rejects_contamination_unknown_protocol_and_oversize · function · L903-L913 — async fn handshake_rejects_contamination_unknown_protocol_and_oversize()
+- startup_timeout_kills_and_reaps_owned_process · function · L916-L931 — async fn startup_timeout_kills_and_reaps_owned_process()
+- successful_connection_shutdown_reaps_child · function · L934-L943 — async fn successful_connection_shutdown_reaps_child()
+- cancelled_handshake_retains_child_for_explicit_reaping · function · L946-L959 — async fn cancelled_handshake_retains_child_for_explicit_reaping()
+- guard_drop_removes_private_socket_and_signals_children · function · L962-L988 — async fn guard_drop_removes_private_socket_and_signals_children()
+- explicit_close_waits_for_child_reaping_and_is_idempotent · function · L991-L1020 — async fn explicit_close_waits_for_child_reaping_and_is_idempotent()
+- workspace_validation_rejects_empty_and_control_paths_before_ssh · function · L1023-L1031 — async fn workspace_validation_rejects_empty_and_control_paths_before_ssh()
+- failed_startup_reports_bounded_stderr · function · L1034-L1053 — async fn failed_startup_reports_bounded_stderr()
+- bridge_exchanges_native_frames_and_exits_when_daemon_dies · function · L1056-L1099 — async fn bridge_exchanges_native_frames_and_exits_when_daemon_dies()
+- bridge_forwards_background_tool_before_busy_tool_completes · function · L1102-L1204 — async fn bridge_forwards_background_tool_before_busy_tool_completes()
+- bridge_does_not_claim_handshake_without_daemon · function · L1207-L1220 — async fn bridge_does_not_claim_handshake_without_daemon()
+- stdio_eof_half_closes_daemon_and_drains_last_reply · function · L1223-L1272 — async fn stdio_eof_half_closes_daemon_and_drains_last_reply()
+- daemon_capability_requires_supported_protocol_and_matching_ping · function · L1275-L1296 — async fn daemon_capability_requires_supported_protocol_and_matching_ping()

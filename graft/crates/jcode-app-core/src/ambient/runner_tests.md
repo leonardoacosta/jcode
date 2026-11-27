@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/ambient/runner_tests.rs
+
+- live_delivery · module · L16-L16 — mod live_delivery;
+- recovery · module · L19-L19 — mod recovery;
+- EnvVarGuard · struct · L21-L24 — struct EnvVarGuard
+- unset · function · L27-L31 — fn unset(key: &'static str) -> Self
+- set_path · function · L33-L37 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- drop · function · L41-L47 — fn drop(&mut self)
+- TestProvider · struct · L50-L50 — struct TestProvider;
+- ResetConfigCache · struct · L52-L52 — struct ResetConfigCache;
+- drop · function · L55-L57 — fn drop(&mut self)
+- ambient_gate_tracks_config_toggles_and_preserves_disabled_override · function · L61-L91 — fn ambient_gate_tracks_config_toggles_and_preserves_disabled_override()
+- running_loop_observes_enable_edit_without_cache_invalidation · function · L94-L147 — async fn running_loop_observes_enable_edit_without_cache_invalidation()
+- StreamingTestProvider · struct · L150-L152 — struct StreamingTestProvider
+- queue_response · function · L155-L157 — fn queue_response(&self, events: Vec<StreamEvent>)
+- complete · function · L162-L172 — async fn complete(
+- name · function · L174-L176 — fn name(&self) -> &str
+- fork · function · L178-L180 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L185-L204 — async fn complete(
+- name · function · L206-L208 — fn name(&self) -> &str
+- fork · function · L210-L212 — fn fork(&self) -> Arc<dyn Provider>
+- runner_stays_alive_to_service_schedules_when_ambient_disabled · function · L216-L233 — async fn runner_stays_alive_to_service_schedules_when_ambient_disabled()
+- assert_visible_launch_error_falls_back · function · L235-L262 — async fn assert_visible_launch_error_falls_back(error_kind: std::io::ErrorKind)
+- unsupported_visible_launch_falls_back_to_headless · function · L265-L267 — async fn unsupported_visible_launch_falls_back_to_headless()
+- missing_visible_launcher_falls_back_to_headless · function · L270-L272 — async fn missing_visible_launcher_falls_back_to_headless()
+- spawn_target_creates_one_child_session_and_runs_task · function · L275-L335 — async fn spawn_target_creates_one_child_session_and_runs_task()
+- mcp_wake_item · function · L337-L344 — fn mcp_wake_item(session: Option<&str>) -> ScheduledItem
+- mcp_wake_for_absent_session_fails_delivery_without_panicking · function · L347-L360 — async fn mcp_wake_for_absent_session_fails_delivery_without_panicking()
+- mcp_wake_resumes_idle_session_with_identifiers_only · function · L363-L392 — async fn mcp_wake_resumes_idle_session_with_identifiers_only()
+- mcp_ambient_wake_stays_queued_while_session_wakes_are_claimed · function · L395-L412 — fn mcp_ambient_wake_stays_queued_while_session_wakes_are_claimed()

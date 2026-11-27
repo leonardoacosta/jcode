@@ -1,0 +1,75 @@
+# crates/jcode-base/src/provider/models.rs
+
+- catalog · module · L5-L5 — mod catalog;
+- catalog_refresh · module · L7-L7 — mod catalog_refresh;
+- catalog_service · module · L9-L9 — mod catalog_service;
+- OPENAI_MODEL_CATALOG_CACHE_FILE · constant · L42-L42 — const OPENAI_MODEL_CATALOG_CACHE_FILE: &str = "openai_model_catalog_cache.json";
+- ANTHROPIC_MODEL_CATALOG_CACHE_FILE · constant · L43-L43 — const ANTHROPIC_MODEL_CATALOG_CACHE_FILE: &str = "anthropic_model_catalog_cache.json";
+- PersistedModelCatalogStore · struct · L46-L48 — struct PersistedModelCatalogStore
+- PersistedModelCatalogScope · struct · L51-L60 — struct PersistedModelCatalogScope
+- BorrowedScope · struct · L65-L71 — struct BorrowedScope<'a>
+- ScopeOverlay · struct · L73-L77 — struct ScopeOverlay<'a>
+- serialize · function · L80-L91 — fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
+- StoreOverlay · struct · L95-L97 — struct StoreOverlay<'a>
+- borrowed_catalog_store · function · L99-L124 — fn borrowed_catalog_store<'a>(
+- filtered_display_models · function · L127-L135 — pub(crate) fn filtered_display_models(models: impl IntoIterator<Item = String>) -> Vec<String>
+- ensure_model_allowed_for_subscription · function · L137-L161 — pub(crate) fn ensure_model_allowed_for_subscription(model: &str) -> Result<()>
+- CONTEXT_LIMIT_CACHE · constant · L164-L165 — static CONTEXT_LIMIT_CACHE: std::sync::LazyLock<RwLock<HashMap<String, usize>>> =
+- RuntimeProviderUnavailability · struct · L168-L172 — struct RuntimeProviderUnavailability
+- OPENAI_MODEL_CATALOG_SERVICE · constant · L176-L183 — static OPENAI_MODEL_CATALOG_SERVICE: std::sync::LazyLock<ModelCatalogService> =
+- ANTHROPIC_MODEL_CATALOG_SERVICE · constant · L184-L191 — static ANTHROPIC_MODEL_CATALOG_SERVICE: std::sync::LazyLock<ModelCatalogService> =
+- ACCOUNT_RUNTIME_UNAVAILABLE_PROVIDERS · constant · L192-L194 — static ACCOUNT_RUNTIME_UNAVAILABLE_PROVIDERS: std::sync::LazyLock<
+- ACCOUNT_MODEL_CACHE_TTL · constant · L195-L195 — const ACCOUNT_MODEL_CACHE_TTL: Duration = Duration::from_secs(30 * 60);
+- RUNTIME_UNAVAILABLE_TTL · constant · L196-L196 — const RUNTIME_UNAVAILABLE_TTL: Duration = Duration::from_secs(10 * 60);
+- PROVIDER_RUNTIME_UNAVAILABLE_TTL · constant · L197-L197 — const PROVIDER_RUNTIME_UNAVAILABLE_TTL: Duration = Duration::from_secs(5 * 60);
+- ACCOUNT_MODEL_REFRESH_RETRY_INTERVAL · constant · L198-L198 — const ACCOUNT_MODEL_REFRESH_RETRY_INTERVAL: Duration = Duration::from_secs(60);
+- AccountModelAvailabilityState · enum · L201-L205 — pub enum AccountModelAvailabilityState
+- AccountModelAvailability · struct · L208-L213 — pub struct AccountModelAvailability
+- format_elapsed_duration_short · function · L215-L225 — fn format_elapsed_duration_short(elapsed: Duration) -> String
+- format_account_model_availability_detail · function · L227-L252 — pub fn format_account_model_availability_detail(
+- model_catalog_state · module · L255-L255 — mod model_catalog_state;
+- reset_model_catalog_services_for_tests · function · L290-L293 — pub fn reset_model_catalog_services_for_tests()
+- merge_openai_model_ids · function · L296-L321 — pub(crate) fn merge_openai_model_ids(dynamic_models: Vec<String>) -> Vec<String>
+- merge_anthropic_model_ids · function · L324-L349 — pub(crate) fn merge_anthropic_model_ids(dynamic_models: Vec<String>) -> Vec<String>
+- known_anthropic_model_ids · function · L351-L372 — pub fn known_anthropic_model_ids() -> Vec<String>
+- known_anthropic_model_ids_for_scope · function · L374-L376 — pub fn known_anthropic_model_ids_for_scope(scope: &str) -> Vec<String>
+- openai_platform_api_key_configured · function · L383-L387 — pub fn openai_platform_api_key_configured() -> bool
+- known_openai_model_ids · function · L394-L411 — pub fn known_openai_model_ids() -> Vec<String>
+- known_openai_model_ids_for_scope · function · L415-L419 — pub fn known_openai_model_ids_for_scope(scope: &str) -> Vec<String>
+- finish_known_openai_model_ids · function · L421-L436 — fn finish_known_openai_model_ids(mut models: Vec<String>) -> Vec<String>
+- runtime_model_unavailability · function · L438-L444 — fn runtime_model_unavailability(scope: &str, model: &str) -> Option<RuntimeModelUnavailability>
+- account_snapshot_model_available · function · L446-L455 — fn account_snapshot_model_available(scope: &str, model: &str) -> Option<bool>
+- account_models_observed_at · function · L457-L459 — fn account_models_observed_at(scope: &str) -> Option<SystemTime>
+- provider_availability · module · L462-L462 — mod provider_availability;
+- model_unavailability_detail_for_account · function · L464-L467 — pub fn model_unavailability_detail_for_account(model: &str) -> Option<String>
+- is_model_available_for_account · function · L472-L478 — pub fn is_model_available_for_account(model: &str) -> Option<bool>
+- model_availability_for_account · function · L480-L482 — pub fn model_availability_for_account(model: &str) -> AccountModelAvailability
+- model_availability_for_scope · function · L486-L560 — pub fn model_availability_for_scope(scope: &str, model: &str) -> AccountModelAvailability
+- OPENAI_MODEL_PREFERENCE · constant · L564-L578 — const OPENAI_MODEL_PREFERENCE: &[&str] = &[
+- get_best_available_openai_model · function · L582-L584 — pub fn get_best_available_openai_model() -> Option<String>
+- get_best_available_openai_model_for_scope · function · L586-L603 — pub fn get_best_available_openai_model_for_scope(scope: &str) -> Option<String>
+- context_limit_for_model · function · L609-L611 — pub fn context_limit_for_model(model: &str) -> Option<usize>
+- context_limit_for_model_with_provider · function · L613-L622 — pub fn context_limit_for_model_with_provider(
+- resolve_model_capabilities · function · L624-L631 — pub fn resolve_model_capabilities(model: &str, provider_hint: Option<&str>) -> ModelCapabilities
+- is_agent_model_for_failover · function · L639-L663 — pub(super) fn is_agent_model_for_failover(model: &str, provider: &str) -> bool
+- provider_for_model_with_hint · function · L666-L700 — pub fn provider_for_model_with_hint(
+- provider_for_model · function · L703-L705 — pub fn provider_for_model(model: &str) -> Option<&'static str>
+- catalog_ownership_tests · module · L708-L1165 — mod catalog_ownership_tests
+- openai_route_capacity_ignores_unscoped_context_cache · function · L712-L724 — fn openai_route_capacity_ignores_unscoped_context_cache()
+- model_picker_transfers_first_string_and_preserves_order · function · L727-L749 — fn model_picker_transfers_first_string_and_preserves_order()
+- overlay · function · L751-L767 — fn overlay<'a>(
+- benchmark_snapshot · function · L769-L789 — fn benchmark_snapshot(count: usize) -> PersistedModelCatalogScope
+- borrowed_overlay_matches_legacy_compact_and_pretty_bytes · function · L792-L817 — fn borrowed_overlay_matches_legacy_compact_and_pretty_bytes()
+- thread_cpu_ns · function · L820-L831 — fn thread_cpu_ns() -> u64
+- scoped_writer_release_cpu_comparison · function · L836-L893 — fn scoped_writer_release_cpu_comparison()
+- CatalogTestHome · struct · L895-L899 — struct CatalogTestHome
+- new · function · L902-L912 — fn new() -> Self
+- drop · function · L916-L922 — fn drop(&mut self)
+- borrowed_persistence_preserves_empty_timestamp_and_concurrent_scopes · function · L926-L980 — fn borrowed_persistence_preserves_empty_timestamp_and_concurrent_scopes()
+- owned_capability_reads_preserve_missing_empty_and_account_scopes · function · L983-L1034 — fn owned_capability_reads_preserve_missing_empty_and_account_scopes()
+- service · function · L1036-L1042 — fn service() -> ModelCatalogService
+- snapshot · function · L1044-L1055 — fn snapshot(
+- populate_context_limits_moves_keys_and_preserves_unrelated_entries · function · L1058-L1087 — fn populate_context_limits_moves_keys_and_preserves_unrelated_entries()
+- hydration_moves_only_selected_scope_without_mutating_disk · function · L1090-L1164 — fn hydration_moves_only_selected_scope_without_mutating_disk()
+- scoped_refresh_tests · module · L1168-L1190 — mod scoped_refresh_tests
+- saved_account_background_refresh_uses_captured_scope · function · L1172-L1189 — fn saved_account_background_refresh_uses_captured_scope()

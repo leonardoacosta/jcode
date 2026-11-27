@@ -1,0 +1,52 @@
+# crates/jcode-base/src/provider/tests/account_failover.rs
+
+- AccountRoutingStreamProvider · struct · L2-L5 — struct AccountRoutingStreamProvider
+- complete · function · L9-L42 — async fn complete(
+- name · function · L44-L46 — fn name(&self) -> &str
+- model · function · L47-L49 — fn model(&self) -> String
+- credential_mode · function · L50-L52 — fn credential_mode(&self) -> CredentialMode
+- fork · function · L53-L55 — fn fork(&self) -> Arc<dyn Provider>
+- AccountRoutingFixtureCleanup · struct · L58-L58 — struct AccountRoutingFixtureCleanup;
+- RemoteQuotaCleanup · struct · L60-L60 — struct RemoteQuotaCleanup;
+- drop · function · L63-L65 — fn drop(&mut self)
+- exhausted_account_snapshot · function · L68-L76 — fn exhausted_account_snapshot(label: &str) -> jcode_protocol::AccountUsageSnapshot
+- account_router_skips_known_exhausted_alternates_without_runtime_errors · function · L79-L95 — fn account_router_skips_known_exhausted_alternates_without_runtime_errors()
+- bound_account_router_checks_known_quota_before_sending_in_both_modes · function · L98-L124 — fn bound_account_router_checks_known_quota_before_sending_in_both_modes()
+- drop · function · L127-L133 — fn drop(&mut self)
+- account_routing_fixture · function · L136-L176 — fn account_routing_fixture(
+- account_router_prompts_before_any_alternate_request_in_both_completion_modes · function · L179-L222 — fn account_router_prompts_before_any_alternate_request_in_both_completion_modes()
+- account_router_cached_failure_skips_spent_and_excluded_accounts_without_requests · function · L225-L258 — fn account_router_cached_failure_skips_spent_and_excluded_accounts_without_requests()
+- account_router_does_not_rotate_invalid_requests · function · L261-L277 — fn account_router_does_not_rotate_invalid_requests()
+- account_router_respects_disabled_failover · function · L280-L296 — fn account_router_respects_disabled_failover()
+- ApiKeyAccountRoutingProvider · struct · L299-L303 — struct ApiKeyAccountRoutingProvider
+- complete · function · L307-L322 — async fn complete(
+- credential_mode · function · L324-L326 — fn credential_mode(&self) -> CredentialMode
+- active_resolved_credential · function · L328-L330 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- name · function · L332-L334 — fn name(&self) -> &str
+- model · function · L336-L338 — fn model(&self) -> String
+- fork · function · L340-L342 — fn fork(&self) -> Arc<dyn Provider>
+- account_router_api_key_requests_ignore_and_preserve_oauth_cooldown · function · L346-L395 — fn account_router_api_key_requests_ignore_and_preserve_oauth_cooldown()
+- account_router_api_key_limit_does_not_rotate_or_poison_oauth_accounts · function · L398-L437 — fn account_router_api_key_limit_does_not_rotate_or_poison_oauth_accounts()
+- BoundAccountRoutingProvider · struct · L439-L444 — struct BoundAccountRoutingProvider
+- complete · function · L448-L469 — async fn complete(
+- name · function · L470-L472 — fn name(&self) -> &str
+- model · function · L473-L475 — fn model(&self) -> String
+- credential_mode · function · L476-L478 — fn credential_mode(&self) -> CredentialMode
+- oauth_account_label · function · L479-L481 — fn oauth_account_label(&self) -> Option<String>
+- context_window · function · L482-L484 — fn context_window(&self) -> usize
+- set_oauth_account · function · L485-L488 — fn set_oauth_account(&self, label: Option<&str>) -> Result<()>
+- set_credential_mode · function · L489-L492 — fn set_credential_mode(&self, mode: CredentialMode) -> Result<()>
+- set_model · function · L493-L495 — fn set_model(&self, _model: &str) -> Result<()>
+- fork · function · L496-L503 — fn fork(&self) -> Arc<dyn Provider>
+- bind_fixture_account · function · L506-L521 — fn bind_fixture_account(
+- pinned_complete_can_cross_pool_boundary_for_context_or_disabled_same_provider · function · L524-L598 — fn pinned_complete_can_cross_pool_boundary_for_context_or_disabled_same_provider()
+- auto_subscription_failure_is_pinned_before_any_api_spending · function · L601-L640 — fn auto_subscription_failure_is_pinned_before_any_api_spending()
+- auto_initial_account_skips_known_quota_before_sending_in_both_modes · function · L643-L673 — fn auto_initial_account_skips_known_quota_before_sending_in_both_modes()
+- auto_initial_anthropic_account_skips_weekly_quota_without_cooldown · function · L676-L734 — fn auto_initial_anthropic_account_skips_weekly_quota_without_cooldown()
+- auto_initial_quota_routing_preserves_pins_disabled_failover_and_pool_boundaries · function · L737-L802 — fn auto_initial_quota_routing_preserves_pins_disabled_failover_and_pool_boundaries()
+- exact_target_readiness_rejects_dead_refresh_and_unavailable_model · function · L805-L849 — fn exact_target_readiness_rejects_dead_refresh_and_unavailable_model()
+- context_failover_never_offers_known_too_small_routes · function · L852-L869 — fn context_failover_never_offers_known_too_small_routes()
+- pinned_account_prompts_use_session_identity_and_apply_without_global_override · function · L872-L933 — fn pinned_account_prompts_use_session_identity_and_apply_without_global_override()
+- pool_order_can_choose_explicit_api_before_same_vendor_oauth · function · L936-L981 — fn pool_order_can_choose_explicit_api_before_same_vendor_oauth()
+- missing_or_excluded_pins_never_fallback · function · L984-L1013 — fn missing_or_excluded_pins_never_fallback()
+- timer_target_revalidation_rejects_deleted_excluded_and_cooled_accounts · function · L1016-L1046 — fn timer_target_revalidation_rejects_deleted_excluded_and_cooled_accounts()

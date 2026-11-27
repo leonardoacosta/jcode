@@ -1,0 +1,54 @@
+# crates/jcode-voice/src/global/hotkey.rs
+
+- F23 · constant · L24-L24 — const F23: usize = 193;
+- ASSISTANT · constant · L25-L25 — const ASSISTANT: usize = 0x247;
+- KEYS · constant · L26-L26 — const KEYS: [usize; 10] = [F23, ASSISTANT, 42, 54, 125, 126, 29, 97, 56, 100];
+- TTL · constant · L27-L27 — const TTL: u64 = 3_000_000_000;
+- RETRY · constant · L28-L28 — const RETRY: Duration = Duration::from_secs(2);
+- DEADLINE · constant · L29-L29 — const DEADLINE: Duration = Duration::from_secs(120);
+- KEY_BYTES · constant · L30-L30 — const KEY_BYTES: usize = 96;
+- NEXT · constant · L31-L31 — static NEXT: AtomicU64 = AtomicU64::new(0);
+- Edge · enum · L34-L45 — pub enum Edge
+- ADOPT_WINDOW · constant · L48-L48 — const ADOPT_WINDOW: Duration = Duration::from_secs(10);
+- InputEvent · struct · L53-L58 — struct InputEvent
+- InputMask · struct · L60-L64 — struct InputMask
+- request · function · L65-L70 — fn request(write: bool, nr: u8, size: usize) -> libc::c_ulong
+- ioctl · function · L71-L78 — fn ioctl<T>(fd: &File, req: libc::c_ulong, value: &mut T) -> io::Result<()>
+- bit · function · L79-L81 — fn bit(bits: &[u8], key: usize) -> bool
+- mask · function · L82-L93 — fn mask(file: &File, kind: u32, bits: &[u8]) -> io::Result<()>
+- now · function · L94-L104 — fn now() -> io::Result<u64>
+- private_file · function · L105-L114 — fn private_file(path: &Path) -> io::Result<File>
+- Lock · struct · L115-L115 — struct Lock(File);
+- take · function · L117-L124 — fn take(path: &Path) -> io::Result<Self>
+- drop · function · L127-L132 — fn drop(&mut self)
+- Registration · struct · L135-L142 — struct Registration
+- new · function · L144-L183 — fn new(dir: PathBuf) -> io::Result<Self>
+- update · function · L184-L214 — fn update(&mut self, active: Option<bool>, eligible: bool) -> io::Result<()>
+- capture · function · L215-L278 — fn capture(&self, event_stamp: u64) -> io::Result<Option<Lock>>
+- drop · function · L281-L287 — fn drop(&mut self)
+- Decoder · struct · L291-L298 — struct Decoder
+- snapshot · function · L300-L314 — fn snapshot(bits: &[u8; KEY_BYTES]) -> Self
+- resync · function · L317-L326 — fn resync(&mut self, held: &[u8; KEY_BYTES]) -> bool
+- pressed_at · function · L327-L331 — fn pressed_at(&self, key: usize) -> Option<u64>
+- user_shift · function · L335-L347 — fn user_shift(&self) -> bool
+- event · function · L348-L389 — fn event(&mut self, kind: u16, code: u16, value: i32) -> Option<Edge>
+- advertised · function · L392-L402 — fn advertised(text: &str, key: usize) -> io::Result<bool>
+- Device · struct · L404-L407 — struct Device
+- open · function · L409-L456 — fn open(path: &Path) -> io::Result<Option<Self>>
+- resync · function · L459-L468 — fn resync(&mut self) -> io::Result<bool>
+- read · function · L469-L471 — fn read(&mut self) -> io::Result<Option<InputEvent>>
+- read_raw · function · L472-L505 — fn read_raw(&mut self) -> io::Result<Option<InputEvent>>
+- event_node · function · L508-L515 — fn event_node(path: &Path) -> bool
+- allowed_device_path · function · L517-L526 — fn allowed_device_path(path: &Path) -> bool
+- Listener · struct · L528-L541 — pub struct Listener
+- new · function · L543-L584 — pub fn new(allowlist: &[PathBuf]) -> io::Result<Self>
+- set_active · function · L585-L593 — pub fn set_active(&mut self, active: bool)
+- set_eligible · function · L596-L605 — pub fn set_eligible(&mut self, eligible: bool)
+- adopt_held_key · function · L608-L610 — pub fn adopt_held_key(&mut self)
+- adopt · function · L611-L638 — fn adopt(&mut self, edges: &mut Vec<Edge>)
+- ready · function · L639-L641 — pub fn ready(&self) -> bool
+- release · function · L642-L646 — fn release(&mut self, edges: &mut Vec<Edge>)
+- cancel · function · L647-L656 — fn cancel(&mut self, reason: &str, edges: &mut Vec<Edge>)
+- scan · function · L657-L693 — fn scan(&mut self) -> io::Result<()>
+- poll · function · L694-L846 — pub fn poll(&mut self) -> Vec<Edge>
+- tests · module · L850-L850 — mod tests;

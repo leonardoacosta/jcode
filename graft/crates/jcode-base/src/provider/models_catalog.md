@@ -1,0 +1,21 @@
+# crates/jcode-base/src/provider/models_catalog.rs
+
+- CATALOG_REQUEST_TIMEOUT · constant · L6-L6 — const CATALOG_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+- ModelCatalogHttpStatus · struct · L12-L12 — pub struct ModelCatalogHttpStatus(pub u16);
+- fmt · function · L15-L17 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- catalog_status_error · function · L22-L24 — fn catalog_status_error(status: reqwest::StatusCode, context: String) -> anyhow::Error
+- OpenAIModelCatalog · struct · L27-L34 — pub struct OpenAIModelCatalog
+- AnthropicModelCatalog · struct · L37-L40 — pub struct AnthropicModelCatalog
+- parse_anthropic_model_catalog · function · L42-L78 — pub(crate) fn parse_anthropic_model_catalog(data: &serde_json::Value) -> AnthropicModelCatalog
+- parse_openai_model_catalog · function · L80-L195 — pub(crate) fn parse_openai_model_catalog(data: &serde_json::Value) -> OpenAIModelCatalog
+- fetch_openai_model_catalog · function · L198-L218 — pub async fn fetch_openai_model_catalog(access_token: &str) -> Result<OpenAIModelCatalog>
+- fetch_anthropic_model_catalog · function · L220-L235 — pub async fn fetch_anthropic_model_catalog(api_key: &str) -> Result<AnthropicModelCatalog>
+- fetch_anthropic_model_catalog_oauth · function · L237-L265 — pub async fn fetch_anthropic_model_catalog_oauth(
+- fetch_anthropic_model_catalog_with_request · function · L267-L317 — async fn fetch_anthropic_model_catalog_with_request<F>(
+- fetch_openai_api_key_model_catalog · function · L326-L374 — pub async fn fetch_openai_api_key_model_catalog(api_key: &str) -> Result<OpenAIModelCatalog>
+- tests · module · L377-L444 — mod tests
+- openai_catalog_service_tiers_preserve_known_and_unknown · function · L381-L406 — fn openai_catalog_service_tiers_preserve_known_and_unknown()
+- openai_catalog_parses_string_and_object_reasoning_efforts · function · L409-L443 — fn openai_catalog_parses_string_and_object_reasoning_efforts()
+- fetch_openai_context_limits · function · L448-L452 — pub async fn fetch_openai_context_limits(access_token: &str) -> Result<HashMap<String, usize>>
+- status_error_tests · module · L455-L474 — mod status_error_tests
+- catalog_status_error_round_trips_through_anyhow_downcast · function · L459-L473 — fn catalog_status_error_round_trips_through_anyhow_downcast()

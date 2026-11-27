@@ -1,0 +1,21 @@
+# crates/jcode-tui-session-picker/src/lib.rs
+
+- SessionSource · enum · L7-L14 — pub enum SessionSource
+- badge · function · L17-L26 — pub fn badge(self) -> Option<&'static str>
+- SessionFilterMode · enum · L37-L59 — pub enum SessionFilterMode
+- next · function · L62-L79 — pub fn next(self) -> Self
+- previous · function · L81-L96 — pub fn previous(self) -> Self
+- label · function · L98-L113 — pub fn label(self) -> Option<&'static str>
+- SessionInfo · struct · L119-L159 — pub struct SessionInfo
+- ServerGroup · struct · L164-L171 — pub struct ServerGroup
+- PreviewMessage · struct · L175-L185 — pub struct PreviewMessage
+- PickerItem · enum · L189-L203 — pub enum PickerItem
+- session_is_claude_code · function · L205-L207 — pub fn session_is_claude_code(source: SessionSource, id: &str) -> bool
+- session_is_codex · function · L209-L216 — pub fn session_is_codex(source: SessionSource, model: Option<&str>) -> bool
+- session_is_pi · function · L218-L242 — pub fn session_is_pi(
+- session_is_open_code · function · L244-L254 — pub fn session_is_open_code(source: SessionSource, provider_key: Option<&str>) -> bool
+- session_is_cursor · function · L256-L266 — pub fn session_is_cursor(source: SessionSource, provider_key: Option<&str>) -> bool
+- tests · module · L269-L330 — mod tests
+- filter_cycle_puts_cloud_immediately_after_all · function · L273-L293 — fn filter_cycle_puts_cloud_immediately_after_all()
+- resume_target_stable_id_uses_durable_identifier · function · L296-L307 — fn resume_target_stable_id_uses_durable_identifier()
+- source_predicates_cover_provider_and_model_names · function · L310-L329 — fn source_predicates_cover_provider_and_model_names()

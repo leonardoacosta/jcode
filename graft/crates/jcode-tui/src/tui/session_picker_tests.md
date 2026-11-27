@@ -1,0 +1,99 @@
+# crates/jcode-tui/src/tui/session_picker_tests.rs
+
+- resume_canvas · module · L8-L8 — mod resume_canvas;
+- write_session_file_with_mtime · function · L10-L20 — fn write_session_file_with_mtime(
+- line_text · function · L22-L27 — fn line_text(line: &Line<'_>) -> String
+- make_session_for_presence · function · L29-L31 — pub(super) fn make_session_for_presence(id: &str) -> SessionInfo
+- make_session · function · L33-L35 — fn make_session(id: &str, short_name: &str, is_debug: bool, status: SessionStatus) -> SessionInfo
+- identity_search · module · L38-L38 — mod identity_search;
+- make_session_with_flags · function · L40-L116 — fn make_session_with_flags(
+- cloud_session_picker_renders_host_and_preserves_resume_target · function · L119-L151 — fn cloud_session_picker_renders_host_and_preserves_resume_target()
+- loading_and_benchmarks · module · L154-L154 — mod loading_and_benchmarks;
+- test_format_estimated_tokens_uses_compact_units · function · L156-L175 — fn test_format_estimated_tokens_uses_compact_units()
+- test_session_item_uses_single_primary_title_line · function · L178-L218 — fn test_session_item_uses_single_primary_title_line()
+- test_status_inference · function · L221-L227 — fn test_status_inference()
+- test_collect_recent_session_stems_skips_empty_recent_sessions · function · L230-L256 — fn test_collect_recent_session_stems_skips_empty_recent_sessions()
+- test_collect_recent_session_stems_skips_system_context_only_sessions · function · L259-L275 — fn test_collect_recent_session_stems_skips_system_context_only_sessions()
+- test_collect_recent_session_stems_keeps_system_context_with_visible_journal_turn · function · L278-L295 — fn test_collect_recent_session_stems_keeps_system_context_with_visible_journal_turn()
+- test_collect_recent_session_stems_uses_timestamp_as_mtime_tiebreaker · function · L298-L322 — fn test_collect_recent_session_stems_uses_timestamp_as_mtime_tiebreaker()
+- test_collect_recent_session_stems_prefers_recently_modified_long_running_session · function · L325-L349 — fn test_collect_recent_session_stems_prefers_recently_modified_long_running_session()
+- test_toggle_test_sessions_rebuilds_visibility · function · L352-L371 — fn test_toggle_test_sessions_rebuilds_visibility()
+- test_new_grouped_hides_debug_by_default · function · L374-L415 — fn test_new_grouped_hides_debug_by_default()
+- test_new_grouped_without_servers_shows_orphan_sessions · function · L418-L437 — fn test_new_grouped_without_servers_shows_orphan_sessions()
+- test_crash_reason_line_for_crashed_sessions · function · L440-L457 — fn test_crash_reason_line_for_crashed_sessions()
+- test_batch_restore_detection_excludes_already_recovered_parent_sessions · function · L460-L482 — fn test_batch_restore_detection_excludes_already_recovered_parent_sessions()
+- test_grouped_batch_restore_uses_last_active_at_and_includes_debug_sessions · function · L485-L560 — fn test_grouped_batch_restore_uses_last_active_at_and_includes_debug_sessions()
+- test_filter_matches_recent_message_content · function · L563-L579 — fn test_filter_matches_recent_message_content()
+- resume_search_recovers_matches_as_typo_query_grows · function · L582-L596 — fn resume_search_recovers_matches_as_typo_query_grows()
+- wait_for_picker_search · function · L598-L605 — fn wait_for_picker_search(picker: &mut SessionPicker)
+- resume_search_ranks_literal_matches_before_newer_typo_matches · function · L608-L626 — fn resume_search_ranks_literal_matches_before_newer_typo_matches()
+- resume_search_battery_prompt_outranks_incidental_tool_mentions · function · L629-L668 — fn resume_search_battery_prompt_outranks_incidental_tool_mentions()
+- test_loading_preview_refreshes_search_index_for_picker_filtering · function · L671-L716 — fn test_loading_preview_refreshes_search_index_for_picker_filtering()
+- benchmark_resume_search_reports_incremental_timings · function · L719-L772 — fn benchmark_resume_search_reports_incremental_timings()
+- test_filter_mode_cycles_through_requested_session_sources · function · L775-L893 — fn test_filter_mode_cycles_through_requested_session_sources()
+- test_filter_mode_keyboard_shortcuts_cycle_both_directions · function · L896-L926 — fn test_filter_mode_keyboard_shortcuts_cycle_both_directions()
+- make_claude_session · function · L930-L944 — fn make_claude_session(session_id: &str) -> SessionInfo
+- live_claude_takeover_requires_explicit_key_and_confirmation · function · L947-L991 — fn live_claude_takeover_requires_explicit_key_and_confirmation()
+- live_claude_row_has_age_only_and_closed_claude_cannot_take_over · function · L994-L1021 — fn live_claude_row_has_age_only_and_closed_claude_cannot_take_over()
+- test_space_selects_multiple_sessions_and_enter_returns_them · function · L1024-L1083 — fn test_space_selects_multiple_sessions_and_enter_returns_them()
+- saved_placement_expiry_keeps_bookmarks_in_saved_filter · function · L1086-L1124 — fn saved_placement_expiry_keeps_bookmarks_in_saved_filter()
+- saved_placement_recent_bookmark_still_gets_header · function · L1127-L1142 — fn saved_placement_recent_bookmark_still_gets_header()
+- test_rebuild_items_prunes_selected_sessions_hidden_by_filter · function · L1145-L1163 — fn test_rebuild_items_prunes_selected_sessions_hidden_by_filter()
+- test_mouse_scroll_only_affects_hovered_pane_without_changing_focus · function · L1166-L1203 — fn test_mouse_scroll_only_affects_hovered_pane_without_changing_focus()
+- test_keyboard_scroll_uses_sessions_focus_for_paging · function · L1206-L1225 — fn test_keyboard_scroll_uses_sessions_focus_for_paging()
+- test_keyboard_scroll_uses_preview_focus_for_paging · function · L1228-L1244 — fn test_keyboard_scroll_uses_preview_focus_for_paging()
+- make_session_with_many_turns · function · L1248-L1274 — fn make_session_with_many_turns(id: &str, turns: usize) -> SessionInfo
+- picker_buffer · function · L1276-L1283 — fn picker_buffer(picker: &mut SessionPicker, w: u16, h: u16) -> ratatui::buffer::Buffer
+- buffer_text · function · L1285-L1293 — fn buffer_text(picker: &mut SessionPicker, w: u16, h: u16) -> String
+- bench_preview_messages · function · L1310-L1350 — fn bench_preview_messages(turns: usize, assistant_paragraphs: usize) -> Vec<PreviewMessage>
+- bench_large_session · function · L1354-L1364 — fn bench_large_session(id: &str, turns: usize, assistant_paragraphs: usize) -> SessionInfo
+- bench_render_full · function · L1366-L1374 — fn bench_render_full(picker: &mut SessionPicker, w: u16, h: u16) -> std::time::Duration
+- bench_render_preview_only · function · L1376-L1387 — fn bench_render_preview_only(picker: &mut SessionPicker, area: Rect) -> std::time::Duration
+- bench_render_list_only · function · L1389-L1398 — fn bench_render_list_only(picker: &mut SessionPicker, area: Rect) -> std::time::Duration
+- bench_median · function · L1400-L1403 — fn bench_median(mut samples: Vec<std::time::Duration>) -> std::time::Duration
+- benchmark_resume_op_preview_scroll_frame_cost · function · L1412-L1460 — fn benchmark_resume_op_preview_scroll_frame_cost()
+- W · constant · L1413-L1413 — const W: u16 = 120;
+- H · constant · L1414-L1414 — const H: u16 = 40;
+- ITERS · constant · L1429-L1429 — const ITERS: usize = 60;
+- benchmark_resume_op_list_render_scaling · function · L1469-L1503 — fn benchmark_resume_op_list_render_scaling()
+- W · constant · L1470-L1470 — const W: u16 = 48;
+- H · constant · L1471-L1471 — const H: u16 = 40;
+- ITERS · constant · L1489-L1489 — const ITERS: usize = 30;
+- benchmark_resume_op_search_keystroke · function · L1510-L1554 — fn benchmark_resume_op_search_keystroke()
+- benchmark_resume_op_nav_frame_cost · function · L1561-L1589 — fn benchmark_resume_op_nav_frame_cost()
+- W · constant · L1562-L1562 — const W: u16 = 120;
+- H · constant · L1563-L1563 — const H: u16 = 40;
+- ITERS · constant · L1573-L1573 — const ITERS: usize = 40;
+- benchmark_resume_op_construction_cost · function · L1596-L1624 — fn benchmark_resume_op_construction_cost()
+- ITERS · constant · L1609-L1609 — const ITERS: usize = 20;
+- contains_scrollbar_glyph · function · L1627-L1629 — fn contains_scrollbar_glyph(text: &str) -> bool
+- test_preview_transcript_omits_picker_metadata · function · L1632-L1685 — fn test_preview_transcript_omits_picker_metadata()
+- preview_transcript_hash_ignores_picker_metadata · function · L1688-L1701 — fn preview_transcript_hash_ignores_picker_metadata()
+- test_preview_is_left_aligned_independently_of_chat_markdown_context · function · L1704-L1756 — fn test_preview_is_left_aligned_independently_of_chat_markdown_context()
+- test_preview_structured_messages_stay_left_aligned · function · L1759-L1843 — fn test_preview_structured_messages_stay_left_aligned()
+- RestorePin · struct · L1764-L1764 — struct RestorePin;
+- drop · function · L1766-L1769 — fn drop(&mut self)
+- test_preview_pane_shows_scrollbar_when_overflowing · function · L1846-L1857 — fn test_preview_pane_shows_scrollbar_when_overflowing()
+- test_session_list_shows_scrollbar_when_overflowing · function · L1860-L1880 — fn test_session_list_shows_scrollbar_when_overflowing()
+- test_preview_sticky_prompt_header_appears_after_scrolling · function · L1883-L1921 — fn test_preview_sticky_prompt_header_appears_after_scrolling()
+- test_preview_sticky_prompt_header_survives_async_preview_load · function · L1924-L2025 — fn test_preview_sticky_prompt_header_survives_async_preview_load()
+- preview_render_cache_is_reused_across_scroll_and_rebuilt_on_selection_change · function · L2028-L2091 — fn preview_render_cache_is_reused_across_scroll_and_rebuilt_on_selection_change()
+- preview_visible_slice_matches_scroll_position · function · L2094-L2119 — fn preview_visible_slice_matches_scroll_position()
+- test_reseed_grouped_preserves_selection_and_search · function · L2122-L2181 — fn test_reseed_grouped_preserves_selection_and_search()
+- test_reseed_grouped_keeps_selection_when_list_changes · function · L2184-L2221 — fn test_reseed_grouped_keeps_selection_when_list_changes()
+- test_search_mode_held_ctrl_j_k_navigate_session_list · function · L2224-L2267 — fn test_search_mode_held_ctrl_j_k_navigate_session_list()
+- test_search_mode_ctrl_j_k_navigate_session_list · function · L2270-L2314 — fn test_search_mode_ctrl_j_k_navigate_session_list()
+- test_search_mode_ctrl_backspace_deletes_word · function · L2317-L2356 — fn test_search_mode_ctrl_backspace_deletes_word()
+- test_search_mode_ctrl_u_clears_query · function · L2359-L2383 — fn test_search_mode_ctrl_u_clears_query()
+- cloud_session_directory_uses_cloud_icon · function · L2386-L2400 — fn cloud_session_directory_uses_cloud_icon()
+- test_current_dir_highlight_marks_matching_sessions · function · L2403-L2446 — fn test_current_dir_highlight_marks_matching_sessions()
+- test_current_dir_highlight_absent_without_current_dir · function · L2449-L2455 — fn test_current_dir_highlight_absent_without_current_dir()
+- highlight_spans_marks_query_occurrences · function · L2458-L2475 — fn highlight_spans_marks_query_occurrences()
+- highlight_spans_marks_each_token_independently · function · L2478-L2496 — fn highlight_spans_marks_each_token_independently()
+- highlight_spans_without_query_returns_single_span · function · L2499-L2504 — fn highlight_spans_without_query_returns_single_span()
+- search_highlights_matching_title_in_rendered_rows · function · L2507-L2521 — fn search_highlights_matching_title_in_rendered_rows()
+- search_highlights_match_in_preview_and_scrolls_to_it · function · L2524-L2575 — fn search_highlights_match_in_preview_and_scrolls_to_it()
+- preview_without_search_has_no_highlight_and_scrolls_to_bottom · function · L2578-L2601 — fn preview_without_search_has_no_highlight_and_scrolls_to_bottom()
+- project_scope · module · L2604-L2604 — mod project_scope;
+- onboarding · module · L2607-L2607 — mod onboarding;
+- additional_copy_session_identifier_reports_success_and_failure · module · L2610-L2610 — mod additional_copy_session_identifier_reports_success_and_failure;

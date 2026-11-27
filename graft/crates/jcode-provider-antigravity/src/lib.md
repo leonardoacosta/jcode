@@ -1,0 +1,54 @@
+# crates/jcode-provider-antigravity/src/lib.rs
+
+- DEFAULT_FALLBACK_MODEL · constant · L10-L10 — pub const DEFAULT_FALLBACK_MODEL: &str = "gemini-3-flash";
+- AVAILABLE_MODELS · constant · L11-L20 — pub const AVAILABLE_MODELS: &[&str] = &[
+- DEFAULT_ENDPOINT · constant · L30-L30 — pub const DEFAULT_ENDPOINT: &str = "https://daily-cloudcode-pa.googleapis.com";
+- ENDPOINT_ENV · constant · L33-L33 — pub const ENDPOINT_ENV: &str = "JCODE_ANTIGRAVITY_ENDPOINT";
+- VERSION_ENV · constant · L34-L34 — const VERSION_ENV: &str = "JCODE_ANTIGRAVITY_VERSION";
+- ANTIGRAVITY_VERSION · constant · L35-L35 — pub const ANTIGRAVITY_VERSION: &str = "1.18.3";
+- X_GOOG_API_CLIENT · constant · L36-L36 — pub const X_GOOG_API_CLIENT: &str = "google-cloud-sdk vscode_cloudshelleditor/0.1";
+- CATALOG_REFRESH_TTL_HOURS · constant · L37-L37 — const CATALOG_REFRESH_TTL_HOURS: i64 = 6;
+- antigravity_endpoint · function · L49-L56 — pub fn antigravity_endpoint() -> String
+- is_valid_endpoint_base · function · L64-L72 — fn is_valid_endpoint_base(value: &str) -> bool
+- fetch_models_api_url · function · L75-L77 — pub fn fetch_models_api_url() -> String
+- generate_content_api_url · function · L80-L82 — pub fn generate_content_api_url() -> String
+- PersistedCatalog · struct · L85-L103 — pub struct PersistedCatalog
+- catalog_matches_current_endpoint · function · L111-L116 — pub fn catalog_matches_current_endpoint(catalog: &PersistedCatalog) -> bool
+- CatalogSnapshot · struct · L123-L126 — pub struct CatalogSnapshot
+- CatalogModel · struct · L129-L149 — pub struct CatalogModel
+- FetchAvailableModelsResponse · struct · L153-L160 — pub struct FetchAvailableModelsResponse
+- FetchAvailableModelEntry · struct · L164-L181 — struct FetchAvailableModelEntry
+- FetchAvailableQuotaInfo · struct · L185-L190 — struct FetchAvailableQuotaInfo
+- metadata_platform · function · L192-L197 — pub fn metadata_platform() -> &'static str
+- antigravity_version · function · L199-L205 — pub fn antigravity_version() -> String
+- antigravity_user_agent · function · L207-L215 — pub fn antigravity_user_agent() -> String
+- client_metadata_header · function · L217-L222 — pub fn client_metadata_header() -> String
+- remaining_fraction_to_milli · function · L224-L231 — fn remaining_fraction_to_milli(value: Option<f64>) -> Option<u16>
+- merge_antigravity_model_ids · function · L233-L256 — pub fn merge_antigravity_model_ids(models: impl IntoIterator<Item = String>) -> Vec<String>
+- is_known_model · function · L258-L261 — pub fn is_known_model(model: &str) -> bool
+- parse_fetch_available_models_response · function · L263-L411 — pub fn parse_fetch_available_models_response(
+- catalog_model_detail · function · L413-L437 — pub fn catalog_model_detail(model: &CatalogModel) -> String
+- catalog_is_stale · function · L439-L447 — pub fn catalog_is_stale(fetched_at_rfc3339: &str) -> bool
+- model_is_claude · function · L450-L452 — pub fn model_is_claude(model: &str) -> bool
+- is_retryable_empty_turn · function · L464-L497 — pub fn is_retryable_empty_turn(response: &CodeAssistGenerateResponse) -> bool
+- is_pseudo_tool_call_turn · function · L502-L526 — pub fn is_pseudo_tool_call_turn(response: &CodeAssistGenerateResponse) -> bool
+- remap_unsupported_model · function · L543-L548 — pub fn remap_unsupported_model(model: &str) -> &str
+- model_is_gemini · function · L551-L553 — pub fn model_is_gemini(model: &str) -> bool
+- antigravity_dialect · function · L569-L577 — pub fn antigravity_dialect(model: &str) -> &'static jcode_schema_dialect::DialectSpec
+- antigravity_compatible_schema · function · L582-L584 — pub fn antigravity_compatible_schema(schema: &Value, model: &str) -> Value
+- NUMERIC_SCHEMA_BOUND_KEYS · constant · L588-L595 — const NUMERIC_SCHEMA_BOUND_KEYS: &[&str] = &[
+- strip_numeric_schema_bounds · function · L599-L616 — pub fn strip_numeric_schema_bounds(schema: &Value) -> Value
+- flatten_schema_combiners · function · L627-L660 — pub fn flatten_schema_combiners(schema: &Value) -> Value
+- endpoint_tests · module · L663-L821 — mod endpoint_tests
+- ENV_LOCK · constant · L669-L669 — static ENV_LOCK: Mutex<()> = Mutex::new(());
+- antigravity_endpoint_defaults_to_daily_host · function · L672-L686 — fn antigravity_endpoint_defaults_to_daily_host()
+- antigravity_endpoint_honors_env_override_and_trims_trailing_slash · function · L689-L702 — fn antigravity_endpoint_honors_env_override_and_trims_trailing_slash()
+- antigravity_endpoint_ignores_blank_env_override · function · L705-L714 — fn antigravity_endpoint_ignores_blank_env_override()
+- antigravity_endpoint_falls_back_on_scheme_less_override · function · L717-L726 — fn antigravity_endpoint_falls_back_on_scheme_less_override()
+- antigravity_endpoint_falls_back_on_override_with_query_string · function · L729-L741 — fn antigravity_endpoint_falls_back_on_override_with_query_string()
+- antigravity_endpoint_falls_back_on_override_with_fragment · function · L744-L753 — fn antigravity_endpoint_falls_back_on_override_with_fragment()
+- antigravity_endpoint_accepts_valid_http_override · function · L756-L765 — fn antigravity_endpoint_accepts_valid_http_override()
+- sample_catalog · function · L767-L785 — fn sample_catalog(endpoint: Option<&str>) -> PersistedCatalog
+- catalog_with_no_recorded_endpoint_matches_any_current_endpoint · function · L788-L794 — fn catalog_with_no_recorded_endpoint_matches_any_current_endpoint()
+- catalog_stamped_with_current_endpoint_matches · function · L797-L805 — fn catalog_stamped_with_current_endpoint_matches()
+- catalog_stamped_with_stale_endpoint_does_not_match_after_override · function · L808-L820 — fn catalog_stamped_with_stale_endpoint_does_not_match_after_override()

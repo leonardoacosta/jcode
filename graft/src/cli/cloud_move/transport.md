@@ -1,0 +1,25 @@
+# src/cli/cloud_move/transport.rs
+
+- tests · module · L4-L4 — mod tests;
+- SSH_CONNECTION_FAILURE · constant · L19-L19 — const SSH_CONNECTION_FAILURE: i32 = 255;
+- SSH_ATTEMPTS · constant · L20-L20 — const SSH_ATTEMPTS: u32 = 3;
+- ssh_connection_failed · function · L22-L24 — fn ssh_connection_failed(status: &std::process::ExitStatus) -> bool
+- SshDropped · struct · L28-L28 — struct SshDropped(String);
+- fmt · function · L31-L33 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- retry_ssh · function · L39-L58 — pub(super) fn retry_ssh<T>(host: &str, what: &str, mut op: impl FnMut() -> Result<T>) -> Result<T>
+- ssh_retry_message · function · L61-L70 — fn ssh_retry_message(host: &str, attempt: u32, stderr: &[u8]) -> String
+- output_with_ssh_retry · function · L74-L93 — fn output_with_ssh_retry(
+- Target · struct · L96-L100 — pub(crate) struct Target
+- resolve_host · function · L103-L119 — pub(super) fn resolve_host(&self) -> Result<String>
+- remote_binary · function · L121-L136 — pub(super) fn remote_binary(&self) -> String
+- preflight · function · L140-L177 — pub(super) fn preflight(&self, host: &str) -> Result<()>
+- preflight_key · function · L179-L204 — fn preflight_key(&self, host: &str) -> Result<String>
+- preflight_uncached · function · L206-L309 — fn preflight_uncached(&self, host: &str) -> Result<()>
+- prepare_development_binary · function · L314-L408 — fn prepare_development_binary(&self, host: &str, home: &str) -> Result<()>
+- ssh_command · function · L412-L420 — pub(super) fn ssh_command(host: &str) -> Result<Command>
+- run_shell · function · L423-L465 — fn run_shell(&self, host: &str, script: &str) -> Result<()>
+- remote_command · function · L467-L491 — pub(super) fn remote_command(&self, host: &str, args: &[&str]) -> Result<Command>
+- run_remote · function · L494-L526 — pub(super) fn run_remote(
+- send_router_credentials · function · L530-L557 — pub(super) fn send_router_credentials(&self, host: &str, payload: &[u8]) -> Result<()>
+- exchange_credentials · function · L562-L640 — pub(super) fn exchange_credentials(
+- kill_credential_child · function · L644-L650 — fn kill_credential_child(child: &mut std::process::Child)

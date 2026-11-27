@@ -1,0 +1,40 @@
+# crates/jcode-config-types/src/keybindings.rs
+
+- KeybindingPlatform · enum · L29-L34 — pub enum KeybindingPlatform
+- current · function · L38-L44 — pub const fn current() -> Self
+- counterpart · function · L47-L52 — pub const fn counterpart(self) -> Self
+- label · function · L55-L60 — pub const fn label(self) -> &'static str
+- KeybindingProvenance · enum · L69-L77 — pub enum KeybindingProvenance
+- label · function · L81-L87 — pub const fn label(self) -> &'static str
+- is_explicit · function · L91-L93 — pub const fn is_explicit(self) -> bool
+- PlatformDefault · struct · L98-L104 — pub struct PlatformDefault
+- dev · function · L108-L113 — pub const fn dev(binding: &'static str) -> Self
+- ai · function · L116-L121 — pub const fn ai(binding: &'static str) -> Self
+- auto · function · L124-L129 — pub const fn auto(binding: &'static str) -> Self
+- unbound · function · L133-L138 — pub const fn unbound(provenance: KeybindingProvenance) -> Self
+- is_bound · function · L141-L143 — pub fn is_bound(&self) -> bool
+- KeybindingDefault · struct · L148-L157 — pub struct KeybindingDefault
+- platform · function · L161-L166 — pub const fn platform(&self, platform: KeybindingPlatform) -> &PlatformDefault
+- binding_for · function · L169-L171 — pub const fn binding_for(&self, platform: KeybindingPlatform) -> &'static str
+- is_bound_value · function · L176-L185 — pub fn is_bound_value(value: &str) -> bool
+- KEYBINDING_DEFAULTS · constant · L195-L362 — pub const KEYBINDING_DEFAULTS: &[KeybindingDefault] = &[
+- keybinding_default · function · L365-L367 — pub fn keybinding_default(id: &str) -> Option<&'static KeybindingDefault>
+- default_binding · function · L371-L373 — pub fn default_binding(id: &str, platform: KeybindingPlatform) -> Option<&'static str>
+- default_binding_or · function · L377-L381 — pub fn default_binding_or(id: &str, fallback: &'static str) -> String
+- KeybindingIssueKind · enum · L385-L397 — pub enum KeybindingIssueKind
+- KeybindingIssue · struct · L401-L408 — pub struct KeybindingIssue
+- validate_keybinding_defaults · function · L423-L425 — pub fn validate_keybinding_defaults() -> Vec<KeybindingIssue>
+- validate_defaults · function · L427-L455 — fn validate_defaults(defaults: &[KeybindingDefault]) -> Vec<KeybindingIssue>
+- asymmetry_issue · function · L457-L474 — fn asymmetry_issue(entry: &KeybindingDefault, bound_on: KeybindingPlatform) -> KeybindingIssue
+- unconfirmed_automatic_issue · function · L476-L497 — fn unconfirmed_automatic_issue(
+- keybinding_defaults_report · function · L501-L525 — pub fn keybinding_defaults_report() -> String
+- display_binding · function · L527-L533 — fn display_binding(binding: &str) -> String
+- tests · module · L536-L659 — mod tests
+- every_default_id_is_unique · function · L540-L549 — fn every_default_id_is_unique()
+- baseline_defaults_have_no_warnings · function · L552-L560 — fn baseline_defaults_have_no_warnings()
+- detects_asymmetric_binding · function · L563-L578 — fn detects_asymmetric_binding()
+- detects_asymmetric_binding_other_direction · function · L581-L597 — fn detects_asymmetric_binding_other_direction()
+- detects_unconfirmed_auto_translation · function · L600-L617 — fn detects_unconfirmed_auto_translation()
+- confirmed_explicit_per_platform_bindings_are_quiet · function · L620-L629 — fn confirmed_explicit_per_platform_bindings_are_quiet()
+- both_automatic_is_not_flagged_as_unconfirmed · function · L632-L642 — fn both_automatic_is_not_flagged_as_unconfirmed()
+- default_binding_lookup_matches_platform · function · L645-L658 — fn default_binding_lookup_matches_platform()

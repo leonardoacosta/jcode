@@ -1,0 +1,142 @@
+# crates/jcode-base/src/provider/mod.rs
+
+- accessors · module · L1-L1 — mod accessors;
+- account_failover · module · L2-L2 — mod account_failover;
+- account_selection · module · L3-L3 — mod account_selection;
+- activation · module · L4-L4 — pub mod activation;
+- anthropic · module · L5-L5 — pub mod anthropic;
+- antigravity · module · L6-L6 — pub mod antigravity;
+- bedrock · module · L7-L7 — pub mod bedrock;
+- catalog_memo · module · L8-L8 — mod catalog_memo;
+- catalog_refresh · module · L9-L9 — mod catalog_refresh;
+- catalog_routes · module · L10-L10 — mod catalog_routes;
+- catalog_scheduler · module · L13-L13 — pub mod catalog_scheduler;
+- copilot · module · L14-L14 — pub mod copilot;
+- cursor · module · L15-L15 — pub mod cursor;
+- dispatch · module · L16-L16 — mod dispatch;
+- external · module · L17-L17 — pub mod external;
+- failover · module · L18-L18 — mod failover;
+- fingerprint · module · L19-L19 — mod fingerprint;
+- gemini · module · L20-L20 — pub mod gemini;
+- image_clamp · module · L21-L21 — mod image_clamp;
+- jcode · module · L22-L22 — pub mod jcode;
+- models · module · L23-L23 — pub mod models;
+- multi_provider · module · L24-L24 — mod multi_provider;
+- openai · module · L25-L25 — pub mod openai;
+- openai_request · module · L26-L26 — pub mod openai_request;
+- openrouter · module · L27-L27 — pub mod openrouter;
+- pricing · module · L28-L28 — pub mod pricing;
+- registry · module · L29-L29 — mod registry;
+- route_builders · module · L30-L30 — mod route_builders;
+- routing · module · L31-L31 — mod routing;
+- selection · module · L32-L32 — mod selection;
+- startup · module · L33-L33 — mod startup;
+- state · module · L34-L34 — mod state;
+- stream_start · module · L35-L35 — mod stream_start;
+- stream_timeout · module · L36-L36 — mod stream_timeout;
+- ACTIVE_PROVIDER · constant · L100-L100 — static ACTIVE_PROVIDER: RwLock<Option<Arc<dyn Provider>>> = RwLock::new(None);
+- bedrock_promoted_default · function · L104-L115 — fn bedrock_promoted_default(current: &str, routes: &[ModelRoute]) -> Option<String>
+- promote_bedrock_placeholder_default · function · L117-L126 — fn promote_bedrock_placeholder_default(bedrock: &bedrock::BedrockProvider)
+- new_bedrock_provider · function · L130-L134 — pub(crate) fn new_bedrock_provider() -> bedrock::BedrockProvider
+- set_active_provider · function · L139-L143 — pub fn set_active_provider(provider: Arc<dyn Provider>)
+- active_provider_fork · function · L148-L154 — pub fn active_provider_fork() -> Option<Arc<dyn Provider>>
+- request_compression_mode · function · L166-L170 — pub fn request_compression_mode() -> jcode_provider_core::request_compression::CompressionMode
+- stores_reasoning_content_for_context · function · L179-L187 — pub fn stores_reasoning_content_for_context(provider_name: &str) -> bool
+- direct_profile_routes · module · L190-L190 — mod direct_profile_routes;
+- jcode_subscription_model_prefix · function · L202-L211 — pub(crate) fn jcode_subscription_model_prefix(model: &str) -> Option<&str>
+- session_restore · module · L215-L215 — mod session_restore;
+- GROK_BUILD_PROFILE_ID · constant · L262-L262 — pub(crate) const GROK_BUILD_PROFILE_ID: &str = "grok-build";
+- MultiProvider · struct · L265-L326 — pub struct MultiProvider
+- bound_session_id · function · L329-L334 — fn bound_session_id(&self) -> Option<String>
+- bind_provider_session · function · L336-L347 — fn bind_provider_session(&self, provider: &dyn Provider)
+- same_provider_account_candidates · function · L350-L352 — fn same_provider_account_candidates(provider: ActiveProvider) -> Vec<String>
+- try_auto_banked_reset · function · L354-L413 — async fn try_auto_banked_reset(
+- auto_reset_route_prompt · function · L416-L432 — fn auto_reset_route_prompt(
+- complete_with_auto_reset · function · L435-L484 — async fn complete_with_auto_reset(
+- complete_with_failover · function · L486-L768 — async fn complete_with_failover(
+- record_provider_activity · function · L774-L779 — fn record_provider_activity(&self, provider: ActiveProvider)
+- activity_source_key · function · L786-L838 — fn activity_source_key(&self, provider: ActiveProvider) -> String
+- openai_compatible_model_prefix · function · L840-L854 — fn openai_compatible_model_prefix(
+- openai_compatible_profile_owning_model · function · L863-L896 — fn openai_compatible_profile_owning_model(
+- active_openai_compatible_profile_serving_model · function · L901-L918 — fn active_openai_compatible_profile_serving_model(
+- named_provider_profile_model_prefix · function · L923-L942 — fn named_provider_profile_model_prefix(model: &str) -> Option<(String, String)>
+- set_model_on_named_provider_profile · function · L946-L1005 — fn set_model_on_named_provider_profile(&self, profile_name: &str, model: &str) -> Result<()>
+- set_model_on_provider · function · L1007-L1009 — fn set_model_on_provider(&self, provider: ActiveProvider, model: &str) -> Result<()>
+- set_model_on_jcode_subscription · function · L1017-L1048 — fn set_model_on_jcode_subscription(&self, model: &str) -> Result<()>
+- set_model_on_provider_with_credential_modes · function · L1050-L1260 — fn set_model_on_provider_with_credential_modes(
+- set_model_on_openai_compatible_profile · function · L1262-L1308 — fn set_model_on_openai_compatible_profile(
+- should_replace_openrouter_after_auth_change · function · L1310-L1328 — fn should_replace_openrouter_after_auth_change(
+- handle_auth_changed · function · L1330-L1524 — fn handle_auth_changed(&self, preserve_existing_openrouter_profile: bool)
+- set_config_default_model · function · L1526-L1631 — pub(super) fn set_config_default_model(
+- fork_model_switch_request · function · L1633-L1692 — fn fork_model_switch_request(&self, active: ActiveProvider, current_model: &str) -> String
+- default · function · L1696-L1698 — fn default() -> Self
+- set_input_compression_profile · function · L1703-L1715 — fn set_input_compression_profile(
+- set_session_id · function · L1717-L1722 — fn set_session_id(&self, session_id: &str)
+- catalog_sharing_identity · function · L1724-L1735 — fn catalog_sharing_identity(&self) -> Option<String>
+- prewarm · function · L1736-L1753 — async fn prewarm(&self, tools: &[ToolDefinition], system_static: &str)
+- complete · function · L1755-L1769 — async fn complete(
+- complete_split · function · L1772-L1790 — async fn complete_split(
+- name · function · L1792-L1803 — fn name(&self) -> &str
+- display_name · function · L1805-L1816 — fn display_name(&self) -> String
+- model · function · L1818-L1857 — fn model(&self) -> String
+- explicit_provider_pin_for_current_model · function · L1859-L1864 — fn explicit_provider_pin_for_current_model(&self) -> Option<String>
+- active_resolved_credential · function · L1866-L1902 — fn active_resolved_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- credential_mode · function · L1904-L1917 — fn credential_mode(&self) -> CredentialMode
+- set_credential_mode · function · L1919-L1938 — fn set_credential_mode(&self, mode: CredentialMode) -> Result<()>
+- oauth_account_label · function · L1940-L1942 — fn oauth_account_label(&self) -> Option<String>
+- serving_oauth_account_label · function · L1944-L1954 — fn serving_oauth_account_label(&self) -> Option<String>
+- active_oauth_account_email · function · L1956-L1968 — fn active_oauth_account_email(&self) -> Option<String>
+- set_oauth_account · function · L1970-L1990 — fn set_oauth_account(&self, label: Option<&str>) -> Result<()>
+- active_explicit_credential · function · L1992-L2011 — fn active_explicit_credential(&self) -> Option<jcode_provider_core::ResolvedCredential>
+- supports_image_input · function · L2013-L2048 — fn supports_image_input(&self) -> bool
+- supports_deferred_tools · function · L2050-L2063 — fn supports_deferred_tools(&self) -> bool
+- set_model · function · L2065-L2232 — fn set_model(&self, model: &str) -> Result<()>
+- set_route_selection · function · L2234-L2250 — fn set_route_selection(&self, selection: &RouteSelection) -> Result<()>
+- available_models · function · L2252-L2257 — fn available_models(&self) -> Vec<&'static str>
+- available_models_for_switching · function · L2259-L2297 — fn available_models_for_switching(&self) -> Vec<String>
+- available_models_display · function · L2299-L2301 — fn available_models_display(&self) -> Vec<String>
+- available_providers_for_model · function · L2303-L2310 — fn available_providers_for_model(&self, model: &str) -> Vec<String>
+- provider_details_for_model · function · L2312-L2319 — fn provider_details_for_model(&self, model: &str) -> Vec<(String, String)>
+- preferred_provider · function · L2321-L2334 — fn preferred_provider(&self) -> Option<String>
+- model_catalog_snapshot · function · L2336-L2344 — fn model_catalog_snapshot(&self) -> jcode_provider_core::ModelCatalogSnapshot
+- model_routes · function · L2346-L2348 — fn model_routes(&self) -> Vec<ModelRoute>
+- model_capabilities_need_refresh · function · L2350-L2355 — fn model_capabilities_need_refresh(&self) -> bool
+- prefetch_models · function · L2357-L2359 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L2361-L2371 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- on_auth_changed · function · L2373-L2375 — fn on_auth_changed(&self)
+- on_auth_changed_preserve_current_provider · function · L2377-L2379 — fn on_auth_changed_preserve_current_provider(&self)
+- auth_model_refresh_pending · function · L2381-L2385 — fn auth_model_refresh_pending(&self) -> bool
+- invalidate_credentials · function · L2387-L2394 — async fn invalidate_credentials(&self)
+- handles_tools_internally · function · L2396-L2419 — fn handles_tools_internally(&self) -> bool
+- reasoning_effort · function · L2421-L2433 — fn reasoning_effort(&self) -> Option<String>
+- set_reasoning_effort · function · L2435-L2457 — fn set_reasoning_effort(&self, effort: &str) -> Result<()>
+- available_efforts · function · L2459-L2479 — fn available_efforts(&self) -> Vec<&'static str>
+- service_tier · function · L2481-L2488 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L2490-L2508 — fn set_service_tier(&self, service_tier: &str) -> Result<()>
+- available_service_tiers · function · L2510-L2526 — fn available_service_tiers(&self) -> Vec<&'static str>
+- native_compaction_mode · function · L2528-L2535 — fn native_compaction_mode(&self) -> Option<String>
+- native_compaction_threshold_tokens · function · L2537-L2544 — fn native_compaction_threshold_tokens(&self) -> Option<usize>
+- transport · function · L2546-L2551 — fn transport(&self) -> Option<String>
+- set_transport · function · L2553-L2563 — fn set_transport(&self, transport: &str) -> Result<()>
+- available_transports · function · L2565-L2575 — fn available_transports(&self) -> Vec<&'static str>
+- supports_compaction · function · L2577-L2609 — fn supports_compaction(&self) -> bool
+- uses_jcode_compaction · function · L2611-L2640 — fn uses_jcode_compaction(&self) -> bool
+- native_compact · function · L2642-L2738 — async fn native_compact(
+- set_premium_mode · function · L2740-L2744 — fn set_premium_mode(&self, mode: PremiumMode)
+- premium_mode · function · L2746-L2752 — fn premium_mode(&self) -> PremiumMode
+- drain_startup_notices · function · L2754-L2761 — fn drain_startup_notices(&self) -> Vec<String>
+- context_window · function · L2763-L2801 — fn context_window(&self) -> usize
+- fork · function · L2803-L2918 — fn fork(&self) -> Arc<dyn Provider>
+- fork_for_new_session · function · L2920-L2947 — fn fork_for_new_session(&self) -> Arc<dyn Provider>
+- native_result_sender · function · L2949-L2967 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- switch_active_provider_to · function · L2969-L2981 — fn switch_active_provider_to(&self, provider: &str) -> Result<()>
+- cache_ttl_for_provider · function · L2986-L2988 — pub fn cache_ttl_for_provider(provider: &str) -> Option<u64>
+- cache_ttl_is_estimate · function · L2993-L3000 — pub fn cache_ttl_is_estimate(provider: &str) -> bool
+- cache_ttl_for_provider_model · function · L3006-L3033 — pub fn cache_ttl_for_provider_model(provider: &str, model: Option<&str>) -> Option<u64>
+- tests · module · L3036-L3036 — mod tests;
+- bedrock_placeholder_default_tests · module · L3039-L3158 — mod bedrock_placeholder_default_tests
+- route · function · L3042-L3052 — fn route(model: &str, available: bool) -> ModelRoute
+- bedrock_placeholder_promotes_to_newest_usable_claude · function · L3055-L3068 — fn bedrock_placeholder_promotes_to_newest_usable_claude()
+- bedrock_placeholder_skips_unusable_routes · function · L3071-L3083 — fn bedrock_placeholder_skips_unusable_routes()
+- new_bedrock_provider_starts_on_newest_cached_flagship · function · L3089-L3148 — fn new_bedrock_provider_starts_on_newest_cached_flagship()
+- bedrock_explicit_model_is_never_replaced · function · L3151-L3157 — fn bedrock_explicit_model_is_never_replaced()

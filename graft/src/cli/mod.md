@@ -1,0 +1,33 @@
+# src/cli/mod.rs
+
+- account · module · L1-L1 — pub mod account;
+- acp · module · L2-L2 — pub mod acp;
+- args · module · L3-L3 — pub mod args;
+- auth_import · module · L4-L4 — pub mod auth_import;
+- auth_test · module · L5-L5 — pub mod auth_test;
+- cloud_ephemeral · module · L6-L6 — pub mod cloud_ephemeral;
+- cloud_managed · module · L7-L7 — pub mod cloud_managed;
+- cloud_move · module · L8-L8 — pub mod cloud_move;
+- cloud_mux · module · L10-L10 — pub mod cloud_mux;
+- cloud_runtime · module · L11-L11 — pub mod cloud_runtime;
+- commands · module · L12-L12 — pub mod commands;
+- companion_autostart · module · L13-L13 — pub mod companion_autostart;
+- compatible_runtime · module · L14-L14 — pub mod compatible_runtime;
+- debug · module · L15-L15 — pub mod debug;
+- dispatch · module · L16-L16 — pub mod dispatch;
+- hibernate_wait · module · L17-L17 — pub mod hibernate_wait;
+- hot_exec · module · L18-L18 — pub mod hot_exec;
+- login · module · L19-L19 — pub mod login;
+- macos_notification_broker · module · L20-L20 — pub mod macos_notification_broker;
+- mcp · module · L21-L21 — pub mod mcp;
+- output · module · L22-L22 — pub mod output;
+- proctitle · module · L23-L23 — pub mod proctitle;
+- provider_doctor · module · L24-L24 — pub mod provider_doctor;
+- provider_init · module · L25-L25 — pub mod provider_init;
+- selfdev · module · L26-L26 — pub mod selfdev;
+- ssh · module · L27-L27 — pub mod ssh;
+- ssh_transport · module · L29-L29 — pub mod ssh_transport;
+- startup · module · L30-L30 — pub mod startup;
+- telemetry · module · L31-L31 — pub mod telemetry;
+- terminal · module · L32-L32 — pub mod terminal;
+- tui_launch · module · L33-L33 — pub mod tui_launch;

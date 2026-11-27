@@ -1,0 +1,36 @@
+# crates/jcode-base/src/account_login.rs
+
+- AccountLoginError · enum · L20-L28 — pub enum AccountLoginError
+- is_temporary · function · L31-L39 — pub fn is_temporary(&self) -> bool
+- fmt · function · L43-L59 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- from · function · L65-L75 — fn from(error: AccountApiError) -> Self
+- LoginFlow · struct · L80-L87 — pub struct LoginFlow
+- auth_url · function · L90-L92 — pub fn auth_url(&self) -> &str
+- interval · function · L93-L95 — pub fn interval(&self) -> Duration
+- expires_in · function · L96-L98 — pub fn expires_in(&self) -> Duration
+- is_expired · function · L99-L101 — pub fn is_expired(&self) -> bool
+- fmt · function · L105-L110 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- ApprovedLogin · struct · L116-L122 — pub struct ApprovedLogin
+- fmt · function · L125-L127 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- LoginPoll · enum · L131-L137 — pub enum LoginPoll
+- start · function · L141-L143 — pub async fn start(client: &reqwest::Client) -> Result<LoginFlow, AccountLoginError>
+- start_with_api_base · function · L150-L168 — pub async fn start_with_api_base(
+- public_auth_url · function · L170-L198 — fn public_auth_url(value: &str) -> Result<String, AccountLoginError>
+- poll · function · L202-L230 — pub async fn poll(
+- EmailLogin · struct · L235-L242 — pub struct EmailLogin
+- email · function · L245-L247 — pub fn email(&self) -> &str
+- code_length · function · L248-L250 — pub fn code_length(&self) -> usize
+- expires_in · function · L251-L253 — pub fn expires_in(&self) -> Duration
+- is_expired · function · L254-L256 — pub fn is_expired(&self) -> bool
+- fmt · function · L260-L264 — fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+- EmailCodeResult · enum · L268-L272 — pub enum EmailCodeResult
+- LOGIN_EMAIL_SENDER · constant · L275-L275 — pub const LOGIN_EMAIL_SENDER: &str = "login@solosystems.dev";
+- gmail_search_link · function · L279-L297 — pub fn gmail_search_link(email: &str) -> String
+- email_start_error_message · function · L300-L311 — pub fn email_start_error_message(error: &AccountLoginError) -> String
+- start_email · function · L314-L319 — pub async fn start_email(
+- start_email_with_api_base · function · L321-L336 — pub async fn start_email_with_api_base(
+- verify_email · function · L339-L367 — pub async fn verify_email(
+- save · function · L372-L382 — pub fn save(approved: &ApprovedLogin) -> Result<(), AccountLoginError>
+- has_credentials · function · L384-L386 — pub fn has_credentials() -> bool
+- current_account · function · L390-L404 — pub async fn current_account(
+- tests · module · L407-L407 — mod tests;

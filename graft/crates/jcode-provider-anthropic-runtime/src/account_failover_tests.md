@@ -1,0 +1,39 @@
+# crates/jcode-provider-anthropic-runtime/src/account_failover_tests.rs
+
+- RetryDecision · enum · L7-L11 — enum RetryDecision
+- ExhaustionApiTarget · struct · L14-L14 — struct ExhaustionApiTarget;
+- complete · function · L18-L26 — async fn complete(
+- name · function · L27-L29 — fn name(&self) -> &str
+- model · function · L30-L32 — fn model(&self) -> String
+- credential_mode · function · L33-L35 — fn credential_mode(&self) -> jcode_provider_core::CredentialMode
+- set_credential_mode · function · L36-L41 — fn set_credential_mode(
+- set_model · function · L42-L48 — fn set_model(&self, model: &str) -> anyhow::Result<()>
+- fork · function · L49-L51 — fn fork(&self) -> Arc<dyn jcode_provider_core::Provider>
+- ExhaustionTargetGuard · struct · L54-L54 — struct ExhaustionTargetGuard(Arc<std::sync::atomic::AtomicBool>);
+- drop · function · L56-L58 — fn drop(&mut self)
+- RouterCase · struct · L62-L66 — struct RouterCase
+- oauth_http_retry_decision · function · L71-L77 — fn oauth_http_retry_decision(
+- http_retry_decision · function · L79-L94 — fn http_retry_decision(
+- http_retry_decision_with_policy · function · L96-L633 — fn http_retry_decision_with_policy(
+- RestoreEnvironment · struct · L107-L107 — struct RestoreEnvironment(Vec<(&'static str, Option<std::ffi::OsString>)>);
+- drop · function · L109-L117 — fn drop(&mut self)
+- RestoreOverride · struct · L231-L231 — struct RestoreOverride(Option<String>);
+- drop · function · L233-L235 — fn drop(&mut self)
+- RestoreRouterEnv · struct · L347-L347 — struct RestoreRouterEnv(Option<std::ffi::OsString>, Option<std::ffi::OsString>);
+- drop · function · L349-L363 — fn drop(&mut self)
+- rate_limit_http_response · function · L635-L641 — fn rate_limit_http_response() -> String
+- oauth_short_throttle_retries_same_account_before_rotation · function · L644-L650 — fn oauth_short_throttle_retries_same_account_before_rotation()
+- oauth_short_throttle_retry_can_be_disabled · function · L653-L659 — fn oauth_short_throttle_retry_can_be_disabled()
+- oauth_exhausted_usage_never_waits_even_without_alternate · function · L662-L674 — fn oauth_exhausted_usage_never_waits_even_without_alternate()
+- recoverable_throttle_policy_is_bounded_and_not_exhaustion · function · L677-L702 — fn recoverable_throttle_policy_is_bounded_and_not_exhaustion()
+- oauth_account_quota_yield_retains_shared_kind_remedy · function · L705-L717 — fn oauth_account_quota_yield_retains_shared_kind_remedy()
+- oauth_account_failover_yields_http_429_before_sixty_second_retry · function · L720-L728 — fn oauth_account_failover_yields_http_429_before_sixty_second_retry()
+- oauth_account_failover_router_switches_http_429_to_second_account_200 · function · L731-L751 — fn oauth_account_failover_router_switches_http_429_to_second_account_200()
+- oauth_account_failover_router_stops_cached_refresh_rejection · function · L754-L776 — fn oauth_account_failover_router_stops_cached_refresh_rejection()
+- oauth_account_failover_router_reports_exhaustion_after_distinct_tokens_each_receive_429 · function · L779-L799 — fn oauth_account_failover_router_reports_exhaustion_after_distinct_tokens_each_receive_429()
+- oauth_account_failover_yields_http_429_when_alternate_is_cooling_down · function · L802-L809 — fn oauth_account_failover_yields_http_429_when_alternate_is_cooling_down()
+- oauth_account_failover_disabled_keeps_http_rate_limit_retry · function · L812-L817 — fn oauth_account_failover_disabled_keeps_http_rate_limit_retry()
+- oauth_account_failover_single_account_keeps_http_rate_limit_retry · function · L820-L825 — fn oauth_account_failover_single_account_keeps_http_rate_limit_retry()
+- oauth_account_failover_preserves_transport_server_retry · function · L828-L833 — fn oauth_account_failover_preserves_transport_server_retry()
+- oauth_account_failover_does_not_rotate_after_partial_output · function · L836-L849 — fn oauth_account_failover_does_not_rotate_after_partial_output()
+- oauth_account_failover_preserves_retry_for_accepted_http_early_sse_quota · function · L852-L862 — fn oauth_account_failover_preserves_retry_for_accepted_http_early_sse_quota()

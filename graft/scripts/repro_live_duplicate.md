@@ -1,0 +1,27 @@
+# scripts/repro_live_duplicate.py
+
+- _recv_debug_response · function · L67-L85 — def _recv_debug_response(sock: socket.socket, timeout: float) -> dict
+- dbg · function · L88-L100 — def dbg(debug_sock: Path, command: str, session_id: str | None = None, timeout: float = 30.0) -> dict
+- dbg_output · function · L103-L110 — def dbg_output(debug_sock: Path, command: str, session_id: str | None = None, timeout: float = 30.0) -> str
+- wait_for_socket · function · L113-L126 — def wait_for_socket(path: Path, timeout_s: float = 20.0) -> None
+- LiveClient · class · L155-L222 — class LiveClient
+- _pump · method · L163-L192 — def _pump(self) -> None
+- start_pump · method · L194-L196 — def start_pump(self) -> None
+- alive · method · L198-L199 — def alive(self) -> bool
+- send_keys · method · L201-L202 — def send_keys(self, data: bytes) -> None
+- shutdown · method · L204-L222 — def shutdown(self) -> None
+- launch_client · function · L225-L242 — def launch_client(binary: str, env: dict, session_id: str, name: str) -> LiveClient
+- SeededSession · class · L250-L252 — class SeededSession
+- now_iso · function · L255-L256 — def now_iso() -> str
+- make_stored_message · function · L259-L269 — def make_stored_message(role: str, blocks: list[dict], display_role: str | None = None) -> dict
+- seed_session · function · L272-L341 — def seed_session(home: Path, working_dir: str, turns: int = 3) -> SeededSession
+- mark · function · L284-L287 — def mark(tag: str) -> str
+- count_markers_in_display · function · L348-L360 — def count_markers_in_display(history_json: str, markers: dict[str, int]) -> dict[str, int]
+- count_markers_in_text · function · L363-L364 — def count_markers_in_text(text: str, markers: dict[str, int]) -> dict[str, int]
+- StageResult · class · L368-L373 — class StageResult
+- diff_stage · function · L376-L385 — def diff_stage(stage: str, client_name: str, history_json: str, markers: dict[str, int]) -> StageResult
+- settle · function · L392-L407 — def settle(debug_sock: Path, session_id: str, client_name_hint: str, verbose: bool, attempts: int = 60) -> bool
+- read_client_history · function · L410-L411 — def read_client_history(debug_sock: Path, session_id: str) -> str
+- run_self_test · function · L414-L433 — def run_self_test(debug_sock: Path, session_id: str, verbose: bool) -> bool
+- main · function · L436-L624 — def main() -> int
+- report_stage · function · L627-L635 — def report_stage(r: StageResult, verbose: bool) -> None

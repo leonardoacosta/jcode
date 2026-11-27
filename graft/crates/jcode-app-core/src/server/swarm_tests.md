@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/server/swarm_tests.rs
+
+- inline_worker_environment_is_removed_when_its_scope_ends · function · L19-L32 — fn inline_worker_environment_is_removed_when_its_scope_ends()
+- plan_item · function · L34-L45 — fn plan_item(id: &str, content: &str) -> PlanItem
+- truncate_detail_collapses_whitespace_and_ellipsizes · function · L48-L50 — fn truncate_detail_collapses_whitespace_and_ellipsizes()
+- summarize_plan_items_limits_output · function · L53-L64 — fn summarize_plan_items_limits_output()
+- parse_swarm_tasks_accepts_wrapped_json · function · L67-L75 — fn parse_swarm_tasks_accepts_wrapped_json()
+- swarm_member · function · L77-L108 — fn swarm_member(
+- event_fanout_moves_payload_to_final_live_receiver · function · L111-L136 — fn event_fanout_moves_payload_to_final_live_receiver()
+- swarm_status_reaches_attachments_and_headless_fallback_once · function · L139-L175 — async fn swarm_status_reaches_attachments_and_headless_fallback_once()
+- benchmark_swarm_payload_fanout · function · L179-L243 — async fn benchmark_swarm_payload_fanout()
+- live_status_fanout_projects_worker_events_into_broadcast · function · L246-L432 — async fn live_status_fanout_projects_worker_events_into_broadcast()
+- member_with_parent · function · L434-L438 — fn member_with_parent(session_id: &str, parent: Option<&str>) -> SwarmMember
+- idle_spawned_worker_reap_selects_only_finished_idle_spawned_agents · function · L441-L495 — fn idle_spawned_worker_reap_selects_only_finished_idle_spawned_agents()
+- idle_worker_reap_window_env_zero_disables · function · L498-L517 — fn idle_worker_reap_window_env_zero_disables()
+- status_broadcast_keeps_live_and_recently_terminal_members_only · function · L520-L539 — fn status_broadcast_keeps_live_and_recently_terminal_members_only()
+- swarm_depth_and_ancestry_follow_report_back_chain · function · L542-L565 — fn swarm_depth_and_ancestry_follow_report_back_chain()
+- swarm_ancestry_guards_against_cycles · function · L568-L575 — fn swarm_ancestry_guards_against_cycles()
+- broadcast_swarm_plan_with_previous_includes_newly_ready_ids · function · L578-L660 — async fn broadcast_swarm_plan_with_previous_includes_newly_ready_ids()
+- swarm_plan_broadcast_versions_can_invert_on_one_member_channel · function · L684-L764 — async fn swarm_plan_broadcast_versions_can_invert_on_one_member_channel()
+- swarm_status_immediate_broadcasts_preserve_snapshot_order · function · L770-L816 — async fn swarm_status_immediate_broadcasts_preserve_snapshot_order()
+- stale_participants_starve_live_members_of_plan_broadcasts · function · L825-L866 — async fn stale_participants_starve_live_members_of_plan_broadcasts()
+- remove_session_from_swarm_reassigns_to_non_headless_member · function · L869-L978 — async fn remove_session_from_swarm_reassigns_to_non_headless_member()
+- remove_session_reparents_children_to_live_grandparent · function · L981-L1025 — async fn remove_session_reparents_children_to_live_grandparent()
+- remove_session_reparents_children_to_coordinator_when_no_grandparent · function · L1028-L1074 — async fn remove_session_reparents_children_to_coordinator_when_no_grandparent()
+- departing_sole_owner_keeps_its_workers_owned · function · L1077-L1118 — async fn departing_sole_owner_keeps_its_workers_owned()
+- owner_notifications · module · L1121-L1121 — mod owner_notifications;
+- swarm_detail_preview_redacts_a_credential_at_the_start_of_a_request · function · L1124-L1154 — fn swarm_detail_preview_redacts_a_credential_at_the_start_of_a_request()
+- swarm_task_label_redacts_credentials · function · L1157-L1165 — async fn swarm_task_label_redacts_credentials()

@@ -1,0 +1,168 @@
+# crates/jcode-tui-mermaid/src/lib.rs
+
+- active · module · L17-L17 — mod active;
+- debug_support · module · L19-L19 — mod debug_support;
+- svg · module · L21-L21 — mod svg;
+- RenderProfile · struct · L66-L68 — pub(crate) struct RenderProfile
+- from_preferred_aspect_ratio · function · L71-L78 — fn from_preferred_aspect_ratio(ratio: Option<f32>) -> Self
+- preferred_aspect_ratio · function · L80-L83 — fn preferred_aspect_ratio(self) -> Option<f32>
+- cache_suffix · function · L86-L89 — fn cache_suffix(self) -> Option<String>
+- current_render_profile · function · L96-L98 — fn current_render_profile() -> RenderProfile
+- current_preferred_aspect_ratio_bucket · function · L100-L102 — pub fn current_preferred_aspect_ratio_bucket() -> Option<u16>
+- preferred_aspect_ratio_bucket · function · L104-L106 — pub fn preferred_aspect_ratio_bucket(ratio: Option<f32>) -> Option<u16>
+- RenderProfileGuard · struct · L108-L110 — struct RenderProfileGuard
+- drop · function · L113-L115 — fn drop(&mut self)
+- push_render_profile · function · L118-L125 — fn push_render_profile(profile: RenderProfile) -> RenderProfileGuard
+- with_preferred_aspect_ratio · function · L127-L130 — pub fn with_preferred_aspect_ratio<R>(ratio: Option<f32>, f: impl FnOnce() -> R) -> R
+- DiagramInfo · struct · L133-L142 — pub struct DiagramInfo
+- ProcessMemorySnapshot · struct · L145-L149 — pub struct ProcessMemorySnapshot
+- LOG_INFO_HOOK · constant · L151-L151 — static LOG_INFO_HOOK: OnceLock<fn(&str)> = OnceLock::new();
+- LOG_WARN_HOOK · constant · L152-L152 — static LOG_WARN_HOOK: OnceLock<fn(&str)> = OnceLock::new();
+- RENDER_COMPLETED_HOOK · constant · L153-L153 — static RENDER_COMPLETED_HOOK: OnceLock<fn()> = OnceLock::new();
+- MEMORY_SNAPSHOT_HOOK · constant · L154-L154 — static MEMORY_SNAPSHOT_HOOK: OnceLock<fn() -> ProcessMemorySnapshot> = OnceLock::new();
+- set_log_hooks · function · L156-L159 — pub fn set_log_hooks(info: fn(&str), warn: fn(&str))
+- set_render_completed_hook · function · L161-L163 — pub fn set_render_completed_hook(hook: fn())
+- set_memory_snapshot_hook · function · L165-L167 — pub fn set_memory_snapshot_hook(hook: fn() -> ProcessMemorySnapshot)
+- log_info · function · L169-L173 — pub(crate) fn log_info(message: &str)
+- log_warn · function · L175-L179 — pub(crate) fn log_warn(message: &str)
+- notify_render_completed · function · L181-L185 — pub(crate) fn notify_render_completed()
+- process_memory_snapshot · function · L187-L192 — pub(crate) fn process_memory_snapshot() -> ProcessMemorySnapshot
+- panic_payload_to_string · function · L194-L202 — pub(crate) fn panic_payload_to_string(payload: &(dyn std::any::Any + Send)) -> String
+- model · module · L211-L211 — mod model;
+- cache_render · module · L219-L219 — mod cache_render;
+- content_render · module · L221-L221 — mod content_render;
+- inline_image · module · L223-L223 — mod inline_image;
+- kitty_classic · module · L225-L225 — mod kitty_classic;
+- runtime · module · L227-L227 — mod runtime;
+- viewport_render · module · L229-L229 — mod viewport_render;
+- widget_render · module · L231-L231 — mod widget_render;
+- MeasuredSvgDimensions · struct · L287-L292 — struct MeasuredSvgDimensions
+- measure_svg_dimensions_from_svg · function · L298-L334 — fn measure_svg_dimensions_from_svg(
+- render_svg_for_png · function · L340-L354 — fn render_svg_for_png(
+- render_svg_for_png · function · L361-L398 — fn render_svg_for_png(
+- render_size_backend · function · L400-L406 — fn render_size_backend() -> &'static str
+- RENDER_SUPERSAMPLE · constant · L411-L411 — const RENDER_SUPERSAMPLE: f64 = 1.1;
+- DEFAULT_RENDER_WIDTH · constant · L412-L412 — const DEFAULT_RENDER_WIDTH: u32 = 2400;
+- DEFAULT_RENDER_HEIGHT · constant · L413-L413 — const DEFAULT_RENDER_HEIGHT: u32 = 1800;
+- DEFAULT_PICKER_FONT_SIZE · constant · L414-L414 — const DEFAULT_PICKER_FONT_SIZE: (u16, u16) = (8, 16);
+- VIDEO_EXPORT_MODE · constant · L419-L419 — static VIDEO_EXPORT_MODE: AtomicBool = AtomicBool::new(false);
+- PICKER · constant · L423-L423 — static PICKER: OnceLock<Option<Picker>> = OnceLock::new();
+- TMUX_NATIVE_SIXEL · constant · L426-L426 — static TMUX_NATIVE_SIXEL: OnceLock<bool> = OnceLock::new();
+- CACHE_EVICTED · constant · L429-L429 — static CACHE_EVICTED: OnceLock<()> = OnceLock::new();
+- RENDER_CACHE · constant · L432-L433 — static RENDER_CACHE: LazyLock<Mutex<MermaidCache>> =
+- DEFERRED_RENDER_EPOCH · constant · L438-L438 — static DEFERRED_RENDER_EPOCH: AtomicU64 = AtomicU64::new(1);
+- MERMAID_SOURCE_BY_HASH · constant · L442-L443 — static MERMAID_SOURCE_BY_HASH: LazyLock<Mutex<HashMap<u64, String>>> =
+- MERMAID_INLINE_EXPAND_LEVEL · constant · L444-L445 — static MERMAID_INLINE_EXPAND_LEVEL: LazyLock<Mutex<HashMap<u64, u8>>> =
+- MERMAID_INLINE_EXPAND_EPOCH · constant · L446-L446 — static MERMAID_INLINE_EXPAND_EPOCH: AtomicU64 = AtomicU64::new(0);
+- InlineLevelGeometry · type · L448-L448 — type InlineLevelGeometry = [(u16, u16); 3];
+- MERMAID_INLINE_LEVEL_GEOMETRY · constant · L449-L450 — static MERMAID_INLINE_LEVEL_GEOMETRY: LazyLock<Mutex<HashMap<u64, InlineLevelGeometry>>> =
+- mermaid_source_for_hash · function · L452-L457 — pub fn mermaid_source_for_hash(hash: u64) -> Option<String>
+- set_mermaid_inline_expand_level · function · L459-L472 — pub fn set_mermaid_inline_expand_level(hash: u64, level: u8)
+- mermaid_inline_expand_epoch · function · L474-L476 — pub fn mermaid_inline_expand_epoch() -> u64
+- next_distinct_mermaid_inline_level · function · L478-L494 — pub fn next_distinct_mermaid_inline_level(hash: u64, current: u8) -> u8
+- step_distinct_mermaid_inline_level · function · L500-L522 — pub fn step_distinct_mermaid_inline_level(hash: u64, current: u8, direction: i8) -> u8
+- register_inline_level_geometries · function · L524-L528 — pub fn register_inline_level_geometries(hash: u64, geometries: [(u16, u16); 3])
+- distinct_level_tests · module · L532-L532 — mod distinct_level_tests;
+- mermaid_inline_expand_level · function · L534-L540 — pub(crate) fn mermaid_inline_expand_level(hash: u64) -> u8
+- remember_mermaid_source · function · L542-L549 — pub(crate) fn remember_mermaid_source(hash: u64, content: &str)
+- CACHE_STAT_SYSCALLS · constant · L555-L555 — static CACHE_STAT_SYSCALLS: AtomicU64 = AtomicU64::new(0);
+- record_cache_stat_syscall · function · L558-L560 — pub(crate) fn record_cache_stat_syscall()
+- cache_stat_syscalls · function · L563-L565 — pub fn cache_stat_syscalls() -> u64
+- PendingRenderKey · type · L567-L567 — type PendingRenderKey = (u64, u32, RenderProfile);
+- PendingRenderMap · type · L568-L568 — type PendingRenderMap = HashMap<PendingRenderKey, PendingDeferredRender>;
+- PENDING_RENDER_REQUESTS · constant · L572-L573 — static PENDING_RENDER_REQUESTS: LazyLock<Mutex<PendingRenderMap>> =
+- DEFERRED_RENDER_TX · constant · L576-L576 — static DEFERRED_RENDER_TX: OnceLock<mpsc::Sender<DeferredRenderTask>> = OnceLock::new();
+- SVG_FONT_DB_PREWARM_STARTED · constant · L577-L577 — static SVG_FONT_DB_PREWARM_STARTED: OnceLock<()> = OnceLock::new();
+- RENDER_WORK_LOCK · constant · L586-L586 — static RENDER_WORK_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+- SVG_FONT_DB · constant · L590-L594 — static SVG_FONT_DB: LazyLock<Arc<usvg::fontdb::Database>> = LazyLock::new(||
+- IMAGE_STATE_MAX · constant · L605-L605 — const IMAGE_STATE_MAX: usize = 24;
+- IMAGE_STATE_MAX_SOURCE_BYTES · constant · L613-L613 — const IMAGE_STATE_MAX_SOURCE_BYTES: usize = 48 * 1024 * 1024;
+- KITTY_VIEWPORT_STATE_MAX · constant · L627-L627 — const KITTY_VIEWPORT_STATE_MAX: usize = 256;
+- KITTY_VIEWPORT_PENDING_MAX_BYTES · constant · L636-L636 — const KITTY_VIEWPORT_PENDING_MAX_BYTES: usize = 32 * 1024 * 1024;
+- IMAGE_STATE · constant · L641-L642 — static IMAGE_STATE: LazyLock<Mutex<ImageStateCache>> =
+- SOURCE_CACHE · constant · L645-L646 — static SOURCE_CACHE: LazyLock<Mutex<SourceImageCache>> =
+- FITTED_SOURCE_CACHE · constant · L652-L653 — static FITTED_SOURCE_CACHE: LazyLock<Mutex<FittedSourceCache>> =
+- KITTY_VIEWPORT_STATE · constant · L658-L659 — static KITTY_VIEWPORT_STATE: LazyLock<Mutex<KittyViewportCache>> =
+- KITTY_PENDING_DELETE_IDS · constant · L664-L665 — static KITTY_PENDING_DELETE_IDS: LazyLock<Mutex<VecDeque<u32>>> =
+- NEXT_KITTY_IMAGE_ID · constant · L669-L669 — static NEXT_KITTY_IMAGE_ID: AtomicU32 = AtomicU32::new(1);
+- queue_kitty_delete · function · L671-L680 — fn queue_kitty_delete(unique_id: u32)
+- queue_kitty_delete_if_transmitted · function · L682-L689 — fn queue_kitty_delete_if_transmitted(state: &KittyViewportState)
+- take_kitty_delete_ids · function · L691-L696 — fn take_kitty_delete_ids() -> Vec<u32>
+- LAST_RENDER · constant · L699-L700 — static LAST_RENDER: LazyLock<Mutex<HashMap<u64, LastRenderState>>> =
+- RENDER_ERRORS · constant · L703-L704 — static RENDER_ERRORS: LazyLock<Mutex<HashMap<u64, String>>> =
+- RENDER_BOOKKEEPING_MAX · constant · L711-L711 — pub(crate) const RENDER_BOOKKEEPING_MAX: usize = 1024;
+- bounded_bookkeeping_insert · function · L715-L720 — pub(crate) fn bounded_bookkeeping_insert<V>(map: &mut HashMap<u64, V>, hash: u64, value: V)
+- ACTIVE_DIAGRAMS_MAX · constant · L723-L723 — const ACTIVE_DIAGRAMS_MAX: usize = 128;
+- ImageState · struct · L726-L740 — struct ImageState
+- ImageStateCache · struct · L743-L747 — struct ImageStateCache
+- new · function · L750-L756 — fn new() -> Self
+- touch · function · L758-L763 — fn touch(&mut self, hash: u64)
+- get_mut · function · L765-L772 — fn get_mut(&mut self, hash: u64) -> Option<&mut ImageState>
+- get · function · L774-L776 — fn get(&self, hash: &u64) -> Option<&ImageState>
+- insert · function · L778-L802 — fn insert(&mut self, hash: u64, state: ImageState)
+- remove · function · L804-L811 — fn remove(&mut self, hash: &u64)
+- clear · function · L813-L817 — fn clear(&mut self)
+- iter · function · L819-L821 — fn iter(&self) -> impl Iterator<Item = (&u64, &ImageState)>
+- ViewportState · struct · L825-L830 — struct ViewportState
+- ResizeMode · enum · L834-L840 — enum ResizeMode
+- SOURCE_CACHE_MAX · constant · L847-L847 — const SOURCE_CACHE_MAX: usize = 16;
+- SOURCE_CACHE_MAX_BYTES · constant · L851-L851 — const SOURCE_CACHE_MAX_BYTES: usize = 48 * 1024 * 1024;
+- FITTED_SOURCE_CACHE_MAX · constant · L856-L856 — const FITTED_SOURCE_CACHE_MAX: usize = 16;
+- FITTED_SOURCE_CACHE_MAX_BYTES · constant · L857-L857 — const FITTED_SOURCE_CACHE_MAX_BYTES: usize = 32 * 1024 * 1024;
+- SourceImageEntry · struct · L859-L863 — struct SourceImageEntry
+- SourceImageCache · struct · L865-L869 — struct SourceImageCache
+- FittedSourceKey · struct · L872-L877 — struct FittedSourceKey
+- FittedSourceEntry · struct · L879-L883 — struct FittedSourceEntry
+- FittedSourceCache · struct · L885-L889 — struct FittedSourceCache
+- KittyViewportState · struct · L891-L909 — struct KittyViewportState
+- KittyViewportCache · struct · L911-L919 — struct KittyViewportCache
+- new · function · L922-L929 — fn new() -> Self
+- touch · function · L931-L934 — fn touch(&mut self, hash: u64)
+- oldest_hash · function · L936-L941 — fn oldest_hash(&self) -> Option<u64>
+- get_mut · function · L943-L950 — fn get_mut(&mut self, hash: u64) -> Option<&mut KittyViewportState>
+- insert · function · L952-L985 — fn insert(&mut self, hash: u64, state: KittyViewportState)
+- take_pending_transmit · function · L987-L996 — fn take_pending_transmit(&mut self, hash: u64) -> Option<(u32, Option<String>)>
+- remove · function · L999-L1020 — fn remove(&mut self, hash: &u64)
+- clear · function · L1022-L1030 — fn clear(&mut self)
+- new · function · L1034-L1040 — fn new() -> Self
+- touch · function · L1042-L1047 — fn touch(&mut self, hash: u64)
+- get · function · L1049-L1062 — fn get(&mut self, hash: u64, expected_path: &Path) -> Option<Arc<DynamicImage>>
+- insert · function · L1064-L1067 — fn insert(&mut self, hash: u64, path: PathBuf, image: DynamicImage) -> Arc<DynamicImage>
+- insert_with_decoded_bytes · function · L1069-L1103 — fn insert_with_decoded_bytes(
+- remove · function · L1105-L1112 — fn remove(&mut self, hash: u64)
+- remove_if_path · function · L1114-L1122 — fn remove_if_path(&mut self, hash: u64, expected_path: &Path)
+- clear · function · L1124-L1128 — fn clear(&mut self)
+- new · function · L1132-L1138 — fn new() -> Self
+- touch · function · L1140-L1145 — fn touch(&mut self, key: FittedSourceKey)
+- get · function · L1147-L1160 — fn get(&mut self, key: FittedSourceKey, source_path: &Path) -> Option<Arc<DynamicImage>>
+- insert · function · L1162-L1170 — fn insert(
+- insert_with_decoded_bytes · function · L1172-L1207 — fn insert_with_decoded_bytes(
+- remove_key · function · L1209-L1216 — fn remove_key(&mut self, key: FittedSourceKey)
+- remove_hash · function · L1218-L1228 — fn remove_hash(&mut self, hash: u64)
+- clear · function · L1230-L1234 — fn clear(&mut self)
+- LastRenderState · struct · L1239-L1243 — struct LastRenderState
+- MermaidDebugStats · struct · L1247-L1302 — pub struct MermaidDebugStats
+- MermaidDebugState · struct · L1305-L1307 — struct MermaidDebugState
+- MERMAID_DEBUG · constant · L1309-L1310 — static MERMAID_DEBUG: LazyLock<Mutex<MermaidDebugState>> =
+- PendingDeferredRender · struct · L1313-L1318 — struct PendingDeferredRender
+- DeferredRenderTask · struct · L1321-L1325 — struct DeferredRenderTask
+- RenderStageBreakdown · struct · L1329-L1338 — struct RenderStageBreakdown
+- MermaidCacheEntry · struct · L1341-L1346 — pub struct MermaidCacheEntry
+- MermaidMemoryProfile · struct · L1349-L1401 — pub struct MermaidMemoryProfile
+- MermaidMemoryBenchmark · struct · L1404-L1413 — pub struct MermaidMemoryBenchmark
+- MermaidTimingSummary · struct · L1416-L1422 — pub struct MermaidTimingSummary
+- MermaidFlickerBenchmark · struct · L1425-L1437 — pub struct MermaidFlickerBenchmark
+- ImageScrollBenchmark · struct · L1440-L1474 — pub struct ImageScrollBenchmark
+- MermaidDebugStatsDelta · struct · L1477-L1486 — pub struct MermaidDebugStatsDelta
+- debug · module · L1488-L1488 — mod debug;
+- hash_content · function · L1497-L1503 — fn hash_content(content: &str) -> u64
+- get_png_dimensions · function · L1506-L1518 — fn get_png_dimensions(path: &Path) -> Option<(u32, u32)>
+- CACHE_MAX_AGE_SECS · constant · L1521-L1521 — const CACHE_MAX_AGE_SECS: u64 = 3 * 24 * 60 * 60;
+- CACHE_MAX_SIZE_BYTES · constant · L1524-L1524 — const CACHE_MAX_SIZE_BYTES: u64 = 50 * 1024 * 1024;
+- CACHE_FILE_EXTENSIONS · constant · L1530-L1530 — const CACHE_FILE_EXTENSIONS: [&str; 7] = ["png", "jpg", "gif", "webp", "bmp", "ico", "img"];
+- evict_old_cache · function · L1533-L1576 — pub fn evict_old_cache()
+- clear_image_state · function · L1579-L1596 — pub fn clear_image_state()
+- take_terminal_image_cleanup_payload · function · L1601-L1605 — pub fn take_terminal_image_cleanup_payload() -> String
+- render_pending_terminal_image_cleanup · function · L1610-L1628 — pub fn render_pending_terminal_image_cleanup(buf: &mut Buffer) -> bool
+- IMAGE_TEST_LOCK · constant · L1631-L1631 — static IMAGE_TEST_LOCK: Mutex<()> = Mutex::new(());
+- tests · module · L1635-L1635 — mod tests;

@@ -1,0 +1,57 @@
+# crates/jcode-provider-cursor-runtime/src/lib.rs
+
+- agent_transport · module · L33-L33 — mod agent_transport;
+- wire · module · L34-L34 — pub mod wire;
+- MODELS_API_URL · constant · L36-L36 — const MODELS_API_URL: &str = "https://api.cursor.com/v0/models";
+- MAX_AGENT_MODELS_RESPONSE_BYTES · constant · L37-L37 — const MAX_AGENT_MODELS_RESPONSE_BYTES: u64 = 4 * 1024 * 1024;
+- MAX_PROMPT_CHARS · constant · L38-L38 — const MAX_PROMPT_CHARS: usize = 120_000;
+- canonical_input_payload · function · L40-L46 — fn canonical_input_payload(model: &str, system: &str, prompt: &str) -> Value
+- build_cli_prompt · function · L48-L126 — fn build_cli_prompt(system: &str, messages: &[Message]) -> String
+- CursorModelsResponse · struct · L129-L132 — struct CursorModelsResponse
+- decode_agent_models · function · L142-L169 — fn decode_agent_models(mut payload: &[u8]) -> Result<Vec<String>>
+- ProtobufField · struct · L172-L176 — struct ProtobufField<'a>
+- protobuf_fields · function · L178-L238 — fn protobuf_fields(mut payload: &[u8]) -> Result<Vec<ProtobufField<'_>>>
+- read_protobuf_varint · function · L240-L252 — fn read_protobuf_varint(payload: &[u8]) -> Result<(u64, &[u8])>
+- PersistedCatalog · struct · L255-L258 — struct PersistedCatalog
+- PersistedCatalogRef · struct · L262-L265 — struct PersistedCatalogRef<'a>
+- merge_cursor_models · function · L267-L290 — fn merge_cursor_models(dynamic: &[String], current: &str) -> Vec<String>
+- CursorModelsAuth · enum · L292-L295 — enum CursorModelsAuth<'a>
+- fetch_available_models · function · L297-L331 — async fn fetch_available_models(
+- fetch_agent_models · function · L333-L384 — async fn fetch_agent_models(client: &reqwest::Client, access_token: &str) -> Result<Vec<String>>
+- runtime_cursor_api_key · function · L386-L388 — fn runtime_cursor_api_key() -> Option<String>
+- ToolResultMultiplexer · struct · L391-L393 — pub struct ToolResultMultiplexer
+- new · function · L396-L400 — pub fn new() -> Self
+- register · function · L402-L410 — pub fn register(&self, stream_uuid: &str, tx: mpsc::Sender<NativeToolResult>) -> StreamGuard
+- dispatch · function · L412-L428 — pub fn dispatch(&self, result: NativeToolResult)
+- StreamGuard · struct · L431-L434 — pub struct StreamGuard
+- drop · function · L437-L441 — fn drop(&mut self)
+- CursorCliProvider · struct · L444-L455 — pub struct CursorCliProvider
+- persisted_catalog_path · function · L458-L460 — fn persisted_catalog_path() -> Result<std::path::PathBuf>
+- load_persisted_catalog · function · L462-L467 — fn load_persisted_catalog() -> Option<PersistedCatalog>
+- persist_catalog · function · L469-L487 — fn persist_catalog(models: &[String])
+- seed_cached_catalog · function · L489-L495 — fn seed_cached_catalog(&self)
+- ensure_forwarder_loop · function · L497-L511 — fn ensure_forwarder_loop(&self)
+- new · function · L513-L529 — pub fn new() -> Self
+- default · function · L533-L535 — fn default() -> Self
+- complete · function · L540-L622 — async fn complete(
+- name · function · L624-L626 — fn name(&self) -> &'static str
+- model · function · L628-L633 — fn model(&self) -> String
+- set_model · function · L635-L647 — fn set_model(&self, model: &str) -> Result<()>
+- available_models · function · L649-L651 — fn available_models(&self) -> Vec<&'static str>
+- available_models_for_switching · function · L653-L655 — fn available_models_for_switching(&self) -> Vec<String>
+- available_models_display · function · L657-L664 — fn available_models_display(&self) -> Vec<String>
+- model_routes · function · L666-L679 — fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute>
+- prefetch_models · function · L681-L736 — async fn prefetch_models(&self) -> Result<()>
+- handles_tools_internally · function · L738-L740 — fn handles_tools_internally(&self) -> bool
+- supports_compaction · function · L742-L747 — fn supports_compaction(&self) -> bool
+- fork · function · L749-L765 — fn fork(&self) -> Arc<dyn Provider>
+- native_result_sender · function · L767-L770 — fn native_result_sender(&self) -> Option<NativeToolResultSender>
+- service_tier · function · L775-L783 — fn service_tier(&self) -> Option<String>
+- set_service_tier · function · L785-L799 — fn set_service_tier(&self, service_tier: &str) -> Result<()>
+- available_service_tiers · function · L801-L803 — fn available_service_tiers(&self) -> Vec<&'static str>
+- run_native_text_command · function · L807-L886 — async fn run_native_text_command(
+- catalog_persistence_tests · module · L889-L930 — mod catalog_persistence_tests
+- borrowed_catalog_matches_owned_json_without_copying_models · function · L893-L929 — fn borrowed_catalog_matches_owned_json_without_copying_models()
+- canonical_input_tests · module · L933-L988 — mod canonical_input_tests
+- borrowed_cursor_fingerprint_matches_legacy_payload · function · L938-L987 — fn borrowed_cursor_fingerprint_matches_legacy_payload()
+- cursor_tests · module · L992-L992 — mod cursor_tests;

@@ -1,0 +1,22 @@
+# crates/jcode-base/src/memory_jev.rs
+
+- MAX_BATCH_ENTRIES · constant · L14-L14 — pub const MAX_BATCH_ENTRIES: usize = 24;
+- MAX_REQUEST_BYTES · constant · L15-L15 — pub const MAX_REQUEST_BYTES: usize = 64 * 1024;
+- MAX_QUERY_BYTES · constant · L16-L16 — pub const MAX_QUERY_BYTES: usize = 8 * 1024;
+- SELECTION_TIMEOUT · constant · L17-L17 — const SELECTION_TIMEOUT: Duration = Duration::from_secs(60);
+- DEFAULT_MODEL · constant · L18-L18 — const DEFAULT_MODEL: &str = crate::jev::DEFAULT_MEMORY_JEV_MODEL;
+- RelevanceTransport · interface · L23-L29 — pub trait RelevanceTransport: Send + Sync
+- model_id · function · L24-L26 — fn model_id(&self) -> &str
+- evaluate · function · L28-L28 — async fn evaluate(&self, state: Value, questions: Map<String, Value>) -> Result<Value>;
+- model_id · function · L33-L35 — fn model_id(&self) -> &str
+- evaluate · function · L37-L39 — async fn evaluate(&self, state: Value, questions: Map<String, Value>) -> Result<Value>
+- collect_scoped · function · L44-L53 — pub fn collect_scoped(manager: &MemoryManager, scope: MemoryScope) -> Result<Vec<MemoryEntry>>
+- recall · function · L55-L70 — pub async fn recall(
+- select · function · L72-L86 — pub async fn select(
+- validate_query · function · L88-L95 — fn validate_query(query: &str) -> Result<()>
+- build_batch · function · L99-L101 — pub fn build_batch(query: &str, entries: &[MemoryEntry]) -> Result<(Value, Map<String, Value>)>
+- build_batch_for_model · function · L103-L147 — fn build_batch_for_model(
+- request_size · function · L150-L157 — fn request_size(state: &Value, questions: &Map<String, Value>, model: &str) -> Result<usize>
+- parse_scores · function · L161-L195 — pub fn parse_scores(response: &Value, count: usize) -> Result<Vec<f64>>
+- select_with_transport · function · L199-L277 — pub async fn select_with_transport<T: RelevanceTransport + ?Sized>(
+- tests · module · L281-L281 — mod tests;

@@ -1,0 +1,30 @@
+# crates/jcode-app-core/src/agent/status.rs
+
+- assistant_output_tail_after · function · L3-L22 — fn assistant_output_tail_after(messages: &[StoredMessage], start_index: usize) -> Option<String>
+- session_for_split · function · L26-L28 — pub(crate) fn session_for_split(&self) -> &Session
+- session_memory_profile_snapshot · function · L30-L34 — pub fn session_memory_profile_snapshot(
+- message_count · function · L36-L38 — pub fn message_count(&self) -> usize
+- visible_conversation_message_count · function · L42-L44 — pub fn visible_conversation_message_count(&self) -> usize
+- last_visible_conversation_role · function · L51-L56 — pub fn last_visible_conversation_role(&self) -> Option<Role>
+- last_message_role · function · L58-L60 — pub fn last_message_role(&self) -> Option<Role>
+- last_message_text · function · L63-L73 — pub fn last_message_text(&self) -> Option<&str>
+- build_transcript_for_extraction · function · L77-L119 — pub fn build_transcript_for_extraction(&self) -> String
+- last_assistant_text · function · L121-L140 — pub fn last_assistant_text(&self) -> Option<String>
+- latest_assistant_text_after · function · L143-L166 — pub fn latest_assistant_text_after(&self, start_index: usize) -> Option<String>
+- recent_assistant_output_tail_after · function · L170-L172 — pub fn recent_assistant_output_tail_after(&self, start_index: usize) -> Option<String>
+- final_assistant_text_after · function · L176-L196 — pub fn final_assistant_text_after(&self, start_index: usize) -> Option<String>
+- last_upstream_provider · function · L198-L202 — pub fn last_upstream_provider(&self) -> Option<String>
+- last_connection_type · function · L204-L206 — pub fn last_connection_type(&self) -> Option<String>
+- last_status_detail · function · L208-L210 — pub fn last_status_detail(&self) -> Option<String>
+- provider_name · function · L212-L216 — pub fn provider_name(&self) -> String
+- provider_reasoning_effort · function · L219-L221 — pub fn provider_reasoning_effort(&self) -> Option<String>
+- provider_model · function · L223-L229 — pub fn provider_model(&self) -> String
+- provider_key_for_new_session · function · L231-L255 — pub(super) fn provider_key_for_new_session(&self) -> Option<String>
+- restore_session_model_from_session · function · L262-L295 — pub(crate) fn restore_session_model_from_session(&mut self)
+- reconcile_explicit_provider_pin_route · function · L297-L307 — pub(super) fn reconcile_explicit_provider_pin_route(&mut self)
+- session_short_name · function · L310-L312 — pub fn session_short_name(&self) -> Option<&str>
+- output_tail_tests · module · L316-L405 — mod output_tail_tests
+- message · function · L319-L324 — fn message(role: &str, content: serde_json::Value) -> StoredMessage
+- automatic_output_tail_excludes_tools_and_private_content · function · L327-L359 — fn automatic_output_tail_excludes_tools_and_private_content()
+- automatic_output_tail_uses_only_latest_nonempty_assistant_response · function · L362-L388 — fn automatic_output_tail_uses_only_latest_nonempty_assistant_response()
+- automatic_output_tail_preserves_utf8_when_truncating_latest_response · function · L391-L404 — fn automatic_output_tail_preserves_utf8_when_truncating_latest_response()

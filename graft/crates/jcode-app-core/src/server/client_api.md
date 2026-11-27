@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/server/client_api.rs
+
+- Client · struct · L9-L13 — pub struct Client
+- connect · function · L16-L18 — pub async fn connect() -> Result<Self>
+- connect_with_path · function · L20-L28 — pub async fn connect_with_path(path: PathBuf) -> Result<Self>
+- connect_debug · function · L30-L32 — pub async fn connect_debug() -> Result<Self>
+- connect_debug_with_path · function · L34-L42 — pub async fn connect_debug_with_path(path: PathBuf) -> Result<Self>
+- send_message · function · L45-L62 — pub async fn send_message(&mut self, content: &str) -> Result<u64>
+- subscribe · function · L65-L68 — pub async fn subscribe(&mut self) -> Result<u64>
+- subscribe_with_info · function · L70-L107 — pub async fn subscribe_with_info(
+- read_event · function · L110-L118 — pub async fn read_event(&mut self) -> Result<ServerEvent>
+- ping · function · L120-L143 — pub async fn ping(&mut self) -> Result<bool>
+- runtime_identity · function · L145-L169 — pub async fn runtime_identity(
+- get_state · function · L171-L186 — pub async fn get_state(&mut self) -> Result<ServerEvent>
+- clear · function · L188-L196 — pub async fn clear(&mut self) -> Result<()>
+- get_history · function · L198-L204 — pub async fn get_history(&mut self) -> Result<Vec<HistoryMessage>>
+- get_history_event · function · L206-L231 — pub async fn get_history_event(&mut self) -> Result<ServerEvent>
+- resume_session · function · L233-L236 — pub async fn resume_session(&mut self, session_id: &str) -> Result<u64>
+- resume_session_with_options · function · L238-L258 — pub async fn resume_session_with_options(
+- notify_session · function · L260-L272 — pub async fn notify_session(&mut self, session_id: &str, message: &str) -> Result<u64>
+- resume_all_sessions · function · L277-L285 — pub async fn resume_all_sessions(&mut self) -> Result<u64>
+- send_transcript · function · L287-L305 — pub async fn send_transcript(
+- reload · function · L307-L310 — pub async fn reload(&mut self) -> Result<()>
+- reload_with_force · function · L316-L324 — pub async fn reload_with_force(&mut self, force: bool) -> Result<u64>
+- cycle_model · function · L326-L334 — pub async fn cycle_model(&mut self, direction: i8) -> Result<u64>
+- refresh_models · function · L336-L344 — pub async fn refresh_models(&mut self) -> Result<u64>
+- notify_auth_changed · function · L346-L348 — pub async fn notify_auth_changed(&mut self) -> Result<u64>
+- notify_auth_changed_for_provider · function · L350-L366 — pub async fn notify_auth_changed_for_provider(
+- debug_command · function · L368-L380 — pub async fn debug_command(&mut self, command: &str, session_id: Option<&str>) -> Result<u64>

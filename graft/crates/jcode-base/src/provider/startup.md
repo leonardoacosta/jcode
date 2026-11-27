@@ -1,0 +1,26 @@
+# crates/jcode-base/src/provider/startup.rs
+
+- FreshRouteMemo · struct · L5-L9 — struct FreshRouteMemo
+- spawn_post_auth_model_refresh · function · L12-L69 — pub(super) fn spawn_post_auth_model_refresh(
+- PendingGuard · struct · L31-L31 — struct PendingGuard(Arc<std::sync::atomic::AtomicUsize>);
+- drop · function · L33-L35 — fn drop(&mut self)
+- new_with_auth_status · function · L71-L407 — pub(super) fn new_with_auth_status(auth_status: auth::AuthStatus) -> Self
+- config_default_allows_pool_selection · function · L412-L461 — fn config_default_allows_pool_selection(
+- select_fresh_session_pool_route · function · L468-L519 — fn select_fresh_session_pool_route(&self)
+- FRESH_ROUTE_MEMO_TTL · constant · L478-L478 — const FRESH_ROUTE_MEMO_TTL: std::time::Duration = std::time::Duration::from_secs(3);
+- FRESH_ROUTE_MEMO · constant · L479-L479 — static FRESH_ROUTE_MEMO: Mutex<Option<FreshRouteMemo>> = Mutex::new(None);
+- FRESH_ROUTE_BUILD_LOCK · constant · L480-L480 — static FRESH_ROUTE_BUILD_LOCK: Mutex<()> = Mutex::new(());
+- compute_fresh_session_pool_route · function · L522-L619 — fn compute_fresh_session_pool_route(
+- spawn_openai_catalog_refresh_if_needed · function · L621-L638 — pub(super) fn spawn_openai_catalog_refresh_if_needed(&self)
+- spawn_anthropic_catalog_refresh_if_needed · function · L640-L664 — pub(super) fn spawn_anthropic_catalog_refresh_if_needed(&self)
+- new · function · L667-L669 — pub fn new() -> Self
+- new_fast · function · L672-L674 — pub fn new_fast() -> Self
+- from_auth_status · function · L676-L678 — pub fn from_auth_status(auth_status: auth::AuthStatus) -> Self
+- with_preference · function · L681-L693 — pub fn with_preference(prefer_openai: bool) -> Self
+- with_preference_fast · function · L695-L707 — pub fn with_preference_fast(prefer_openai: bool) -> Self
+- active_provider · function · L709-L714 — pub(super) fn active_provider(&self) -> ActiveProvider
+- auto_select_active_multi_account · function · L716-L718 — pub fn auto_select_active_multi_account(&self)
+- auto_select_anthropic_account · function · L721-L723 — pub fn auto_select_anthropic_account(&self)
+- auto_select_openai_account · function · L725-L727 — pub fn auto_select_openai_account(&self)
+- auto_select_multi_account_for_provider · function · L729-L809 — pub(super) fn auto_select_multi_account_for_provider(&self, provider: ActiveProvider)
+- is_claude_usage_exhausted · function · L812-L819 — pub(super) fn is_claude_usage_exhausted(&self) -> bool

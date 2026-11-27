@@ -1,0 +1,28 @@
+# crates/jcode-setup-hints/src/macos_launcher.rs
+
+- MACOS_APP_ICON_FILE_NAME · constant · L17-L17 — const MACOS_APP_ICON_FILE_NAME: &str = "Jcode.icns";
+- MACOS_APP_ICON_BYTES · constant · L18-L21 — const MACOS_APP_ICON_BYTES: &[u8] = include_bytes!(concat!(
+- MACOS_NOTIFICATION_APP_NAME · constant · L22-L22 — const MACOS_NOTIFICATION_APP_NAME: &str = "Jcode Notifications.app";
+- MACOS_NOTIFICATION_EXECUTABLE · constant · L23-L23 — const MACOS_NOTIFICATION_EXECUTABLE: &str = "jcode-notification-broker";
+- MACOS_NOTIFICATION_VERSION_MARKER · constant · L24-L24 — const MACOS_NOTIFICATION_VERSION_MARKER: &str = "jcode-broker-version";
+- MACOS_NOTIFICATION_BUNDLE_ID · constant · L25-L25 — const MACOS_NOTIFICATION_BUNDLE_ID: &str = "com.jcode.notifications";
+- LEGACY_LAUNCHER_BUNDLE_IDS · constant · L30-L30 — const LEGACY_LAUNCHER_BUNDLE_IDS: &[&str] = &["com.jcode.app", "com.jcode.launcher"];
+- should_refresh_macos_app_launcher · function · L32-L41 — pub(super) fn should_refresh_macos_app_launcher(state: &SetupHintsState) -> bool
+- install_macos_app_launcher · function · L45-L49 — pub(super) fn install_macos_app_launcher() -> Result<PathBuf>
+- remove_legacy_macos_bundles · function · L53-L61 — pub(super) fn remove_legacy_macos_bundles() -> Result<Vec<PathBuf>>
+- user_applications_dir · function · L63-L66 — fn user_applications_dir() -> Result<PathBuf>
+- macos_notification_broker_dir · function · L71-L74 — pub(super) fn macos_notification_broker_dir() -> Result<PathBuf>
+- macos_notification_broker_dir_in · function · L76-L81 — fn macos_notification_broker_dir_in(home: &Path) -> PathBuf
+- legacy_macos_bundles · function · L87-L111 — fn legacy_macos_bundles(applications: &Path) -> Vec<PathBuf>
+- bundle_identifier · function · L117-L124 — fn bundle_identifier(app_dir: &Path) -> Option<String>
+- macos_notification_broker_executable_path · function · L126-L131 — fn macos_notification_broker_executable_path(app_dir: &Path) -> PathBuf
+- macos_notification_broker_marker_path · function · L133-L138 — fn macos_notification_broker_marker_path(app_dir: &Path) -> PathBuf
+- macos_notification_broker_icon_path · function · L140-L145 — fn macos_notification_broker_icon_path(app_dir: &Path) -> PathBuf
+- macos_notification_broker_is_valid · function · L147-L154 — fn macos_notification_broker_is_valid(app_dir: &Path) -> bool
+- install_macos_notification_broker · function · L160-L219 — fn install_macos_notification_broker(jcode_executable: &Path) -> Result<PathBuf>
+- macos_notification_info_plist · function · L221-L257 — fn macos_notification_info_plist() -> String
+- remove_path_if_exists · function · L259-L274 — fn remove_path_if_exists(path: &Path) -> Result<()>
+- lsregister_path · function · L276-L281 — fn lsregister_path() -> Option<&'static Path>
+- register_macos_bundle · function · L286-L292 — fn register_macos_bundle(app_dir: &Path)
+- unregister_macos_bundle · function · L296-L302 — fn unregister_macos_bundle(app_dir: &Path)
+- macos_launcher_tests · module · L306-L306 — mod macos_launcher_tests;

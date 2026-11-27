@@ -1,0 +1,42 @@
+# crates/jcode-base/src/goal.rs
+
+- GoalDisplayMode · enum · L10-L15 — pub enum GoalDisplayMode
+- parse · function · L18-L26 — pub fn parse(value: &str) -> Option<Self>
+- GoalCreateInput · struct · L30-L42 — pub struct GoalCreateInput
+- GoalUpdateInput · struct · L45-L57 — pub struct GoalUpdateInput
+- GoalAttachment · struct · L60-L67 — struct GoalAttachment
+- GoalDisplayResult · struct · L70-L73 — pub struct GoalDisplayResult
+- create_goal · function · L75-L96 — pub fn create_goal(input: GoalCreateInput, working_dir: Option<&Path>) -> Result<Goal>
+- update_goal · function · L98-L158 — pub fn update_goal(
+- load_goal · function · L160-L190 — pub fn load_goal(
+- list_relevant_goals · function · L192-L199 — pub fn list_relevant_goals(working_dir: Option<&Path>) -> Result<Vec<Goal>>
+- resume_goal · function · L201-L211 — pub fn resume_goal(session_id: &str, working_dir: Option<&Path>) -> Result<Option<Goal>>
+- attach_goal_to_session · function · L213-L233 — pub fn attach_goal_to_session(
+- load_attached_goal · function · L235-L251 — pub fn load_attached_goal(session_id: &str, working_dir: Option<&Path>) -> Result<Option<Goal>>
+- open_goals_overview_for_session · function · L253-L266 — pub fn open_goals_overview_for_session(
+- refresh_goals_overview_for_session · function · L268-L283 — pub fn refresh_goals_overview_for_session(
+- open_goal_for_session · function · L285-L305 — pub fn open_goal_for_session(
+- resume_goal_for_session · function · L307-L326 — pub fn resume_goal_for_session(
+- write_goal_page · function · L328-L351 — pub fn write_goal_page(
+- goal_page_id · function · L353-L355 — pub fn goal_page_id(id: &str) -> String
+- header_badge · function · L357-L382 — pub fn header_badge(
+- render_goals_overview · function · L384-L412 — pub fn render_goals_overview(goals: &[Goal]) -> String
+- render_goal_detail · function · L414-L496 — pub fn render_goal_detail(goal: &Goal) -> String
+- should_focus_goal_page · function · L498-L506 — fn should_focus_goal_page(session_id: &str, page_id: &str) -> Result<bool>
+- save_goal · function · L508-L511 — fn save_goal(goal: &Goal, working_dir: Option<&Path>) -> Result<()>
+- goal_file · function · L513-L520 — fn goal_file(goal: &Goal, working_dir: Option<&Path>) -> Result<PathBuf>
+- goal_file_in_dir · function · L522-L524 — fn goal_file_in_dir(dir: &Path, id: &str) -> PathBuf
+- global_goals_dir · function · L526-L528 — fn global_goals_dir() -> Result<PathBuf>
+- project_goals_dir · function · L530-L540 — fn project_goals_dir(working_dir: Option<&Path>) -> Result<Option<PathBuf>>
+- load_goals_in_dir · function · L542-L559 — fn load_goals_in_dir(dir: &Path) -> Result<Vec<Goal>>
+- sort_goals · function · L561-L569 — fn sort_goals(goals: &mut [Goal])
+- project_hash · function · L571-L576 — fn project_hash(path: &Path) -> String
+- session_attachment_path · function · L578-L583 — fn session_attachment_path(session_id: &str) -> Result<PathBuf>
+- next_available_goal_id · function · L585-L597 — fn next_available_goal_id(
+- trim_vec · function · L599-L605 — fn trim_vec(values: Vec<String>) -> Vec<String>
+- truncate_title · function · L607-L618 — fn truncate_title(title: &str, max_chars: usize) -> String
+- sync_goal_memory · function · L620-L647 — fn sync_goal_memory(goal: &Goal, working_dir: Option<&Path>) -> Result<String>
+- goal_memory_id · function · L649-L651 — fn goal_memory_id(goal: &Goal) -> String
+- goal_memory_tags · function · L653-L676 — fn goal_memory_tags(goal: &Goal) -> Vec<String>
+- goal_memory_content · function · L678-L710 — fn goal_memory_content(goal: &Goal) -> String
+- goal_tests · module · L714-L714 — mod goal_tests;

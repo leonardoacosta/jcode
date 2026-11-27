@@ -1,0 +1,23 @@
+# crates/jcode-voice/src/streaming_capture/tests.rs
+
+- poisoned_event_queue_preserves_original_wakeup_and_finished_event · function · L4-L25 — async fn poisoned_event_queue_preserves_original_wakeup_and_finished_event()
+- level_chunker · function · L27-L39 — fn level_chunker() -> Chunker
+- level · function · L41-L43 — fn level(c: &Chunker) -> f32
+- callback_level_is_latest_rms_not_peak_or_signed_average · function · L46-L57 — fn callback_level_is_latest_rms_not_peak_or_signed_average()
+- callback_level_downmixes_and_normalizes_native_formats · function · L60-L74 — fn callback_level_downmixes_and_normalizes_native_formats()
+- callback_level_is_finite_and_bounded_for_invalid_float_samples · function · L77-L83 — fn callback_level_is_finite_and_bounded_for_invalid_float_samples()
+- recording_level_reads_callback_atomic_without_consuming_events · function · L86-L117 — fn recording_level_reads_callback_atomic_without_consuming_events()
+- cancelled_constructors_never_open_microphone · function · L120-L130 — fn cancelled_constructors_never_open_microphone()
+- bounded_chunks_downmix_and_fail_on_backpressure · function · L133-L156 — fn bounded_chunks_downmix_and_fail_on_backpressure()
+- stop_unparks_capture_thread_immediately · function · L158-L178 — fn stop_unparks_capture_thread_immediately()
+- event_ready_wakes_on_push_and_keeps_early_permit · function · L180-L206 — async fn event_ready_wakes_on_push_and_keeps_early_permit()
+- events_coalesce_but_preserve_lifecycle · function · L208-L217 — fn events_coalesce_but_preserve_lifecycle()
+- stop_preserves_token_drop_cancels_without_joining · function · L219-L253 — fn stop_preserves_token_drop_cancels_without_joining()
+- fake_capture · function · L254-L279 — fn fake_capture(
+- orchestration_opens_capture_during_handshake_then_releases_on_network_error · function · L281-L339 — async fn orchestration_opens_capture_during_handshake_then_releases_on_network_error()
+- orchestration_setup_error_releases_capture_and_reports_provider_error · function · L341-L380 — async fn orchestration_setup_error_releases_capture_and_reports_provider_error()
+- filter_tail_never_exceeds_duration_cap · function · L383-L406 — fn filter_tail_never_exceeds_duration_cap()
+- upsampling_final_frame_cannot_exceed_cap · function · L410-L426 — fn upsampling_final_frame_cannot_exceed_cap()
+- construction_returns_before_microphone_or_network_are_ready · function · L428-L447 — fn construction_returns_before_microphone_or_network_are_ready()
+- cancelled_slow_factory_finishes_cancelled_without_starting_stale_capture · function · L449-L511 — async fn cancelled_slow_factory_finishes_cancelled_without_starting_stale_capture()
+- unified_stop_finalizes_and_drop_after_finished_preserves_token · function · L513-L557 — async fn unified_stop_finalizes_and_drop_after_finished_preserves_token()

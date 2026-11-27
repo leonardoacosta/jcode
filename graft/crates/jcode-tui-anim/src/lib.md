@@ -1,0 +1,24 @@
+# crates/jcode-tui-anim/src/lib.rs
+
+- angle_table · function · L29-L37 — fn angle_table(step: f32) -> Vec<(f32, f32)>
+- rotate_xyz · function · L39-L50 — fn rotate_xyz(x: f32, y: f32, z: f32, ax: f32, ay: f32, az: f32) -> (f32, f32, f32)
+- sample_donut · function · L52-L110 — pub fn sample_donut(
+- THETA · constant · L63-L63 — static THETA: OnceLock<Vec<(f32, f32)>> = OnceLock::new();
+- PHI · constant · L64-L64 — static PHI: OnceLock<Vec<(f32, f32)>> = OnceLock::new();
+- sample_black_hole · function · L112-L184 — pub fn sample_black_hole(
+- sample_gyroscope · function · L186-L274 — pub fn sample_gyroscope(
+- V_TAB · constant · L195-L195 — static V_TAB: OnceLock<Vec<(f32, f32)>> = OnceLock::new();
+- sample_orbit_rings · function · L276-L382 — pub fn sample_orbit_rings(
+- V_TAB · constant · L285-L285 — static V_TAB: OnceLock<Vec<(f32, f32)>> = OnceLock::new();
+- shape_char_3x3 · function · L384-L591 — pub fn shape_char_3x3(pattern: u16, brightness: f32) -> char
+- hsv_to_rgb · function · L593-L611 — pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8)
+- tests · module · L614-L930 — mod tests
+- ref_rotate_xyz · function · L623-L634 — fn ref_rotate_xyz(x: f32, y: f32, z: f32, ax: f32, ay: f32, az: f32) -> (f32, f32, f32)
+- ref_donut · function · L636-L694 — fn ref_donut(
+- ref_gyroscope · function · L696-L778 — fn ref_gyroscope(
+- ref_orbit_rings · function · L780-L881 — fn ref_orbit_rings(
+- Sampler · type · L883-L883 — type Sampler = fn(f32, usize, usize, &mut [bool], &mut [f32], &mut [f32]);
+- assert_bit_identical · function · L885-L914 — fn assert_bit_identical(name: &str, reference: Sampler, optimized: Sampler)
+- donut_table_is_bit_identical_to_reference · function · L917-L919 — fn donut_table_is_bit_identical_to_reference()
+- gyroscope_table_is_bit_identical_to_reference · function · L922-L924 — fn gyroscope_table_is_bit_identical_to_reference()
+- orbit_rings_table_is_bit_identical_to_reference · function · L927-L929 — fn orbit_rings_table_is_bit_identical_to_reference()

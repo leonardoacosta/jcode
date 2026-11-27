@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/server/session_manager.rs
+
+- AgentHandle · type · L13-L13 — type AgentHandle = Arc<Mutex<Agent>>;
+- AgentMap · type · L14-L14 — type AgentMap = HashMap<String, AgentHandle>;
+- SessionManager · struct · L17-L25 — pub(crate) struct SessionManager
+- tests · module · L29-L29 — mod tests;
+- new · function · L32-L34 — pub(super) fn new() -> Self
+- turn_observer · function · L36-L42 — pub(super) fn turn_observer(&self, session_id: &str) -> Option<crate::agent::TurnObserver>
+- read · function · L44-L46 — pub(super) async fn read(&self) -> RwLockReadGuard<'_, AgentMap>
+- try_read · function · L48-L52 — pub(super) fn try_read(
+- reserve · function · L56-L77 — pub(super) async fn reserve(&self, session_id: &str) -> SessionReservation<'_>
+- register_new · function · L79-L81 — pub(super) async fn register_new(&self, session_id: String, agent: AgentHandle) -> Result<()>
+- get_or_start · function · L83-L100 — pub(super) async fn get_or_start<F, Fut>(
+- remove · function · L102-L112 — pub(super) async fn remove(&self, session_id: &str) -> Option<AgentHandle>
+- remove_if_same · function · L114-L129 — pub(super) async fn remove_if_same(&self, session_id: &str, expected: &AgentHandle) -> bool
+- retain · function · L131-L138 — pub(super) async fn retain(&self, mut keep: impl FnMut(&String, &AgentHandle) -> bool)
+- from_agents · function · L141-L161 — pub(super) fn from_agents(agents: AgentMap) -> Self
+- clear_for_test · function · L164-L168 — pub(super) async fn clear_for_test(&self)
+- write_for_test · function · L171-L173 — pub(super) async fn write_for_test(&self) -> tokio::sync::RwLockWriteGuard<'_, AgentMap>
+- SessionReservation · struct · L178-L182 — pub(super) struct SessionReservation<'a>
+- restore_new · function · L186-L207 — pub(super) async fn restore_new(
+- refresh_stale · function · L209-L221 — pub(super) async fn refresh_stale(&self, working_dir: Option<&str>) -> Result<()>
+- ensure_vacant · function · L224-L239 — pub(super) fn ensure_vacant(&self) -> Result<()>
+- existing · function · L241-L248 — pub(super) async fn existing(&self) -> Option<AgentHandle>
+- publish · function · L250-L252 — pub(super) async fn publish(&self, agent: AgentHandle) -> Result<()>
+- publish_rekeyed · function · L254-L314 — async fn publish_rekeyed(&self, old_id: Option<&str>, agent: AgentHandle) -> Result<()>

@@ -1,0 +1,65 @@
+# crates/jcode-app-core/src/tool/council.rs
+
+- REQUEST_ID · constant · L20-L20 — const REQUEST_ID: u64 = 1;
+- MIN_SEATS · constant · L21-L21 — const MIN_SEATS: usize = 2;
+- MAX_SEATS · constant · L22-L22 — const MAX_SEATS: usize = 4;
+- MAX_ROUNDS · constant · L23-L23 — const MAX_ROUNDS: u32 = 3;
+- DEFAULT_TOTAL_TIMEOUT_SECS · constant · L24-L24 — const DEFAULT_TOTAL_TIMEOUT_SECS: u64 = 600;
+- MIN_ROUND_TIMEOUT_SECS · constant · L25-L25 — const MIN_ROUND_TIMEOUT_SECS: u64 = 60;
+- POLL_INTERVAL · constant · L26-L26 — const POLL_INTERVAL: Duration = Duration::from_secs(2);
+- SEAT_ALLOWED_TOOLS · constant · L28-L28 — pub(crate) const SEAT_ALLOWED_TOOLS: [&str; 4] = ["read", "agentgrep", "webfetch", "websearch"];
+- SeatSpec · struct · L31-L36 — struct SeatSpec
+- CouncilInput · struct · L39-L55 — struct CouncilInput
+- Turn · struct · L58-L63 — struct Turn
+- Verdict · struct · L66-L70 — pub(crate) struct Verdict
+- Seat · struct · L73-L76 — struct Seat
+- Council · struct · L79-L96 — struct Council
+- COUNCILS · constant · L98-L99 — static COUNCILS: LazyLock<Mutex<HashMap<String, Council>>> =
+- councils · function · L101-L103 — fn councils() -> std::sync::MutexGuard<'static, HashMap<String, Council>>
+- provider_budget_dir · function · L105-L117 — fn provider_budget_dir(id: &str) -> Result<std::path::PathBuf>
+- provider_call_budget · function · L119-L121 — pub(crate) fn provider_call_budget(id: &str) -> Result<ProviderCallBudget>
+- snapshot · function · L123-L127 — fn snapshot(council: &Council) -> Value
+- validate_caps · function · L130-L155 — pub(crate) fn validate_caps(
+- round_timeout_secs · function · L157-L159 — pub(crate) fn round_timeout_secs(total_secs: u64, rounds: u32) -> u64
+- parse_vote · function · L162-L172 — pub(crate) fn parse_vote(text: &str) -> Option<String>
+- unanimous · function · L175-L180 — pub(crate) fn unanimous(votes: &[Option<String>]) -> bool
+- parse_verdict · function · L183-L220 — pub(crate) fn parse_verdict(text: &str, fallback_tally: &BTreeMap<String, usize>) -> Verdict
+- tally_votes · function · L222-L229 — fn tally_votes(turns: &[Turn], round: u32) -> BTreeMap<String, usize>
+- seat_task · function · L231-L241 — fn seat_task(seat: &SeatSpec, council_id: &str, topic: &str) -> String
+- format_transcript · function · L243-L249 — fn format_transcript(turns: &[Turn]) -> String
+- check_error · function · L251-L256 — fn check_error(response: &ServerEvent) -> Result<()>
+- spawn_seat · function · L258-L295 — async fn spawn_seat(
+- send_to · function · L297-L311 — async fn send_to(ctx: &ToolContext, target: &str, message: String) -> Result<()>
+- read_history · function · L313-L326 — async fn read_history(ctx: &ToolContext, target: &str) -> Result<Vec<HistoryMessage>>
+- assistant_count · function · L328-L330 — fn assistant_count(messages: &[HistoryMessage]) -> usize
+- stop_seats · function · L332-L343 — async fn stop_seats(ctx: &ToolContext, session_ids: &[String])
+- barrier · function · L347-L388 — async fn barrier(
+- persist · function · L390-L404 — fn persist(council: &Council) -> Result<()>
+- record_round · function · L406-L445 — fn record_round(council: &mut Council, round: u32, replies: Vec<Option<String>>) -> Vec<String>
+- take · function · L447-L451 — fn take(id: &str) -> Result<Council>
+- put · function · L453-L457 — fn put(council: Council) -> Result<()>
+- summary · function · L459-L480 — fn summary(council: &Council) -> String
+- open · function · L482-L561 — async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council>
+- uuid_like · function · L563-L569 — fn uuid_like(ctx: &ToolContext) -> String
+- round · function · L572-L614 — async fn round(ctx: &ToolContext, council: &mut Council) -> bool
+- verdict · function · L616-L668 — async fn verdict(ctx: &ToolContext, council: &mut Council) -> Result<Verdict>
+- close · function · L670-L691 — async fn close(ctx: &ToolContext, mut council: Council) -> Result<ToolOutput>
+- SeatGuard · struct · L694-L697 — struct SeatGuard
+- for_council · function · L700-L709 — fn for_council(ctx: &ToolContext, council: &Council) -> Self
+- drop · function · L713-L722 — fn drop(&mut self)
+- CouncilTool · struct · L725-L725 — pub struct CouncilTool;
+- new · function · L728-L730 — pub fn new() -> Self
+- name · function · L735-L737 — fn name(&self) -> &str
+- description · function · L739-L741 — fn description(&self) -> &str
+- parameters_schema · function · L743-L771 — fn parameters_schema(&self) -> Value
+- execute · function · L773-L871 — async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L875-L1022 — mod tests
+- rejects_bad_seat_counts_and_rounds · function · L880-L886 — fn rejects_bad_seat_counts_and_rounds()
+- call_cap_below_floor_is_rejected · function · L889-L892 — fn call_cap_below_floor_is_rejected()
+- call_cap_above_formula_is_rejected · function · L895-L904 — fn call_cap_above_formula_is_rejected()
+- council · function · L906-L935 — fn council(max_calls: u32) -> (Council, tempfile::TempDir)
+- round_refused_when_cap_reached · function · L938-L953 — async fn round_refused_when_cap_reached()
+- timeout_names_late_seats_and_blocks_early_stop · function · L956-L962 — fn timeout_names_late_seats_and_blocks_early_stop()
+- unanimous_votes_converge · function · L965-L978 — fn unanimous_votes_converge()
+- split_vote_verdict_is_partial_with_dissent · function · L981-L998 — fn split_vote_verdict_is_partial_with_dissent()
+- seat_policy_rejects_edit_tools · function · L1001-L1021 — fn seat_policy_rejects_edit_tools()

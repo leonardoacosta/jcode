@@ -1,0 +1,41 @@
+# crates/jcode-tui/src/tui/app/voice_input.rs
+
+- HOLD_TO_TALK · constant · L18-L18 — const HOLD_TO_TALK: Duration = Duration::from_millis(400);
+- REPEAT_DEBOUNCE · constant · L21-L21 — const REPEAT_DEBOUNCE: Duration = Duration::from_millis(300);
+- METER_TICK · constant · L23-L23 — const METER_TICK: Duration = Duration::from_millis(80);
+- METER_BARS · constant · L24-L24 — const METER_BARS: usize = 10;
+- LEVEL_HISTORY · constant · L27-L27 — const LEVEL_HISTORY: usize = 64;
+- LIVE_TAIL_CHARS · constant · L28-L28 — const LIVE_TAIL_CHARS: usize = 56;
+- VoicePhase · enum · L31-L34 — pub(crate) enum VoicePhase
+- VoiceInput · struct · L36-L44 — pub(crate) struct VoiceInput
+- drop · function · L47-L50 — fn drop(&mut self)
+- VoicePoll · enum · L55-L62 — pub(crate) enum VoicePoll
+- voice_input_key_label · function · L65-L67 — pub(crate) fn voice_input_key_label(&self) -> Option<&str>
+- voice_input_key_matches · function · L69-L74 — fn voice_input_key_matches(&self, code: KeyCode, modifiers: KeyModifiers) -> bool
+- handle_voice_key_event · function · L78-L108 — pub(crate) fn handle_voice_key_event(&mut self, event: &KeyEvent) -> bool
+- observe_voice_key_release · function · L112-L129 — pub(crate) fn observe_voice_key_release(&mut self, event: &KeyEvent)
+- toggle_voice_input · function · L131-L143 — pub(crate) fn toggle_voice_input(&mut self)
+- start_voice_input · function · L145-L195 — fn start_voice_input(&mut self)
+- stop_voice_input · function · L197-L207 — fn stop_voice_input(&mut self)
+- cancel_voice_input · function · L209-L213 — pub(crate) fn cancel_voice_input(&mut self, notice: &str)
+- report_voice_error · function · L215-L226 — fn report_voice_error(&mut self, error: &VoiceError)
+- poll_voice_input · function · L229-L268 — pub(crate) fn poll_voice_input(&mut self) -> VoicePoll
+- handle_voice_input_wake_local · function · L271-L280 — pub(crate) fn handle_voice_input_wake_local(&mut self) -> bool
+- apply_external_voice_activity · function · L283-L294 — pub(crate) fn apply_external_voice_activity(
+- external_voice_status_line · function · L297-L303 — fn external_voice_status_line(&self) -> Option<(bool, String)>
+- voice_input_status_line · function · L307-L312 — pub(crate) fn voice_input_status_line(&self) -> Option<(bool, String)>
+- voice_composer_preview_state · function · L316-L340 — pub(crate) fn voice_composer_preview_state(&self) -> Option<crate::tui::VoiceComposerPreview>
+- voice_status_line_text · function · L342-L381 — fn voice_status_line_text(&self) -> Option<(bool, String)>
+- EXTERNAL_VOICE_STALE · constant · L385-L385 — const EXTERNAL_VOICE_STALE: Duration = Duration::from_secs(3);
+- EXTERNAL_TRANSCRIBING_STALE · constant · L387-L387 — const EXTERNAL_TRANSCRIBING_STALE: Duration = Duration::from_secs(60);
+- external_voice_preview · function · L389-L417 — fn external_voice_preview(
+- external_voice_line · function · L419-L465 — fn external_voice_line(
+- drain_voice_events · function · L467-L483 — fn drain_voice_events(
+- spawn_voice_waker · function · L487-L500 — fn spawn_voice_waker(notify: Arc<tokio::sync::Notify>, done: Arc<AtomicBool>)
+- meter_bar · function · L504-L508 — fn meter_bar(level: f32) -> char
+- BARS · constant · L505-L505 — const BARS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+- live_tail · function · L510-L518 — fn live_tail(text: &str) -> String
+- tests · module · L521-L567 — mod tests
+- meter_is_flat_for_silence_and_full_for_loud_speech · function · L525-L532 — fn meter_is_flat_for_silence_and_full_for_loud_speech()
+- external_voice_shows_meter_and_expires · function · L535-L556 — fn external_voice_shows_meter_and_expires()
+- live_tail_keeps_the_most_recent_words · function · L559-L566 — fn live_tail_keeps_the_most_recent_words()

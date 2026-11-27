@@ -1,0 +1,49 @@
+# crates/jcode-base/src/model_pricing.rs
+
+- API_URL · constant · L30-L30 — const API_URL: &str = "https://models.dev/api.json";
+- CACHE_FILE · constant · L31-L31 — const CACHE_FILE: &str = "models_dev_pricing.json";
+- CACHE_TTL_SECS · constant · L32-L32 — const CACHE_TTL_SECS: u64 = 24 * 60 * 60;
+- HTTP_TIMEOUT · constant · L33-L33 — const HTTP_TIMEOUT: Duration = Duration::from_secs(20);
+- ModelCost · struct · L37-L44 — pub struct ModelCost
+- PricingCache · struct · L47-L52 — struct PricingCache
+- MEMORY_CACHE · constant · L61-L61 — static MEMORY_CACHE: Mutex<Option<(PathBuf, Arc<PricingCache>)>> = Mutex::new(None);
+- REFRESH_IN_FLIGHT · constant · L62-L62 — static REFRESH_IN_FLIGHT: AtomicBool = AtomicBool::new(false);
+- cache_path · function · L64-L69 — fn cache_path() -> PathBuf
+- now_unix_secs · function · L71-L76 — fn now_unix_secs() -> u64
+- load_cache · function · L78-L94 — fn load_cache() -> Option<Arc<PricingCache>>
+- save_cache · function · L96-L104 — fn save_cache(cache: PricingCache) -> Arc<PricingCache>
+- models_dev_provider_id · function · L108-L147 — pub fn models_dev_provider_id(jcode_provider: &str) -> Option<&'static str>
+- normalize_model_id · function · L151-L156 — fn normalize_model_id(model: &str) -> &str
+- lookup · function · L161-L163 — pub fn lookup(jcode_provider: &str, model: &str) -> Option<ModelCost>
+- PricingMatch · enum · L167-L173 — pub enum PricingMatch
+- lookup_with_provenance · function · L177-L216 — pub fn lookup_with_provenance(
+- openai_compatible_profile_is_local · function · L222-L239 — fn openai_compatible_profile_is_local(jcode_provider: &str) -> bool
+- api_base_is_local · function · L242-L261 — fn api_base_is_local(api_base: &str) -> bool
+- cross_provider_lookup · function · L267-L289 — fn cross_provider_lookup(cache: &PricingCache, model: &str) -> Option<ModelCost>
+- modal_pricing · function · L293-L303 — fn modal_pricing(candidates: &[(&str, ModelCost)]) -> Option<ModelCost>
+- cost_key · function · L309-L317 — fn cost_key(cost: &ModelCost) -> [u64; 4]
+- MISSING · constant · L310-L310 — const MISSING: u64 = u64::MAX;
+- ensure_cache_fresh · function · L320-L330 — fn ensure_cache_fresh() -> Option<Arc<PricingCache>>
+- schedule_refresh · function · L334-L368 — pub fn schedule_refresh()
+- refresh_now · function · L371-L391 — async fn refresh_now() -> anyhow::Result<()>
+- parse_api_response · function · L393-L484 — fn parse_api_response(body: &str) -> anyhow::Result<PricingCache>
+- ProviderPrices · struct · L402-L405 — struct ProviderPrices<'a>
+- ModelPrice · struct · L408-L411 — struct ModelPrice<'a>
+- PriceFields · struct · L414-L423 — struct PriceFields<'a>
+- number · function · L425-L436 — fn number(raw: Option<&RawValue>) -> Option<f64>
+- save_test_cache · function · L487-L499 — pub(crate) fn save_test_cache(entries: &[(&str, &str, ModelCost)])
+- clear_memory_cache_for_tests · function · L502-L506 — pub(crate) fn clear_memory_cache_for_tests()
+- tests · module · L509-L1098 — mod tests
+- save_cache_moves_backing_allocations_and_preserves_disk_and_lookup · function · L513-L577 — fn save_cache_moves_backing_allocations_and_preserves_disk_and_lookup()
+- resellers_fall_back_to_vendor_pricing_seen_elsewhere · function · L580-L718 — fn resellers_fall_back_to_vendor_pricing_seen_elsewhere()
+- local_profiles_do_not_borrow_hosted_pricing · function · L721-L754 — fn local_profiles_do_not_borrow_hosted_pricing()
+- local_api_bases_are_detected · function · L757-L776 — fn local_api_bases_are_detected()
+- mapped_compatible_profiles_do_not_borrow_foreign_pricing · function · L779-L825 — fn mapped_compatible_profiles_do_not_borrow_foreign_pricing()
+- missing_cache_rates_do_not_merge_with_free_ones · function · L828-L893 — fn missing_cache_rates_do_not_merge_with_free_ones()
+- parses_models_dev_shape · function · L896-L932 — fn parses_models_dev_shape()
+- pricing_parser_skips_malformed_entries_without_losing_valid_prices · function · L935-L974 — fn pricing_parser_skips_malformed_entries_without_losing_valid_prices()
+- pricing_parser_ignores_large_metadata_and_decodes_escaped_ids · function · L977-L1010 — fn pricing_parser_ignores_large_metadata_and_decodes_escaped_ids()
+- pricing_parser_validates_json_even_in_ignored_metadata · function · L1013-L1024 — fn pricing_parser_validates_json_even_in_ignored_metadata()
+- rejects_empty_response · function · L1027-L1030 — fn rejects_empty_response()
+- provider_key_mapping_covers_jcode_providers · function · L1033-L1046 — fn provider_key_mapping_covers_jcode_providers()
+- lookup_normalizes_model_ids · function · L1049-L1097 — fn lookup_normalizes_model_ids()

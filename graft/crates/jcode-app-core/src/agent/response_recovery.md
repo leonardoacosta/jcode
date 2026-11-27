@@ -1,0 +1,57 @@
+# crates/jcode-app-core/src/agent/response_recovery.rs
+
+- MalformedToolCallInfo · struct · L6-L11 — pub(crate) struct MalformedToolCallInfo
+- should_continue_after_stop_reason · function · L14-L33 — pub(crate) fn should_continue_after_stop_reason(stop_reason: &str) -> bool
+- is_pause_turn_stop_reason · function · L36-L38 — pub(crate) fn is_pause_turn_stop_reason(stop_reason: &str) -> bool
+- is_guardrail_stop_reason · function · L43-L51 — pub(crate) fn is_guardrail_stop_reason(stop_reason: Option<&str>) -> bool
+- FABLE_GUARDRAIL_RECONSIDERATION_PROMPTS · constant · L53-L57 — pub(crate) const FABLE_GUARDRAIL_RECONSIDERATION_PROMPTS: [&'static str; 3] = [
+- maybe_reconsider_fable_guardrail · function · L62-L94 — pub(crate) fn maybe_reconsider_fable_guardrail(
+- should_reconsider_fable_guardrail · function · L96-L105 — pub(crate) fn should_reconsider_fable_guardrail(
+- provider_guardrail_notice · function · L110-L142 — pub(crate) fn provider_guardrail_notice(
+- empty_turn_log_event · function · L147-L153 — pub(crate) fn empty_turn_log_event(stop_reason: Option<&str>) -> &'static str
+- EMPTY_POST_TOOL_CONTINUATION_PREFIX · constant · L163-L164 — pub(crate) const EMPTY_POST_TOOL_CONTINUATION_PREFIX: &str =
+- maybe_continue_empty_post_tool_response · function · L171-L217 — pub(crate) fn maybe_continue_empty_post_tool_response(
+- continuation_prompt_for_stop_reason · function · L219-L224 — fn continuation_prompt_for_stop_reason(stop_reason: &str) -> String
+- maybe_continue_incomplete_response · function · L226-L279 — pub(crate) fn maybe_continue_incomplete_response(
+- is_stranded_tool_use_stop · function · L290-L295 — pub(crate) fn is_stranded_tool_use_stop(stop_reason: Option<&str>) -> bool
+- maybe_continue_stranded_tool_use · function · L297-L328 — pub(crate) fn maybe_continue_stranded_tool_use(
+- filter_truncated_tool_calls · function · L330-L359 — pub(super) fn filter_truncated_tool_calls(
+- MAX_MALFORMED_TOOL_CALL_ROUNDS · constant · L367-L367 — pub(crate) const MAX_MALFORMED_TOOL_CALL_ROUNDS: u32 = 3;
+- MALFORMED_TOOL_CALL_ERROR_PREFIX · constant · L372-L372 — pub const MALFORMED_TOOL_CALL_ERROR_PREFIX: &str = "Invalid tool calls:";
+- handle_malformed_tool_round · function · L395-L464 — pub(crate) fn handle_malformed_tool_round(
+- malformed_tool_call_correction · function · L469-L498 — pub(crate) fn malformed_tool_call_correction(
+- malformed_tool_call_terminal_error · function · L502-L514 — pub(crate) fn malformed_tool_call_terminal_error(
+- malformed_tool_schema_excerpt · function · L523-L588 — fn malformed_tool_schema_excerpt(schema: &serde_json::Value) -> String
+- MAX_PROPERTY_CHARS · constant · L524-L524 — const MAX_PROPERTY_CHARS: usize = 400;
+- MAX_FULL_CHARS · constant · L578-L578 — const MAX_FULL_CHARS: usize = 600;
+- malformed_tool_call_recovery_tests · module · L591-L1143 — mod malformed_tool_call_recovery_tests
+- ExecLog · type · L597-L597 — type ExecLog = Arc<Mutex<Vec<Value>>>;
+- SessionLog · type · L598-L598 — type SessionLog = Arc<Mutex<Vec<Option<String>>>>;
+- MalformedScriptProvider · struct · L604-L607 — struct MalformedScriptProvider
+- complete · function · L611-L629 — async fn complete(
+- name · function · L630-L632 — fn name(&self) -> &str
+- model · function · L633-L635 — fn model(&self) -> String
+- supports_compaction · function · L636-L638 — fn supports_compaction(&self) -> bool
+- fork · function · L639-L641 — fn fork(&self) -> Arc<dyn Provider>
+- CaptureTool · struct · L644-L644 — struct CaptureTool(ExecLog);
+- name · function · L647-L649 — fn name(&self) -> &str
+- description · function · L650-L652 — fn description(&self) -> &str
+- parameters_schema · function · L653-L655 — fn parameters_schema(&self) -> Value
+- execute · function · L656-L663 — async fn execute(
+- malformed_round · function · L669-L688 — fn malformed_round(id: &str, session: Option<&str>) -> Vec<StreamEvent>
+- valid_round · function · L690-L709 — fn valid_round(id: &str, value: bool, session: Option<&str>) -> Vec<StreamEvent>
+- mixed_round · function · L712-L736 — fn mixed_round(bad_id: &str, good_id: &str) -> Vec<StreamEvent>
+- final_text_round · function · L738-L745 — fn final_text_round() -> Vec<StreamEvent>
+- scripted_agent · function · L747-L770 — async fn scripted_agent(rounds: Vec<Vec<StreamEvent>>) -> (Agent, SessionLog, ExecLog)
+- correction_reminders · function · L772-L789 — fn correction_reminders(agent: &Agent) -> Vec<String>
+- null_tool_use_count · function · L791-L799 — fn null_tool_use_count(agent: &Agent) -> usize
+- error_tool_result_count · function · L801-L817 — fn error_tool_result_count(agent: &Agent) -> usize
+- run_scripted_turn · function · L819-L826 — async fn run_scripted_turn(agent: &mut Agent, streaming: bool) -> Result<()>
+- tool_examples_remain_literal_text_in_both_turn_loops · function · L829-L896 — async fn tool_examples_remain_literal_text_in_both_turn_loops()
+- structured_tools_keep_literal_examples_in_arguments · function · L899-L914 — async fn structured_tools_keep_literal_examples_in_arguments()
+- schema_excerpt_leads_with_required_and_compact_types · function · L917-L958 — fn schema_excerpt_leads_with_required_and_compact_types()
+- correction_includes_expected_schema_and_unknown_tool_note · function · L961-L988 — fn correction_includes_expected_schema_and_unknown_tool_note()
+- terminal_error_keeps_stable_prefix_and_actionable_guidance · function · L991-L1004 — fn terminal_error_keeps_stable_prefix_and_actionable_guidance()
+- consecutive_malformed_rounds_terminate_the_turn_with_stable_prefix · function · L1007-L1071 — async fn consecutive_malformed_rounds_terminate_the_turn_with_stable_prefix()
+- valid_tool_calls_reset_the_malformed_round_bound · function · L1074-L1108 — async fn valid_tool_calls_reset_the_malformed_round_bound()
+- mixed_round_counts_as_progress_and_resets_the_bound · function · L1111-L1142 — async fn mixed_round_counts_as_progress_and_resets_the_bound()

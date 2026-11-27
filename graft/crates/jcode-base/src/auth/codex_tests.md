@@ -1,0 +1,26 @@
+# crates/jcode-base/src/auth/codex_tests.rs
+
+- subscription_type_comes_from_account_scoped_jwt_claims · function · L5-L22 — fn subscription_type_comes_from_account_scoped_jwt_claims()
+- EnvVarGuard · struct · L24-L27 — struct EnvVarGuard
+- set · function · L30-L34 — fn set(key: &'static str, value: &str) -> Self
+- set_path · function · L36-L40 — fn set_path(key: &'static str, value: &std::path::Path) -> Self
+- drop · function · L44-L50 — fn drop(&mut self)
+- auth_file_with_oauth_tokens · function · L54-L74 — fn auth_file_with_oauth_tokens()
+- auth_file_with_api_key_only · function · L77-L84 — fn auth_file_with_api_key_only()
+- auth_file_minimal_tokens · function · L87-L100 — fn auth_file_minimal_tokens()
+- decode_jwt_payload_valid · function · L103-L115 — fn decode_jwt_payload_valid()
+- jwt_with_exp · function · L117-L121 — fn jwt_with_exp(exp_secs: i64) -> String
+- expires_at_from_access_token_reads_exp_claim_as_millis · function · L124-L132 — fn expires_at_from_access_token_reads_exp_claim_as_millis()
+- expires_at_from_access_token_handles_missing_exp_and_garbage · function · L135-L144 — fn expires_at_from_access_token_handles_missing_exp_and_garbage()
+- legacy_tokens_without_expiry_recover_expires_at_from_jwt · function · L147-L160 — fn legacy_tokens_without_expiry_recover_expires_at_from_jwt()
+- explicit_expires_at_takes_precedence_over_jwt · function · L163-L173 — fn explicit_expires_at_takes_precedence_over_jwt()
+- extract_account_id_from_jwt · function · L176-L189 — fn extract_account_id_from_jwt()
+- extract_email_from_jwt · function · L192-L200 — fn extract_email_from_jwt()
+- load_credentials_falls_back_to_env_api_key · function · L203-L215 — fn load_credentials_falls_back_to_env_api_key()
+- multi_account_active_switch_works · function · L218-L252 — fn multi_account_active_switch_works()
+- load_auth_file_migrates_legacy_codex_tokens · function · L255-L287 — fn load_auth_file_migrates_legacy_codex_tokens()
+- load_credentials_ignores_legacy_oauth_without_consent · function · L290-L327 — fn load_credentials_ignores_legacy_oauth_without_consent()
+- load_credentials_reads_legacy_oauth_when_allowed · function · L330-L363 — fn load_credentials_reads_legacy_oauth_when_allowed()
+- load_credentials_reads_legacy_oauth_without_changing_external_permissions · function · L367-L416 — fn load_credentials_reads_legacy_oauth_without_changing_external_permissions()
+- load_auth_file_preserves_existing_named_labels · function · L419-L455 — fn load_auth_file_preserves_existing_named_labels()
+- serving_account_label_follows_credentials_not_active_login · function · L458-L506 — fn serving_account_label_follows_credentials_not_active_login()

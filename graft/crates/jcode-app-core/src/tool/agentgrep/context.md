@@ -1,0 +1,41 @@
+# crates/jcode-app-core/src/tool/agentgrep/context.rs
+
+- maybe_write_context_json · function · L3-L26 — pub(super) fn maybe_write_context_json(
+- build_harness_context · function · L28-L105 — fn build_harness_context(
+- collect_tool_exposures · function · L107-L156 — fn collect_tool_exposures(session: &Session) -> Vec<ToolExposureObservation>
+- collect_read_exposure · function · L158-L208 — fn collect_read_exposure(
+- collect_agentgrep_exposure · function · L214-L285 — fn collect_agentgrep_exposure(
+- collect_bash_exposure · function · L291-L366 — pub(super) fn collect_bash_exposure(
+- normalize_context_path · function · L368-L379 — fn normalize_context_path(path: &str, search_root: &Path, ctx: &ToolContext) -> Option<String>
+- normalize_read_range_from_tool_input · function · L381-L411 — fn normalize_read_range_from_tool_input(input: &Value) -> (usize, usize)
+- collect_outline_symbols · function · L413-L442 — fn collect_outline_symbols(
+- collect_trace_exposure · function · L444-L607 — pub(super) fn collect_trace_exposure(
+- collect_shell_output_path_exposure · function · L609-L657 — fn collect_shell_output_path_exposure(
+- tune_known_file · function · L659-L679 — pub(super) fn tune_known_file(
+- tune_known_region · function · L681-L701 — pub(super) fn tune_known_region(
+- tune_known_symbol · function · L703-L723 — fn tune_known_symbol(
+- apply_exposure_tuning · function · L729-L779 — fn apply_exposure_tuning(
+- file_freshness_multiplier · function · L781-L813 — fn file_freshness_multiplier(
+- file_modified_at · function · L815-L828 — fn file_modified_at(path: &str, search_root: &Path, ctx: &ToolContext) -> Option<DateTime<Utc>>
+- push_known_file · function · L830-L848 — fn push_known_file(context: &mut AgentGrepHarnessContext, known: AgentGrepKnownFile)
+- push_known_region · function · L850-L865 — fn push_known_region(context: &mut AgentGrepHarnessContext, known: AgentGrepKnownRegion)
+- push_known_symbol · function · L867-L883 — fn push_known_symbol(context: &mut AgentGrepHarnessContext, known: AgentGrepKnownSymbol)
+- merge_reasons · function · L885-L891 — fn merge_reasons(existing: &mut Vec<&'static str>, new_reasons: Vec<&'static str>)
+- parse_structure_items · function · L893-L898 — fn parse_structure_items(content: &str) -> Vec<(&'static str, String, usize, usize)>
+- parse_structure_item_line · function · L900-L911 — fn parse_structure_item_line(line: &str) -> Option<(&'static str, String, usize, usize)>
+- STRUCTURE_ITEM_RE · constant · L901-L901 — static STRUCTURE_ITEM_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_ranked_file_header · function · L913-L924 — fn parse_ranked_file_header(line: &str) -> Option<String>
+- FILE_HEADER_RE · constant · L914-L914 — static FILE_HEADER_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_region_header_line · function · L926-L936 — fn parse_region_header_line(line: &str) -> Option<(String, usize, usize)>
+- REGION_HEADER_RE · constant · L927-L927 — static REGION_HEADER_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_sed_file_range · function · L938-L956 — fn parse_sed_file_range(command: &str) -> Option<(String, usize, usize)>
+- SED_RE · constant · L939-L939 — static SED_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_cat_files · function · L958-L978 — fn parse_cat_files(command: &str) -> Vec<String>
+- CAT_RE · constant · L959-L959 — static CAT_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_git_show_files · function · L980-L1000 — fn parse_git_show_files(command: &str) -> Vec<String>
+- GIT_SHOW_RE · constant · L981-L981 — static GIT_SHOW_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_git_diff_files · function · L1002-L1022 — fn parse_git_diff_files(command: &str) -> Vec<String>
+- GIT_DIFF_RE · constant · L1003-L1003 — static GIT_DIFF_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- parse_path_line_hits · function · L1024-L1040 — fn parse_path_line_hits(content: &str) -> Vec<(String, usize)>
+- PATH_LINE_RE · constant · L1025-L1025 — static PATH_LINE_RE: OnceLock<Option<Regex>> = OnceLock::new();
+- leak_str · function · L1042-L1044 — fn leak_str(value: String) -> &'static str

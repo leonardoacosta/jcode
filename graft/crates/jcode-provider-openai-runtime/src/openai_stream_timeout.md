@@ -1,0 +1,21 @@
+# crates/jcode-provider-openai-runtime/src/openai_stream_timeout.rs
+
+- send_websocket_frame · function · L11-L41 — pub(crate) async fn send_websocket_frame<S>(
+- reasoning_payload · function · L49-L51 — pub(crate) fn reasoning_payload(effort: &str) -> Value
+- request_reasoning_effort · function · L54-L59 — pub(crate) fn request_reasoning_effort(request: &Value) -> Option<&str>
+- effective_https_idle_timeout · function · L62-L64 — pub(crate) fn effective_https_idle_timeout(request: &Value) -> std::time::Duration
+- effective_ws_completion_timeout_secs · function · L74-L76 — pub(crate) fn effective_ws_completion_timeout_secs(request: &Value) -> u64
+- tests · module · L79-L277 — mod tests
+- PendingSend · struct · L82-L84 — struct PendingSend
+- Error · type · L87-L87 — type Error = tokio_tungstenite::tungstenite::Error;
+- poll_ready · function · L89-L98 — fn poll_ready(
+- start_send · function · L100-L105 — fn start_send(
+- poll_flush · function · L107-L112 — fn poll_flush(
+- poll_close · function · L114-L119 — fn poll_close(
+- websocket_send_timeout_covers_readiness_and_flush · function · L123-L140 — async fn websocket_send_timeout_covers_readiness_and_flush()
+- reasoning_payload_always_requests_summaries · function · L143-L155 — fn reasoning_payload_always_requests_summaries()
+- council_provider_budget_stops_websocket_retry_frames · function · L158-L200 — async fn council_provider_budget_stops_websocket_retry_frames()
+- reads_the_responses_reasoning_payload_shape · function · L203-L218 — fn reads_the_responses_reasoning_payload_shape()
+- ws_completion_budget_scales_with_reasoning_effort · function · L221-L247 — fn ws_completion_budget_scales_with_reasoning_effort()
+- ws_idle_budget_matches_https_for_every_effort · function · L250-L264 — fn ws_idle_budget_matches_https_for_every_effort()
+- https_and_ws_budgets_agree_on_effort_ordering · function · L267-L276 — fn https_and_ws_budgets_agree_on_effort_ordering()

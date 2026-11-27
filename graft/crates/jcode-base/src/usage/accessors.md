@@ -1,0 +1,43 @@
+# crates/jcode-base/src/usage/accessors.rs
+
+- USAGE · constant · L4-L4 — static USAGE: tokio::sync::OnceCell<Arc<RwLock<UsageData>>> = tokio::sync::OnceCell::const_new();
+- REFRESH_IN_FLIGHT · constant · L5-L5 — static REFRESH_IN_FLIGHT: AtomicBool = AtomicBool::new(false);
+- get_usage · function · L7-L12 — pub(super) async fn get_usage() -> Arc<RwLock<UsageData>>
+- fetch_usage · function · L15-L47 — async fn fetch_usage() -> Result<UsageData>
+- refresh_usage · function · L49-L65 — async fn refresh_usage(usage: Arc<RwLock<UsageData>>)
+- try_spawn_refresh · function · L67-L79 — fn try_spawn_refresh(usage: Arc<RwLock<UsageData>>)
+- get · function · L82-L96 — pub async fn get() -> UsageData
+- OPENAI_USAGE · constant · L98-L99 — static OPENAI_USAGE: tokio::sync::OnceCell<Arc<RwLock<OpenAIUsageData>>> =
+- OPENAI_REFRESH_IN_FLIGHT · constant · L100-L100 — static OPENAI_REFRESH_IN_FLIGHT: AtomicBool = AtomicBool::new(false);
+- get_openai_usage_cell · function · L102-L107 — pub(super) async fn get_openai_usage_cell() -> Arc<RwLock<OpenAIUsageData>>
+- fetch_openai_usage_data · function · L109-L118 — async fn fetch_openai_usage_data() -> OpenAIUsageData
+- refresh_openai_usage · function · L120-L127 — async fn refresh_openai_usage(usage: Arc<RwLock<OpenAIUsageData>>)
+- try_spawn_openai_refresh · function · L129-L144 — fn try_spawn_openai_refresh(usage: Arc<RwLock<OpenAIUsageData>>)
+- get_openai_usage · function · L146-L159 — pub async fn get_openai_usage() -> OpenAIUsageData
+- get_openai_usage_sync · function · L161-L178 — pub fn get_openai_usage_sync() -> OpenAIUsageData
+- OPENAI_LABEL_REFRESH_IN_FLIGHT · constant · L180-L182 — static OPENAI_LABEL_REFRESH_IN_FLIGHT: std::sync::OnceLock<
+- get_openai_usage_for_label_sync · function · L188-L234 — pub fn get_openai_usage_for_label_sync(label: &str) -> OpenAIUsageData
+- EmailScopedOpenAiUsage · struct · L237-L241 — struct EmailScopedOpenAiUsage
+- current · function · L244-L252 — fn current(&mut self, generation: u64) -> &mut Self
+- OPENAI_EMAIL_USAGE · constant · L255-L257 — static OPENAI_EMAIL_USAGE: std::sync::OnceLock<
+- normalized_usage_email · function · L259-L261 — fn normalized_usage_email(email: &str) -> String
+- unique_openai_account_for_email · function · L263-L280 — fn unique_openai_account_for_email<'a>(
+- fetch_openai_usage_for_email · function · L282-L305 — async fn fetch_openai_usage_for_email(email: &str) -> OpenAIUsageData
+- get_openai_usage_for_email_sync · function · L313-L346 — pub fn get_openai_usage_for_email_sync(email: &str) -> OpenAIUsageData
+- has_extra_usage · function · L350-L357 — pub fn has_extra_usage() -> bool
+- fetch_usage_for_account_sync · function · L363-L391 — pub fn fetch_usage_for_account_sync(
+- fetch_openai_usage_for_account_sync · function · L393-L425 — pub fn fetch_openai_usage_for_account_sync(
+- account_usage_probe_sync · function · L427-L432 — pub fn account_usage_probe_sync(provider: MultiAccountProviderKind) -> Option<AccountUsageProbe>
+- anthropic_account_usage_probe_sync · function · L434-L478 — fn anthropic_account_usage_probe_sync() -> Option<AccountUsageProbe>
+- openai_account_usage_probe_sync · function · L480-L534 — fn openai_account_usage_probe_sync() -> Option<AccountUsageProbe>
+- fetch_usage_for_account · function · L536-L548 — async fn fetch_usage_for_account(
+- fetch_usage_for_access_token · function · L554-L557 — pub async fn fetch_usage_for_access_token(access_token: &str) -> Result<UsageData>
+- get_sync · function · L560-L580 — pub fn get_sync() -> UsageData
+- email_usage_tests · module · L583-L691 — mod email_usage_tests
+- account · function · L586-L596 — fn account(label: &str, email: Option<&str>) -> auth::codex::OpenAiAccount
+- usage · function · L598-L608 — fn usage(ratio: f32) -> OpenAIUsageData
+- email_resolution_is_exact_normalized_and_not_first_account · function · L611-L625 — fn email_resolution_is_exact_normalized_and_not_first_account()
+- email_resolution_rejects_multiple_workspace_accounts · function · L628-L634 — fn email_resolution_rejects_multiple_workspace_accounts()
+- email_cache_keeps_account_snapshots_separate · function · L637-L669 — fn email_cache_keeps_account_snapshots_separate()
+- email_cache_generation_change_discards_snapshot_and_inflight_marker · function · L672-L684 — fn email_cache_generation_change_discards_snapshot_and_inflight_marker()
+- email_accessor_without_runtime_is_unavailable_for_unknown_identity · function · L687-L690 — fn email_accessor_without_runtime_is_unavailable_for_unknown_identity()

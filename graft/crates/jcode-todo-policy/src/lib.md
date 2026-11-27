@@ -1,0 +1,87 @@
+# crates/jcode-todo-policy/src/lib.rs
+
+- evidence · module · L10-L10 — pub mod evidence;
+- shadow · module · L11-L11 — pub mod shadow;
+- await_dependency · module · L13-L13 — pub mod await_dependency;
+- completion_report · module · L14-L14 — pub mod completion_report;
+- followup · module · L15-L15 — pub mod followup;
+- store · module · L16-L16 — pub mod store;
+- TODO_LONG_SESSION_REVIEW_MESSAGE · constant · L28-L28 — pub const TODO_LONG_SESSION_REVIEW_MESSAGE: &str = "[auto] Re-read the request. Update the todo plan and goal assessments from the evidence gathered so far. Correct anything stale or overstated, then continue the work. Do not reply or wait for the user.";
+- PRE_COMPACT_TODO_LONG_SESSION_REVIEW_MESSAGE · constant · L29-L29 — const PRE_COMPACT_TODO_LONG_SESSION_REVIEW_MESSAGE: &str = "[automated todo assessment review - not a user message] Re-read the request. Update the todo plan and goal assessments from the evidence gathered so far. Correct anything stale or overstated, then continue the work. Do not reply or wait for the user.";
+- PRE_BUDGET_TODO_LONG_SESSION_REVIEW_MESSAGE · constant · L30-L30 — const PRE_BUDGET_TODO_LONG_SESSION_REVIEW_MESSAGE: &str = "[automated todo assessment review - not a user message] Re-read the original request and reconsider the current todo plan and every goal assessment using the evidence gathered during the work so far. Correct anything stale or overstated, including intent understanding, feedback-loop relevance and coverage, autonomy, difficulty, delivery, confidence, iteration maturity, and stopping evidence. Do not reply conversationally or wait for the user. Continue the work after saving an honest updated assessment.";
+- TODO_QUALITY_GATE_MAX_APPROX_TOKENS · constant · L35-L35 — pub const TODO_QUALITY_GATE_MAX_APPROX_TOKENS: usize = 64;
+- canonical_todo_status · function · L50-L70 — pub fn canonical_todo_status(status: &str) -> Option<&'static str>
+- incomplete_todo_fingerprint · function · L74-L88 — pub fn incomplete_todo_fingerprint<'a>(
+- todo_status_is_completed · function · L90-L92 — pub fn todo_status_is_completed(status: &str) -> bool
+- todo_status_is_cancelled · function · L94-L96 — pub fn todo_status_is_cancelled(status: &str) -> bool
+- intent_understanding_passes · function · L99-L101 — pub fn intent_understanding_passes(state: Option<IntentUnderstanding>) -> bool
+- feedback_loop_passes · function · L104-L106 — pub fn feedback_loop_passes(state: Option<FeedbackLoopState>) -> bool
+- required_feedback_loop_relevance · function · L111-L117 — pub fn required_feedback_loop_relevance(difficulty: Option<Difficulty>) -> FeedbackLoopRelevance
+- required_feedback_loop_coverage · function · L121-L127 — pub fn required_feedback_loop_coverage(difficulty: Option<Difficulty>) -> FeedbackLoopCoverage
+- feedback_loop_relevance_passes · function · L129-L132 — pub fn feedback_loop_relevance_passes(goal: &TodoGoal) -> bool
+- feedback_loop_coverage_passes · function · L134-L137 — pub fn feedback_loop_coverage_passes(goal: &TodoGoal) -> bool
+- required_feedback_loop_traceability · function · L139-L147 — pub fn required_feedback_loop_traceability(
+- feedback_loop_traceability_passes · function · L149-L152 — pub fn feedback_loop_traceability_passes(goal: &TodoGoal) -> bool
+- completion_confidence_passes · function · L155-L157 — pub fn completion_confidence_passes(state: Option<ConfidenceState>) -> bool
+- required_delivery_state · function · L162-L164 — pub fn required_delivery_state(_difficulty: Option<Difficulty>) -> DeliveryState
+- delivery_state_passes · function · L168-L196 — pub fn delivery_state_passes(goal: &TodoGoal) -> bool
+- LEGACY_TODO_ALIGNMENT_CONTINUATION_MESSAGE · constant · L200-L200 — const LEGACY_TODO_ALIGNMENT_CONTINUATION_MESSAGE: &str = "Your alignment score is not high enough. Build a requirement inventory from the user's request, including outcomes, deliverables, constraints, prohibited actions, integration paths, edge cases, and necessary follow-through. Revise the plan and its stated user intention to represent every material item. Then map each item to an explicit observation or check in a feedback loop. Generic instructions to run tests, verify, or review count only for requirements those checks actually enforce; add separate checks for non-testable requirements. Reassess the weaker link before continuing the task.";
+- TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE · constant · L203-L203 — pub const TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE: &str = "[auto] Understand the user's intent better. Try to avoid asking the user. Make sure the todo is up to date.";
+- PRE_COMPACT_TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE · constant · L204-L204 — const PRE_COMPACT_TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE: &str = "Understand the user's intent better. Try to avoid asking the user. Make sure the todo is up to date.";
+- PRE_CONCISE_TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE · constant · L208-L208 — const PRE_CONCISE_TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE: &str = "Your understanding of the user's intent is not high enough. Re-read the request and think harder about what the user actually wants and left implicit, using the conversation and codebase as evidence. Form a requirement inventory covering outcomes, deliverables, constraints, prohibited actions, integration paths, edge cases, and necessary follow-through, and check the plan represents every material item. Do not ask the user; resolve the ambiguity yourself, then update the plan's user intention and understands_user_intent.";
+- PRE_TODO_REMINDER_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE · constant · L209-L210 — const PRE_TODO_REMINDER_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE: &str =
+- TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE · constant · L214-L214 — pub const TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE: &str = "[auto] Your feedback loop isn't good enough. Think about what feedback loops you need. Make sure the todo is up to date.";
+- PRE_COMPACT_TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE · constant · L215-L215 — const PRE_COMPACT_TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE: &str = "Improve the goal's feedback loop. Name a concrete check for each requirement and what result will show it passed. Update the todo, then continue the work.";
+- PRE_TODO_REMINDER_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE · constant · L216-L216 — const PRE_TODO_REMINDER_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE: &str = "Improve the goal's feedback loop. Name a concrete check for each requirement and what result will show it passed. Update the goal, then continue the work.";
+- PRE_BUDGET_TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE · constant · L217-L217 — const PRE_BUDGET_TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE: &str = "Your feedback loop is not closed. First, improve the goal's objective and name the observation that reports back on each requirement, so progress can be measured across iterations. Generic phrases such as run tests, verify, or review count only for requirements those named checks demonstrably enforce; add separate explicit checks for non-testable requirements. Then call the todo tool again with the revised goal before continuing the task. The goal is to create a strong feedback loop you can iterate against.";
+- LEGACY_TODO_HILL_CLIMBABILITY_CONTINUATION_MESSAGE · constant · L222-L222 — const LEGACY_TODO_HILL_CLIMBABILITY_CONTINUATION_MESSAGE: &str = "Your hill-climbability is not high enough. First, improve the goal's objective and feedback loop so progress can be measured across iterations. Then call the todo tool again with the revised goal before continuing the task. The goal is to create a strong feedback loop you can iterate against.";
+- TODO_OWNERSHIP_CONTINUATION_MESSAGE · constant · L226-L227 — pub const TODO_OWNERSHIP_CONTINUATION_MESSAGE: &str =
+- PRE_COMPACT_TODO_OWNERSHIP_CONTINUATION_MESSAGE · constant · L228-L228 — const PRE_COMPACT_TODO_OWNERSHIP_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] Continue the work below. Keep the todo up to date; do not reply or wait for the user.";
+- goal_has_documented_stop · function · L236-L250 — fn goal_has_documented_stop(goal: &TodoGoal) -> bool
+- todos_needing_validation · function · L259-L274 — pub fn todos_needing_validation<'a>(
+- build_todo_validation_continuation_message · function · L277-L281 — pub fn build_todo_validation_continuation_message(targets: &[&TodoItem]) -> String
+- ownership_followup_reasons · function · L283-L317 — fn ownership_followup_reasons(goal: &TodoGoal) -> Vec<&'static str>
+- build_todo_ownership_continuation_message · function · L321-L347 — pub fn build_todo_ownership_continuation_message(todos: &[TodoItem], goals: &[TodoGoal]) -> String
+- LEGACY_TODO_OWNERSHIP_CONTINUATION_MESSAGE · constant · L351-L351 — const LEGACY_TODO_OWNERSHIP_CONTINUATION_MESSAGE: &str = "[automated todo completion gate - not a user message] Your end-to-end ownership is not high enough to finish this goal.";
+- TODO_COMPLETION_CONTINUATION_MESSAGE · constant · L354-L354 — pub const TODO_COMPLETION_CONTINUATION_MESSAGE: &str = "[auto] Do more validation on the work below. Keep the todo up to date; do not reply or wait for the user.";
+- PRE_COMPACT_TODO_COMPLETION_CONTINUATION_MESSAGE · constant · L355-L355 — const PRE_COMPACT_TODO_COMPLETION_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] Do more validation on the work below. Keep the todo up to date; do not reply or wait for the user.";
+- TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE · constant · L359-L359 — pub const TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str = "[auto] You had a confidence jump in the items below. Double-check that these are correct. Keep the todo up to date; do not reply or wait for the user.";
+- PRE_COMPACT_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE · constant · L360-L360 — const PRE_COMPACT_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] You had a confidence jump in the items below. Double-check that these are correct. Keep the todo up to date; do not reply or wait for the user.";
+- TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE · constant · L365-L365 — pub const TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE: &str = "[auto] Give the user a concise final response now, including any remaining limitations or blockers. Do not call the todo tool or do more work.";
+- PRE_NARROWED_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE · constant · L366-L366 — const PRE_NARROWED_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE: &str = "[auto] Quality checks passed. Give the user a concise final response now. Do not call the todo tool or do more work.";
+- PRE_COMPACT_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE · constant · L367-L367 — const PRE_COMPACT_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] Quality checks passed. Give the user a concise final response now. Do not call the todo tool or do more work.";
+- PRE_BUDGET_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE · constant · L368-L368 — const PRE_BUDGET_TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] All work and quality checks are complete. Give the user the final response now. Default to fewer than 5 lines unless the user's request requires more detail. Summarize the outcome clearly; do not call the todo tool or perform more work.";
+- TODO_CONFIDENCE_SPIKE_LEVELS · constant · L373-L373 — pub const TODO_CONFIDENCE_SPIKE_LEVELS: u8 = 3;
+- SEVERE_INTENT_MISUNDERSTANDING · constant · L379-L379 — pub const SEVERE_INTENT_MISUNDERSTANDING: IntentUnderstanding = IntentUnderstanding::Uncertain;
+- GateObservationKind · enum · L384-L390 — pub enum GateObservationKind
+- GateObservation · struct · L402-L412 — pub struct GateObservation
+- TODO_GATE_DIGEST_PREFIX · constant · L419-L419 — pub const TODO_GATE_DIGEST_PREFIX: &str = "[auto] Before you treat this turn as finished, double-check the weak points it surfaced. Keep the todo up to date. Do not reply or wait for the user.";
+- PRE_COMPACT_TODO_GATE_DIGEST_PREFIX · constant · L420-L420 — const PRE_COMPACT_TODO_GATE_DIGEST_PREFIX: &str = "Before you treat this turn as finished, double-check the weak points it surfaced. Keep the todo up to date. Do not reply or wait for the user.";
+- LABELED_TODO_GATE_DIGEST_PREFIX · constant · L421-L421 — const LABELED_TODO_GATE_DIGEST_PREFIX: &str = "[automated todo quality review - not a user message] Before you treat this turn as finished, double-check the weak points it surfaced. Do not reply conversationally or wait for the user.";
+- observation_score_later_cleared · function · L429-L457 — fn observation_score_later_cleared(
+- build_gate_digest · function · L472-L594 — pub fn build_gate_digest(
+- LEGACY_TODO_CONFIDENCE_SUMMARY_PREFIX · constant · L596-L596 — const LEGACY_TODO_CONFIDENCE_SUMMARY_PREFIX: &str = "All todos are done. Todo confidence summary:";
+- LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE · constant · L600-L601 — const LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE: &str =
+- LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE · constant · L602-L603 — const LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str =
+- PRE_EVIDENCE_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE · constant · L606-L606 — const PRE_EVIDENCE_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] Independently recheck the work below. Keep the todo up to date; do not reply or wait for the user.";
+- normalized_group · function · L608-L613 — fn normalized_group(group: Option<&str>) -> Option<String>
+- group_is_complete · function · L615-L621 — fn group_is_complete(todos: &[TodoItem], group: &Option<String>) -> bool
+- newly_completed_groups_have_sufficient_delivery · function · L626-L648 — pub fn newly_completed_groups_have_sufficient_delivery(
+- completed_groups_have_sufficient_delivery · function · L653-L671 — pub fn completed_groups_have_sufficient_delivery(todos: &[TodoItem], goals: &[TodoGoal]) -> bool
+- groups_closed_by_update · function · L679-L694 — pub fn groups_closed_by_update(
+- spike_completed_todos · function · L699-L715 — pub fn spike_completed_todos(todos: &[TodoItem]) -> Vec<&TodoItem>
+- is_spike · function · L700-L702 — fn is_spike(from: ConfidenceState, to: ConfidenceState) -> bool
+- build_auto_poke_message · function · L720-L726 — pub fn build_auto_poke_message(incomplete_count: usize) -> String
+- build_actionable_poke_message · function · L731-L746 — pub fn build_actionable_poke_message(actionable: &[TodoItem]) -> String
+- GATE_NAMED_TODO_LIMIT · constant · L750-L750 — const GATE_NAMED_TODO_LIMIT: usize = 6;
+- quoted_todo_label · function · L752-L760 — fn quoted_todo_label(todo: &TodoItem) -> String
+- append_named_todos · function · L762-L779 — fn append_named_todos(message: &mut String, lead: &str, todos: &[&TodoItem])
+- build_todo_completion_continuation_message · function · L783-L815 — pub fn build_todo_completion_continuation_message(todos: &[TodoItem]) -> String
+- build_todo_confidence_spike_continuation_message · function · L819-L824 — pub fn build_todo_confidence_spike_continuation_message(todos: &[TodoItem]) -> String
+- is_auto_poke_message · function · L835-L876 — pub fn is_auto_poke_message(message: &str) -> bool
+- auto_poke_display_summary · function · L884-L950 — pub fn auto_poke_display_summary(message: &str) -> Option<&'static str>
+- derive_session_title · function · L957-L994 — pub fn derive_session_title(todos: &[TodoItem], plan: &TodoPlan) -> Option<String>
+- non_empty · function · L958-L963 — fn non_empty(value: Option<&str>) -> Option<String>
+- reminder_tests · module · L997-L997 — mod reminder_tests;
+- tests · module · L1001-L1001 — mod tests;
+- stages · module · L1003-L1003 — pub mod stages;

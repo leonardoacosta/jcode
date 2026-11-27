@@ -1,0 +1,25 @@
+# scripts/bench_memory_cli.py
+
+- ToolSpec · class · L38-L46 — class ToolSpec
+- SessionLaunch · class · L50-L59 — class SessionLaunch
+- ToolRunResult · class · L63-L69 — class ToolRunResult
+- shutil_which · function · L72-L75 — def shutil_which(name: str) -> str | None
+- detect_pi_bin · function · L78-L86 — def detect_pi_bin() -> str
+- build_specs · function · L89-L158 — def build_specs() -> dict[str, ToolSpec]
+- reply_queries · function · L161-L188 — def reply_queries(master_fd: int, buffer: bytes) -> bytes
+- strip_ansi · function · L191-L192 — def strip_ansi(text: str) -> str
+- first_meaningful_line · function · L195-L203 — def first_meaningful_line(text: str) -> str | None
+- wait_for_socket · function · L206-L218 — def wait_for_socket(path: str, timeout_s: float) -> bool
+- launch_interactive · function · L221-L278 — def launch_interactive(argv: list[str], cwd: Path, env: dict[str, str], timeout_s: float, settle_s: float) -> SessionLaunch
+- iter_proc_stat · function · L281-L298 — def iter_proc_stat() -> dict[int, tuple[int, int]]
+- collect_descendants · function · L301-L314 — def collect_descendants(root_pids: list[int]) -> set[int]
+- collect_process_group_pids · function · L317-L320 — def collect_process_group_pids(pgids: list[int]) -> set[int]
+- read_pss_mb · function · L323-L331 — def read_pss_mb(pid: int) -> float | None
+- collect_pattern_pids · function · L334-L347 — def collect_pattern_pids(patterns: tuple[str, ...]) -> set[int]
+- read_rss_mb · function · L350-L357 — def read_rss_mb(pid: int) -> float | None
+- sum_tree_rss · function · L360-L362 — def sum_tree_rss(root_pids: list[int], pgids: list[int], patterns: tuple[str, ...] = ()) -> float
+- sum_tree_pss · function · L365-L375 — def sum_tree_pss(root_pids: list[int], pgids: list[int], patterns: tuple[str, ...] = ()) -> tuple[float, int]
+- terminate_pgroup · function · L378-L384 — def terminate_pgroup(pgid: int) -> None
+- version_for · function · L387-L390 — def version_for(spec: ToolSpec) -> str
+- run_tool · function · L393-L501 — def run_tool(spec: ToolSpec, sessions: int, cwd: Path, timeout_s: float, settle_s: float) -> ToolRunResult
+- main · function · L504-L528 — def main() -> int

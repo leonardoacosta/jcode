@@ -1,0 +1,29 @@
+# crates/jcode-render-core/src/model.rs
+
+- StyleRole · enum · L16-L34 — pub enum StyleRole
+- FillRole · enum · L39-L43 — pub enum FillRole
+- TextAttrs · struct · L48-L53 — pub struct TextAttrs
+- none · function · L56-L63 — pub const fn none() -> Self
+- StyledSpan · struct · L68-L77 — pub struct StyledSpan
+- new · function · L80-L88 — pub fn new(text: impl Into<String>, role: StyleRole) -> Self
+- plain · function · L90-L92 — pub fn plain(text: impl Into<String>) -> Self
+- with_fill · function · L94-L97 — pub fn with_fill(mut self, fill: FillRole) -> Self
+- with_attrs · function · L99-L102 — pub fn with_attrs(mut self, attrs: TextAttrs) -> Self
+- bold · function · L104-L107 — pub fn bold(mut self) -> Self
+- italic · function · L109-L112 — pub fn italic(mut self) -> Self
+- Alignment · enum · L117-L122 — pub enum Alignment
+- StyledLine · struct · L128-L131 — pub struct StyledLine
+- empty · function · L134-L136 — pub fn empty() -> Self
+- from_spans · function · L138-L143 — pub fn from_spans(spans: Vec<StyledSpan>) -> Self
+- aligned · function · L145-L147 — pub fn aligned(spans: Vec<StyledSpan>, alignment: Alignment) -> Self
+- plain_text · function · L151-L153 — pub fn plain_text(&self) -> String
+- is_blank · function · L155-L157 — pub fn is_blank(&self) -> bool
+- BlockKind · enum · L164-L186 — pub enum BlockKind
+- Block · struct · L192-L217 — pub struct Block
+- is_zero · function · L219-L221 — fn is_zero(value: &usize) -> bool
+- new · function · L224-L233 — pub fn new(kind: BlockKind, lines: Vec<StyledLine>) -> Self
+- table · function · L236-L245 — pub fn table(rows: Vec<Vec<String>>) -> Self
+- in_list · function · L249-L252 — pub fn in_list(mut self, depth: usize) -> Self
+- aligned_table · function · L255-L260 — pub fn aligned_table(rows: Vec<Vec<String>>, alignments: Vec<Alignment>) -> Self
+- Document · struct · L265-L267 — pub struct Document
+- lines · function · L272-L274 — pub fn lines(&self) -> impl Iterator<Item = &StyledLine>

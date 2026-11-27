@@ -1,0 +1,55 @@
+# crates/jcode-tui/src/tui/app/commands_cloud_tests.rs
+
+- account_onboarding · module · L4-L4 — mod account_onboarding;
+- auto_recovery · module · L6-L6 — mod auto_recovery;
+- mobile_does_not_match_command_prefixes · function · L9-L13 — fn mobile_does_not_match_command_prefixes()
+- mobile_is_registered_once_and_visible_in_command_help · function · L16-L36 — fn mobile_is_registered_once_and_visible_in_command_help()
+- mobile_push_feedback_is_visible_without_failing_cloud_status · function · L40-L66 — fn mobile_push_feedback_is_visible_without_failing_cloud_status()
+- parses_explicit_group_selection_without_treating_flags_as_hosts · function · L69-L102 — fn parses_explicit_group_selection_without_treating_flags_as_hosts()
+- invalid_move_options_do_not_queue_or_spawn · function · L105-L117 — fn invalid_move_options_do_not_queue_or_spawn()
+- preparation_preserves_explicit_group_selection · function · L121-L143 — fn preparation_preserves_explicit_group_selection()
+- group_preview_does_not_handoff_or_quit · function · L147-L173 — fn group_preview_does_not_handoff_or_quit()
+- group_completion_attaches_coordinator_and_reports_limits · function · L177-L195 — fn group_completion_attaches_coordinator_and_reports_limits()
+- replacement_requires_explicit_flags_and_never_parses_as_a_host · function · L198-L228 — fn replacement_requires_explicit_flags_and_never_parses_as_a_host()
+- replacement_usage_does_not_start_or_queue_work · function · L231-L244 — fn replacement_usage_does_not_start_or_queue_work()
+- replacement_waits_for_idle_and_preserves_drafts · function · L247-L265 — fn replacement_waits_for_idle_and_preserves_drafts()
+- replacement_child_uses_local_directory_without_session_transfer_flags · function · L268-L283 — fn replacement_child_uses_local_directory_without_session_transfer_flags()
+- replacement_completion_stays_local_and_shows_backup · function · L287-L318 — fn replacement_completion_stays_local_and_shows_backup()
+- replacement_notice_reaches_next_local_turn_once · function · L322-L354 — fn replacement_notice_reaches_next_local_turn_once()
+- replacement_invalid_response_cannot_claim_success · function · L358-L379 — fn replacement_invalid_response_cannot_claim_success()
+- replacement_is_discoverable_in_slash_suggestions · function · L382-L403 — fn replacement_is_discoverable_in_slash_suggestions()
+- cloud_recovery_is_bounded_and_keeps_command_and_cause · function · L406-L419 — fn cloud_recovery_is_bounded_and_keeps_command_and_cause()
+- cloud_recovery_guides_read_only_ssh_without_mutating_access · function · L422-L450 — fn cloud_recovery_guides_read_only_ssh_without_mutating_access()
+- cloud_recovery_uses_config_from_actual_jcode_state_directory · function · L453-L463 — fn cloud_recovery_uses_config_from_actual_jcode_state_directory()
+- cloud_failure_context_is_session_scoped_and_consumed_once · function · L466-L491 — fn cloud_failure_context_is_session_scoped_and_consumed_once()
+- cloud_failure_reaches_next_local_agent_turn · function · L494-L516 — fn cloud_failure_reaches_next_local_agent_turn()
+- pending · function · L518-L527 — fn pending(command: CloudCommand, session_id: &str) -> PendingCloudHandoff
+- fake_job · function · L529-L549 — fn fake_job(app: &mut App, command: CloudCommand) -> std::sync::mpsc::Sender<CloudEvent>
+- output · function · L552-L559 — fn output(success: bool, stdout: &str) -> std::process::Output
+- unsent_snapshot · function · L561-L577 — fn unsent_snapshot(app: &App) -> String
+- UnsentCase · type · L579-L579 — type UnsentCase = (&'static str, fn(&mut App));
+- unsent_cases · function · L581-L609 — fn unsent_cases() -> Vec<UnsentCase>
+- handoff_error_identifies_blocking_queue_without_its_contents · function · L612-L629 — fn handoff_error_identifies_blocking_queue_without_its_contents()
+- acceptance_refuses_unsent_state_without_consuming_it · function · L632-L653 — fn acceptance_refuses_unsent_state_without_consuming_it()
+- safe_dispatch_rechecks_new_unsent_work_without_spawning · function · L656-L679 — fn safe_dispatch_rechecks_new_unsent_work_without_spawning()
+- safe_dispatch_uses_original_session_and_cancels_after_session_change · function · L682-L714 — fn safe_dispatch_uses_original_session_and_cancels_after_session_change()
+- busy_enter_keeps_new_draft_out_of_interleave · function · L717-L734 — fn busy_enter_keeps_new_draft_out_of_interleave()
+- queued_handoff_restores_draft_before_dispatch_recheck · function · L737-L752 — fn queued_handoff_restores_draft_before_dispatch_recheck()
+- canceled_preparation_does_not_block_work · function · L755-L769 — fn canceled_preparation_does_not_block_work()
+- busy_return_queues_without_spawning_and_status_preserves_target · function · L772-L808 — fn busy_return_queues_without_spawning_and_status_preserves_target()
+- dispatch_waits_for_idle_and_staged_turn_and_completed_handoff · function · L811-L833 — fn dispatch_waits_for_idle_and_staged_turn_and_completed_handoff()
+- prepared_host_is_pinned_without_starting_busy_transfer · function · L837-L866 — fn prepared_host_is_pinned_without_starting_busy_transfer()
+- replacement_and_cancel_ignore_stale_preparation_results · function · L870-L907 — fn replacement_and_cancel_ignore_stale_preparation_results()
+- preparation_failure_clears_only_its_own_request · function · L911-L928 — fn preparation_failure_clears_only_its_own_request()
+- active_transfer_rejects_replacement_and_cancellation_without_killing_job · function · L931-L942 — fn active_transfer_rejects_replacement_and_cancellation_without_killing_job()
+- polling_keeps_all_steps_and_stops_spinner_on_failure · function · L946-L998 — fn polling_keeps_all_steps_and_stops_spinner_on_failure()
+- cloud_markdown_keeps_steps_and_diagnostics_on_separate_rows · function · L1001-L1070 — fn cloud_markdown_keeps_steps_and_diagnostics_on_separate_rows()
+- cloud_transcript_preserves_steps_and_animates_only_active_step · function · L1073-L1084 — fn cloud_transcript_preserves_steps_and_animates_only_active_step()
+- cloud_failure_strips_only_known_boilerplate · function · L1087-L1106 — fn cloud_failure_strips_only_known_boilerplate()
+- cloud_failure_explains_missing_saved_account · function · L1109-L1121 — fn cloud_failure_explains_missing_saved_account()
+- cloud_failure_handles_empty_details_and_nested_fences · function · L1124-L1132 — fn cloud_failure_handles_empty_details_and_nested_fences()
+- every_cloud_completion_failure_shows_a_reason · function · L1136-L1194 — fn every_cloud_completion_failure_shows_a_reason()
+- parses_cloud_commands · function · L1197-L1238 — fn parses_cloud_commands()
+- queued_system_reminders_reach_agent_before_handoff · function · L1241-L1264 — fn queued_system_reminders_reach_agent_before_handoff()
+- prepared_handoff_interrupts_running_turn_once · function · L1267-L1285 — fn prepared_handoff_interrupts_running_turn_once()
+- additional_parses_mobile_as_a_move_to_managed_cloud · module · L1288-L1288 — mod additional_parses_mobile_as_a_move_to_managed_cloud;

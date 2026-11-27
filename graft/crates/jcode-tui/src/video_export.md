@@ -1,0 +1,28 @@
+# crates/jcode-tui/src/video_export.rs
+
+- find_command · function · L12-L57 — fn find_command(name: &str) -> Option<PathBuf>
+- get_terminal_font · function · L60-L62 — fn get_terminal_font() -> (String, f64)
+- get_terminal_font · function · L65-L93 — fn get_terminal_font() -> (String, f64)
+- swarm_export_grid · function · L95-L104 — fn swarm_export_grid(pane_count: u16) -> (u16, u16)
+- swarm_export_font_size · function · L106-L112 — fn swarm_export_font_size(base_font_size: f64, pane_count: u16, cols: u16, rows: u16) -> f64
+- export_video · function · L118-L162 — pub async fn export_video(
+- export_swarm_video · function · L164-L240 — pub async fn export_swarm_video(
+- render_svg_pipeline · function · L246-L397 — async fn render_svg_pipeline(
+- hash_buffer · function · L399-L431 — fn hash_buffer(buf: &Buffer) -> u64
+- color_to_hex · function · L433-L455 — fn color_to_hex(color: Color) -> String
+- color_to_bg_hex · function · L457-L462 — fn color_to_bg_hex(color: Color) -> String
+- indexed_color_to_hex · function · L464-L495 — fn indexed_color_to_hex(idx: u8) -> String
+- MermaidRegion · struct · L498-L513 — struct MermaidRegion
+- find_mermaid_regions · function · L518-L610 — fn find_mermaid_regions(buf: &Buffer) -> Vec<MermaidRegion>
+- buffer_to_svg · function · L612-L867 — fn buffer_to_svg(
+- xml_escape · function · L869-L875 — fn xml_escape(s: &str) -> String
+- is_private_use · function · L877-L881 — fn is_private_use(ch: char) -> bool
+- looks_like_emoji · function · L883-L889 — fn looks_like_emoji(sym: &str) -> bool
+- special_text_class · function · L891-L897 — fn special_text_class(sym: &str) -> &'static str
+- needs_special_cell_render · function · L899-L901 — fn needs_special_cell_render(sym: &str) -> bool
+- render_special_text_cell · function · L903-L924 — fn render_special_text_cell(
+- is_box_drawing · function · L926-L929 — fn is_box_drawing(ch: char) -> bool
+- box_drawing_to_svg · function · L933-L1177 — fn box_drawing_to_svg(
+- tests · module · L1180-L1197 — mod tests
+- four_pane_swarm_export_prefers_single_row · function · L1184-L1189 — fn four_pane_swarm_export_prefers_single_row()
+- four_wide_swarm_export_uses_smaller_font · function · L1192-L1196 — fn four_wide_swarm_export_uses_smaller_font()

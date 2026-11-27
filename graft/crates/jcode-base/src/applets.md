@@ -1,0 +1,28 @@
+# crates/jcode-base/src/applets.rs
+
+- MAX_INSTANCES_PER_SESSION · constant · L12-L12 — pub const MAX_INSTANCES_PER_SESSION: usize = 64;
+- LOCK · constant · L14-L14 — static LOCK: Mutex<()> = Mutex::new(());
+- state_file · function · L16-L23 — fn state_file(session_id: &str) -> Result<PathBuf>
+- load · function · L25-L31 — fn load(session_id: &str) -> Result<AgentApplets>
+- save · function · L33-L42 — fn save(session_id: &str, state: &AgentApplets) -> Result<()>
+- validate · function · L44-L47 — fn validate(doc: &Document) -> Result<()>
+- validate_id · function · L49-L59 — fn validate_id(id: &str) -> Result<()>
+- update · function · L63-L72 — fn update<T>(
+- find · function · L74-L78 — fn find<'a>(state: &'a mut AgentApplets, id: &str) -> Result<&'a mut Instance>
+- snapshot_for_session · function · L80-L83 — pub fn snapshot_for_session(session_id: &str) -> Result<AgentApplets>
+- mount · function · L87-L110 — pub fn mount(session_id: &str, mut instance: Instance) -> Result<AgentApplets>
+- patch · function · L114-L129 — pub fn patch(
+- move_instance · function · L131-L139 — pub fn move_instance(session_id: &str, id: &str, placement: Placement) -> Result<AgentApplets>
+- close · function · L142-L148 — pub fn close(session_id: &str, id: &str) -> Result<(AgentApplets, bool)>
+- set_state · function · L152-L169 — pub fn set_state(
+- tests · module · L172-L245 — mod tests
+- inst · function · L177-L195 — fn inst(id: &str, title: &str) -> Instance
+- lifecycle · function · L198-L244 — fn lifecycle()
+- Restore · struct · L203-L203 — struct Restore(Option<std::ffi::OsString>);
+- drop · function · L205-L210 — fn drop(&mut self)
+- publish · function · L248-L255 — pub fn publish(session_id: &str, snapshot: AgentApplets)
+- short_hash · function · L257-L262 — fn short_hash(s: &str) -> String
+- document_for_mcp_resource · function · L266-L307 — pub fn document_for_mcp_resource(
+- mount_mcp_resource · function · L311-L348 — pub fn mount_mcp_resource(
+- mcp_tests · module · L351-L381 — mod mcp_tests
+- mcp_resources_map_to_documents · function · L355-L380 — fn mcp_resources_map_to_documents()

@@ -1,0 +1,23 @@
+# crates/jcode-provider-core/src/pricing.rs
+
+- usd_to_micros · function · L3-L5 — fn usd_to_micros(usd: f64) -> u64
+- usd_per_token_str_to_micros_per_mtok · function · L7-L12 — fn usd_per_token_str_to_micros_per_mtok(raw: &str) -> Option<u64>
+- anthropic_tier_is_fast · function · L17-L25 — fn anthropic_tier_is_fast(service_tier: Option<&str>) -> bool
+- anthropic_api_pricing · function · L32-L34 — pub fn anthropic_api_pricing(model: &str) -> Option<RouteCheapnessEstimate>
+- anthropic_api_pricing_with_tier · function · L42-L88 — pub fn anthropic_api_pricing_with_tier(
+- anthropic_oauth_pricing · function · L90-L144 — pub fn anthropic_oauth_pricing(model: &str, subscription: Option<&str>) -> RouteCheapnessEstimate
+- openai_api_pricing · function · L151-L153 — pub fn openai_api_pricing(model: &str) -> Option<RouteCheapnessEstimate>
+- openai_api_pricing_with_tier · function · L161-L244 — pub fn openai_api_pricing_with_tier(
+- openai_oauth_pricing · function · L246-L260 — pub fn openai_oauth_pricing(model: &str) -> RouteCheapnessEstimate
+- copilot_pricing · function · L262-L296 — pub fn copilot_pricing(model: &str, zero_premium_mode: bool) -> RouteCheapnessEstimate
+- openrouter_pricing_from_token_prices · function · L298-L312 — pub fn openrouter_pricing_from_token_prices(
+- tests · module · L315-L484 — mod tests
+- opus_55_published_pricing_includes_discounted_cache_reads · function · L320-L327 — fn opus_55_published_pricing_includes_discounted_cache_reads()
+- anthropic_api_pricing_long_context_uses_standard_rates · function · L330-L348 — fn anthropic_api_pricing_long_context_uses_standard_rates()
+- anthropic_api_pricing_matches_published_rates · function · L351-L376 — fn anthropic_api_pricing_matches_published_rates()
+- openrouter_token_pricing_parses_token_prices · function · L379-L393 — fn openrouter_token_pricing_parses_token_prices()
+- anthropic_fast_mode_tier_bills_premium_rates · function · L396-L419 — fn anthropic_fast_mode_tier_bills_premium_rates()
+- openai_service_tiers_bill_published_rates · function · L422-L443 — fn openai_service_tiers_bill_published_rates()
+- astra_public_api_rates_cover_standard_flex_and_fast · function · L446-L458 — fn astra_public_api_rates_cover_standard_flex_and_fast()
+- sol_public_api_rates_cover_all_speed_tiers · function · L461-L475 — fn sol_public_api_rates_cover_all_speed_tiers()
+- copilot_zero_mode_marks_estimate_high_confidence_and_zero_reference_cost · function · L478-L483 — fn copilot_zero_mode_marks_estimate_high_confidence_and_zero_reference_cost()

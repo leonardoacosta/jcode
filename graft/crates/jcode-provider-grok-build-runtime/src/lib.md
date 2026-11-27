@@ -1,0 +1,45 @@
+# crates/jcode-provider-grok-build-runtime/src/lib.rs
+
+- DEFAULT_MODEL · constant · L30-L30 — pub const DEFAULT_MODEL: &str = "grok-4.6";
+- default_model · function · L35-L38 — pub fn default_model() -> String
+- ROUTE_PREFIX · constant · L39-L39 — const ROUTE_PREFIX: &str = "grok-build:";
+- ROUTE_API_METHOD · constant · L41-L41 — pub const ROUTE_API_METHOD: &str = "grok-build-acp";
+- GrokBuildProvider · struct · L44-L46 — pub struct GrokBuildProvider
+- new · function · L49-L51 — pub fn new() -> Self
+- with_model · function · L53-L59 — pub fn with_model(model: &str) -> Self
+- complete_once · function · L61-L69 — async fn complete_once(
+- default · function · L73-L75 — fn default() -> Self
+- normalize_model · function · L78-L82 — fn normalize_model(model: &str) -> Option<&str>
+- is_unauthorized_text · function · L85-L92 — fn is_unauthorized_text(text: &str) -> bool
+- is_unauthorized_item · function · L94-L100 — fn is_unauthorized_item(item: &Result<StreamEvent>) -> bool
+- AuthRetryStream · struct · L104-L109 — struct AuthRetryStream
+- RetryFuture · type · L111-L111 — type RetryFuture = Pin<Box<dyn Future<Output = Result<EventStream>> + Send>>;
+- produces_output · function · L113-L122 — fn produces_output(event: &StreamEvent) -> bool
+- Item · type · L125-L125 — type Item = Result<StreamEvent>;
+- poll_next · function · L127-L162 — fn poll_next(self: Pin<&mut Self>, cx: &mut TaskContext<'_>) -> Poll<Option<Self::Item>>
+- complete · function · L167-L197 — async fn complete(
+- name · function · L199-L201 — fn name(&self) -> &str
+- display_name · function · L203-L205 — fn display_name(&self) -> String
+- model · function · L207-L209 — fn model(&self) -> String
+- set_model · function · L211-L216 — fn set_model(&self, model: &str) -> Result<()>
+- available_models_display · function · L218-L220 — fn available_models_display(&self) -> Vec<String>
+- available_models_for_switching · function · L222-L224 — fn available_models_for_switching(&self) -> Vec<String>
+- model_routes · function · L226-L239 — fn model_routes(&self) -> Vec<ModelRoute>
+- prefetch_models · function · L241-L249 — async fn prefetch_models(&self) -> Result<()>
+- refresh_model_catalog · function · L251-L259 — async fn refresh_model_catalog(&self) -> Result<ModelCatalogRefreshSummary>
+- active_auth_method_label · function · L261-L263 — fn active_auth_method_label(&self) -> Option<&'static str>
+- handles_tools_internally · function · L265-L267 — fn handles_tools_internally(&self) -> bool
+- supports_compaction · function · L269-L271 — fn supports_compaction(&self) -> bool
+- supports_image_input · function · L273-L275 — fn supports_image_input(&self) -> bool
+- context_window · function · L277-L279 — fn context_window(&self) -> usize
+- transport · function · L281-L283 — fn transport(&self) -> Option<String>
+- fork · function · L285-L287 — fn fork(&self) -> Arc<dyn Provider>
+- tests · module · L291-L511 — mod tests
+- live_catalog_reaches_grok_picker_and_force_refresh_preserves_cache_on_failure · function · L296-L379 — async fn live_catalog_reaches_grok_picker_and_force_refresh_preserves_cache_on_failure()
+- model_selection_strips_route_prefix_and_rejects_empty · function · L382-L395 — fn model_selection_strips_route_prefix_and_rejects_empty()
+- routes_keep_stable_ids_and_jcode_owns_tools · function · L398-L417 — fn routes_keep_stable_ids_and_jcode_owns_tools()
+- classifies_proxy_401_messages · function · L420-L429 — fn classifies_proxy_401_messages()
+- stream_of · function · L431-L433 — fn stream_of(items: Vec<Result<StreamEvent>>) -> EventStream
+- resolved_model_is_forwarded_without_request_inference · function · L436-L463 — async fn resolved_model_is_forwarded_without_request_inference()
+- retries_once_on_401_before_output · function · L466-L482 — async fn retries_once_on_401_before_output()
+- does_not_retry_after_output_or_twice · function · L485-L510 — async fn does_not_retry_after_output_or_twice()

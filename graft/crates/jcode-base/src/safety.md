@@ -1,0 +1,46 @@
+# crates/jcode-base/src/safety.rs
+
+- PermissionNotifier · type · L11-L11 — type PermissionNotifier = fn(&str, &str, &str);
+- PERMISSION_NOTIFIER · constant · L13-L13 — static PERMISSION_NOTIFIER: OnceLock<PermissionNotifier> = OnceLock::new();
+- register_permission_notifier · function · L21-L23 — pub fn register_permission_notifier(notifier: PermissionNotifier)
+- dispatch_permission_notification · function · L25-L29 — fn dispatch_permission_notification(action: &str, description: &str, request_id: &str)
+- ActionTier · enum · L37-L40 — pub enum ActionTier
+- Urgency · enum · L44-L48 — pub enum Urgency
+- PermissionRequest · struct · L55-L65 — pub struct PermissionRequest
+- PermissionResult · enum · L69-L74 — pub enum PermissionResult
+- Decision · struct · L77-L84 — pub struct Decision
+- ActionLog · struct · L91-L98 — pub struct ActionLog
+- TranscriptStatus · enum · L102-L106 — pub enum TranscriptStatus
+- AmbientTranscript · struct · L109-L126 — pub struct AmbientTranscript
+- AUTO_ALLOWED · constant · L132-L144 — const AUTO_ALLOWED: &[&str] = &[
+- SafetySystem · struct · L150-L154 — pub struct SafetySystem
+- new · function · L158-L174 — pub fn new() -> Self
+- classify · function · L177-L184 — pub fn classify(&self, action: &str) -> ActionTier
+- request_permission · function · L187-L199 — pub fn request_permission(&self, request: PermissionRequest) -> PermissionResult
+- expire_dead_session_requests · function · L203-L240 — pub fn expire_dead_session_requests(&self, via: &str) -> Result<Vec<String>>
+- record_decision · function · L243-L270 — pub fn record_decision(
+- pending_requests · function · L273-L275 — pub fn pending_requests(&self) -> Vec<PermissionRequest>
+- log_action · function · L278-L282 — pub fn log_action(&self, log: ActionLog)
+- generate_summary · function · L285-L332 — pub fn generate_summary(&self) -> String
+- save_transcript · function · L335-L342 — pub fn save_transcript(&self, transcript: &AmbientTranscript) -> Result<()>
+- default · function · L346-L348 — fn default() -> Self
+- queue_path · function · L355-L357 — fn queue_path() -> Result<std::path::PathBuf>
+- history_path · function · L359-L361 — fn history_path() -> Result<std::path::PathBuf>
+- persist_queue · function · L363-L366 — fn persist_queue(queue: &[PermissionRequest]) -> Result<()>
+- persist_history · function · L368-L371 — fn persist_history(history: &[Decision]) -> Result<()>
+- record_permission_via_file · function · L379-L416 — pub fn record_permission_via_file(
+- expire_stale_permissions_via_file · function · L420-L470 — pub fn expire_stale_permissions_via_file(via: &str) -> Result<Vec<String>>
+- stale_request_reason · function · L472-L493 — fn stale_request_reason(request: &PermissionRequest) -> Option<String>
+- request_session_id · function · L495-L509 — fn request_session_id(request: &PermissionRequest) -> Option<String>
+- new_request_id · function · L516-L518 — pub fn new_request_id() -> String
+- tests · module · L525-L722 — mod tests
+- with_temp_home · function · L528-L545 — fn with_temp_home<F, T>(f: F) -> T
+- test_classify_auto_allowed · function · L548-L563 — fn test_classify_auto_allowed()
+- test_classify_requires_permission · function · L566-L582 — fn test_classify_requires_permission()
+- test_classify_case_insensitive · function · L585-L592 — fn test_classify_case_insensitive()
+- test_request_permission_returns_queued · function · L595-L620 — fn test_request_permission_returns_queued()
+- test_record_decision_removes_from_queue · function · L623-L645 — fn test_record_decision_removes_from_queue()
+- test_log_action_and_summary · function · L648-L672 — fn test_log_action_and_summary()
+- test_empty_summary · function · L675-L681 — fn test_empty_summary()
+- test_new_request_id_format · function · L684-L689 — fn test_new_request_id_format()
+- test_record_permission_via_file · function · L692-L721 — fn test_record_permission_via_file()

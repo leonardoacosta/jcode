@@ -1,0 +1,18 @@
+# scripts/test_soft_interrupt.py
+
+- send_cmd_blocking · function · L21-L48 — def send_cmd_blocking(sock, cmd, session_id=None, timeout=180)
+- send_cmd_quick · function · L50-L57 — def send_cmd_quick(cmd, session_id=None, timeout=10)
+- send_message_async · function · L59-L69 — def send_message_async(msg, session_id, result_queue)
+- create_test_session · function · L71-L80 — def create_test_session(cwd="/tmp")
+- destroy_session · function · L82-L84 — def destroy_session(session_id)
+- get_history · function · L86-L94 — def get_history(session_id)
+- queue_interrupt · function · L96-L100 — def queue_interrupt(session_id, content, urgent=False)
+- extract_text_from_content · function · L102-L117 — def extract_text_from_content(content)
+- print_history · function · L119-L142 — def print_history(history)
+- test_basic_message · function · L144-L188 — def test_basic_message()
+- test_soft_interrupt_during_streaming · function · L190-L282 — def test_soft_interrupt_during_streaming()
+- test_soft_interrupt_with_tools · function · L284-L373 — def test_soft_interrupt_with_tools()
+- test_urgent_interrupt_skips_tools · function · L375-L454 — def test_urgent_interrupt_skips_tools()
+- test_interrupt_during_long_response · function · L456-L540 — def test_interrupt_during_long_response()
+- test_message_order_preserved · function · L542-L617 — def test_message_order_preserved()
+- main · function · L619-L663 — def main()

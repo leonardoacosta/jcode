@@ -1,0 +1,27 @@
+# crates/jcode-app-core/src/server/client_disconnect_grace_tests.rs
+
+- NoRequests · struct · L13-L13 — struct NoRequests;
+- complete · function · L16-L24 — async fn complete(
+- name · function · L25-L27 — fn name(&self) -> &str
+- fork · function · L28-L30 — fn fork(&self) -> Arc<dyn Provider>
+- Home · struct · L33-L36 — struct Home
+- new · function · L38-L46 — fn new() -> Self
+- drop · function · L49-L54 — fn drop(&mut self)
+- Fixture · struct · L57-L67 — struct Fixture
+- new · function · L69-L125 — async fn new(persisted: bool) -> Self
+- cleanup · function · L127-L133 — async fn cleanup(&self, processing: bool, grace: Duration)
+- cleanup_task · function · L135-L143 — async fn cleanup_task(
+- cleanup_with_continuation · function · L145-L181 — async fn cleanup_with_continuation(
+- wait_for_detach · function · L183-L191 — async fn wait_for_detach(&self)
+- attach_successor · function · L193-L206 — async fn attach_successor(&self)
+- connection · function · L209-L223 — fn connection(name: &str, id: &str) -> ClientConnectionInfo
+- continued_idle_coordinator_survives_disconnect_without_reconnect_grace · function · L226-L281 — async fn continued_idle_coordinator_survives_disconnect_without_reconnect_grace()
+- continued_turn_remains_live_after_owner_finishes · function · L284-L314 — async fn continued_turn_remains_live_after_owner_finishes()
+- unsaved_idle_session_retains_same_agent_for_reattachment · function · L317-L339 — async fn unsaved_idle_session_retains_same_agent_for_reattachment()
+- unsaved_idle_session_expires_without_persisting_or_leaking · function · L342-L356 — async fn unsaved_idle_session_expires_without_persisting_or_leaking()
+- unsaved_idle_session_without_swarm_member_still_expires · function · L359-L375 — async fn unsaved_idle_session_without_swarm_member_still_expires()
+- old_grace_cannot_remove_successor_that_already_detached_again · function · L378-L401 — async fn old_grace_cannot_remove_successor_that_already_detached_again()
+- persisted_idle_session_does_not_wait_for_reconnect_grace · function · L404-L416 — async fn persisted_idle_session_does_not_wait_for_reconnect_grace()
+- interrupted_session_does_not_wait_for_reconnect_grace · function · L419-L435 — async fn interrupted_session_does_not_wait_for_reconnect_grace()
+- busy_successor_retains_owner_task_and_completion_receiver · function · L438-L463 — async fn busy_successor_retains_owner_task_and_completion_receiver()
+- busy_without_successor_aborts_owner_and_marks_crashed · function · L466-L494 — async fn busy_without_successor_aborts_owner_and_marks_crashed()

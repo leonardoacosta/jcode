@@ -1,0 +1,21 @@
+# crates/jcode-selfdev-types/src/lib.rs
+
+- desktop · module · L6-L6 — mod desktop;
+- CLIENT_SELFDEV_ENV · constant · L13-L13 — pub const CLIENT_SELFDEV_ENV: &str = "JCODE_CLIENT_SELFDEV_MODE";
+- RuntimeIdentity · struct · L17-L23 — pub struct RuntimeIdentity
+- client_selfdev_requested · function · L28-L30 — pub fn client_selfdev_requested() -> bool
+- ReloadRecoveryDirective · struct · L33-L36 — pub struct ReloadRecoveryDirective
+- SelfDevBuildCommand · struct · L39-L43 — pub struct SelfDevBuildCommand
+- SelfDevBuildTarget · enum · L47-L51 — pub enum SelfDevBuildTarget
+- parse · function · L54-L64 — pub fn parse(value: Option<&str>) -> Result<Self>
+- BinaryVersionReport · struct · L68-L71 — pub struct BinaryVersionReport
+- BinaryChoice · enum · L75-L82 — pub enum BinaryChoice
+- SourceState · struct · L85-L94 — pub struct SourceState
+- PublishedBuild · struct · L97-L104 — pub struct PublishedBuild
+- PendingActivation · struct · L107-L115 — pub struct PendingActivation
+- DevBinarySourceMetadata · struct · L118-L125 — pub struct DevBinarySourceMetadata
+- from · function · L128-L137 — fn from(source: &SourceState) -> Self
+- CanaryStatus · enum · L143-L153 — pub enum CanaryStatus
+- BuildInfo · struct · L157-L174 — pub struct BuildInfo
+- CrashInfo · struct · L178-L190 — pub struct CrashInfo
+- MigrationContext · struct · L194-L201 — pub struct MigrationContext

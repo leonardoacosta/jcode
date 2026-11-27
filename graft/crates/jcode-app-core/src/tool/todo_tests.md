@@ -1,0 +1,47 @@
+# crates/jcode-app-core/src/tool/todo_tests.rs
+
+- hierarchy_preserves_declared_order_and_rejects_empty_ids · function · L2-L37 — fn hierarchy_preserves_declared_order_and_rejects_empty_ids()
+- hierarchy_invalid_writes_are_atomic · function · L40-L75 — async fn hierarchy_invalid_writes_are_atomic()
+- hierarchy_flattens_and_clears · function · L77-L96 — fn hierarchy_flattens_and_clears()
+- hierarchy_rejects_malformed_structures · function · L99-L143 — fn hierarchy_rejects_malformed_structures()
+- hierarchy_open_items_validate_fields_and_types · function · L146-L186 — fn hierarchy_open_items_validate_fields_and_types()
+- hierarchy_patch_inherits_and_preserves_membership · function · L189-L216 — fn hierarchy_patch_inherits_and_preserves_membership()
+- tool_is_named_todo · function · L220-L222 — fn tool_is_named_todo()
+- new_in_progress_todo_claims_self_but_other_new_statuses_do_not · function · L225-L236 — fn new_in_progress_todo_claims_self_but_other_new_statuses_do_not()
+- transition_into_in_progress_claims_self · function · L239-L254 — fn transition_into_in_progress_claims_self()
+- rewriting_legacy_unassigned_in_progress_todo_does_not_claim_self · function · L257-L267 — fn rewriting_legacy_unassigned_in_progress_todo_does_not_claim_self()
+- starting_or_rewriting_todo_preserves_previous_worker_assignment · function · L270-L286 — fn starting_or_rewriting_todo_preserves_previous_worker_assignment()
+- new_in_progress_todo_preserves_explicit_worker_assignment · function · L289-L297 — fn new_in_progress_todo_preserves_explicit_worker_assignment()
+- model_facing_descriptions_stay_compact · function · L300-L355 — fn model_facing_descriptions_stay_compact()
+- description_bytes · function · L301-L316 — fn description_bytes(value: &Value) -> usize
+- update_rejects_fields_the_open_schema_cannot_catch · function · L358-L381 — fn update_rejects_fields_the_open_schema_cannot_catch()
+- add_schema_declares_all_todo_fields_and_conforms_to_gemini · function · L384-L408 — fn add_schema_declares_all_todo_fields_and_conforms_to_gemini()
+- schema_advertises_intent_and_todos · function · L411-L628 — fn schema_advertises_intent_and_todos()
+- parse · function · L630-L632 — fn parse(input: Value) -> Result<TodoInput>
+- accepts_stringified_todos_array · function · L635-L647 — fn accepts_stringified_todos_array()
+- accepts_stringified_todo_items_and_string_confidence · function · L650-L672 — fn accepts_stringified_todo_items_and_string_confidence()
+- normalizes_natural_and_case_varied_todo_statuses · function · L675-L691 — fn normalizes_natural_and_case_varied_todo_statuses()
+- rejects_unknown_todo_statuses_with_valid_vocabulary · function · L694-L705 — fn rejects_unknown_todo_statuses_with_valid_vocabulary()
+- accepts_float_confidence_and_empty_string_as_none · function · L708-L721 — fn accepts_float_confidence_and_empty_string_as_none()
+- empty_string_todos_means_read · function · L724-L727 — fn empty_string_todos_means_read()
+- native_input_still_parses · function · L730-L741 — fn native_input_still_parses()
+- accepts_goals_and_plan_including_string_coercion · function · L744-L775 — fn accepts_goals_and_plan_including_string_coercion()
+- stringified_plan_object_is_accepted · function · L778-L789 — fn stringified_plan_object_is_accepted()
+- accepts_legacy_plan_alignment_key_but_serializes_the_new_name · function · L792-L814 — fn accepts_legacy_plan_alignment_key_but_serializes_the_new_name()
+- goal · function · L816-L825 — fn goal(group: Option<&str>, state: crate::todo::FeedbackLoopState) -> TodoGoal
+- aligned_plan · function · L829-L836 — fn aligned_plan() -> TodoPlan
+- todo_in_group · function · L838-L847 — fn todo_in_group(group: Option<&str>, id: &str) -> TodoItem
+- todo_telemetry_derives_lifecycle_groups_and_score_summaries · function · L850-L910 — fn todo_telemetry_derives_lifecycle_groups_and_score_summaries()
+- todo_telemetry_regrouping_does_not_create_or_abandon_items · function · L913-L930 — fn todo_telemetry_regrouping_does_not_create_or_abandon_items()
+- todo_telemetry_zero_state_is_all_zero_and_has_no_scores · function · L933-L936 — fn todo_telemetry_zero_state_is_all_zero_and_has_no_scores()
+- prune_orphaned_goals_drops_goals_without_live_todos · function · L941-L952 — fn prune_orphaned_goals_drops_goals_without_live_todos()
+- prune_orphaned_goals_keeps_ungrouped_goal_for_flat_list · function · L955-L960 — fn prune_orphaned_goals_keeps_ungrouped_goal_for_flat_list()
+- prune_orphaned_goals_keeps_everything_when_todo_list_is_empty · function · L963-L970 — fn prune_orphaned_goals_keeps_everything_when_todo_list_is_empty()
+- merge_goals_retains_unmentioned_goals · function · L973-L995 — fn merge_goals_retains_unmentioned_goals()
+- merge_plan_retains_stored_intent_when_update_omits_fields · function · L998-L1025 — fn merge_plan_retains_stored_intent_when_update_omits_fields()
+- plan_change_reports_only_updated_intent_fields · function · L1028-L1040 — fn plan_change_reports_only_updated_intent_fields()
+- open_todo · function · L1042-L1051 — fn open_todo(group: Option<&str>) -> TodoItem
+- ownership_gate_output_preserves_the_saved_todo_card · function · L1054-L1080 — fn ownership_gate_output_preserves_the_saved_todo_card()
+- execution · module · L1083-L1083 — mod execution;
+- test_ctx · function · L1085-L1095 — fn test_ctx(session_id: &str) -> ToolContext
+- goal_updates_for_groups_without_todos_are_reported_not_silently_dropped · function · L1100-L1117 — fn goal_updates_for_groups_without_todos_are_reported_not_silently_dropped()

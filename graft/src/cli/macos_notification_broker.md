@@ -1,0 +1,23 @@
+# src/cli/macos_notification_broker.rs
+
+- platform · module · L9-L307 — mod platform
+- BROKER_EXECUTABLE_NAME · constant · L29-L29 — const BROKER_EXECUTABLE_NAME: &str = "jcode-notification-broker";
+- POLL_INTERVAL_SECONDS · constant · L30-L30 — const POLL_INTERVAL_SECONDS: f64 = 0.25;
+- AUTHORIZATION_PENDING · constant · L31-L31 — const AUTHORIZATION_PENDING: u8 = 0;
+- AUTHORIZATION_GRANTED · constant · L32-L32 — const AUTHORIZATION_GRANTED: u8 = 1;
+- AUTHORIZATION_DENIED · constant · L33-L33 — const AUTHORIZATION_DENIED: u8 = 2;
+- AUTHORIZATION_RETRY_TICKS · constant · L34-L34 — const AUTHORIZATION_RETRY_TICKS: u32 = 240;
+- ORIGIN_METADATA_KEY · constant · L35-L35 — const ORIGIN_METADATA_KEY: &str = "jcode_origin";
+- new · function · L96-L100 — fn new(mtm: MainThreadMarker) -> Retained<Self>
+- is_invocation · function · L103-L108 — pub(super) fn is_invocation() -> bool
+- run · function · L110-L129 — pub(super) fn run() -> Result<()>
+- request_authorization · function · L131-L146 — fn request_authorization(center: &UNUserNotificationCenter, authorization: Arc<AtomicU8>)
+- spawn_inbox_timer · function · L148-L173 — fn spawn_inbox_timer(center: Retained<UNUserNotificationCenter>, authorization: Arc<AtomicU8>)
+- recover_interrupted_submissions · function · L175-L191 — fn recover_interrupted_submissions()
+- drain_inbox · function · L193-L237 — fn drain_inbox(center: &UNUserNotificationCenter)
+- is_future_schema · function · L239-L247 — fn is_future_schema(path: &std::path::Path) -> bool
+- submit · function · L249-L306 — fn submit(
+- is_invocation · function · L310-L312 — pub fn is_invocation() -> bool
+- is_invocation · function · L315-L317 — pub fn is_invocation() -> bool
+- run · function · L320-L322 — pub fn run() -> anyhow::Result<()>
+- run · function · L325-L327 — pub fn run() -> anyhow::Result<()>

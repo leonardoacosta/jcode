@@ -1,0 +1,32 @@
+# crates/jcode-tui-render/src/swarm_tiles.rs
+
+- SwarmTile · struct · L25-L36 — pub struct SwarmTile
+- new · function · L39-L47 — pub fn new(title: impl Into<String>, status: impl Into<String>, accent: Color) -> Self
+- with_role_glyph · function · L49-L52 — pub fn with_role_glyph(mut self, glyph: impl Into<String>) -> Self
+- with_body · function · L54-L57 — pub fn with_body(mut self, body: Vec<String>) -> Self
+- SwarmGalleryConfig · struct · L62-L77 — pub struct SwarmGalleryConfig
+- default · function · L80-L89 — fn default() -> Self
+- GridShape · struct · L93-L98 — struct GridShape
+- choose_grid · function · L103-L154 — fn choose_grid(
+- render_cell · function · L158-L240 — fn render_cell(tile: &SwarmTile, inner_w: usize, inner_h: usize) -> Vec<Line<'static>>
+- normalize_top_width · function · L242-L259 — fn normalize_top_width(spans: &mut Vec<Span<'static>>, box_width: usize, border_style: Style)
+- content_line · function · L261-L276 — fn content_line(
+- wrap_tail · function · L280-L306 — fn wrap_tail(body: &[String], width: usize, height: usize) -> Vec<String>
+- truncate_w · function · L308-L330 — fn truncate_w(s: &str, max_width: usize) -> String
+- render_single_tile · function · L335-L349 — pub fn render_single_tile(tile: &SwarmTile, width: usize, height: usize) -> Vec<Line<'static>>
+- render_swarm_gallery · function · L353-L428 — pub fn render_swarm_gallery(
+- tests · module · L431-L611 — mod tests
+- tile · function · L434-L437 — fn tile(name: &str, body: &[&str]) -> SwarmTile
+- single_agent_uses_one_column · function · L440-L449 — fn single_agent_uses_one_column()
+- many_agents_form_multiple_columns · function · L452-L458 — fn many_agents_form_multiple_columns()
+- tail_shows_most_recent_lines · function · L461-L467 — fn tail_shows_most_recent_lines()
+- overflow_emits_more_strip · function · L470-L479 — fn overflow_emits_more_strip()
+- cells_are_width_bounded · function · L482-L496 — fn cells_are_width_bounded()
+- empty_tiles_render_nothing_but_header · function · L499-L504 — fn empty_tiles_render_nothing_but_header()
+- zero_sized_budgets_do_not_panic · function · L507-L516 — fn zero_sized_budgets_do_not_panic()
+- degenerate_config_does_not_panic · function · L519-L534 — fn degenerate_config_does_not_panic()
+- hundreds_of_tiles_small_terminal_stay_bounded · function · L537-L558 — fn hundreds_of_tiles_small_terminal_stay_bounded()
+- single_tile_tiny_sizes_stay_bounded · function · L561-L585 — fn single_tile_tiny_sizes_stay_bounded()
+- wrap_tail_handles_zero_and_empty · function · L588-L592 — fn wrap_tail_handles_zero_and_empty()
+- truncate_w_handles_wide_chars · function · L595-L606 — fn truncate_w_handles_wide_chars()
+- plain · function · L608-L610 — fn plain(line: &Line<'static>) -> String

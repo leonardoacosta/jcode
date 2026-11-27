@@ -1,0 +1,46 @@
+# crates/jcode-sdk/src/auth.rs
+
+- INPUT_LIMIT · constant · L15-L15 — const INPUT_LIMIT: usize = 16 * 1024;
+- OUTPUT_LIMIT · constant · L16-L16 — const OUTPUT_LIMIT: usize = 64 * 1024;
+- callback · module · L18-L18 — mod callback;
+- AuthOptions · struct · L21-L30 — pub struct AuthOptions
+- default · function · L33-L42 — fn default() -> Self
+- LoginMethod · enum · L46-L50 — pub enum LoginMethod
+- LoginProvider · struct · L53-L58 — pub struct LoginProvider
+- supported · function · L60-L76 — fn supported(provider: LoginProviderDescriptor) -> Option<LoginProvider>
+- AuthClient · struct · L79-L81 — pub struct AuthClient
+- new · function · L84-L86 — pub fn new(options: AuthOptions) -> Self
+- providers · function · L90-L95 — pub fn providers(&self) -> Vec<LoginProvider>
+- resolve_provider · function · L98-L100 — pub fn resolve_provider(&self, input: &str) -> Option<LoginProvider>
+- begin · function · L104-L131 — pub fn begin(&self, provider: &str, account: Option<&str>) -> Result<AuthFlow>
+- default · function · L135-L137 — fn default() -> Self
+- AuthInputKind · enum · L141-L146 — pub enum AuthInputKind
+- AuthPrompt · struct · L149-L154 — pub struct AuthPrompt
+- AuthResult · struct · L157-L161 — pub struct AuthResult
+- AuthFlow · struct · L164-L164 — pub struct AuthFlow(Arc<FlowInner>);
+- State · enum · L167-L171 — enum State
+- FlowInner · struct · L172-L183 — struct FlowInner
+- Operation · enum · L186-L192 — enum Operation
+- flag · function · L194-L202 — fn flag(self) -> &'static str
+- invalid · function · L205-L207 — fn invalid(message: &'static str) -> Error
+- failed · function · L208-L210 — fn failed(message: &'static str) -> Error
+- cancelled · function · L211-L213 — fn cancelled() -> Error
+- parse_login_response · function · L215-L233 — fn parse_login_response(bytes: &[u8], operation: Operation) -> Result<serde_json::Value>
+- login_process_failure · function · L237-L257 — fn login_process_failure(stderr: &[u8]) -> Error
+- callback_provider_error · function · L259-L274 — fn callback_provider_error(input: &str) -> Option<Error>
+- start · function · L277-L329 — pub fn start(&self) -> Result<AuthPrompt>
+- submit_callback · function · L331-L333 — pub fn submit_callback(&self, input: &str) -> Result<AuthResult>
+- submit_code · function · L334-L336 — pub fn submit_code(&self, input: &str) -> Result<AuthResult>
+- complete_device · function · L337-L339 — pub fn complete_device(&self) -> Result<AuthResult>
+- has_callback_listener · function · L343-L345 — pub fn has_callback_listener(&self) -> bool
+- wait_for_callback · function · L351-L353 — pub fn wait_for_callback(&self) -> Result<AuthResult>
+- wait_for_callback_with_progress · function · L358-L382 — pub fn wait_for_callback_with_progress(&self, received: impl FnOnce()) -> Result<AuthResult>
+- complete · function · L384-L427 — fn complete(&self, operation: Operation, input: Option<&str>) -> Result<AuthResult>
+- cancel · function · L432-L444 — pub fn cancel(&self) -> Result<()>
+- close_callback · function · L448-L452 — fn close_callback(&self)
+- notify_daemon_best_effort · function · L454-L474 — fn notify_daemon_best_effort(&self)
+- command · function · L476-L509 — fn command(&self, operation: Operation) -> Command
+- kill_child · function · L511-L516 — fn kill_child(&self)
+- execute · function · L518-L632 — fn execute(
+- drop · function · L636-L659 — fn drop(&mut self)
+- tests · module · L663-L663 — mod tests;

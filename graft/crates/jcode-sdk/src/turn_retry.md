@@ -1,0 +1,33 @@
+# crates/jcode-sdk/src/turn_retry.rs
+
+- CONTINUATION_REMINDER · constant · L32-L32 — pub const CONTINUATION_REMINDER: &str = "[auto] The previous model request failed with a transient error and was retried automatically. Continue the task from where you left off. Do not repeat tool calls or edits that already completed.";
+- FailureKind · enum · L36-L43 — pub enum FailureKind
+- MAX_RATE_LIMIT_WAIT · constant · L47-L47 — pub const MAX_RATE_LIMIT_WAIT: Duration = Duration::from_secs(5 * 60);
+- classify_failure · function · L53-L87 — pub fn classify_failure(message: &str, retry_after: Option<Duration>) -> FailureKind
+- PERMANENT_MARKERS · constant · L91-L168 — const PERMANENT_MARKERS: &[&str] = &[
+- RATE_LIMIT_MARKERS · constant · L170-L170 — const RATE_LIMIT_MARKERS: &[&str] = &["rate limit", "rate_limit", "ratelimit", "too many requests"];
+- RATE_LIMIT_CODES · constant · L174-L174 — const RATE_LIMIT_CODES: &[&str] = &["429"];
+- TRANSIENT_CODES · constant · L175-L175 — const TRANSIENT_CODES: &[&str] = &["500", "502", "503", "504", "529"];
+- contains_code · function · L177-L184 — fn contains_code(text: &str, code: &str) -> bool
+- TRANSIENT_MARKERS · constant · L186-L233 — const TRANSIENT_MARKERS: &[&str] = &[
+- parse_retry_after · function · L235-L279 — fn parse_retry_after(lower: &str) -> Option<Duration>
+- structured_retry_after · function · L281-L292 — fn structured_retry_after(value: &serde_json::Value) -> Option<Duration>
+- CLOSE_GRACE · constant · L295-L295 — const CLOSE_GRACE: Duration = Duration::from_secs(10);
+- RetryPolicy · struct · L299-L306 — pub struct RetryPolicy
+- default · function · L309-L315 — fn default() -> Self
+- delay · function · L319-L328 — fn delay(&self, attempt: u32, kind: FailureKind) -> Option<Duration>
+- RetryDecision · enum · L333-L351 — pub enum RetryDecision
+- TurnRetry · struct · L355-L368 — pub struct TurnRetry
+- new · function · L371-L376 — pub fn new(policy: RetryPolicy) -> Self
+- policy · function · L378-L380 — pub fn policy(&self) -> RetryPolicy
+- pending · function · L383-L385 — pub fn pending(&self) -> Option<Instant>
+- attempts · function · L388-L390 — pub fn attempts(&self) -> u32
+- user_sent · function · L394-L400 — pub fn user_sent(&mut self) -> RetryDecision
+- user_cancelled · function · L403-L407 — pub fn user_cancelled(&mut self) -> RetryDecision
+- take_due · function · L411-L422 — pub fn take_due(&mut self, now: Instant) -> bool
+- send_failed · function · L426-L428 — pub fn send_failed(&mut self, now: Instant)
+- observe · function · L431-L477 — pub fn observe(&mut self, event: &ApiEvent, now: Instant) -> RetryDecision
+- observe_error · function · L479-L543 — fn observe_error(&mut self, code: ErrorCode, message: &str, now: Instant) -> RetryDecision
+- cancel_pending · function · L545-L551 — fn cancel_pending(&mut self) -> RetryDecision
+- summarize · function · L555-L566 — fn summarize(message: &str) -> String
+- tests · module · L570-L570 — mod tests;

@@ -1,0 +1,77 @@
+# crates/jcode-tui/src/tui/app/navigation.rs
+
+- diagram_fit · module · L2-L2 — mod diagram_fit;
+- repository_links · module · L5-L5 — mod repository_links;
+- panel_controls · module · L11-L11 — mod panel_controls;
+- MouseScrollTraceState · struct · L14-L27 — struct MouseScrollTraceState
+- capture · function · L30-L45 — fn capture(app: &App) -> Self
+- summary · function · L47-L63 — fn summary(&self) -> String
+- tui_mouse_scroll_trace_enabled · function · L66-L68 — fn tui_mouse_scroll_trace_enabled() -> bool
+- is_mouse_scroll_kind · function · L70-L78 — fn is_mouse_scroll_kind(kind: MouseEventKind) -> bool
+- MOUSE_SCROLL_INTENT_LINES · constant · L81-L81 — const MOUSE_SCROLL_INTENT_LINES: i16 = 3;
+- MOUSE_SCROLL_MAX_INTENT_LINES · constant · L85-L85 — const MOUSE_SCROLL_MAX_INTENT_LINES: i16 = 5;
+- MOUSE_SCROLL_MAX_QUEUE · constant · L88-L88 — const MOUSE_SCROLL_MAX_QUEUE: i16 = 30;
+- log_mouse_scroll_trace · function · L90-L140 — fn log_mouse_scroll_trace(
+- try_cycle_image_expand_at · function · L146-L186 — pub(super) fn try_cycle_image_expand_at(&mut self, column: u16, row: u16) -> bool
+- try_zoom_inline_image_at · function · L191-L232 — pub(super) fn try_zoom_inline_image_at(
+- try_toggle_swarm_expand_at · function · L237-L270 — pub(super) fn try_toggle_swarm_expand_at(&mut self, column: u16, row: u16) -> bool
+- toggle_swarm_message_expand · function · L275-L315 — pub(super) fn toggle_swarm_message_expand(&mut self, msg_idx: usize) -> bool
+- try_open_link_at · function · L317-L383 — pub(super) fn try_open_link_at(&mut self, column: u16, row: u16) -> bool
+- try_open_link_at_with · function · L386-L406 — pub(super) fn try_open_link_at_with<F, E>(
+- scroll_max_estimate · function · L408-L438 — pub(super) fn scroll_max_estimate(&self) -> usize
+- estimated_chat_wrapped_lines · function · L440-L480 — fn estimated_chat_wrapped_lines(&self, width: usize) -> usize
+- wrapped_text_lines · function · L443-L451 — fn wrapped_text_lines(text: &str, width: usize) -> usize
+- diagram_available · function · L482-L486 — pub(super) fn diagram_available(&self) -> bool
+- normalize_diagram_state · function · L488-L518 — pub(super) fn normalize_diagram_state(&mut self)
+- set_diagram_focus · function · L520-L531 — pub(super) fn set_diagram_focus(&mut self, focus: bool)
+- diff_pane_visible · function · L534-L538 — pub(super) fn diff_pane_visible(&self) -> bool
+- set_diff_pane_focus · function · L540-L563 — pub(super) fn set_diff_pane_focus(&mut self, focus: bool)
+- pan_diff_pane_x · function · L565-L570 — pub(super) fn pan_diff_pane_x(&mut self, dx: i32)
+- close_panel_image_preview · function · L572-L575 — pub(super) fn close_panel_image_preview(&mut self)
+- adjust_side_panel_image_zoom · function · L577-L588 — pub(super) fn adjust_side_panel_image_zoom(&mut self, delta_percent: i16)
+- reset_side_panel_image_zoom · function · L590-L599 — pub(super) fn reset_side_panel_image_zoom(&mut self)
+- handle_diff_pane_focus_key · function · L601-L662 — pub(super) fn handle_diff_pane_focus_key(
+- focus_adjacent_side_panel_page · function · L664-L689 — fn focus_adjacent_side_panel_page(&mut self, delta: isize)
+- side_pane_has_visual_images · function · L691-L696 — pub(super) fn side_pane_has_visual_images(&self) -> bool
+- side_pane_has_visual_images_ignoring_user_hidden · function · L698-L702 — pub(super) fn side_pane_has_visual_images_ignoring_user_hidden(&self) -> bool
+- update_pinned_images_auto_hide · function · L704-L710 — pub(super) fn update_pinned_images_auto_hide(&mut self) -> bool
+- side_pane_line_scroll_amount · function · L712-L718 — fn side_pane_line_scroll_amount(&self) -> usize
+- side_pane_page_scroll_amount · function · L720-L726 — fn side_pane_page_scroll_amount(&self) -> usize
+- side_pane_scroll_by · function · L740-L772 — pub(super) fn side_pane_scroll_by(&mut self, delta: isize) -> bool
+- enqueue_mouse_scroll · function · L774-L821 — pub(super) fn enqueue_mouse_scroll(&mut self, target: MouseScrollTarget, direction: i16)
+- enqueue_native_scroll · function · L829-L845 — pub(super) fn enqueue_native_scroll(&mut self, target: MouseScrollTarget, delta: i32)
+- scroll_acceleration_multiplier · function · L852-L855 — pub(super) fn scroll_acceleration_multiplier(gap: std::time::Duration) -> i16
+- scroll_intent_lines · function · L859-L861 — pub(super) fn scroll_intent_lines(multiplier: i16) -> i16
+- mouse_scroll_drain_amount · function · L863-L876 — pub(super) fn mouse_scroll_drain_amount(&self) -> usize
+- drain_mouse_scroll_animation · function · L878-L937 — fn drain_mouse_scroll_animation(&mut self, max_steps: usize)
+- apply_mouse_scroll_step · function · L939-L998 — pub(super) fn apply_mouse_scroll_step(
+- progress_mouse_scroll_animation · function · L1000-L1002 — pub(super) fn progress_mouse_scroll_animation(&mut self)
+- cycle_diagram · function · L1004-L1022 — pub(super) fn cycle_diagram(&mut self, direction: i32)
+- pan_diagram · function · L1024-L1027 — pub(super) fn pan_diagram(&mut self, dx: i32, dy: i32)
+- DIAGRAM_PANE_ANIM_DURATION · constant · L1029-L1029 — pub(super) const DIAGRAM_PANE_ANIM_DURATION: f32 = 0.15;
+- diagram_pane_ratio_limits · function · L1031-L1036 — fn diagram_pane_ratio_limits(&self) -> (u8, u8)
+- set_diagram_pane_ratio · function · L1038-L1067 — fn set_diagram_pane_ratio(&mut self, next: i16, animate: bool, announce: bool)
+- animated_diagram_pane_ratio · function · L1069-L1079 — pub(super) fn animated_diagram_pane_ratio(&self) -> u8
+- adjust_diagram_pane_ratio · function · L1081-L1085 — pub(super) fn adjust_diagram_pane_ratio(&mut self, delta: i8)
+- set_diagram_pane_ratio_immediate · function · L1087-L1090 — pub(super) fn set_diagram_pane_ratio_immediate(&mut self, next: u8)
+- set_side_panel_ratio_preset · function · L1092-L1095 — pub(super) fn set_side_panel_ratio_preset(&mut self, next: u8)
+- toggle_inline_images · function · L1100-L1109 — pub(super) fn toggle_inline_images(&mut self)
+- cycle_image_expand · function · L1114-L1145 — pub(super) fn cycle_image_expand(
+- adjust_diagram_zoom · function · L1147-L1153 — pub(super) fn adjust_diagram_zoom(&mut self, delta: i8)
+- toggle_diagram_pane · function · L1155-L1170 — pub(super) fn toggle_diagram_pane(&mut self)
+- toggle_diagram_pane_position · function · L1172-L1189 — pub(super) fn toggle_diagram_pane_position(&mut self)
+- pop_out_diagram · function · L1191-L1216 — pub(super) fn pop_out_diagram(&mut self)
+- handle_diagram_ctrl_key · function · L1218-L1267 — pub(super) fn handle_diagram_ctrl_key(
+- ctrl_prompt_rank · function · L1269-L1280 — pub(super) fn ctrl_prompt_rank(code: &KeyCode, modifiers: KeyModifiers) -> Option<usize>
+- ctrl_side_panel_ratio_preset · function · L1282-L1299 — pub(super) fn ctrl_side_panel_ratio_preset(
+- handle_diagram_focus_key · function · L1301-L1328 — pub(super) fn handle_diagram_focus_key(
+- handle_mouse_event · function · L1331-L1796 — pub(super) fn handle_mouse_event(&mut self, mouse: MouseEvent) -> bool
+- finish_mouse_event · function · L1334-L1347 — macro_rules! finish_mouse_event
+- scroll_up · function · L1803-L1861 — pub(super) fn scroll_up(&mut self, amount: usize) -> bool
+- pause_chat_auto_scroll · function · L1863-L1874 — pub(super) fn pause_chat_auto_scroll(&mut self)
+- scroll_down · function · L1882-L1933 — pub(super) fn scroll_down(&mut self, amount: usize) -> bool
+- follow_chat_bottom · function · L1935-L1942 — pub(super) fn follow_chat_bottom(&mut self)
+- debug_scroll_up · function · L1944-L1946 — pub(super) fn debug_scroll_up(&mut self, amount: usize)
+- debug_scroll_down · function · L1948-L1950 — pub(super) fn debug_scroll_down(&mut self, amount: usize)
+- debug_scroll_top · function · L1952-L1955 — pub(super) fn debug_scroll_top(&mut self)
+- debug_scroll_bottom · function · L1957-L1959 — pub(super) fn debug_scroll_bottom(&mut self)

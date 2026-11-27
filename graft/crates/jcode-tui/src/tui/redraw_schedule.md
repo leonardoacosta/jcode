@@ -1,0 +1,54 @@
+# crates/jcode-tui/src/tui/redraw_schedule.rs
+
+- REDRAW_IDLE · constant · L16-L16 — pub(crate) const REDRAW_IDLE: Duration = Duration::from_millis(250);
+- REDRAW_DEEP_IDLE · constant · L17-L17 — pub(crate) const REDRAW_DEEP_IDLE: Duration = Duration::from_millis(5000);
+- REDRAW_REMOTE_STARTUP · constant · L18-L18 — pub(crate) const REDRAW_REMOTE_STARTUP: Duration = Duration::from_millis(1000);
+- REDRAW_PASSIVE_LIVENESS · constant · L19-L19 — pub(crate) const REDRAW_PASSIVE_LIVENESS: Duration = Duration::from_millis(1000);
+- REDRAW_COPY_AUTOSCROLL · constant · L21-L21 — pub(crate) const REDRAW_COPY_AUTOSCROLL: Duration = Duration::from_millis(30);
+- REDRAW_DEEP_IDLE_AFTER · constant · L22-L22 — pub(crate) const REDRAW_DEEP_IDLE_AFTER: Duration = Duration::from_secs(30);
+- REDRAW_STATIC_STREAM · constant · L25-L25 — pub(crate) const REDRAW_STATIC_STREAM: Duration = Duration::from_millis(80);
+- REDRAW_UNFOCUSED_MIN · constant · L29-L29 — pub(crate) const REDRAW_UNFOCUSED_MIN: Duration = Duration::from_millis(100);
+- REDRAW_UNFOCUSED_STREAM · constant · L35-L35 — pub(crate) const REDRAW_UNFOCUSED_STREAM: Duration = Duration::from_millis(250);
+- REDRAW_HIDDEN · constant · L39-L39 — pub(crate) const REDRAW_HIDDEN: Duration = Duration::from_secs(1);
+- unfocused_event_hold · function · L43-L49 — pub(crate) fn unfocused_event_hold(focused: bool) -> Duration
+- deep_idle_dormant · function · L67-L79 — fn deep_idle_dormant(state: &dyn TuiState) -> bool
+- idle_donut_active_with_policy · function · L81-L116 — fn idle_donut_active_with_policy(
+- has_started_conversation · function · L123-L128 — fn has_started_conversation(state: &dyn TuiState) -> bool
+- idle_donut_paces_redraws · function · L161-L167 — fn idle_donut_paces_redraws(
+- animation_on_screen_now · function · L175-L177 — fn animation_on_screen_now() -> bool
+- LAST_FULL_FRAME_REDRAW_REASON · constant · L184-L185 — static LAST_FULL_FRAME_REDRAW_REASON: std::sync::atomic::AtomicUsize =
+- FULL_FRAME_REDRAW_REASONS · constant · L187-L202 — const FULL_FRAME_REDRAW_REASONS: &[&str] = &[
+- record_full_frame_redraw_reason · function · L204-L208 — fn record_full_frame_redraw_reason(reason: &'static str)
+- last_full_frame_redraw_reason · function · L210-L214 — pub(crate) fn last_full_frame_redraw_reason() -> Option<&'static str>
+- current_full_frame_redraw_reason · function · L223-L238 — pub(crate) fn current_full_frame_redraw_reason(state: &dyn TuiState) -> Option<&'static str>
+- idle_donut_active · function · L240-L243 — pub(crate) fn idle_donut_active(state: &dyn TuiState) -> bool
+- rate_limit_countdown_redraw_active · function · L245-L250 — fn rate_limit_countdown_redraw_active(state: &dyn TuiState) -> bool
+- cache_cold_countdown_redraw_active · function · L258-L266 — fn cache_cold_countdown_redraw_active(state: &dyn TuiState) -> bool
+- full_frame_status_animation_active_with_policy · function · L268-L282 — fn full_frame_status_animation_active_with_policy(
+- primary_status_spinner_fast_path_available_with_policy · function · L284-L298 — fn primary_status_spinner_fast_path_available_with_policy(
+- primary_status_spinner_needs_full_redraw_with_policy · function · L300-L312 — fn primary_status_spinner_needs_full_redraw_with_policy(
+- REDRAW_SWARM_SPINNER · constant · L317-L318 — pub(crate) const REDRAW_SWARM_SPINNER: Duration =
+- swarm_spinner_redraw_active · function · L330-L336 — fn swarm_spinner_redraw_active(state: &dyn TuiState) -> bool
+- session_picker_spinner_redraw_active · function · L341-L348 — fn session_picker_spinner_redraw_active(state: &dyn TuiState) -> bool
+- session_picker_preview_redraw_active · function · L352-L359 — fn session_picker_preview_redraw_active(state: &dyn TuiState) -> bool
+- fps_to_duration · function · L361-L363 — fn fps_to_duration(fps: u32) -> Duration
+- DECORATIVE_ANIMATION_FPS_CAP · constant · L385-L385 — const DECORATIVE_ANIMATION_FPS_CAP: u32 = 30;
+- decorative_animation_interval · function · L389-L391 — fn decorative_animation_interval(policy: &crate::perf::TuiPerfPolicy) -> Duration
+- static_text_chrome_active · function · L404-L406 — fn static_text_chrome_active(state: &dyn TuiState) -> bool
+- COMPOSING_ANIMATION_BACKOFF · constant · L413-L413 — const COMPOSING_ANIMATION_BACKOFF: Duration = Duration::from_millis(600);
+- actively_composing · function · L420-L425 — fn actively_composing(state: &dyn TuiState) -> bool
+- redraw_interval_with_policy_and_animation · function · L435-L446 — pub(crate) fn redraw_interval_with_policy_and_animation(
+- unfocused_redraw_min · function · L453-L463 — fn unfocused_redraw_min(state: &dyn TuiState) -> Duration
+- redraw_interval_focused_policy · function · L465-L633 — fn redraw_interval_focused_policy(
+- redraw_interval_with_policy · function · L646-L651 — pub(crate) fn redraw_interval_with_policy(
+- redraw_interval · function · L653-L656 — pub(crate) fn redraw_interval(state: &dyn TuiState) -> Duration
+- periodic_redraw_required · function · L658-L660 — pub(crate) fn periodic_redraw_required(state: &dyn TuiState) -> bool
+- periodic_redraw_required_excluding_idle_animation · function · L666-L668 — pub(crate) fn periodic_redraw_required_excluding_idle_animation(state: &dyn TuiState) -> bool
+- periodic_redraw_required_inner · function · L670-L723 — fn periodic_redraw_required_inner(state: &dyn TuiState, include_idle_animation: bool) -> bool
+- live_activity_redraw_reason · function · L732-L764 — fn live_activity_redraw_reason(state: &dyn TuiState) -> Option<&'static str>
+- tests · module · L767-L838 — mod tests
+- reason_slot_lock · function · L772-L775 — fn reason_slot_lock() -> std::sync::MutexGuard<'static, ()>
+- LOCK · constant · L773-L773 — static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+- every_recorded_reason_is_in_the_reason_table · function · L781-L810 — fn every_recorded_reason_is_in_the_reason_table()
+- unknown_reasons_do_not_corrupt_the_reason_slot · function · L813-L818 — fn unknown_reasons_do_not_corrupt_the_reason_slot()
+- static_chrome_cadence_retires_notices_without_animation_cost · function · L828-L837 — fn static_chrome_cadence_retires_notices_without_animation_cost()

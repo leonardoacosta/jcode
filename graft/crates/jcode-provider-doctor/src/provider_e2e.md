@@ -1,0 +1,78 @@
+# crates/jcode-provider-doctor/src/provider_e2e.rs
+
+- DoctorTier · enum · L44-L51 — pub enum DoctorTier
+- requires_api_key · function · L54-L56 — pub fn requires_api_key(self) -> bool
+- spends_balance · function · L58-L60 — pub fn spends_balance(self) -> bool
+- as_str · function · L62-L68 — pub fn as_str(self) -> &'static str
+- Err · type · L72-L72 — type Err = String;
+- from_str · function · L74-L83 — fn from_str(value: &str) -> Result<Self, Self::Err>
+- DoctorCheck · struct · L88-L94 — pub struct DoctorCheck
+- passed · function · L97-L104 — fn passed(checkpoint: &'static str, label: &'static str, detail: impl Into<String>) -> Self
+- failed · function · L106-L113 — fn failed(checkpoint: &'static str, label: &'static str, detail: impl Into<String>) -> Self
+- skipped · function · L115-L122 — fn skipped(checkpoint: &'static str, label: &'static str, detail: impl Into<String>) -> Self
+- is_failure · function · L124-L129 — pub fn is_failure(&self) -> bool
+- DoctorReport · struct · L134-L146 — pub struct DoctorReport
+- DoctorSpend · struct · L154-L165 — pub struct DoctorSpend
+- accumulate · function · L169-L203 — fn accumulate(&mut self, usage: Option<&serde_json::Value>, cost: Option<&serde_json::Value>)
+- to_json · function · L206-L215 — pub fn to_json(&self) -> serde_json::Value
+- human_summary · function · L218-L240 — pub fn human_summary(&self) -> String
+- first_failure · function · L244-L246 — pub fn first_failure(&self) -> Option<&DoctorCheck>
+- FULL_PIPELINE_LABELS · constant · L249-L278 — const FULL_PIPELINE_LABELS: &[(&str, &str)] = &[
+- label_for · function · L280-L286 — fn label_for(checkpoint: &str) -> &'static str
+- tool_stage_detail · function · L295-L322 — fn tool_stage_detail(stage: &jcode_base::live_tests::LiveVerificationStage) -> String
+- reasoning_stage_detail · function · L331-L344 — fn reasoning_stage_detail(stage: &jcode_base::live_tests::LiveVerificationStage) -> String
+- push_reasoning_check · function · L356-L380 — fn push_reasoning_check(
+- API_DEPENDENT_CHECKPOINTS · constant · L384-L392 — const API_DEPENDENT_CHECKPOINTS: &[&str] = &[
+- run_provider_e2e · function · L397-L554 — pub async fn run_provider_e2e(
+- native_claude_wiring_contract · function · L573-L581 — fn native_claude_wiring_contract() -> WiringContract
+- cheapest_catalog_model · function · L589-L601 — fn cheapest_catalog_model(catalog_models: &[String]) -> Option<String>
+- run_claude_native_e2e · function · L614-L848 — pub async fn run_claude_native_e2e(
+- native_claude_auth · function · L853-L865 — fn native_claude_auth(is_oauth: bool) -> LiveVerificationAuth
+- run_native_claude_api_checks · function · L869-L947 — async fn run_native_claude_api_checks(
+- native_antigravity_wiring_contract · function · L956-L964 — fn native_antigravity_wiring_contract() -> WiringContract
+- native_antigravity_auth · function · L970-L977 — fn native_antigravity_auth(account: &str) -> LiveVerificationAuth
+- cheapest_antigravity_model · function · L985-L1001 — fn cheapest_antigravity_model(catalog_models: &[String]) -> Option<String>
+- run_antigravity_native_e2e · function · L1014-L1208 — pub async fn run_antigravity_native_e2e(
+- run_native_antigravity_api_checks · function · L1212-L1291 — async fn run_native_antigravity_api_checks(
+- NativeProviderKind · enum · L1308-L1316 — pub enum NativeProviderKind
+- from_normalized · function · L1320-L1331 — pub fn from_normalized(provider_id: &str) -> Option<Self>
+- spec · function · L1333-L1443 — fn spec(self) -> NativeProviderSpec
+- build_runtime · function · L1448-L1515 — fn build_runtime(self) -> anyhow::Result<std::sync::Arc<dyn jcode_base::provider::Provider>>
+- resolve_credential · function · L1520-L1587 — async fn resolve_credential(self) -> anyhow::Result<String>
+- cheapest_model · function · L1592-L1617 — fn cheapest_model(self, catalog: &[String]) -> Option<String>
+- NativeProviderSpec · struct · L1621-L1634 — struct NativeProviderSpec
+- run_generic_native_e2e · function · L1645-L1858 — pub async fn run_generic_native_e2e(
+- run_generic_native_api_checks · function · L1862-L1943 — async fn run_generic_native_api_checks(
+- WiringContract · struct · L1954-L1966 — struct WiringContract
+- wiring_contract · function · L1968-L1992 — fn wiring_contract(profile: OpenAiCompatibleProfile) -> WiringContract
+- run_wiring_checks · function · L1994-L2007 — fn run_wiring_checks(
+- run_wiring_checks_for_contract · function · L2013-L2176 — fn run_wiring_checks_for_contract(
+- run_full_api_checks · function · L2178-L2251 — async fn run_full_api_checks(
+- finish_report · function · L2254-L2295 — fn finish_report(
+- compat_auth · function · L2299-L2308 — fn compat_auth(api_key: Option<&str>, api_key_env: &str, env_file: &str) -> LiveVerificationAuth
+- record_event · function · L2311-L2376 — fn record_event(
+- truncate_list · function · L2378-L2385 — fn truncate_list(models: &[String]) -> String
+- format_error_chain · function · L2393-L2411 — fn format_error_chain(error: &anyhow::Error) -> String
+- provider_failure_coverage · function · L2415-L2467 — pub fn provider_failure_coverage(
+- SCENARIOS · constant · L2418-L2423 — const SCENARIOS: [&str; 4] = [
+- tests · module · L2470-L2874 — mod tests
+- failure_coverage_empty_is_not_covered_for_every_provider · function · L2472-L2483 — fn failure_coverage_empty_is_not_covered_for_every_provider()
+- failure_coverage_preserves_skip_reason_and_never_promotes_generic_chat · function · L2486-L2518 — fn failure_coverage_preserves_skip_reason_and_never_promotes_generic_chat()
+- failure_coverage_distinguishes_live_and_offline_and_latest_results · function · L2521-L2560 — fn failure_coverage_distinguishes_live_and_offline_and_latest_results()
+- format_error_chain_joins_context_with_root_cause · function · L2565-L2578 — fn format_error_chain_joins_context_with_root_cause()
+- format_error_chain_dedupes_and_handles_single_error · function · L2581-L2584 — fn format_error_chain_dedupes_and_handles_single_error()
+- native_provider_kind_maps_every_generic_id · function · L2587-L2603 — fn native_provider_kind_maps_every_generic_id()
+- native_provider_specs_are_self_consistent · function · L2606-L2639 — fn native_provider_specs_are_self_consistent()
+- spend_accumulates_openai_style_usage_and_cost · function · L2642-L2668 — fn spend_accumulates_openai_style_usage_and_cost()
+- spend_handles_missing_usage_and_anthropic_style_keys · function · L2671-L2692 — fn spend_handles_missing_usage_and_anthropic_style_keys()
+- native_doctor_supports_claude_and_antigravity · function · L2695-L2705 — fn native_doctor_supports_claude_and_antigravity()
+- native_provider_roster_matches_base_predicate · function · L2713-L2735 — fn native_provider_roster_matches_base_predicate()
+- native_antigravity_contract_routes_via_https_prefix · function · L2738-L2745 — fn native_antigravity_contract_routes_via_https_prefix()
+- native_jcode_contract_uses_managed_subscription_identity · function · L2748-L2761 — fn native_jcode_contract_uses_managed_subscription_identity()
+- cheapest_antigravity_model_prefers_gemini_flash · function · L2764-L2775 — fn cheapest_antigravity_model_prefers_gemini_flash()
+- cheapest_antigravity_model_falls_back_to_any_gemini_then_any_model · function · L2778-L2797 — fn cheapest_antigravity_model_falls_back_to_any_gemini_then_any_model()
+- native_antigravity_auth_is_secret_free · function · L2800-L2806 — fn native_antigravity_auth_is_secret_free()
+- tool_stage_detail_surfaces_multi_and_parallel_phases · function · L2809-L2828 — fn tool_stage_detail_surfaces_multi_and_parallel_phases()
+- reasoning_stage_detail_describes_each_classification · function · L2831-L2844 — fn reasoning_stage_detail_describes_each_classification()
+- push_reasoning_check_records_pass_for_clean_turn · function · L2847-L2857 — fn push_reasoning_check_records_pass_for_clean_turn()
+- push_reasoning_check_skips_never_fails_on_probe_error · function · L2860-L2873 — fn push_reasoning_check_skips_never_fails_on_probe_error()

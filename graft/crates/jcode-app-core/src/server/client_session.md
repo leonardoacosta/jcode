@@ -1,0 +1,26 @@
+# crates/jcode-app-core/src/server/client_session.rs
+
+- ChannelSubscriptions · type · L32-L32 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- RELOAD_RESTORE_MARKER_MAX_AGE · constant · L33-L33 — const RELOAD_RESTORE_MARKER_MAX_AGE: Duration = Duration::from_secs(60);
+- last_message_has_pending_tool · function · L37-L43 — pub(super) fn last_message_has_pending_tool(session: &crate::session::StoredMessage) -> bool
+- session_was_interrupted_by_reload · function · L45-L65 — pub(super) fn session_was_interrupted_by_reload(agent: &Agent) -> bool
+- restored_session_was_interrupted · function · L67-L115 — pub(super) fn restored_session_was_interrupted(
+- session_reload_signals · module · L118-L118 — mod session_reload_signals;
+- handle_clear_session · function · L122-L368 — pub(super) async fn handle_clear_session(
+- ensure_client_swarm_member · function · L371-L505 — async fn ensure_client_swarm_member(
+- log_ignored_subscribe_working_dir · function · L511-L516 — fn log_ignored_subscribe_working_dir(session_id: &str, current: &str, reported: &str)
+- apply_or_defer_subscribe_working_dir · function · L518-L568 — fn apply_or_defer_subscribe_working_dir(
+- apply_or_defer_subscribe_selfdev · function · L570-L590 — fn apply_or_defer_subscribe_selfdev(agent: &Arc<Mutex<Agent>>, session_id: &str)
+- apply_or_defer_desktop_response_capability · function · L594-L612 — pub(super) async fn apply_or_defer_desktop_response_capability(
+- handle_subscribe · function · L615-L964 — pub(super) async fn handle_subscribe(
+- prewarm_idle_agent · function · L966-L974 — fn prewarm_idle_agent(agent: &Arc<Mutex<Agent>>) -> bool
+- subscribe_should_mark_ready · function · L976-L984 — async fn subscribe_should_mark_ready(
+- SwarmMemberRename · struct · L988-L995 — pub(super) struct SwarmMemberRename
+- resumed_member_swarm_id · function · L1009-L1033 — fn resumed_member_swarm_id(
+- client_session_rename · module · L1041-L1041 — mod client_session_rename;
+- handle_reload · function · L1044-L1135 — pub(super) async fn handle_reload(
+- cleanup_detached_source_session_if_unused · function · L1138-L1204 — async fn cleanup_detached_source_session_if_unused(
+- remove_detached_source_if_unclaimed · function · L1210-L1230 — async fn remove_detached_source_if_unclaimed(
+- claim_live_target_agent · function · L1237-L1254 — async fn claim_live_target_agent(
+- handle_resume_session · function · L1257-L2055 — pub(super) async fn handle_resume_session(
+- tests · module · L2059-L2059 — mod tests;

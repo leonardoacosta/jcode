@@ -1,0 +1,21 @@
+# crates/jcode-base/src/session/parallel_messages.rs
+
+- PARALLEL_MIN_MESSAGES · constant · L19-L19 — const PARALLEL_MIN_MESSAGES: usize = 512;
+- MAX_THREADS · constant · L20-L20 — const MAX_THREADS: usize = 8;
+- deserialize · function · L22-L27 — pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<StoredMessage>, D::Error>
+- RawSeqVisitor · struct · L29-L29 — struct RawSeqVisitor;
+- Value · type · L32-L32 — type Value = Vec<StoredMessage>;
+- expecting · function · L34-L36 — fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
+- visit_seq · function · L38-L47 — fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+- parse_one · function · L50-L52 — fn parse_one(raw: &RawValue) -> Result<StoredMessage, serde_json::Error>
+- parse_raw_messages · function · L54-L89 — fn parse_raw_messages(raws: &[Box<RawValue>]) -> Result<Vec<StoredMessage>, serde_json::Error>
+- tests · module · L92-L200 — mod tests
+- Holder · struct · L97-L100 — struct Holder
+- message_json · function · L102-L111 — fn message_json(i: usize) -> String
+- doc · function · L113-L116 — fn doc(n: usize) -> String
+- sequential · function · L118-L122 — fn sequential(n: usize) -> Vec<StoredMessage>
+- ids · function · L124-L129 — fn ids(messages: &[StoredMessage]) -> Vec<String>
+- parallel_parse_matches_sequential_in_order · function · L132-L137 — fn parallel_parse_matches_sequential_in_order()
+- reader_and_value_inputs_parse_identically · function · L140-L148 — fn reader_and_value_inputs_parse_identically()
+- benchmark_short_session_topology_query · function · L152-L192 — fn benchmark_short_session_topology_query()
+- a_malformed_message_is_an_error_not_a_silent_drop · function · L195-L199 — fn a_malformed_message_is_an_error_not_a_silent_drop()

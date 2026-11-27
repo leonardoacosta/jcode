@@ -1,0 +1,23 @@
+# crates/jcode-app-core/src/server/swarm_mutation_state.rs
+
+- SWARM_MUTATION_DIR · constant · L11-L11 — const SWARM_MUTATION_DIR: &str = "jcode-swarm-mutations";
+- FINAL_STATE_TTL · constant · L12-L12 — const FINAL_STATE_TTL: Duration = Duration::from_secs(30);
+- PENDING_STATE_TTL · constant · L13-L13 — const PENDING_STATE_TTL: Duration = Duration::from_secs(30 * 60);
+- PersistedSwarmMutationResponse · enum · L16-L30 — pub(crate) enum PersistedSwarmMutationResponse
+- into_server_event · function · L33-L58 — fn into_server_event(self, id: u64, session_id: &str) -> ServerEvent
+- PersistedSwarmMutationState · struct · L62-L69 — pub(crate) struct PersistedSwarmMutationState
+- SwarmMutationWaiter · struct · L72-L75 — struct SwarmMutationWaiter
+- SwarmMutationSync · struct · L89-L92 — struct SwarmMutationSync
+- SwarmMutationRuntime · struct · L95-L97 — pub(crate) struct SwarmMutationRuntime
+- is_stale · function · L99-L105 — fn is_stale(state: &PersistedSwarmMutationState) -> bool
+- request_key · function · L107-L109 — pub(super) fn request_key(session_id: &str, action: &str, components: &[String]) -> String
+- load_state · function · L111-L113 — pub(super) fn load_state(key: &str) -> Option<PersistedSwarmMutationState>
+- save_state · function · L115-L122 — pub(super) fn save_state(state: &PersistedSwarmMutationState)
+- ensure_pending_state · function · L124-L142 — pub(super) fn ensure_pending_state(
+- blocking_io · function · L145-L149 — async fn blocking_io<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T
+- persist_final_response · function · L151-L159 — pub(super) fn persist_final_response(
+- begin_or_replay · function · L161-L179 — pub(super) async fn begin_or_replay(
+- begin_or_join_in_flight · function · L188-L206 — pub(super) async fn begin_or_join_in_flight(
+- begin_with_mode · function · L208-L271 — async fn begin_with_mode(
+- finish_request · function · L273-L299 — pub(super) async fn finish_request(
+- swarm_mutation_state_tests · module · L303-L303 — mod swarm_mutation_state_tests;

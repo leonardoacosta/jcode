@@ -1,0 +1,51 @@
+# crates/jcode-provider-core/src/models.rs
+
+- DEFAULT_CLAUDE_MODEL · constant · L2-L2 — pub const DEFAULT_CLAUDE_MODEL: &str = "claude-opus-5-5";
+- DEFAULT_OPENAI_MODEL · constant · L5-L5 — pub const DEFAULT_OPENAI_MODEL: &str = "gpt-6.1-sol";
+- ALL_CLAUDE_MODELS · constant · L14-L33 — pub const ALL_CLAUDE_MODELS: &[&str] = &[
+- CHATGPT_WEB_MODEL · constant · L37-L37 — pub const CHATGPT_WEB_MODEL: &str = "gpt-5.6-pro[web]";
+- OPENAI_API_ONLY_PRO_MODELS · constant · L45-L51 — pub const OPENAI_API_ONLY_PRO_MODELS: &[&str] = &[
+- is_openai_api_only_pro_model · function · L55-L64 — pub fn is_openai_api_only_pro_model(model: &str) -> bool
+- ALL_OPENAI_MODELS · constant · L66-L104 — pub const ALL_OPENAI_MODELS: &[&str] = &[
+- gpt_5_6_catalog_tests · module · L107-L128 — mod gpt_5_6_catalog_tests
+- openai_catalog_exposes_the_complete_gpt_5_6_family · function · L111-L127 — fn openai_catalog_exposes_the_complete_gpt_5_6_family()
+- DEFAULT_CONTEXT_LIMIT · constant · L131-L131 — pub const DEFAULT_CONTEXT_LIMIT: usize = 200_000;
+- ModelCapabilities · struct · L134-L137 — pub struct ModelCapabilities
+- normalize_provider_id · function · L139-L141 — fn normalize_provider_id(provider: &str) -> String
+- provider_key_from_hint · function · L143-L155 — pub fn provider_key_from_hint(provider_hint: Option<&str>) -> Option<&'static str>
+- is_listable_model_name · function · L157-L160 — pub fn is_listable_model_name(model: &str) -> bool
+- model_id_for_capability_lookup · function · L162-L173 — fn model_id_for_capability_lookup(model: &str, provider: Option<&str>) -> (String, bool)
+- copilot_context_limit_for_model · function · L175-L192 — fn copilot_context_limit_for_model(model: &str) -> usize
+- provider_for_model_with_hint · function · L197-L223 — pub fn provider_for_model_with_hint(
+- provider_for_model · function · L225-L227 — pub fn provider_for_model(model: &str) -> Option<&'static str>
+- base_is_known_claude_model · function · L237-L243 — fn base_is_known_claude_model(base: &str) -> bool
+- context_limit_for_model_with_provider_and_cache · function · L245-L356 — pub fn context_limit_for_model_with_provider_and_cache(
+- open_weight_family_context_limit · function · L365-L498 — pub fn open_weight_family_context_limit(model: &str) -> Option<usize>
+- is_bare_kimi_id · function · L502-L515 — fn is_bare_kimi_id(model: &str) -> bool
+- kimi_generation · function · L518-L535 — fn kimi_generation(model: &str) -> Option<u32>
+- context_limit_for_model_with_provider · function · L537-L542 — pub fn context_limit_for_model_with_provider(
+- context_limit_for_model · function · L544-L546 — pub fn context_limit_for_model(model: &str) -> Option<usize>
+- normalize_copilot_model_name · function · L552-L564 — pub fn normalize_copilot_model_name(model: &str) -> Option<&'static str>
+- tests · module · L567-L1005 — mod tests
+- newest_claude_is_listed_first_and_is_the_default · function · L571-L585 — fn newest_claude_is_listed_first_and_is_the_default()
+- bundled_claude_list_covers_live_generations · function · L593-L610 — fn bundled_claude_list_covers_live_generations()
+- bare_k3_resolves_globally_to_one_million_context · function · L613-L616 — fn bare_k3_resolves_globally_to_one_million_context()
+- glm_53_family_resolves_to_one_million_context · function · L619-L635 — fn glm_53_family_resolves_to_one_million_context()
+- kimi_k3_family_resolves_to_one_million_context · function · L638-L651 — fn kimi_k3_family_resolves_to_one_million_context()
+- celeris_family_resolves_to_131k_context · function · L654-L656 — fn celeris_family_resolves_to_131k_context()
+- context_limit_handles_claude_1m_aliases · function · L659-L668 — fn context_limit_handles_claude_1m_aliases()
+- custom_endpoint_claude_named_id_honours_configured_window · function · L677-L709 — fn custom_endpoint_claude_named_id_honours_configured_window()
+- custom_endpoint_claude_named_id_still_falls_back_without_config · function · L714-L723 — fn custom_endpoint_claude_named_id_still_falls_back_without_config()
+- context_limit_classifies_claude_by_context_mode · function · L726-L762 — fn context_limit_classifies_claude_by_context_mode()
+- context_limit_classifies_retired_fable_as_native_1m · function · L765-L777 — fn context_limit_classifies_retired_fable_as_native_1m()
+- anthropic_context_mode_classifications · function · L780-L825 — fn anthropic_context_mode_classifications()
+- future_claude_generations_do_not_fail_closed_at_the_default_limit · function · L832-L848 — fn future_claude_generations_do_not_fail_closed_at_the_default_limit()
+- verified_claude_generations_stay_pinned_over_the_catalog · function · L853-L877 — fn verified_claude_generations_stay_pinned_over_the_catalog()
+- catalog_overrides_optimistic_guess_for_unverified_claude_generations · function · L882-L891 — fn catalog_overrides_optimistic_guess_for_unverified_claude_generations()
+- bare_kimi_ids_resolve_to_their_real_window · function · L895-L910 — fn bare_kimi_ids_resolve_to_their_real_window()
+- context_limit_handles_copilot_hint · function · L913-L922 — fn context_limit_handles_copilot_hint()
+- context_limit_uses_cache_for_unknown_models · function · L925-L932 — fn context_limit_uses_cache_for_unknown_models()
+- unknown_claude_model_prefers_catalog_limit_over_default · function · L935-L946 — fn unknown_claude_model_prefers_catalog_limit_over_default()
+- configured_context_window_overrides_gpt_family_fallback · function · L949-L977 — fn configured_context_window_overrides_gpt_family_fallback()
+- normalizes_copilot_model_names · function · L980-L986 — fn normalizes_copilot_model_names()
+- classifies_api_only_pro_models · function · L989-L1004 — fn classifies_api_only_pro_models()

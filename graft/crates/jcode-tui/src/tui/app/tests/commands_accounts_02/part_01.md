@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/app/tests/commands_accounts_02/part_01.rs
+
+- remote_account_fixture · function · L1-L17 — fn remote_account_fixture(label: &str) -> crate::protocol::AccountUsageSnapshot
+- test_account_hotkeys_connected_remote_queue_switch_and_preserve_draft · function · L20-L56 — fn test_account_hotkeys_connected_remote_queue_switch_and_preserve_draft()
+- test_account_local_shared_daemon_retains_inventory_center_and_saved_defaults · function · L59-L96 — fn test_account_local_shared_daemon_retains_inventory_center_and_saved_defaults()
+- test_remote_account_picker_pending_empty_and_scoped_inventory · function · L99-L145 — fn test_remote_account_picker_pending_empty_and_scoped_inventory()
+- test_remote_account_ssh_picker_keyboard_queues_host_switch · function · L148-L184 — fn test_remote_account_ssh_picker_keyboard_queues_host_switch()
+- test_remote_accounts_plural_preview_focuses_without_switching · function · L187-L210 — fn test_remote_accounts_plural_preview_focuses_without_switching()
+- test_remote_account_commands_send_wire_switches_and_host_management · function · L213-L299 — fn test_remote_account_commands_send_wire_switches_and_host_management()
+- usage_cards · module · L302-L302 — mod usage_cards;
+- test_show_accounts_includes_masked_email_column · function · L304-L341 — fn test_show_accounts_includes_masked_email_column()
+- test_account_openai_command_opens_account_picker · function · L344-L402 — fn test_account_openai_command_opens_account_picker()
+- test_account_picker_marks_routed_session_login_not_global_last_account · function · L405-L451 — fn test_account_picker_marks_routed_session_login_not_global_last_account()
+- test_account_picker_includes_all_configured_credentials_even_excluded_and_manual · function · L454-L602 — fn test_account_picker_includes_all_configured_credentials_even_excluded_and_manual()
+- test_account_priority_keys_persist_reset_and_preserve_membership · function · L605-L708 — fn test_account_priority_keys_persist_reset_and_preserve_membership()
+- test_account_command_opens_account_picker · function · L711-L796 — fn test_account_command_opens_account_picker()
+- test_account_picker_supports_arrow_and_vim_navigation · function · L799-L864 — fn test_account_picker_supports_arrow_and_vim_navigation()
+- test_account_picker_preview_from_input_filters_accounts · function · L867-L908 — fn test_account_picker_preview_from_input_filters_accounts()
+- test_account_picker_preview_stays_closed_for_explicit_subcommands · function · L911-L921 — fn test_account_picker_preview_stays_closed_for_explicit_subcommands()
+- test_account_command_combines_claude_and_openai_accounts · function · L924-L982 — fn test_account_command_combines_claude_and_openai_accounts()
+- test_account_picker_renders_each_oauth_email_in_combined_and_scoped_views · function · L985-L1037 — fn test_account_picker_renders_each_oauth_email_in_combined_and_scoped_views()
+- test_account_command_uses_fast_auth_snapshot_without_running_cursor_status · function · L1041-L1082 — fn test_account_command_uses_fast_auth_snapshot_without_running_cursor_status()
+- test_account_switch_shorthand_switches_openai_account_by_label · function · L1085-L1138 — fn test_account_switch_shorthand_switches_openai_account_by_label()
+- test_account_picker_prompt_new_openai_label_cancel_clears_prompt · function · L1141-L1155 — fn test_account_picker_prompt_new_openai_label_cancel_clears_prompt()
+- test_login_command_opens_inline_login_picker · function · L1158-L1169 — fn test_login_command_opens_inline_login_picker()
+- test_account_openai_compatible_settings_renders_provider_settings · function · L1172-L1185 — fn test_account_openai_compatible_settings_renders_provider_settings()
+- test_account_default_provider_command_saves_config · function · L1188-L1196 — fn test_account_default_provider_command_saves_config()
+- test_commands_alias_shows_help · function · L1199-L1208 — fn test_commands_alias_shows_help()
+- improvement_commands · module · L1211-L1211 — mod improvement_commands;
+- additional_test_account_hotkeys_advance_from_pending_target_not_stale_header · module · L1215-L1215 — mod additional_test_account_hotkeys_advance_from_pending_target_not_stale_header;

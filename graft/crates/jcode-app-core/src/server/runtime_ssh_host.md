@@ -1,0 +1,22 @@
+# crates/jcode-app-core/src/server/runtime_ssh_host.rs
+
+- MAX_VIEW · constant · L8-L8 — const MAX_VIEW: usize = 64 * 1024;
+- maintenance_event · function · L12-L62 — pub(super) fn maintenance_event(
+- handles · function · L64-L77 — pub(super) fn handles(command: &str) -> bool
+- sensitive_path · function · L80-L128 — fn sensitive_path(path: &Path) -> bool
+- bounded_read · function · L130-L169 — fn bounded_read(path: &Path) -> Result<String>
+- display_text · function · L171-L184 — fn display_text(text: &str) -> String
+- file_result · function · L186-L192 — fn file_result(path: &Path) -> Result<(Value, String)>
+- config_path · function · L194-L196 — fn config_path() -> Result<PathBuf>
+- redact · function · L199-L224 — fn redact(value: &mut toml::Value)
+- config_view · function · L226-L257 — fn config_view(path: &Path) -> Result<(Value, String)>
+- config_set · function · L259-L310 — fn config_set(path: &Path, key: &str, raw: &str) -> Result<()>
+- atomic_write · function · L312-L343 — fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()>
+- execute · function · L345-L532 — pub(super) async fn execute(
+- swarm_view · function · L534-L550 — fn swarm_view(agent: &Agent, project: Option<PathBuf>, global: PathBuf) -> Result<(Value, String)>
+- tests · module · L553-L652 — mod tests
+- config_set_preserves_unknown_tables_and_rejects_bad_values · function · L557-L571 — fn config_set_preserves_unknown_tables_and_rejects_bad_values()
+- maintenance_results_are_host_owned_and_do_not_claim_reload · function · L574-L595 — fn maintenance_results_are_host_owned_and_do_not_claim_reload()
+- malformed_config_is_never_replaced · function · L598-L604 — fn malformed_config_is_never_replaced()
+- viewer_bounds_and_rejects_private_content · function · L607-L640 — fn viewer_bounds_and_rejects_private_content()
+- config_redacts_nested_credentials_and_terminal_controls · function · L643-L651 — fn config_redacts_nested_credentials_and_terminal_controls()

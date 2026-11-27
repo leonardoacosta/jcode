@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/tool/calendar.rs
+
+- DEFAULT_EVENT_MINUTES · constant · L11-L11 — const DEFAULT_EVENT_MINUTES: i64 = 30;
+- CalendarTool · struct · L13-L15 — pub struct CalendarTool
+- new · function · L18-L22 — pub fn new() -> Self
+- CalendarInput · struct · L26-L62 — struct CalendarInput
+- to_event_time · function · L65-L76 — fn to_event_time(parsed: &ParsedTime, time_zone: Option<&str>) -> Result<EventTime>
+- default_end · function · L79-L104 — fn default_end(start: &ParsedTime) -> Result<ParsedTime>
+- to_rfc3339_bound · function · L108-L129 — fn to_rfc3339_bound(input: &str) -> Result<String>
+- validate_send_updates · function · L131-L141 — fn validate_send_updates(value: Option<&str>) -> Result<&'static str>
+- reminders_json · function · L143-L151 — fn reminders_json(minutes: &[i64]) -> Value
+- attendees_json · function · L153-L162 — fn attendees_json(emails: &[String]) -> Value
+- resolve_time_zone · function · L167-L185 — async fn resolve_time_zone(
+- event_body · function · L188-L245 — async fn event_body(
+- name · function · L250-L252 — fn name(&self) -> &str
+- description · function · L254-L256 — fn description(&self) -> &str
+- parameters_schema · function · L258-L315 — fn parameters_schema(&self) -> Value
+- execute · function · L317-L493 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- tests · module · L497-L737 — mod tests
+- default_end_adds_thirty_minutes_or_one_day · function · L501-L514 — fn default_end_adds_thirty_minutes_or_one_day()
+- naive_times_need_a_zone · function · L517-L527 — fn naive_times_need_a_zone()
+- send_updates_defaults_to_none_and_rejects_unknown · function · L530-L537 — fn send_updates_defaults_to_none_and_rejects_unknown()
+- reminders_override_defaults · function · L540-L552 — fn reminders_override_defaults()
+- list_bounds_accept_absolute_and_local_inputs · function · L555-L563 — fn list_bounds_accept_absolute_and_local_inputs()
+- create_body_rejects_mixed_all_day_and_timed · function · L566-L580 — async fn create_body_rejects_mixed_all_day_and_timed()
+- create_body_with_offset_needs_no_zone_lookup · function · L583-L603 — async fn create_body_with_offset_needs_no_zone_lookup()
+- live_read_only · function · L610-L655 — async fn live_read_only()
+- live_write_round_trip · function · L663-L736 — async fn live_write_round_trip()

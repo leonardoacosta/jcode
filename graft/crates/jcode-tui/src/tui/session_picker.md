@@ -1,0 +1,128 @@
+# crates/jcode-tui/src/tui/session_picker.rs
+
+- presence · module · L7-L7 — mod presence;
+- ONBOARDING_REVIEW_LABEL · constant · L31-L31 — const ONBOARDING_REVIEW_LABEL: &str = "Find bugs in my most active repo";
+- benchmark_io · module · L39-L39 — mod benchmark_io;
+- benchmark_matrix · module · L41-L41 — mod benchmark_matrix;
+- canvas · module · L42-L42 — mod canvas;
+- cloud_presence · module · L43-L43 — mod cloud_presence;
+- cloud_preview · module · L44-L44 — mod cloud_preview;
+- filter · module · L45-L45 — mod filter;
+- identity_search · module · L46-L46 — mod identity_search;
+- latency · module · L47-L47 — mod latency;
+- loading · module · L48-L48 — mod loading;
+- memory · module · L49-L49 — mod memory;
+- navigation · module · L50-L50 — mod navigation;
+- performance · module · L51-L51 — mod performance;
+- performance_tests · module · L53-L53 — mod performance_tests;
+- preview_chrome · module · L54-L54 — mod preview_chrome;
+- preview_io · module · L55-L55 — mod preview_io;
+- preview_metadata · module · L57-L57 — mod preview_metadata;
+- preview_refresh · module · L58-L58 — mod preview_refresh;
+- progressive_preview · module · L59-L59 — mod progressive_preview;
+- render · module · L60-L60 — mod render;
+- saved_placement · module · L61-L61 — mod saved_placement;
+- session_view · module · L62-L62 — mod session_view;
+- transcript_search · module · L64-L64 — mod transcript_search;
+- typing_bench · module · L66-L66 — mod typing_bench;
+- SEARCH_CONTENT_BUDGET_BYTES · constant · L80-L80 — const SEARCH_CONTENT_BUDGET_BYTES: usize = 12_000;
+- DEFAULT_SESSION_SCAN_LIMIT · constant · L81-L81 — const DEFAULT_SESSION_SCAN_LIMIT: usize = 500;
+- MIN_SESSION_SCAN_LIMIT · constant · L82-L82 — const MIN_SESSION_SCAN_LIMIT: usize = 50;
+- MAX_SESSION_SCAN_LIMIT · constant · L83-L83 — const MAX_SESSION_SCAN_LIMIT: usize = 10_000;
+- GroupedSessionList · type · L85-L85 — type GroupedSessionList = (Vec<ServerGroup>, Vec<SessionInfo>);
+- SessionListUpdate · enum · L87-L91 — pub(crate) enum SessionListUpdate
+- PickerResult · enum · L94-L106 — pub enum PickerResult
+- OnboardingAction · enum · L109-L112 — enum OnboardingAction
+- OverlayAction · enum · L115-L119 — pub enum OverlayAction
+- safe_truncate · function · L122-L131 — fn safe_truncate(s: &str, max_chars: usize) -> &str
+- normalize_dir · function · L136-L144 — fn normalize_dir(dir: &str) -> String
+- dir_is_home · function · L146-L148 — fn dir_is_home(dir: &str) -> bool
+- git_common_dir · function · L152-L169 — fn git_common_dir(dir: &Path) -> Option<PathBuf>
+- time_labels · module · L173-L173 — mod time_labels;
+- PaneFocus · enum · L178-L183 — enum PaneFocus
+- PREVIEW_SCROLL_STEP · constant · L185-L185 — const PREVIEW_SCROLL_STEP: u16 = 3;
+- PREVIEW_PAGE_SCROLL · constant · L186-L186 — const PREVIEW_PAGE_SCROLL: u16 = PREVIEW_SCROLL_STEP * 3;
+- SESSION_PAGE_STEP_COUNT · constant · L187-L187 — const SESSION_PAGE_STEP_COUNT: usize = 3;
+- LIVE_PRESENCE_REFRESH_INTERVAL · constant · L191-L191 — const LIVE_PRESENCE_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+- SessionRef · enum · L195-L202 — enum SessionRef
+- PendingSessionPreviewLoad · struct · L204-L207 — struct PendingSessionPreviewLoad
+- PreviewExtras · struct · L213-L222 — struct PreviewExtras
+- LoadedSessionPreview · struct · L224-L230 — struct LoadedSessionPreview
+- PreviewCacheKey · struct · L237-L250 — struct PreviewCacheKey
+- PreviewRenderCache · struct · L256-L270 — struct PreviewRenderCache
+- SessionPicker · struct · L272-L386 — pub struct SessionPicker
+- new · function · L389-L458 — pub fn new(sessions: Vec<SessionInfo>) -> Self
+- loading · function · L462-L520 — pub fn loading() -> Self
+- debug_memory_profile · function · L522-L524 — pub fn debug_memory_profile(&self) -> serde_json::Value
+- new_grouped · function · L527-L620 — pub fn new_grouped(server_groups: Vec<ServerGroup>, orphan_sessions: Vec<SessionInfo>) -> Self
+- activate_search · function · L622-L624 — pub fn activate_search(&mut self)
+- activate_catchup_filter · function · L626-L629 — pub fn activate_catchup_filter(&mut self)
+- set_current_dir · function · L633-L640 — pub fn set_current_dir(&mut self, dir: Option<String>)
+- session_in_current_dir · function · L645-L668 — pub(super) fn session_in_current_dir(&self, session: &SessionInfo) -> bool
+- set_current_session_id · function · L672-L674 — pub fn set_current_session_id(&mut self, session_id: Option<String>)
+- session_is_current · function · L677-L679 — pub(super) fn session_is_current(&self, session: &SessionInfo) -> bool
+- activate_active_filter · function · L683-L687 — pub fn activate_active_filter(&mut self)
+- selected_live_claude_target · function · L689-L695 — fn selected_live_claude_target(&self) -> Option<ResumeTarget>
+- begin_claude_takeover_confirmation · function · L697-L703 — fn begin_claude_takeover_confirmation(&mut self) -> bool
+- handle_claude_takeover_confirmation_key · function · L705-L726 — fn handle_claude_takeover_confirmation_key(
+- claude_takeover_confirmation_active_for_test · function · L729-L731 — pub(crate) fn claude_takeover_confirmation_active_for_test(&self) -> bool
+- has_visible_running_sessions · function · L735-L738 — pub(crate) fn has_visible_running_sessions(&self) -> bool
+- set_live_presence_for_test · function · L744-L754 — pub(crate) fn set_live_presence_for_test(
+- reseed_grouped · function · L763-L860 — pub fn reseed_grouped(
+- activate_external_cli_filter · function · L864-L867 — pub fn activate_external_cli_filter(&mut self, mode: SessionFilterMode)
+- activate_onboarding_banner · function · L871-L874 — pub fn activate_onboarding_banner(&mut self, banner_lines: Vec<Line<'static>>)
+- onboarding_banner_active · function · L877-L879 — pub fn onboarding_banner_active(&self) -> bool
+- onboarding_start_new_highlighted · function · L882-L885 — pub fn onboarding_start_new_highlighted(&self) -> bool
+- onboarding_review_recent_project_highlighted · function · L888-L891 — pub fn onboarding_review_recent_project_highlighted(&self) -> bool
+- visible_session_count · function · L894-L899 — pub fn visible_session_count(&self) -> usize
+- latest_visible_resume_target · function · L903-L909 — pub fn latest_visible_resume_target(&self) -> Option<ResumeTarget>
+- selected_session · function · L911-L920 — pub fn selected_session(&self) -> Option<&SessionInfo>
+- copy_selected_session_with · function · L923-L935 — fn copy_selected_session_with(&mut self, copy: impl FnOnce(&str) -> bool)
+- session_for_target · function · L937-L942 — pub fn session_for_target(&self, target: &ResumeTarget) -> Option<&SessionInfo>
+- selection_or_current_targets · function · L944-L958 — fn selection_or_current_targets(&self) -> Vec<ResumeTarget>
+- selection_count · function · L960-L962 — fn selection_count(&self) -> usize
+- toggle_selected_session · function · L964-L973 — fn toggle_selected_session(&mut self)
+- clear_selected_sessions · function · L975-L977 — pub fn clear_selected_sessions(&mut self)
+- selected_session_ref · function · L979-L987 — fn selected_session_ref(&self) -> Option<SessionRef>
+- session_by_ref · function · L989-L1001 — fn session_by_ref(&self, session_ref: SessionRef) -> Option<&SessionInfo>
+- session_by_ref_mut · function · L1003-L1018 — fn session_by_ref_mut(&mut self, session_ref: SessionRef) -> Option<&mut SessionInfo>
+- session_ref_for_id · function · L1020-L1042 — fn session_ref_for_id(&self, session_id: &str) -> Option<SessionRef>
+- push_visible_session · function · L1044-L1049 — fn push_visible_session(&mut self, session_ref: SessionRef)
+- visible_session_iter · function · L1052-L1056 — pub(super) fn visible_session_iter(&self) -> impl Iterator<Item = &SessionInfo> + '_
+- visible_session_iter_for_test · function · L1062-L1064 — pub(crate) fn visible_session_iter_for_test(&self) -> impl Iterator<Item = &SessionInfo> + '_
+- load_preview_for_target · function · L1066-L1103 — fn load_preview_for_target(
+- load_external_preview_for_target · function · L1105-L1139 — fn load_external_preview_for_target(
+- apply_session_preview · function · L1142-L1144 — fn apply_session_preview(&mut self, session_id: &str, preview: Vec<PreviewMessage>)
+- apply_session_preview_with_search · function · L1146-L1176 — fn apply_session_preview_with_search(
+- poll_preview_load · function · L1178-L1220 — fn poll_preview_load(&mut self) -> bool
+- ensure_selected_preview_loading · function · L1222-L1300 — fn ensure_selected_preview_loading(&mut self)
+- ensure_selected_preview_loaded · function · L1303-L1323 — fn ensure_selected_preview_loaded(&mut self)
+- delete_search_word_back · function · L1327-L1349 — fn delete_search_word_back(&mut self)
+- search_submission_pending · function · L1351-L1353 — pub fn search_submission_pending(&self) -> bool
+- poll_search_submission · function · L1357-L1380 — pub fn poll_search_submission(&mut self) -> Option<OverlayAction>
+- queue_search_submission · function · L1382-L1393 — fn queue_search_submission(&mut self, modifiers: KeyModifiers) -> bool
+- handle_search_key · function · L1398-L1477 — fn handle_search_key(
+- handle_key_event · function · L1481-L1487 — fn handle_key_event(&mut self, key: event::KeyEvent) -> Result<OverlayAction>
+- handle_overlay_key · function · L1495-L1512 — pub fn handle_overlay_key(
+- handle_overlay_key_inner · function · L1514-L1641 — fn handle_overlay_key_inner(
+- selection_result_for_enter · function · L1643-L1669 — fn selection_result_for_enter(
+- render_preview · function · L1671-L1833 — fn render_preview(&mut self, frame: &mut Frame, area: Rect)
+- held_preview_ref · function · L1837-L1853 — fn held_preview_ref(&mut self, loading_id: &str) -> Option<SessionRef>
+- GRACE · constant · L1838-L1838 — const GRACE: std::time::Duration = std::time::Duration::from_millis(150);
+- draw_selected_view · function · L1856-L1927 — fn draw_selected_view(
+- preview_content_hash · function · L1933-L1943 — fn preview_content_hash(
+- preview_content_hash_with_transcript · function · L1945-L1982 — fn preview_content_hash_with_transcript(
+- build_preview_cache · function · L1988-L2021 — fn build_preview_cache(
+- highlight_lines_in_place · function · L2028-L2055 — fn highlight_lines_in_place(lines: &mut [Line<'static>], tokens: &[String]) -> Option<usize>
+- preview_prompt_header_lines · function · L2062-L2086 — fn preview_prompt_header_lines(
+- onboarding_start_new_label · function · L2090-L2110 — fn onboarding_start_new_label(&self) -> String
+- render_onboarding_band · function · L2115-L2222 — fn render_onboarding_band(&self, frame: &mut Frame, area: Rect)
+- render · function · L2224-L2242 — pub fn render(&mut self, frame: &mut Frame)
+- render_inner · function · L2244-L2340 — fn render_inner(&mut self, frame: &mut Frame)
+- render_claude_takeover_confirmation · function · L2342-L2394 — fn render_claude_takeover_confirmation(&self, frame: &mut Frame)
+- run · function · L2397-L2399 — pub fn run(self) -> Result<Option<PickerResult>>
+- set_cloud_warning · function · L2401-L2403 — pub(crate) fn set_cloud_warning(&mut self, warning: String)
+- apply_session_list_update · function · L2405-L2417 — fn apply_session_list_update(&mut self, update: SessionListUpdate) -> Result<bool>
+- run_with_session_updates · function · L2419-L2526 — fn run_with_session_updates(
+- pick_session · function · L2531-L2558 — pub fn pick_session() -> Result<Option<PickerResult>>
+- tests · module · L2562-L2562 — mod tests;

@@ -1,0 +1,28 @@
+# src/cli/provider_init_tests.rs
+
+- ENV_LOCK · constant · L13-L13 — static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- lock_env · function · L15-L21 — fn lock_env() -> std::sync::MutexGuard<'static, ()>
+- test_provider_choice_arg_values · function · L25-L72 — fn test_provider_choice_arg_values()
+- novita_cli_aliases_select_the_builtin_profile · function · L75-L89 — fn novita_cli_aliases_select_the_builtin_profile()
+- explicit_anthropic_api_choice_pins_api_key_over_available_oauth · function · L96-L160 — async fn explicit_anthropic_api_choice_pins_api_key_over_available_oauth()
+- explicit_openai_api_choice_overrides_configured_compatible_default · function · L167-L230 — async fn explicit_openai_api_choice_overrides_configured_compatible_default()
+- test_server_bootstrap_login_selection_preserves_order · function · L233-L251 — fn test_server_bootstrap_login_selection_preserves_order()
+- test_auto_init_login_selection_preserves_order · function · L254-L284 — fn test_auto_init_login_selection_preserves_order()
+- test_init_provider_jcode_delegates_runtime_profile_to_wrapper · function · L287-L341 — fn test_init_provider_jcode_delegates_runtime_profile_to_wrapper()
+- test_openai_compatible_profile_overrides · function · L344-L381 — fn test_openai_compatible_profile_overrides()
+- test_openai_compatible_profile_rejects_invalid_overrides · function · L384-L421 — fn test_openai_compatible_profile_rejects_invalid_overrides()
+- parse_external_auth_review_selection_supports_all_and_deduped_indices · function · L424-L439 — fn parse_external_auth_review_selection_supports_all_and_deduped_indices()
+- parse_login_provider_selection_supports_skip_and_names · function · L442-L469 — fn parse_login_provider_selection_supports_skip_and_names()
+- login_provider_menu_shows_autodetected_auth_and_skip · function · L472-L493 — fn login_provider_menu_shows_autodetected_auth_and_skip()
+- choice_for_login_provider_round_trips_core_targets · function · L496-L521 — fn choice_for_login_provider_round_trips_core_targets()
+- choice_for_login_provider_round_trips_openai_compatible_profiles · function · L524-L545 — fn choice_for_login_provider_round_trips_openai_compatible_profiles()
+- login_provider_choice_table_round_trips_catalog_providers · function · L548-L591 — fn login_provider_choice_table_round_trips_catalog_providers()
+- auth_integration_registry_matches_cli_choice_runtime_wiring · function · L594-L619 — fn auth_integration_registry_matches_cli_choice_runtime_wiring()
+- resolved_profile_default_model_uses_openai_compatible_override · function · L622-L650 — fn resolved_profile_default_model_uses_openai_compatible_override()
+- apply_login_provider_profile_env_keeps_an_explicit_named_profile · function · L653-L699 — fn apply_login_provider_profile_env_keeps_an_explicit_named_profile()
+- apply_login_provider_profile_env_preserves_compatible_profile_for_auto_spawn · function · L702-L782 — fn apply_login_provider_profile_env_preserves_compatible_profile_for_auto_spawn()
+- init_provider_for_ollama_reapplies_local_compat_runtime_env_after_disabling_subscription_mode · function · L789-L862 — async fn init_provider_for_ollama_reapplies_local_compat_runtime_env_after_disabling_subscription_mode()
+- auto_provider_uses_config_default_named_no_auth_provider · function · L869-L961 — async fn auto_provider_uses_config_default_named_no_auth_provider()
+- auto_provider_noninteractive_skips_untrusted_external_auth_instead_of_blocking · function · L968-L1065 — async fn auto_provider_noninteractive_skips_untrusted_external_auth_instead_of_blocking()
+- pending_external_auth_review_candidates_include_shared_and_legacy_sources · function · L1068-L1124 — fn pending_external_auth_review_candidates_include_shared_and_legacy_sources()
+- env_model_for_choice_only_targets_openrouter_slot_runtimes · function · L1127-L1147 — fn env_model_for_choice_only_targets_openrouter_slot_runtimes()

@@ -1,0 +1,99 @@
+# crates/jcode-base/src/mobile_sync.rs
+
+- SyncTiming · struct · L32-L36 — struct SyncTiming
+- new · function · L39-L45 — fn new(stage: &'static str) -> Self
+- record · function · L47-L54 — fn record(&self) -> String
+- drop · function · L58-L60 — fn drop(&mut self)
+- SYNC_INTERVAL · constant · L63-L63 — pub const SYNC_INTERVAL: Duration = Duration::from_secs(20);
+- MAX_MESSAGES_PER_UPLOAD · constant · L64-L64 — const MAX_MESSAGES_PER_UPLOAD: usize = 200;
+- MAX_TOOL_RESULT_CHARS · constant · L65-L65 — const MAX_TOOL_RESULT_CHARS: usize = 4_000;
+- MAX_TEXT_CHARS · constant · L66-L66 — const MAX_TEXT_CHARS: usize = 100_000;
+- MAX_STRUCTURED_TOOLS · constant · L67-L67 — const MAX_STRUCTURED_TOOLS: usize = 32;
+- MAX_TOOL_INPUT_BYTES · constant · L68-L68 — const MAX_TOOL_INPUT_BYTES: usize = 8 * 1024;
+- MAX_TOOL_ID_BYTES · constant · L69-L69 — const MAX_TOOL_ID_BYTES: usize = 256;
+- MAX_STRUCTURED_BYTES · constant · L70-L70 — const MAX_STRUCTURED_BYTES: usize = 240 * 1024;
+- WIRE_VERSION · constant · L73-L73 — const WIRE_VERSION: u32 = 2;
+- BACKFILL_WINDOW · constant · L75-L75 — const BACKFILL_WINDOW: Duration = Duration::from_secs(14 * 24 * 3600);
+- SYNC_DEBOUNCE · constant · L76-L76 — const SYNC_DEBOUNCE: Duration = Duration::from_millis(150);
+- MAX_DIRTY_SESSIONS · constant · L79-L79 — const MAX_DIRTY_SESSIONS: usize = 1024;
+- PERSISTED · constant · L80-L80 — static PERSISTED: tokio::sync::Notify = tokio::sync::Notify::const_new();
+- DIRTY_SESSIONS · constant · L81-L81 — static DIRTY_SESSIONS: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+- SYNC_PASS · constant · L82-L82 — static SYNC_PASS: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+- FAILURE_BACKOFF · constant · L83-L83 — static FAILURE_BACKOFF: Mutex<Option<FailureBackoff>> = Mutex::new(None);
+- FailureBackoff · struct · L88-L91 — struct FailureBackoff
+- FailedSession · struct · L93-L97 — struct FailedSession
+- deferred · function · L100-L112 — fn deferred(&mut self, id: &str, revision: [u64; 4], fresh: bool, now: Instant) -> bool
+- failed · function · L114-L133 — fn failed(&mut self, id: &str, revision: [u64; 4], now: Instant)
+- notify_session_persisted · function · L139-L142 — pub(crate) fn notify_session_persisted(id: &str)
+- mark_dirty · function · L144-L153 — fn mark_dirty(id: &str)
+- state_lock · function · L155-L167 — fn state_lock() -> Result<std::fs::File>
+- MobileSyncState · struct · L170-L183 — pub struct MobileSyncState
+- SessionProgress · struct · L186-L203 — pub struct SessionProgress
+- WireMessage · struct · L206-L220 — pub struct WireMessage
+- WireToolCall · struct · L223-L227 — pub struct WireToolCall
+- WireToolResult · struct · L230-L234 — pub struct WireToolResult
+- WireImage · struct · L237-L240 — pub struct WireImage
+- SyncedSession · struct · L244-L252 — pub struct SyncedSession
+- discover_cloud_sessions · function · L255-L260 — pub async fn discover_cloud_sessions() -> Result<Vec<SyncedSession>>
+- list_cloud_sessions · function · L263-L268 — pub async fn list_cloud_sessions(client: &reqwest::Client) -> Result<Vec<SyncedSession>>
+- list_cloud_sessions_with_endpoint · function · L270-L305 — async fn list_cloud_sessions_with_endpoint(
+- SessionsResponse · struct · L278-L280 — struct SessionsResponse
+- UploadBody · struct · L308-L317 — struct UploadBody<'a>
+- state_path · function · L319-L321 — fn state_path() -> Result<PathBuf>
+- load_state · function · L323-L325 — pub fn load_state() -> MobileSyncState
+- MAX_CACHED_STATE_BYTES · constant · L329-L329 — const MAX_CACHED_STATE_BYTES: usize = 1024 * 1024;
+- ParsedState · struct · L330-L334 — struct ParsedState
+- PARSED_STATE · constant · L335-L335 — static PARSED_STATE: Mutex<Option<ParsedState>> = Mutex::new(None);
+- load_state_snapshot · function · L337-L374 — fn load_state_snapshot() -> Arc<MobileSyncState>
+- save_state · function · L376-L393 — pub fn save_state(state: &MobileSyncState) -> Result<()>
+- set_phone_messages_off · function · L398-L404 — pub fn set_phone_messages_off(off: bool) -> Result<MobileSyncState>
+- merge_progress · function · L406-L418 — fn merge_progress(
+- commit_progress · function · L420-L430 — fn commit_progress(generation: u64, updates: &BTreeMap<String, SessionProgress>) -> Result<()>
+- is_enabled · function · L432-L434 — pub fn is_enabled() -> bool
+- sync_still_enabled · function · L436-L439 — fn sync_still_enabled(generation: u64) -> bool
+- session_source · function · L442-L452 — pub fn session_source() -> &'static str
+- host_name · function · L454-L467 — pub(crate) fn host_name() -> Option<String>
+- truncate · function · L469-L473 — fn truncate(text: &str, max: usize) -> String
+- BoundedText · struct · L477-L481 — struct BoundedText
+- new · function · L484-L490 — fn new(max: usize) -> Self
+- push · function · L492-L520 — fn push(&mut self, text: &str)
+- append_tool_summary · function · L523-L539 — fn append_tool_summary(out: &mut BoundedText, name: &str, input: &serde_json::Value)
+- bounded_tool_input · function · L543-L575 — fn bounded_tool_input(input: &serde_json::Value) -> serde_json::Value
+- Preview · struct · L544-L544 — struct Preview(Vec<u8>);
+- write · function · L546-L555 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- flush · function · L556-L558 — fn flush(&mut self) -> std::io::Result<()>
+- serialized_byte_len · function · L579-L601 — fn serialized_byte_len(value: &impl Serialize) -> serde_json::Result<usize>
+- Counter · struct · L580-L580 — struct Counter(usize);
+- write · function · L582-L585 — fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize>
+- write_all · function · L587-L592 — fn write_all(&mut self, bytes: &[u8]) -> std::io::Result<()>
+- flush · function · L594-L596 — fn flush(&mut self) -> std::io::Result<()>
+- byte_count_tests · module · L605-L605 — mod byte_count_tests;
+- direct_count_tests · module · L609-L609 — mod direct_count_tests;
+- structured_tools · function · L611-L696 — fn structured_tools(
+- wire_payload · module · L698-L698 — mod wire_payload;
+- wire_fingerprint · function · L703-L709 — fn wire_fingerprint(messages: &[WireMessage], end: usize) -> u64
+- incremental_cache · module · L712-L712 — mod incremental_cache;
+- incremental_messages · function · L714-L716 — fn incremental_messages(session: &Session, progress: &SessionProgress) -> (Vec<WireMessage>, u64)
+- mtime_ms · function · L718-L733 — fn mtime_ms(path: &Path) -> u64
+- session_mtime_ms · function · L735-L739 — fn session_mtime_ms(snapshot: &Path) -> u64
+- session_revision · function · L741-L767 — fn session_revision(snapshot: &Path) -> [u64; 4]
+- stamp · function · L742-L753 — fn stamp(path: &Path) -> (u64, u64)
+- candidate_sessions · function · L770-L795 — fn candidate_sessions(since_ms: u64) -> Result<Vec<(String, PathBuf, u64)>>
+- SyncReport · struct · L798-L802 — pub struct SyncReport
+- upload_http_outcome · function · L806-L816 — fn upload_http_outcome(status: reqwest::StatusCode) -> &'static str
+- diagnostics_tests · module · L820-L820 — mod diagnostics_tests;
+- upload · function · L822-L869 — async fn upload(
+- UPLOAD_RESPONSE_DRAIN_LIMIT · constant · L871-L871 — const UPLOAD_RESPONSE_DRAIN_LIMIT: usize = 64 * 1024;
+- UPLOAD_RESPONSE_DRAIN_TIMEOUT · constant · L872-L872 — const UPLOAD_RESPONSE_DRAIN_TIMEOUT: Duration = Duration::from_millis(100);
+- drain_upload_response · function · L874-L899 — async fn drain_upload_response(mut response: reqwest::Response) -> &'static str
+- valid_session_id · function · L901-L907 — pub(crate) fn valid_session_id(id: &str) -> bool
+- sync_once · function · L910-L912 — pub async fn sync_once(client: &reqwest::Client) -> Result<SyncReport>
+- sync_pass · function · L914-L1132 — async fn sync_pass(client: &reqwest::Client, reconcile: bool) -> Result<SyncReport>
+- wipe_remote · function · L1135-L1156 — pub async fn wipe_remote(client: &reqwest::Client) -> Result<()>
+- spawn_background_sync · function · L1159-L1161 — pub fn spawn_background_sync()
+- background_sync · function · L1163-L1184 — async fn background_sync()
+- progress · module · L1187-L1187 — mod progress;
+- thumbnail_cache · module · L1190-L1190 — mod thumbnail_cache;
+- backoff_tests · module · L1194-L1194 — mod backoff_tests;
+- http_tests · module · L1197-L1197 — mod http_tests;
+- tests · module · L1200-L1200 — mod tests;

@@ -1,0 +1,57 @@
+# crates/jcode-tui/src/tui/app/conversation_state.rs
+
+- ensure_provider_messages_hydrated · function · L4-L11 — pub(super) fn ensure_provider_messages_hydrated(&mut self)
+- materialized_provider_messages · function · L13-L19 — pub(super) fn materialized_provider_messages(&self) -> Vec<Message>
+- local_transcript_message_count · function · L21-L27 — pub(super) fn local_transcript_message_count(&self) -> usize
+- format_compaction_strategy_label · function · L29-L39 — pub(super) fn format_compaction_strategy_label(trigger: &str) -> &'static str
+- format_compaction_started_message · function · L41-L44 — pub(super) fn format_compaction_started_message(trigger: &str) -> String
+- format_compaction_progress_notice · function · L46-L67 — pub(super) fn format_compaction_progress_notice(elapsed: std::time::Duration) -> String
+- BAR_WIDTH · constant · L47-L47 — const BAR_WIDTH: usize = 12;
+- PULSE_WIDTH · constant · L48-L48 — const PULSE_WIDTH: usize = 4;
+- format_compaction_complete_message · function · L69-L79 — pub(super) fn format_compaction_complete_message(
+- format_emergency_compaction_message · function · L81-L86 — pub(super) fn format_emergency_compaction_message(
+- format_compaction_usage_message · function · L88-L125 — fn format_compaction_usage_message(
+- format_compaction_number · function · L127-L137 — pub(super) fn format_compaction_number(value: u64) -> String
+- add_provider_message · function · L139-L151 — pub(super) fn add_provider_message(&mut self, message: Message)
+- replace_provider_messages · function · L153-L159 — pub(super) fn replace_provider_messages(&mut self, messages: Vec<Message>)
+- clear_provider_messages · function · L161-L167 — pub(super) fn clear_provider_messages(&mut self)
+- reset_tool_output_tracking · function · L169-L173 — pub(super) fn reset_tool_output_tracking(&mut self)
+- reseed_compaction_from_provider_messages · function · L175-L196 — pub(super) fn reseed_compaction_from_provider_messages(&mut self)
+- sync_session_compaction_state_from_manager · function · L198-L211 — pub(super) fn sync_session_compaction_state_from_manager(
+- apply_openai_native_compaction · function · L213-L256 — pub(super) fn apply_openai_native_compaction(
+- messages_for_provider · function · L258-L295 — pub(super) fn messages_for_provider(&mut self) -> (Vec<Message>, Option<CompactionEvent>)
+- poll_compaction_completion · function · L297-L313 — pub(super) fn poll_compaction_completion(&mut self) -> bool
+- handle_compaction_event · function · L315-L336 — pub(super) fn handle_compaction_event(&mut self, event: CompactionEvent)
+- invalidate_kv_cache_after_compaction · function · L338-L360 — fn invalidate_kv_cache_after_compaction(&mut self)
+- set_status_notice · function · L362-L364 — pub fn set_status_notice(&mut self, text: impl Into<String>)
+- retire_expired_status_notice · function · L374-L383 — pub(super) fn retire_expired_status_notice(&mut self) -> bool
+- set_pending_startup_notice · function · L390-L401 — pub fn set_pending_startup_notice(
+- reapply_pending_startup_notice_if_cleared · function · L408-L427 — pub(crate) fn reapply_pending_startup_notice_if_cleared(&mut self)
+- set_remote_startup_phase · function · L429-L435 — pub(crate) fn set_remote_startup_phase(&mut self, phase: super::RemoteStartupPhase)
+- clear_remote_startup_phase · function · L437-L440 — pub(crate) fn clear_remote_startup_phase(&mut self)
+- begin_remote_history_wait · function · L447-L451 — pub(crate) fn begin_remote_history_wait(&mut self)
+- clear_remote_history_wait · function · L455-L459 — pub(crate) fn clear_remote_history_wait(&mut self)
+- set_memory_feature_enabled · function · L461-L469 — pub(super) fn set_memory_feature_enabled(&mut self, enabled: bool)
+- set_autoreview_feature_enabled · function · L471-L474 — pub(super) fn set_autoreview_feature_enabled(&mut self, enabled: bool)
+- set_autojudge_feature_enabled · function · L476-L479 — pub(super) fn set_autojudge_feature_enabled(&mut self, enabled: bool)
+- trigger_save_memory_extraction · function · L481-L493 — pub(super) fn trigger_save_memory_extraction(&self)
+- memory_prompt_signature · function · L495-L503 — pub(super) fn memory_prompt_signature(prompt: &str) -> String
+- should_inject_memory_context · function · L505-L517 — pub(super) fn should_inject_memory_context(&mut self, prompt: &str) -> bool
+- clear_active_experimental_feature_notice · function · L519-L521 — pub(in crate::tui::app) fn clear_active_experimental_feature_notice(&mut self)
+- note_experimental_feature_use · function · L523-L537 — pub(in crate::tui::app) fn note_experimental_feature_use(
+- NOTICE · constant · L527-L527 — const NOTICE: &str = "experimental feature";
+- experimental_feature_key_for_tool · function · L539-L561 — pub(in crate::tui::app) fn experimental_feature_key_for_tool(
+- set_swarm_feature_enabled · function · L563-L568 — pub(super) fn set_swarm_feature_enabled(&mut self, enabled: bool)
+- extract_thought_line · function · L570-L577 — pub(super) fn extract_thought_line(text: &str) -> Option<String>
+- handle_quit_request · function · L580-L602 — pub(super) fn handle_quit_request(&mut self) -> bool
+- QUIT_TIMEOUT · constant · L581-L581 — const QUIT_TIMEOUT: Duration = Duration::from_secs(2);
+- collect_missing_tool_outputs_since_last_scan · function · L604-L694 — fn collect_missing_tool_outputs_since_last_scan(&mut self) -> Vec<(usize, Vec<String>)>
+- missing_tool_result_ids · function · L696-L702 — pub(super) fn missing_tool_result_ids(&mut self) -> Vec<String>
+- summarize_tool_results_missing · function · L704-L721 — pub(super) fn summarize_tool_results_missing(&mut self) -> Option<String>
+- repair_missing_tool_outputs · function · L723-L769 — pub(super) fn repair_missing_tool_outputs(&mut self) -> usize
+- recover_session_without_tools · function · L772-L853 — pub(super) fn recover_session_without_tools(&mut self)
+- tests · module · L857-L966 — mod tests
+- compaction_message_is_one_line_with_method_and_usage · function · L862-L920 — fn compaction_message_is_one_line_with_method_and_usage()
+- experimental_feature_key_marks_swarm_spawn_actions · function · L923-L936 — fn experimental_feature_key_marks_swarm_spawn_actions()
+- experimental_feature_key_marks_spawn_if_needed_assignment · function · L939-L952 — fn experimental_feature_key_marks_spawn_if_needed_assignment()
+- experimental_feature_key_ignores_non_spawning_swarm_actions · function · L955-L965 — fn experimental_feature_key_ignores_non_spawning_swarm_actions()

@@ -1,0 +1,28 @@
+# crates/jcode-base/src/provider/activation.rs
+
+- RuntimeProviderId · enum · L10-L26 — pub enum RuntimeProviderId
+- key · function · L29-L47 — pub const fn key(self) -> &'static str
+- label · function · L49-L67 — pub const fn label(self) -> &'static str
+- RuntimeSelection · enum · L72-L79 — pub enum RuntimeSelection
+- log_value · function · L82-L88 — fn log_value(self) -> &'static str
+- RuntimeModelHint · struct · L92-L95 — pub struct RuntimeModelHint
+- new · function · L98-L103 — pub fn new(env_key: &'static str, model: impl Into<String>) -> Self
+- ProviderActivation · struct · L108-L112 — pub struct ProviderActivation
+- new · function · L115-L121 — pub fn new(runtime_id: RuntimeProviderId, selection: RuntimeSelection) -> Self
+- with_model_hint · function · L123-L126 — pub fn with_model_hint(mut self, env_key: &'static str, model: impl Into<String>) -> Self
+- initial · function · L128-L130 — pub fn initial(runtime_id: RuntimeProviderId, active_provider: ActiveProvider) -> Self
+- unlocked · function · L132-L134 — pub fn unlocked(runtime_id: RuntimeProviderId, active_hint: Option<ActiveProvider>) -> Self
+- azure_openai · function · L136-L143 — pub fn azure_openai(model: Option<String>) -> Self
+- openai_compatible · function · L145-L155 — pub fn openai_compatible(model: Option<String>) -> Self
+- jcode_subscription · function · L157-L160 — pub fn jcode_subscription(model: impl Into<String>) -> Self
+- apply_env · function · L162-L223 — pub fn apply_env(&self) -> Result<()>
+- select_initial_runtime_provider_key · function · L228-L237 — pub fn select_initial_runtime_provider_key(provider_key_raw: &str)
+- clear_initial_runtime_provider · function · L239-L247 — pub fn clear_initial_runtime_provider()
+- apply_azure_openai_runtime · function · L249-L254 — pub fn apply_azure_openai_runtime() -> Result<Option<String>>
+- apply_openai_compatible_runtime · function · L256-L258 — pub fn apply_openai_compatible_runtime(default_model: Option<String>) -> Result<()>
+- tests · module · L261-L348 — mod tests
+- EnvGuard · struct · L264-L266 — struct EnvGuard
+- new · function · L269-L278 — fn new(keys: &[&'static str]) -> Self
+- drop · function · L282-L290 — fn drop(&mut self)
+- initial_provider_selection_preserves_raw_runtime_key · function · L294-L312 — fn initial_provider_selection_preserves_raw_runtime_key()
+- azure_activation_preserves_identity_while_using_openrouter_slot · function · L315-L347 — fn azure_activation_preserves_identity_while_using_openrouter_slot()

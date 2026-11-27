@@ -1,0 +1,25 @@
+# crates/jcode-app-core/src/tool/computer/tests.rs
+
+- ctx · function · L7-L17 — fn ctx() -> ToolContext
+- run_action · function · L19-L21 — async fn run_action(v: Value) -> Result<ToolOutput>
+- rejects_bad_action · function · L26-L34 — async fn rejects_bad_action()
+- move_requires_coords · function · L37-L40 — async fn move_requires_coords()
+- discover_all_lists_actions · function · L43-L57 — async fn discover_all_lists_actions()
+- discover_category_scopes · function · L60-L66 — async fn discover_category_scopes()
+- press_requires_element · function · L69-L72 — async fn press_requires_element()
+- dry_run_skips_mutation · function · L75-L81 — async fn dry_run_skips_mutation()
+- dry_run_ignored_for_readonly · function · L84-L89 — async fn dry_run_ignored_for_readonly()
+- cap_output_truncates · function · L92-L97 — fn cap_output_truncates()
+- is_mutating_classifies · function · L100-L107 — fn is_mutating_classifies()
+- schema_declares_every_input_field · function · L110-L151 — fn schema_declares_every_input_field()
+- schema_is_compact · function · L154-L172 — fn schema_is_compact()
+- live_check_permissions · function · L178-L184 — async fn live_check_permissions()
+- live_cursor_and_move · function · L188-L196 — async fn live_cursor_and_move()
+- live_screenshot · function · L200-L205 — async fn live_screenshot()
+- live_ui_tree · function · L209-L221 — async fn live_ui_tree()
+- live_ocr_full_screen · function · L225-L230 — async fn live_ocr_full_screen()
+- live_ocr_region · function · L234-L243 — async fn live_ocr_region()
+- live_list_windows · function · L247-L252 — async fn live_list_windows()
+- live_clipboard_roundtrip · function · L256-L264 — async fn live_clipboard_roundtrip()
+- live_applescript · function · L268-L273 — async fn live_applescript()
+- live_background_set_value · function · L279-L321 — async fn live_background_set_value()

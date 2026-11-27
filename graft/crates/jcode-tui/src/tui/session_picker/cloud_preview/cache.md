@@ -1,0 +1,25 @@
+# crates/jcode-tui/src/tui/session_picker/cloud_preview/cache.rs
+
+- MAX_BYTES · constant · L11-L11 — pub(super) const MAX_BYTES: usize = 3 * 1024 * 1024;
+- CACHE_BUDGET · constant · L12-L12 — const CACHE_BUDGET: u64 = 24 * 1024 * 1024;
+- TTL · constant · L13-L13 — const TTL: Duration = Duration::from_secs(15);
+- path · function · L15-L23 — pub(super) fn path(session_id: &str, host: &str, epoch: u64) -> Option<PathBuf>
+- key_path · function · L26-L35 — fn key_path(root: &Path, session_id: &str, host: &str, epoch: u64) -> PathBuf
+- scoped_key_path · function · L37-L58 — fn scoped_key_path(
+- read · function · L60-L86 — pub(super) fn read(path: &Path) -> Option<Vec<u8>>
+- fresh · function · L88-L102 — pub(super) fn fresh(path: &Path) -> bool
+- write · function · L104-L132 — pub(super) fn write(path: &Path, bytes: &[u8]) -> io::Result<()>
+- prune · function · L136-L170 — fn prune(parent: &Path, keep: &Path, budget: u64)
+- refreshing · function · L172-L175 — fn refreshing() -> &'static Mutex<HashSet<PathBuf>>
+- REFRESHING · constant · L173-L173 — static REFRESHING: OnceLock<Mutex<HashSet<PathBuf>>> = OnceLock::new();
+- RefreshGuard · struct · L177-L179 — pub(super) struct RefreshGuard
+- begin_refresh · function · L181-L188 — pub(super) fn begin_refresh(path: &Path) -> Option<RefreshGuard>
+- drop · function · L191-L196 — fn drop(&mut self)
+- tests · module · L200-L392 — mod tests
+- cold_miss_and_round_trip · function · L205-L215 — fn cold_miss_and_round_trip()
+- atomic_replacement_keeps_open_reader_and_private_mode · function · L218-L237 — fn atomic_replacement_keeps_open_reader_and_private_mode()
+- size_bounds_and_failed_write_preserve_last_good · function · L240-L263 — fn size_bounds_and_failed_write_preserve_last_good()
+- keys_scope_host_session_epoch_and_field_boundaries · function · L266-L324 — fn keys_scope_host_session_epoch_and_field_boundaries()
+- aggregate_budget_evicts_old_blobs_but_not_current_or_unrelated_files · function · L327-L358 — fn aggregate_budget_evicts_old_blobs_but_not_current_or_unrelated_files()
+- stale_and_future_mtime_are_not_fresh · function · L361-L374 — fn stale_and_future_mtime_are_not_fresh()
+- single_flight_releases_on_drop_and_unwind · function · L377-L391 — fn single_flight_releases_on_drop_and_unwind()

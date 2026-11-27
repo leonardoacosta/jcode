@@ -1,0 +1,57 @@
+# crates/jcode-provider-cursor-runtime/src/agent_transport.rs
+
+- AGENT_HOST · constant · L39-L39 — const AGENT_HOST: &str = "agentn.global.api5.cursor.sh";
+- AGENT_PATH · constant · L40-L40 — const AGENT_PATH: &str = "/agent.v1.AgentService/Run";
+- HEARTBEAT_INTERVAL · constant · L41-L41 — const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+- CONNECT_TIMEOUT · constant · L42-L42 — const CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
+- CLI_CLIENT_VERSION_DEFAULT · constant · L46-L46 — const CLI_CLIENT_VERSION_DEFAULT: &str = "cli-2026.08.25-3e8eec8";
+- stream_debug · function · L48-L52 — fn stream_debug(message: impl std::fmt::Display)
+- valid_cli_build_id · function · L54-L70 — fn valid_cli_build_id(value: &str) -> bool
+- installed_cli_build_id · function · L72-L83 — fn installed_cli_build_id() -> Option<String>
+- cli_client_version · function · L85-L96 — pub(crate) fn cli_client_version() -> String
+- normalize_agent_host · function · L104-L123 — fn normalize_agent_host(raw: &str) -> Option<String>
+- agent_host_from_cursor_cli_config · function · L131-L196 — fn agent_host_from_cursor_cli_config() -> Option<String>
+- agent_host · function · L202-L214 — pub(crate) fn agent_host() -> String
+- encode_varint · function · L220-L226 — fn encode_varint(mut value: u64, out: &mut Vec<u8>)
+- field_ld · function · L229-L235 — fn field_ld(field: u64, data: &[u8]) -> Vec<u8>
+- field_varint · function · L238-L243 — fn field_varint(field: u64, value: u64) -> Vec<u8>
+- field_str · function · L245-L247 — fn field_str(field: u64, s: &str) -> Vec<u8>
+- routed_prompt · function · L249-L275 — pub(crate) fn routed_prompt(
+- connect_frame · function · L280-L282 — fn connect_frame(payload: &[u8]) -> Vec<u8>
+- encode_model_meta · function · L290-L296 — fn encode_model_meta(name: &str, fast: bool) -> Vec<u8>
+- ResolvedModel · struct · L301-L304 — pub(crate) struct ResolvedModel
+- resolve_model_id · function · L318-L320 — pub(crate) fn resolve_model_id(model: &str, fast_override: Option<bool>) -> ResolvedModel
+- split_model_suffixes · function · L323-L358 — fn split_model_suffixes(model: &str) -> (&str, bool, bool)
+- SUFFIXES · constant · L327-L336 — const SUFFIXES: &[&str] = &[
+- OFFLINE_CATALOG_ALIASES · constant · L365-L365 — const OFFLINE_CATALOG_ALIASES: &[(&str, &str)] = &[("grok-4.6", "cursor-grok-4.6-high")];
+- resolve_model_id_with_catalog · function · L376-L471 — pub(crate) fn resolve_model_id_with_catalog(
+- build_run_frames · function · L482-L534 — fn build_run_frames(
+- heartbeat_frame · function · L537-L539 — fn heartbeat_frame() -> Vec<u8>
+- next_frame · function · L549-L569 — fn next_frame(buf: &[u8]) -> Result<Option<(u8, Vec<u8>, usize)>>
+- PbField · struct · L575-L579 — struct PbField<'a>
+- iter_fields · function · L581-L635 — fn iter_fields(mut buf: &[u8]) -> impl Iterator<Item = PbField<'_>>
+- read_varint · function · L637-L651 — fn read_varint(buf: &[u8]) -> Option<(u64, &[u8])>
+- extract_answer_text · function · L657-L678 — fn extract_answer_text(payload: &[u8]) -> Option<String>
+- extract_thinking_text · function · L682-L703 — pub(crate) fn extract_thinking_text(payload: &[u8]) -> Option<String>
+- tls_config · function · L709-L717 — fn tls_config() -> Arc<tokio_rustls::rustls::ClientConfig>
+- parse_tool_request_id · function · L719-L727 — pub(crate) fn parse_tool_request_id(request_id: &str) -> (u32, &str)
+- resolve_native_tool_name · function · L729-L754 — pub(crate) fn resolve_native_tool_name(
+- run_agent_turn · function · L758-L1466 — pub async fn run_agent_turn(
+- tests · module · L1469-L1873 — mod tests
+- usable_model_decoder_reads_wire_ids_and_deduplicates · function · L1473-L1482 — fn usable_model_decoder_reads_wire_ids_and_deduplicates()
+- resolve_model_id_reduces_composite_ids_to_base_ids · function · L1487-L1517 — fn resolve_model_id_reduces_composite_ids_to_base_ids()
+- resolve_model_id_uses_live_catalog_ids · function · L1523-L1571 — fn resolve_model_id_uses_live_catalog_ids()
+- composer_defaults_to_fast_and_respects_override · function · L1574-L1584 — fn composer_defaults_to_fast_and_respects_override()
+- run_request_encodes_base_id_and_fast_param · function · L1587-L1617 — fn run_request_encodes_base_id_and_fast_param()
+- run_request_uses_current_model_metadata_shape · function · L1620-L1686 — fn run_request_uses_current_model_metadata_shape()
+- normalize_agent_host_reduces_urls_to_bare_hosts · function · L1692-L1709 — fn normalize_agent_host_reduces_urls_to_bare_hosts()
+- normalize_agent_host_strips_explicit_ports · function · L1715-L1726 — fn normalize_agent_host_strips_explicit_ports()
+- agent_host_normalizes_env_overrides · function · L1732-L1755 — fn agent_host_normalizes_env_overrides()
+- frames_are_well_formed_connect_frames · function · L1758-L1777 — fn frames_are_well_formed_connect_frames()
+- frame0_contains_prompt_and_model · function · L1780-L1792 — fn frame0_contains_prompt_and_model()
+- frame0_advertises_mcp_tools · function · L1795-L1813 — fn frame0_advertises_mcp_tools()
+- routed_prompt_uses_the_same_collision_safe_aliases_as_wire_tools · function · L1816-L1838 — fn routed_prompt_uses_the_same_collision_safe_aliases_as_wire_tools()
+- extract_answer_text_reads_nested_chunk · function · L1841-L1847 — fn extract_answer_text_reads_nested_chunk()
+- extract_answer_text_ignores_reasoning · function · L1850-L1857 — fn extract_answer_text_ignores_reasoning()
+- next_frame_parses_uncompressed · function · L1860-L1867 — fn next_frame_parses_uncompressed()
+- heartbeat_is_stable · function · L1870-L1872 — fn heartbeat_is_stable()

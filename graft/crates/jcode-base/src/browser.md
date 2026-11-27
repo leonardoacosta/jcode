@@ -1,0 +1,89 @@
+# crates/jcode-base/src/browser.rs
+
+- GITHUB_API_LATEST · constant · L7-L8 — const GITHUB_API_LATEST: &str =
+- NATIVE_HOST_NAME · constant · L10-L10 — const NATIVE_HOST_NAME: &str = "firefox_agent_bridge";
+- EXTENSION_ID_LISTED · constant · L11-L11 — const EXTENSION_ID_LISTED: &str = "browser-agent-bridge@1jehuang.github.io";
+- EXTENSION_ID_LOCAL · constant · L12-L12 — const EXTENSION_ID_LOCAL: &str = "firefox-agent-bridge@local";
+- CHROMIUM_EXTENSION_ID · constant · L15-L15 — pub const CHROMIUM_EXTENSION_ID: &str = "ijifgeepmnbalajhfjnpbnobfobflfkk";
+- BRIDGE_RELAY_PORT · constant · L17-L17 — const BRIDGE_RELAY_PORT: u16 = 8767;
+- BrowserStatus · struct · L20-L34 — pub struct BrowserStatus
+- REQUIRED_BRIDGE_ACTION_PROBES · constant · L40-L48 — const REQUIRED_BRIDGE_ACTION_PROBES: &[(&str, &str)] = &[
+- jcode_dir · function · L50-L56 — fn jcode_dir() -> PathBuf
+- browser_dir · function · L58-L60 — fn browser_dir() -> PathBuf
+- browser_binary_path · function · L62-L72 — pub fn browser_binary_path() -> PathBuf
+- host_binary_path · function · L74-L84 — fn host_binary_path() -> PathBuf
+- xpi_path · function · L86-L88 — fn xpi_path() -> PathBuf
+- setup_marker_path · function · L90-L92 — fn setup_marker_path() -> PathBuf
+- browser_preference_path · function · L96-L98 — fn browser_preference_path() -> PathBuf
+- extensions_dir · function · L100-L102 — fn extensions_dir() -> PathBuf
+- chromium_extension_dir · function · L105-L107 — pub fn chromium_extension_dir() -> PathBuf
+- safari_extension_dir · function · L109-L111 — fn safari_extension_dir() -> PathBuf
+- safari_app_project_dir · function · L114-L116 — fn safari_app_project_dir() -> PathBuf
+- saved_browser_preference · function · L118-L122 — pub fn saved_browser_preference() -> Option<BrowserKind>
+- save_browser_preference · function · L124-L127 — fn save_browser_preference(kind: BrowserKind)
+- detect_target_browser · function · L130-L146 — pub fn detect_target_browser() -> BrowserDetection
+- resolve_target_browser · function · L149-L175 — pub fn resolve_target_browser(requested: Option<&str>) -> Result<BrowserDetection>
+- browser_session · module · L178-L178 — mod browser_session;
+- browser_chromium_diag · module · L184-L184 — mod browser_chromium_diag;
+- browser_update · module · L186-L186 — mod browser_update;
+- apply_bridge_browser_env · function · L198-L205 — pub fn apply_bridge_browser_env<C: BridgeEnv>(command: &mut C, browser: Option<&str>)
+- BridgeEnv · interface · L208-L210 — pub trait BridgeEnv
+- set_env · function · L209-L209 — fn set_env(&mut self, key: &str, value: &str);
+- set_env · function · L213-L215 — fn set_env(&mut self, key: &str, value: &str)
+- set_env · function · L219-L221 — fn set_env(&mut self, key: &str, value: &str)
+- bridge_browser_name · function · L225-L227 — pub fn bridge_browser_name(kind: BrowserKind) -> &'static str
+- is_browser_command · function · L229-L232 — pub fn is_browser_command(command: &str) -> bool
+- is_setup_complete · function · L234-L236 — pub fn is_setup_complete() -> bool
+- mark_setup_complete · function · L238-L242 — fn mark_setup_complete() -> Result<()>
+- mark_setup_complete_for · function · L244-L247 — fn mark_setup_complete_for(kind: BrowserKind) -> Result<()>
+- rewrite_command_with_full_path · function · L249-L264 — pub fn rewrite_command_with_full_path(command: &str) -> String
+- ensure_browser_setup · function · L266-L268 — pub async fn ensure_browser_setup() -> Result<String>
+- ensure_browser_setup_for · function · L270-L489 — pub async fn ensure_browser_setup_for(target: BrowserDetection) -> Result<String>
+- manual_install_hint · function · L491-L507 — fn manual_install_hint(kind: BrowserKind) -> String
+- extension_package_present · function · L509-L515 — fn extension_package_present(kind: BrowserKind) -> bool
+- ping_matches · function · L519-L527 — fn ping_matches(info: &serde_json::Value, kind: BrowserKind) -> bool
+- connected_matches · function · L529-L531 — fn connected_matches(status: &BrowserStatus, kind: BrowserKind) -> bool
+- status_answered_by · function · L537-L544 — pub fn status_answered_by(status: &BrowserStatus, kind: BrowserKind) -> bool
+- download_browser_binary_for · function · L546-L549 — async fn download_browser_binary_for(kind: BrowserKind) -> Result<()>
+- download_bridge_release · function · L553-L695 — async fn download_bridge_release(
+- write_file_atomically · function · L697-L725 — fn write_file_atomically(path: &PathBuf, bytes: &[u8], _executable: bool) -> Result<()>
+- replace_dir_with_zip · function · L730-L747 — fn replace_dir_with_zip(dir: &std::path::Path, bytes: &[u8]) -> Result<()>
+- extract_zip · function · L751-L822 — pub(crate) fn extract_zip(bytes: &[u8], dest: &std::path::Path) -> Result<()>
+- get_platform_asset_name · function · L824-L859 — fn get_platform_asset_name() -> String
+- get_host_asset_name · function · L861-L864 — fn get_host_asset_name() -> String
+- native_host · module · L867-L867 — mod native_host;
+- bridge_port_open · function · L872-L878 — fn bridge_port_open() -> bool
+- ensure_relay_host_running · function · L883-L897 — pub fn ensure_relay_host_running() -> Result<bool>
+- BRIDGE_PING_TIMEOUT · constant · L905-L905 — const BRIDGE_PING_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+- run_browser_cli_capped · function · L911-L932 — async fn run_browser_cli_capped(
+- check_browser_ping · function · L934-L936 — async fn check_browser_ping(kind: BrowserKind) -> Result<bool>
+- bridge_ping_info · function · L940-L959 — async fn bridge_ping_info(kind: BrowserKind) -> Result<Option<serde_json::Value>>
+- probe_bridge_action_support · function · L961-L995 — async fn probe_bridge_action_support(
+- MIN_PROBE_FREE_EXTENSION · constant · L998-L998 — const MIN_PROBE_FREE_EXTENSION: (u64, u64, u64) = (0, 10, 0);
+- ping_reports_current_extension · function · L1005-L1010 — fn ping_reports_current_extension(info: &serde_json::Value) -> bool
+- probe_bridge_missing_actions · function · L1012-L1020 — async fn probe_bridge_missing_actions(kind: BrowserKind) -> Result<Vec<String>>
+- inspect_browser_status · function · L1022-L1024 — pub async fn inspect_browser_status() -> Result<BrowserStatus>
+- inspect_browser_status_for · function · L1026-L1064 — pub async fn inspect_browser_status_for(target: &BrowserDetection) -> Result<BrowserStatus>
+- ensure_browser_ready_noninteractive · function · L1066-L1068 — pub async fn ensure_browser_ready_noninteractive() -> Result<BrowserStatus>
+- ensure_browser_ready_noninteractive_for · function · L1070-L1079 — pub async fn ensure_browser_ready_noninteractive_for(
+- wait_for_bridge · function · L1082-L1084 — pub async fn wait_for_bridge(kind: BrowserKind, timeout_secs: u64) -> bool
+- wait_for_ping · function · L1086-L1098 — async fn wait_for_ping(kind: BrowserKind, timeout_secs: u64) -> Result<bool>
+- wait_for_ready_for · function · L1100-L1115 — async fn wait_for_ready_for(target: &BrowserDetection, timeout_secs: u64) -> Result<bool>
+- should_prompt_extension_install · function · L1125-L1130 — fn should_prompt_extension_install(status: &BrowserStatus) -> bool
+- is_firefox_running · function · L1133-L1135 — pub fn is_firefox_running() -> bool
+- is_target_browser_running · function · L1138-L1140 — pub fn is_target_browser_running() -> bool
+- is_browser_running · function · L1147-L1202 — pub fn is_browser_running(kind: BrowserKind) -> bool
+- linux_browser_process_matches · function · L1205-L1211 — fn linux_browser_process_matches(kind: BrowserKind, pid: u32) -> bool
+- launch_browser_detached · function · L1215-L1283 — fn launch_browser_detached(kind: BrowserKind, url: Option<&str>) -> bool
+- should_attempt_firefox_launch · function · L1288-L1290 — pub fn should_attempt_firefox_launch(status: &BrowserStatus, firefox_running: bool) -> bool
+- firefox_autolaunch_disabled · function · L1296-L1301 — pub fn firefox_autolaunch_disabled() -> bool
+- try_launch_firefox_for_bridge · function · L1306-L1310 — pub async fn try_launch_firefox_for_bridge(
+- try_launch_browser_for_bridge · function · L1314-L1318 — pub async fn try_launch_browser_for_bridge(
+- try_launch_browser_for_bridge_with · function · L1320-L1346 — pub async fn try_launch_browser_for_bridge_with(
+- install_extension · function · L1348-L1373 — async fn install_extension() -> Result<String>
+- install_extension_for · function · L1375-L1381 — async fn install_extension_for(kind: BrowserKind) -> Result<String>
+- install_chromium_extension · function · L1386-L1416 — fn install_chromium_extension(kind: BrowserKind) -> Result<String>
+- install_safari_extension · function · L1421-L1525 — async fn install_safari_extension() -> Result<String>
+- run_setup_command · function · L1527-L1529 — pub async fn run_setup_command() -> Result<()>
+- run_setup_command_for · function · L1531-L1540 — pub async fn run_setup_command_for(requested: Option<&str>) -> Result<()>
+- browser_tests · module · L1545-L1545 — mod browser_tests;

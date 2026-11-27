@@ -1,0 +1,29 @@
+# crates/jcode-app-core/src/server/comm_session.rs
+
+- swarm_stop_target · module · L24-L24 — mod swarm_stop_target;
+- ChannelSubscriptions · type · L28-L28 — type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
+- ClientConnections · type · L29-L29 — type ClientConnections = Arc<RwLock<HashMap<String, ClientConnectionInfo>>>;
+- swarm_startup_message · function · L31-L42 — fn swarm_startup_message(message: &str, worker_role: Option<&str>) -> String
+- spawn_admission_lock · function · L48-L61 — fn spawn_admission_lock(swarm_id: &str) -> Arc<Mutex<()>>
+- LOCKS · constant · L49-L49 — static LOCKS: OnceLock<StdMutex<HashMap<String, Weak<Mutex<()>>>>> = OnceLock::new();
+- client_terminal_env_for_session · function · L67-L78 — async fn client_terminal_env_for_session(
+- create_visible_spawn_session · function · L80-L125 — fn create_visible_spawn_session(
+- resolve_spawn_working_dir · function · L127-L160 — async fn resolve_spawn_working_dir(
+- spawn_visible_session_window_with_context · function · L165-L193 — fn spawn_visible_session_window_with_context(
+- spawn_model_selection · module · L196-L196 — mod spawn_model_selection;
+- persist_headed_startup_message · function · L202-L212 — fn persist_headed_startup_message(session_id: &str, message: &str)
+- clear_headed_startup_message · function · L214-L226 — fn clear_headed_startup_message(session_id: &str)
+- cleanup_prepared_visible_spawn_session · function · L228-L249 — fn cleanup_prepared_visible_spawn_session(session_id: &str)
+- prepare_visible_spawn_session · function · L252-L300 — fn prepare_visible_spawn_session<F>(
+- register_visible_spawned_member · function · L306-L379 — async fn register_visible_spawned_member(
+- spawn_policy · module · L388-L388 — mod spawn_policy;
+- spawn_swarm_agent · function · L397-L723 — pub(super) async fn spawn_swarm_agent(
+- handle_comm_spawn · function · L726-L854 — pub(super) async fn handle_comm_spawn(
+- handle_comm_list_models · function · L861-L892 — pub(super) async fn handle_comm_list_models(
+- STOP_DRAIN_DEADLINE · constant · L895-L895 — const STOP_DRAIN_DEADLINE: std::time::Duration = std::time::Duration::from_secs(25);
+- STOP_DRAIN_DEADLINE · constant · L897-L897 — const STOP_DRAIN_DEADLINE: std::time::Duration = std::time::Duration::from_millis(300);
+- handle_comm_stop · function · L900-L1031 — pub(super) async fn handle_comm_stop(
+- discard_pre_stop_soft_interrupts · function · L1036-L1059 — pub(super) async fn discard_pre_stop_soft_interrupts(
+- swarm_member_status_is_stale_for_coordination · function · L1061-L1066 — fn swarm_member_status_is_stale_for_coordination(status: &str) -> bool
+- ensure_spawn_coordinator_swarm · function · L1069-L1263 — async fn ensure_spawn_coordinator_swarm(
+- comm_session_tests · module · L1267-L1267 — mod comm_session_tests;

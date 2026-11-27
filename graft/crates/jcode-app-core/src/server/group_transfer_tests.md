@@ -1,0 +1,31 @@
+# crates/jcode-app-core/src/server/group_transfer_tests.rs
+
+- TestHome · struct · L8-L13 — struct TestHome
+- new · function · L15-L28 — fn new() -> Self
+- drop · function · L31-L42 — fn drop(&mut self)
+- state · function · L44-L51 — fn state() -> SwarmState
+- agents · function · L52-L56 — fn agents() -> SessionAgents
+- member · function · L57-L76 — fn member(id: &str, swarm: &str) -> PersistedSwarmMember
+- swarm · function · L77-L85 — fn swarm(id: &str, ids: &[&str]) -> PersistedSwarmState
+- bundle · function · L86-L101 — fn bundle(swarms: Vec<PersistedSwarmState>, ids: &[&str]) -> GroupTransferBundle
+- save_session · function · L102-L107 — fn save_session(id: &str, epoch: u64) -> Session
+- inbound_lease · function · L108-L119 — fn inbound_lease(id: &str, epoch: u64)
+- closure_includes_entire_swarm_and_external_report_owner_but_not_unrelated · function · L122-L142 — fn closure_includes_entire_swarm_and_external_report_owner_but_not_unrelated()
+- rejects_incomplete_or_forged_bundle · function · L145-L157 — fn rejects_incomplete_or_forged_bundle()
+- local_lease_value · function · L158-L168 — fn local_lease_value(transfer: &mut GroupTransferBundle)
+- prepare_rejects_busy_gate_then_fences_and_abort_restores · function · L171-L239 — async fn prepare_rejects_busy_gate_then_fences_and_abort_restores()
+- import_preserves_unrelated_state_and_plan_without_starting_agents · function · L242-L307 — async fn import_preserves_unrelated_state_and_plan_without_starting_agents()
+- import_rejects_stale_destination_before_mutating_swarm_state · function · L310-L317 — async fn import_rejects_stale_destination_before_mutating_swarm_state()
+- abort_before_late_prepare_is_idempotent_and_durably_cancels · function · L320-L349 — async fn abort_before_late_prepare_is_idempotent_and_durably_cancels()
+- changed_expected_epoch_never_partially_fences_group · function · L352-L374 — async fn changed_expected_epoch_never_partially_fences_group()
+- reserve_fences_before_install_and_import_keeps_members_blocked · function · L377-L414 — async fn reserve_fences_before_install_and_import_keeps_members_blocked()
+- IdleProvider · struct · L416-L416 — struct IdleProvider;
+- complete · function · L420-L428 — async fn complete(
+- name · function · L429-L431 — fn name(&self) -> &str
+- fork · function · L432-L434 — fn fork(&self) -> Arc<dyn crate::provider::Provider>
+- live_agents_are_reserved_together_then_only_selected_agents_evicted · function · L438-L503 — async fn live_agents_are_reserved_together_then_only_selected_agents_evicted()
+- admission_waits_for_selected_and_unscoped_drain_without_bypassing_work · function · L506-L532 — async fn admission_waits_for_selected_and_unscoped_drain_without_bypassing_work()
+- admission_timeout_keeps_real_work_busy_and_does_not_leave_a_fence · function · L535-L570 — async fn admission_timeout_keeps_real_work_busy_and_does_not_leave_a_fence()
+- scoped_admission_allows_unrelated_turn_but_rejects_any_selected_swarm_callback · function · L573-L650 — async fn scoped_admission_allows_unrelated_turn_but_rejects_any_selected_swarm_callback()
+- scoped_bus_callback_reserves_until_dispatch_and_rechecks_ownership_after_fence · function · L653-L731 — async fn scoped_bus_callback_reserves_until_dispatch_and_rechecks_ownership_after_fence()
+- production_transport_inspect_prepare_abort_with_unrelated_active_session · function · L735-L845 — async fn production_transport_inspect_prepare_abort_with_unrelated_active_session()

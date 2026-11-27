@@ -1,0 +1,24 @@
+# crates/jcode-base/src/provider/catalog_routes.rs
+
+- simplified_model_routes_for_picker · function · L24-L169 — pub fn simplified_model_routes_for_picker(
+- expand_saved_account_routes · function · L174-L275 — fn expand_saved_account_routes(mut routes: Vec<ModelRoute>) -> Vec<ModelRoute>
+- apply_saved_account_status · function · L277-L305 — fn apply_saved_account_status(
+- qualify_saved_account_route · function · L307-L318 — fn qualify_saved_account_route(route: &mut ModelRoute, label: &str, email: Option<&str>)
+- append_simplified_anthropic_model_routes · function · L320-L356 — pub fn append_simplified_anthropic_model_routes(
+- OpenRouterRouteStats · struct · L361-L366 — struct OpenRouterRouteStats
+- multiprovider_model_routes · function · L373-L476 — pub(super) fn multiprovider_model_routes(provider: &MultiProvider) -> Vec<ModelRoute>
+- append_anthropic_routes · function · L479-L518 — pub(super) fn append_anthropic_routes(
+- append_openai_routes · function · L527-L620 — fn append_openai_routes(
+- append_openai_compatible_profile_routes · function · L625-L674 — fn append_openai_compatible_profile_routes(
+- named_provider_profile_routes · function · L680-L727 — fn named_provider_profile_routes(
+- append_copilot_routes · function · L731-L749 — fn append_copilot_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>)
+- append_gemini_routes · function · L751-L765 — fn append_gemini_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>)
+- append_antigravity_routes · function · L767-L771 — fn append_antigravity_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>)
+- append_cursor_routes · function · L773-L787 — fn append_cursor_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>)
+- append_bedrock_routes · function · L791-L804 — fn append_bedrock_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>)
+- append_openrouter_routes · function · L808-L917 — fn append_openrouter_routes(
+- append_openrouter_alternative_routes · function · L920-L958 — fn append_openrouter_alternative_routes(
+- provider_route_counts · function · L962-L974 — fn provider_route_counts(routes: &[ModelRoute]) -> std::collections::BTreeMap<String, usize>
+- log_model_routes_summary · function · L980-L1030 — fn log_model_routes_summary(
+- remote · module · L1033-L1033 — mod remote;
+- tests · module · L1037-L1037 — mod tests;

@@ -1,0 +1,27 @@
+# src/cli/login/tests.rs
+
+- novita_login_saves_private_key_and_rejects_empty_replacement · function · L4-L46 — fn novita_login_saves_private_key_and_rejects_empty_replacement()
+- set_or_clear_env · function · L48-L54 — fn set_or_clear_env(key: &str, value: Option<std::ffi::OsString>)
+- scriptable_resume_command_matches_input_kind · function · L57-L74 — fn scriptable_resume_command_matches_input_kind()
+- load_pending_login_removes_expired_record · function · L77-L100 — fn load_pending_login_removes_expired_record()
+- load_pending_login_accepts_legacy_format · function · L103-L129 — fn load_pending_login_accepts_legacy_format()
+- uses_scriptable_flow_detects_dash_input_without_consuming_stdin · function · L132-L143 — fn uses_scriptable_flow_detects_dash_input_without_consuming_stdin()
+- auto_scriptable_flow_reason_prefers_non_interactive_for_oauth_provider · function · L146-L151 — fn auto_scriptable_flow_reason_prefers_non_interactive_for_oauth_provider()
+- auto_scriptable_flow_reason_uses_no_browser_reason_when_requested · function · L154-L166 — fn auto_scriptable_flow_reason_uses_no_browser_reason_when_requested()
+- auto_scriptable_flow_reason_skips_api_key_only_provider · function · L169-L174 — fn auto_scriptable_flow_reason_skips_api_key_only_provider()
+- auto_scriptable_flow_reason_skips_when_scriptable_input_already_explicit · function · L177-L189 — fn auto_scriptable_flow_reason_skips_when_scriptable_input_already_explicit()
+- scoped_pending_paths_validate_ids_and_preserve_legacy_layout · function · L192-L232 — fn scoped_pending_paths_validate_ids_and_preserve_legacy_layout()
+- ScopedLoginTestHome · struct · L234-L234 — struct ScopedLoginTestHome(Option<std::ffi::OsString>);
+- new · function · L237-L241 — fn new(path: &Path) -> Self
+- drop · function · L245-L247 — fn drop(&mut self)
+- scoped_concurrent_begin_completion_and_cancel_are_isolated · function · L251-L342 — async fn scoped_concurrent_begin_completion_and_cancel_are_isolated()
+- scoped_cancel_requires_explicit_provider_and_flow · function · L345-L363 — async fn scoped_cancel_requires_explicit_provider_and_flow()
+- scoped_test_record · function · L365-L373 — fn scoped_test_record() -> PendingScriptableLoginRecord
+- scoped_cancel_before_begin_fences_late_writes_and_expires · function · L376-L392 — fn scoped_cancel_before_begin_fences_late_writes_and_expires()
+- scoped_concurrent_begin_and_cancel_never_resurrect_pending_state · function · L395-L418 — fn scoped_concurrent_begin_and_cancel_never_resurrect_pending_state()
+- complete_saved_muse_subscription_login_uses_code_only_path · function · L421-L487 — async fn complete_saved_muse_subscription_login_uses_code_only_path()
+- cancelling_muse_subscription_login_during_polling_prevents_credential_persistence · function · L490-L554 — async fn cancelling_muse_subscription_login_during_polling_prevents_credential_persistence()
+- replacing_muse_subscription_login_during_polling_prevents_credential_persistence · function · L557-L625 — async fn replacing_muse_subscription_login_during_polling_prevents_credential_persistence()
+- complete_scriptable_muse_subscription_login_fails_if_already_cancelled · function · L628-L665 — async fn complete_scriptable_muse_subscription_login_fails_if_already_cancelled()
+- muse_device_login_slow_down_accumulates_delay_code_only · function · L668-L720 — async fn muse_device_login_slow_down_accumulates_delay_code_only()
+- muse_device_login_slow_down_accumulates_delay_challenge_loop · function · L723-L787 — async fn muse_device_login_slow_down_accumulates_delay_challenge_loop()

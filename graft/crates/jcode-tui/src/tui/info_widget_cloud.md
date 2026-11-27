@@ -1,0 +1,30 @@
+# crates/jcode-tui/src/tui/info_widget_cloud.rs
+
+- fit · function · L13-L42 — fn fit(line: Line<'static>, width: u16) -> Line<'static>
+- clean · function · L43-L47 — fn clean(text: &str) -> String
+- row · function · L48-L50 — fn row(text: impl Into<String>, width: u16) -> Line<'static>
+- value_style · function · L51-L53 — fn value_style() -> Style
+- kv · function · L55-L63 — fn kv(label: &str, value: impl Into<String>, width: u16) -> Line<'static>
+- state_style · function · L64-L71 — fn state_style(state: &str) -> Style
+- transfer_time · function · L73-L81 — fn transfer_time(raw: &str) -> String
+- path_row · function · L82-L104 — fn path_row(prefix: &str, path: &str, width: u16) -> Line<'static>
+- duration · function · L105-L115 — fn duration(seconds: u64) -> String
+- elapsed · function · L116-L121 — fn elapsed(time: SystemTime) -> String
+- status · function · L122-L131 — fn status<'a>(data: &'a InfoWidgetData, info: &CloudStatusInfo) -> &'a str
+- stale · function · L132-L134 — fn stale(data: &InfoWidgetData, info: &CloudStatusInfo) -> bool
+- resource · function · L135-L146 — fn resource(label: &str, used: Option<f64>, width: u16, display_used: bool) -> Line<'static>
+- bytes · function · L147-L151 — fn bytes(value: Option<u64>) -> String
+- used_ratio · function · L152-L159 — fn used_ratio(total: Option<u64>, available: Option<u64>) -> Option<f64>
+- render_cloud_summary · function · L161-L177 — pub(super) fn render_cloud_summary(data: &InfoWidgetData, width: u16) -> Vec<Line<'static>>
+- render_cloud_widget · function · L179-L311 — pub(super) fn render_cloud_widget(data: &InfoWidgetData, inner: Rect) -> Framed
+- tests · module · L314-L538 — mod tests
+- fixture · function · L321-L348 — fn fixture() -> InfoWidgetData
+- text · function · L349-L356 — fn text(data: &InfoWidgetData) -> String
+- cloud_local_absent · function · L358-L363 — fn cloud_local_absent()
+- cloud_probe_timing_is_only_in_footer · function · L366-L383 — fn cloud_probe_timing_is_only_in_footer()
+- cloud_populated_and_used_convention · function · L385-L408 — fn cloud_populated_and_used_convention()
+- cloud_loading_error_and_connection_override · function · L410-L430 — fn cloud_loading_error_and_connection_override()
+- cloud_controls_invalid_metrics_and_path_tail · function · L432-L458 — fn cloud_controls_invalid_metrics_and_path_tail()
+- cloud_layout_preserves_dual_git_and_full_card · function · L460-L493 — fn cloud_layout_preserves_dual_git_and_full_card()
+- cloud_capacity_fits_default_width · function · L495-L507 — fn cloud_capacity_fits_default_width()
+- cloud_widths_and_layout_match · function · L509-L537 — fn cloud_widths_and_layout_match()

@@ -1,0 +1,16 @@
+# crates/jcode-tui/src/tui/session_picker_tests/loading_and_benchmarks.rs
+
+- cloud_warning_retains_local_sessions_and_survives_fresh_update · function · L4-L54 — fn cloud_warning_retains_local_sessions_and_survives_fresh_update()
+- standalone_resume_renders_before_list_load_finishes · function · L57-L78 — fn standalone_resume_renders_before_list_load_finishes()
+- shortcut_search_accepts_typing_before_sessions_arrive · function · L81-L92 — fn shortcut_search_accepts_typing_before_sessions_arrive()
+- loading_picker_accepts_and_renders_search_before_sessions_arrive · function · L95-L130 — fn loading_picker_accepts_and_renders_search_before_sessions_arrive()
+- loading_picker_search_is_editable_and_escape_clears_without_closing · function · L133-L167 — fn loading_picker_search_is_editable_and_escape_clears_without_closing()
+- loading_picker_without_search_keeps_escape_and_ctrl_c_cancellation · function · L170-L184 — fn loading_picker_without_search_keeps_escape_and_ctrl_c_cancellation()
+- loading_picker_search_survives_cached_and_fresh_updates_and_filters_both · function · L187-L232 — fn loading_picker_search_survives_cached_and_fresh_updates_and_filters_both()
+- loading_picker_enter_preserves_search_without_queuing_resume · function · L235-L260 — fn loading_picker_enter_preserves_search_without_queuing_resume()
+- loading_picker_filter_choice_survives_refresh · function · L263-L284 — fn loading_picker_filter_choice_survives_refresh()
+- standalone_resume_refresh_preserves_cached_selection_and_search · function · L287-L323 — fn standalone_resume_refresh_preserves_cached_selection_and_search()
+- standalone_resume_load_error_preserves_existing_list · function · L326-L349 — fn standalone_resume_load_error_preserves_existing_list()
+- standalone_resume_empty_refresh_finishes_loading · function · L352-L361 — fn standalone_resume_empty_refresh_finishes_loading()
+- benchmark_real_resume_first_render_reports_timings · function · L365-L427 — fn benchmark_real_resume_first_render_reports_timings()
+- benchmark_real_resume_cached_first_render_reports_timings · function · L431-L471 — fn benchmark_real_resume_cached_first_render_reports_timings()

@@ -1,0 +1,88 @@
+# crates/jcode-base/src/runtime_memory_log.rs
+
+- DEFAULT_PROCESS_INTERVAL_SECS · constant · L9-L9 — const DEFAULT_PROCESS_INTERVAL_SECS: u64 = 60;
+- MIN_PROCESS_INTERVAL_SECS · constant · L10-L10 — const MIN_PROCESS_INTERVAL_SECS: u64 = 15;
+- DEFAULT_ATTRIBUTION_INTERVAL_SECS · constant · L11-L11 — const DEFAULT_ATTRIBUTION_INTERVAL_SECS: u64 = 15 * 60;
+- MIN_ATTRIBUTION_INTERVAL_SECS · constant · L12-L12 — const MIN_ATTRIBUTION_INTERVAL_SECS: u64 = 60;
+- DEFAULT_ATTRIBUTION_MIN_SPACING_SECS · constant · L13-L13 — const DEFAULT_ATTRIBUTION_MIN_SPACING_SECS: u64 = 30;
+- MIN_ATTRIBUTION_MIN_SPACING_SECS · constant · L14-L14 — const MIN_ATTRIBUTION_MIN_SPACING_SECS: u64 = 5;
+- DEFAULT_EVENT_PROCESS_MIN_SPACING_SECS · constant · L15-L15 — const DEFAULT_EVENT_PROCESS_MIN_SPACING_SECS: u64 = 5;
+- MIN_EVENT_PROCESS_MIN_SPACING_SECS · constant · L16-L16 — const MIN_EVENT_PROCESS_MIN_SPACING_SECS: u64 = 1;
+- DEFAULT_PSS_DELTA_THRESHOLD_MB · constant · L17-L17 — const DEFAULT_PSS_DELTA_THRESHOLD_MB: u64 = 16;
+- DEFAULT_ATTRIBUTION_JSON_DELTA_THRESHOLD_MB · constant · L18-L18 — const DEFAULT_ATTRIBUTION_JSON_DELTA_THRESHOLD_MB: u64 = 4;
+- MAX_SERVER_LOG_FILES · constant · L19-L19 — const MAX_SERVER_LOG_FILES: usize = 90;
+- SERVER_LOG_FILE_PREFIX · constant · L20-L20 — const SERVER_LOG_FILE_PREFIX: &str = "server-runtime-memory-";
+- SERVER_LOG_FILE_SUFFIX · constant · L21-L21 — const SERVER_LOG_FILE_SUFFIX: &str = ".jsonl";
+- DEFAULT_CLIENT_PROCESS_INTERVAL_SECS · constant · L22-L22 — const DEFAULT_CLIENT_PROCESS_INTERVAL_SECS: u64 = 5 * 60;
+- DEFAULT_CLIENT_ATTRIBUTION_INTERVAL_SECS · constant · L23-L23 — const DEFAULT_CLIENT_ATTRIBUTION_INTERVAL_SECS: u64 = 15 * 60;
+- DEFAULT_CLIENT_ATTRIBUTION_MIN_SPACING_SECS · constant · L24-L24 — const DEFAULT_CLIENT_ATTRIBUTION_MIN_SPACING_SECS: u64 = 30;
+- DEFAULT_CLIENT_EVENT_PROCESS_MIN_SPACING_SECS · constant · L25-L25 — const DEFAULT_CLIENT_EVENT_PROCESS_MIN_SPACING_SECS: u64 = 15;
+- DEFAULT_CLIENT_PSS_DELTA_THRESHOLD_MB · constant · L26-L26 — const DEFAULT_CLIENT_PSS_DELTA_THRESHOLD_MB: u64 = 8;
+- DEFAULT_CLIENT_ATTRIBUTION_JSON_DELTA_THRESHOLD_MB · constant · L27-L27 — const DEFAULT_CLIENT_ATTRIBUTION_JSON_DELTA_THRESHOLD_MB: u64 = 2;
+- MAX_CLIENT_LOG_FILES · constant · L28-L28 — const MAX_CLIENT_LOG_FILES: usize = 90;
+- CLIENT_LOG_FILE_PREFIX · constant · L29-L29 — const CLIENT_LOG_FILE_PREFIX: &str = "client-runtime-memory-";
+- CLIENT_LOG_FILE_SUFFIX · constant · L30-L30 — const CLIENT_LOG_FILE_SUFFIX: &str = ".jsonl";
+- MAX_PENDING_EVENTS · constant · L31-L31 — const MAX_PENDING_EVENTS: usize = 64;
+- MAX_PENDING_CATEGORIES · constant · L32-L32 — const MAX_PENDING_CATEGORIES: usize = 8;
+- EVENT_SINK · constant · L34-L35 — static EVENT_SINK: OnceLock<Mutex<Option<mpsc::UnboundedSender<RuntimeMemoryLogEvent>>>> =
+- ServerRuntimeMemorySample · struct · L38-L54 — pub struct ServerRuntimeMemorySample
+- ClientRuntimeMemorySample · struct · L57-L83 — pub struct ClientRuntimeMemorySample
+- ClientRuntimeMemoryClient · struct · L86-L96 — pub struct ClientRuntimeMemoryClient
+- ClientRuntimeMemoryTotals · struct · L99-L135 — pub struct ClientRuntimeMemoryTotals
+- RuntimeMemoryLogTrigger · struct · L138-L145 — pub struct RuntimeMemoryLogTrigger
+- RuntimeMemoryLogSampling · struct · L148-L155 — pub struct RuntimeMemoryLogSampling
+- ServerRuntimeMemoryProcessDiagnostics · struct · L158-L181 — pub struct ServerRuntimeMemoryProcessDiagnostics
+- ServerRuntimeMemoryServer · struct · L184-L191 — pub struct ServerRuntimeMemoryServer
+- ServerRuntimeMemoryClients · struct · L194-L196 — pub struct ServerRuntimeMemoryClients
+- ServerRuntimeMemoryBackground · struct · L199-L201 — pub struct ServerRuntimeMemoryBackground
+- ServerRuntimeMemoryEmbeddings · struct · L204-L208 — pub struct ServerRuntimeMemoryEmbeddings
+- ServerRuntimeMemorySessions · struct · L211-L226 — pub struct ServerRuntimeMemorySessions
+- ServerRuntimeMemoryTopSession · struct · L229-L243 — pub struct ServerRuntimeMemoryTopSession
+- RuntimeMemoryLogConfig · struct · L246-L253 — pub struct RuntimeMemoryLogConfig
+- RuntimeMemoryLogEvent · struct · L256-L262 — pub struct RuntimeMemoryLogEvent
+- new · function · L265-L273 — pub fn new(category: impl Into<String>, reason: impl Into<String>) -> Self
+- with_session_id · function · L275-L278 — pub fn with_session_id(mut self, session_id: impl Into<String>) -> Self
+- with_detail · function · L280-L283 — pub fn with_detail(mut self, detail: impl Into<String>) -> Self
+- force_attribution · function · L285-L288 — pub fn force_attribution(mut self) -> Self
+- RuntimeMemoryLogController · struct · L292-L300 — pub struct RuntimeMemoryLogController
+- new · function · L303-L313 — pub fn new(config: RuntimeMemoryLogConfig) -> Self
+- config · function · L315-L317 — pub fn config(&self) -> &RuntimeMemoryLogConfig
+- process_heartbeat_due · function · L319-L323 — pub fn process_heartbeat_due(&self, now: Instant) -> bool
+- attribution_heartbeat_due · function · L325-L329 — pub fn attribution_heartbeat_due(&self, now: Instant) -> bool
+- should_write_process_for_event · function · L331-L343 — pub fn should_write_process_for_event(
+- record_process_sample · function · L345-L347 — pub fn record_process_sample(&mut self, now: Instant)
+- defer_event · function · L349-L355 — pub fn defer_event(&mut self, event: RuntimeMemoryLogEvent)
+- can_write_attribution · function · L357-L361 — pub fn can_write_attribution(&self, now: Instant) -> bool
+- mark_attribution_heartbeat_pending · function · L363-L365 — pub fn mark_attribution_heartbeat_pending(&mut self)
+- build_sampling_for_process · function · L367-L386 — pub fn build_sampling_for_process(
+- build_sampling_for_attribution · function · L388-L441 — pub fn build_sampling_for_attribution(
+- finalize_attribution_sample · function · L443-L464 — pub fn finalize_attribution_sample(
+- finalize_attribution_totals · function · L466-L489 — pub fn finalize_attribution_totals(
+- pss_delta_reason · function · L491-L503 — fn pss_delta_reason(
+- server_logging_enabled · function · L506-L514 — pub fn server_logging_enabled() -> bool
+- server_logging_config · function · L516-L550 — pub fn server_logging_config() -> RuntimeMemoryLogConfig
+- client_logging_enabled · function · L552-L560 — pub fn client_logging_enabled() -> bool
+- client_logging_config · function · L562-L595 — pub fn client_logging_config() -> RuntimeMemoryLogConfig
+- install_event_sink · function · L597-L601 — pub fn install_event_sink(sender: mpsc::UnboundedSender<RuntimeMemoryLogEvent>)
+- emit_event · function · L603-L609 — pub fn emit_event(event: RuntimeMemoryLogEvent)
+- server_logs_dir · function · L611-L613 — pub fn server_logs_dir() -> Result<PathBuf>
+- current_server_log_path · function · L615-L617 — pub fn current_server_log_path() -> Result<PathBuf>
+- current_client_log_path · function · L619-L621 — pub fn current_client_log_path() -> Result<PathBuf>
+- append_server_sample · function · L623-L627 — pub fn append_server_sample(sample: &ServerRuntimeMemorySample) -> Result<PathBuf>
+- append_client_sample · function · L629-L633 — pub fn append_client_sample(sample: &ClientRuntimeMemorySample) -> Result<PathBuf>
+- prune_old_server_logs · function · L635-L660 — pub fn prune_old_server_logs() -> Result<usize>
+- prune_old_client_logs · function · L662-L687 — pub fn prune_old_client_logs() -> Result<usize>
+- build_process_diagnostics · function · L689-L721 — pub fn build_process_diagnostics(
+- allocator_retained_resident_estimate · function · L728-L738 — pub fn allocator_retained_resident_estimate(
+- AUX_THREAD_STACK_RESIDENT_ESTIMATE_BYTES · constant · L743-L743 — const AUX_THREAD_STACK_RESIDENT_ESTIMATE_BYTES: u64 = 64 * 1024;
+- thread_stack_estimate · function · L745-L752 — pub fn thread_stack_estimate(
+- env_u64 · function · L754-L756 — fn env_u64(name: &str) -> Option<u64>
+- event_sink · function · L758-L760 — fn event_sink() -> &'static Mutex<Option<mpsc::UnboundedSender<RuntimeMemoryLogEvent>>>
+- pending_categories · function · L762-L774 — fn pending_categories(events: &[RuntimeMemoryLogEvent]) -> Vec<String>
+- delta_i64 · function · L776-L781 — fn delta_i64(left: Option<u64>, right: Option<u64>) -> Option<i64>
+- bytes_to_mb_string · function · L783-L785 — fn bytes_to_mb_string(bytes: u64) -> String
+- server_log_path_for · function · L787-L793 — fn server_log_path_for(now: chrono::DateTime<Utc>) -> Result<PathBuf>
+- client_log_path_for · function · L795-L801 — fn client_log_path_for(now: chrono::DateTime<Utc>) -> Result<PathBuf>
+- is_server_log_file · function · L803-L810 — fn is_server_log_file(path: &Path) -> bool
+- is_client_log_file · function · L812-L819 — fn is_client_log_file(path: &Path) -> bool
+- runtime_memory_log_tests · module · L823-L823 — mod runtime_memory_log_tests;

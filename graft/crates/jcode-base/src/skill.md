@@ -1,0 +1,70 @@
+# crates/jcode-base/src/skill.rs
+
+- invocation · module · L11-L11 — mod invocation;
+- SkillSource · enum · L16-L21 — pub enum SkillSource
+- label · function · L24-L31 — pub fn label(self) -> &'static str
+- SkillProvenance · struct · L35-L40 — pub struct SkillProvenance
+- Skill · struct · L44-L55 — pub struct Skill
+- SkillFrontmatter · struct · L58-L63 — struct SkillFrontmatter
+- AllowedTools · enum · L67-L70 — enum AllowedTools
+- SkillRegistry · struct · L74-L80 — pub struct SkillRegistry
+- SkillLoadError · struct · L84-L87 — pub struct SkillLoadError
+- PLUGIN_SCAN_MAX_DEPTH · constant · L94-L94 — const PLUGIN_SCAN_MAX_DEPTH: usize = 5;
+- SkillCopyStats · struct · L98-L102 — struct SkillCopyStats
+- shared_registry · function · L114-L131 — pub fn shared_registry() -> Arc<RwLock<Self>>
+- SHARED · constant · L122-L122 — static SHARED: OnceLock<Arc<RwLock<SkillRegistry>>> = OnceLock::new();
+- shared_snapshot · function · L135-L149 — pub fn shared_snapshot() -> Arc<Self>
+- import_from_external · function · L153-L199 — fn import_from_external()
+- copy_skills_dir · function · L202-L246 — fn copy_skills_dir(src: &Path, dst: &Path) -> SkillCopyStats
+- copy_dir_recursive · function · L249-L272 — fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()>
+- list_skill_names · function · L275-L286 — fn list_skill_names(dir: &Path) -> Vec<String>
+- load · function · L289-L291 — pub fn load() -> Result<Self>
+- load_global · function · L300-L328 — pub fn load_global() -> Result<Self>
+- load_project_overlay · function · L337-L341 — pub fn load_project_overlay(working_dir: Option<&Path>) -> Result<Self>
+- merge_overlay · function · L346-L355 — pub fn merge_overlay(&mut self, overlay: Self)
+- effective_for_working_dir · function · L359-L365 — pub fn effective_for_working_dir(base: &Self, working_dir: Option<&Path>) -> Self
+- load_for_working_dir · function · L369-L373 — pub fn load_for_working_dir(working_dir: Option<&Path>) -> Result<Self>
+- project_roots · function · L376-L392 — fn project_roots(working_dir: Option<&Path>) -> Vec<PathBuf>
+- load_project_local_dirs · function · L394-L405 — fn load_project_local_dirs(&mut self, working_dir: Option<&Path>) -> Result<()>
+- load_nested · function · L407-L437 — fn load_nested(
+- MAX_DEPTH · constant · L413-L413 — const MAX_DEPTH: usize = 6;
+- claude_plugins_root · function · L440-L444 — fn claude_plugins_root() -> Option<PathBuf>
+- load_plugin_skills_from_root · function · L449-L457 — fn load_plugin_skills_from_root(&mut self, plugins_root: &Path) -> usize
+- plugin_skill_dirs_under · function · L471-L494 — fn plugin_skill_dirs_under(plugins_root: &Path) -> Vec<PathBuf>
+- installed_plugin_paths · function · L499-L526 — fn installed_plugin_paths(manifest: &Path) -> Vec<PathBuf>
+- collect_plugin_skills_dirs · function · L530-L557 — fn collect_plugin_skills_dirs(
+- dir_contains_skill · function · L560-L566 — fn dir_contains_skill(dir: &Path) -> bool
+- load_from_dir_with_source · function · L568-L586 — fn load_from_dir_with_source(&mut self, dir: &Path, source: SkillSource) -> Result<()>
+- load_skill_file · function · L590-L606 — fn load_skill_file(&mut self, skill_file: &Path, source: SkillSource) -> bool
+- load_errors · function · L610-L614 — pub fn load_errors(&self) -> Vec<&SkillLoadError>
+- parse_skill · function · L617-L639 — fn parse_skill(path: &Path, source: SkillSource) -> Result<Skill>
+- parse_skill_inner · function · L641-L669 — fn parse_skill_inner(path: &Path) -> Result<Skill>
+- parse_frontmatter · function · L672-L708 — fn parse_frontmatter(content: &str) -> Result<(SkillFrontmatter, String)>
+- parse_frontmatter_lenient · function · L713-L787 — fn parse_frontmatter_lenient(yaml: &str) -> Option<SkillFrontmatter>
+- top_level_key · function · L714-L724 — fn top_level_key(line: &str) -> Option<(&str, &str)>
+- unquote · function · L725-L733 — fn unquote(value: &str) -> String
+- get · function · L790-L792 — pub fn get(&self, name: &str) -> Option<&Skill>
+- list · function · L803-L807 — pub fn list(&self) -> Vec<&Skill>
+- reload · function · L810-L840 — pub fn reload(&mut self, name: &str) -> Result<bool>
+- reload_all · function · L843-L845 — pub fn reload_all(&mut self) -> Result<usize>
+- reload_global · function · L855-L888 — pub fn reload_global(&mut self) -> Result<usize>
+- load_from_dir_count · function · L891-L910 — fn load_from_dir_count(&mut self, dir: &Path, source: SkillSource) -> Result<usize>
+- insert_loaded_skill · function · L912-L914 — fn insert_loaded_skill(&mut self, skill: Skill)
+- insert_skill · function · L916-L929 — fn insert_skill(&mut self, mut skill: Skill)
+- insert_shared_skill · function · L931-L944 — fn insert_shared_skill(&mut self, skill: Arc<Skill>)
+- parse_invocation · function · L954-L980 — pub fn parse_invocation(input: &str) -> Option<SkillInvocation<'_>>
+- contains · function · L983-L985 — pub fn contains(&self, name: &str) -> bool
+- EndorsedSkill · struct · L990-L1002 — pub struct EndorsedSkill
+- ENDORSED_SKILLS · constant · L1011-L1179 — pub const ENDORSED_SKILLS: &[EndorsedSkill] = &[
+- endorsed_skills · function · L1182-L1184 — pub fn endorsed_skills() -> &'static [EndorsedSkill]
+- metadata · function · L1187-L1211 — pub fn metadata(&self) -> jcode_protocol::SkillMetadata
+- info · function · L1213-L1215 — pub fn info(&self) -> String
+- warnings · function · L1217-L1221 — pub fn warnings(&self) -> Vec<String>
+- get_prompt · function · L1224-L1229 — pub fn get_prompt(&self) -> String
+- load_file · function · L1232-L1239 — pub fn load_file(&self, filename: &str) -> Result<String>
+- as_memory_entry · function · L1241-L1262 — pub fn as_memory_entry(&self) -> crate::memory::MemoryEntry
+- name_mismatch_warning · function · L1265-L1276 — fn name_mismatch_warning(name: &str, path: &Path) -> Option<String>
+- format_skill_info · function · L1278-L1305 — pub fn format_skill_info(
+- build_skill_search_text · function · L1307-L1309 — fn build_skill_search_text(name: &str, description: &str, content: &str) -> String
+- normalize_skill_search_text · function · L1311-L1328 — fn normalize_skill_search_text(text: &str) -> String
+- tests · module · L1332-L1332 — mod tests;

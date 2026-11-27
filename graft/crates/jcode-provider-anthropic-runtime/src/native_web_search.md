@@ -1,0 +1,24 @@
+# crates/jcode-provider-anthropic-runtime/src/native_web_search.rs
+
+- BASIC_TOOL_VERSION · constant · L18-L18 — const BASIC_TOOL_VERSION: &str = "web_search_20250305";
+- server_tool · function · L21-L52 — pub(crate) fn server_tool(config: &WebSearchConfig) -> Value
+- clean_domains · function · L54-L61 — fn clean_domains(domains: &[String]) -> Vec<String>
+- server_tools_for_request · function · L68-L74 — pub(crate) fn server_tools_for_request(first_party: bool, tools: &[ToolDefinition]) -> Vec<Value>
+- session_offers_websearch · function · L77-L79 — pub(crate) fn session_offers_websearch(tools: &[ToolDefinition]) -> bool
+- server_tools_with_config · function · L81-L87 — pub(crate) fn server_tools_with_config(config: &WebSearchConfig, first_party: bool) -> Vec<Value>
+- without_local_websearch · function · L92-L106 — pub(crate) fn without_local_websearch<'a>(
+- ServerBlockStart · enum · L110-L117 — pub(crate) enum ServerBlockStart
+- ServerBlockAccumulator · struct · L120-L123 — pub(crate) struct ServerBlockAccumulator
+- push_input · function · L126-L128 — pub(crate) fn push_input(&mut self, partial_json: &str)
+- finish · function · L132-L142 — pub(crate) fn finish(mut self) -> Value
+- server_block_start · function · L146-L165 — pub(crate) fn server_block_start(data: &str) -> ServerBlockStart
+- tests · module · L168-L277 — mod tests
+- native_config · function · L172-L177 — fn native_config() -> WebSearchConfig
+- default_tool_is_basic_version_with_max_uses · function · L180-L186 — fn default_tool_is_basic_version_with_max_uses()
+- newer_versions_pin_direct_callers · function · L189-L197 — fn newer_versions_pin_direct_callers()
+- allowed_domains_win_over_blocked · function · L200-L211 — fn allowed_domains_win_over_blocked()
+- server_tool_only_for_native_engine_on_first_party_api · function · L214-L227 — fn server_tool_only_for_native_engine_on_first_party_api()
+- server_tool_requires_session_to_offer_websearch · function · L230-L235 — fn server_tool_requires_session_to_offer_websearch()
+- builtin · function · L237-L248 — fn builtin(name: &str) -> ToolDefinition
+- sdk_custom_websearch_is_never_replaced_by_server_tool · function · L251-L266 — fn sdk_custom_websearch_is_never_replaced_by_server_tool()
+- local_websearch_is_dropped_only_when_server_tool_attached · function · L269-L276 — fn local_websearch_is_dropped_only_when_server_tool_attached()

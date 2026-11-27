@@ -1,0 +1,24 @@
+# crates/jcode-app-core/src/server/runtime_ssh_loops.rs
+
+- Workflow · struct · L15-L20 — struct Workflow
+- LoopState · struct · L24-L31 — struct LoopState
+- default · function · L34-L43 — fn default() -> Self
+- state_lock · function · L46-L49 — fn state_lock() -> &'static Mutex<()>
+- LOCK · constant · L47-L47 — static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+- state_path_at · function · L51-L60 — fn state_path_at(root: &Path, session_id: &str) -> Result<PathBuf>
+- state_path · function · L62-L64 — fn state_path(session_id: &str) -> Result<PathBuf>
+- read_state · function · L66-L76 — fn read_state(path: &Path) -> Result<LoopState>
+- initialize_remote_session · function · L80-L93 — pub(super) fn initialize_remote_session(session_id: &str, enabled: bool) -> Result<()>
+- update_state · function · L95-L105 — fn update_state<T>(
+- handles · function · L107-L109 — pub(super) fn handles(command: &str) -> bool
+- status_data · function · L111-L118 — fn status_data(session_id: &str, state: &LoopState) -> Result<Value>
+- status_result · function · L120-L123 — fn status_result(session_id: &str, state: &LoopState) -> Result<(Value, String)>
+- control · function · L127-L183 — pub(super) fn control(
+- launch_prompt · function · L185-L214 — fn launch_prompt(workflow: &Workflow, resume: bool) -> String
+- execute · function · L219-L324 — pub(super) async fn execute(
+- snapshot · function · L326-L331 — fn snapshot(session_id: &str) -> Result<todo::followup::TodoSnapshot>
+- apply_effects · function · L333-L341 — fn apply_effects(session_id: &str, effects: &todo::followup::TodoEffects) -> Result<()>
+- next_followup · function · L343-L362 — fn next_followup(
+- run_followups · function · L368-L374 — pub(super) async fn run_followups(
+- run_reserved_followups · function · L376-L482 — pub(super) async fn run_reserved_followups(
+- tests · module · L486-L486 — mod tests;

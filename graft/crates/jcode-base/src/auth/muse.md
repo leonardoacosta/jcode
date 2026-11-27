@@ -1,0 +1,79 @@
+# crates/jcode-base/src/auth/muse.rs
+
+- PROFILE_ID · constant · L56-L56 — pub const PROFILE_ID: &str = "muse-subscription";
+- API_KEY_ENV · constant · L60-L60 — pub const API_KEY_ENV: &str = "JCODE_MUSE_SUBSCRIPTION_API_KEY";
+- ENV_FILE · constant · L62-L62 — pub const ENV_FILE: &str = "muse-subscription.env";
+- EXPERIMENTAL_ENV_VAR · constant · L64-L64 — pub const EXPERIMENTAL_ENV_VAR: &str = "JCODE_EXPERIMENTAL_MUSE_SUBSCRIPTION";
+- MUSE_CLIENT_ID · constant · L68-L68 — pub const MUSE_CLIENT_ID: &str = "1031625952748946"; // gitleaks:allow
+- AUTH_HOST · constant · L70-L70 — pub const AUTH_HOST: &str = "https://auth.meta.com";
+- DEVICE_AUTHORIZATION_PATH · constant · L71-L71 — const DEVICE_AUTHORIZATION_PATH: &str = "/oidc/device/authorization/";
+- DEVICE_TOKEN_PATH · constant · L72-L72 — const DEVICE_TOKEN_PATH: &str = "/oidc/device/token/";
+- DEVICE_CODE_GRANT · constant · L73-L73 — const DEVICE_CODE_GRANT: &str = "urn:ietf:params:oauth:grant-type:device_code";
+- MINT_URL · constant · L75-L75 — pub const MINT_URL: &str = "https://api.meta.ai/muse-code/key";
+- EXPECTED_API_BASE_URL · constant · L77-L77 — pub const EXPECTED_API_BASE_URL: &str = "https://api.meta.ai/v1";
+- CREDENTIALS_FILE_NAME · constant · L80-L80 — const CREDENTIALS_FILE_NAME: &str = "muse_subscription.json";
+- CONNECT_TIMEOUT · constant · L82-L82 — const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+- REQUEST_TIMEOUT · constant · L83-L83 — const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+- MAX_BODY_LEN · constant · L84-L84 — const MAX_BODY_LEN: usize = 64 * 1024;
+- MINT_TTL_MS · constant · L87-L87 — const MINT_TTL_MS: i64 = 24 * 60 * 60 * 1000;
+- REFRESH_SAFETY_WINDOW_MS · constant · L88-L88 — const REFRESH_SAFETY_WINDOW_MS: i64 = 5 * 60 * 1000;
+- experimental_warning_message · function · L94-L104 — pub fn experimental_warning_message() -> &'static str
+- ensure_enabled · function · L108-L121 — pub fn ensure_enabled() -> Result<()>
+- http_client · function · L128-L142 — pub fn http_client() -> Result<reqwest::Client>
+- DeviceChallenge · struct · L151-L161 — pub struct DeviceChallenge
+- fmt · function · L164-L173 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- PollOutcome · enum · L180-L192 — pub enum PollOutcome
+- SubsUsage · struct · L198-L211 — pub struct SubsUsage
+- MuseCredentials · struct · L218-L231 — pub struct MuseCredentials
+- fmt · function · L234-L245 — fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+- DeviceAuthorizationResponse · struct · L249-L262 — struct DeviceAuthorizationResponse
+- DeviceTokenResponse · struct · L265-L270 — struct DeviceTokenResponse
+- MintResponse · struct · L275-L294 — struct MintResponse
+- MintSubsUsage · struct · L297-L304 — struct MintSubsUsage
+- MintUsageWindow · struct · L307-L314 — struct MintUsageWindow
+- MintUsageWeekly · struct · L317-L322 — struct MintUsageWeekly
+- TestEndpoints · struct · L326-L329 — struct TestEndpoints
+- TEST_ENDPOINTS · constant · L332-L332 — static TEST_ENDPOINTS: std::sync::Mutex<Option<TestEndpoints>> = std::sync::Mutex::new(None);
+- set_test_endpoints · function · L337-L345 — pub(crate) fn set_test_endpoints(auth_base: &str, api_base: &str) -> TestEndpointGuard
+- TestEndpointGuard · struct · L348-L348 — pub(crate) struct TestEndpointGuard;
+- drop · function · L352-L356 — fn drop(&mut self)
+- test_endpoints · function · L360-L365 — fn test_endpoints() -> Option<TestEndpoints>
+- device_authorization_url · function · L367-L373 — fn device_authorization_url() -> String
+- device_token_url · function · L375-L381 — fn device_token_url() -> String
+- mint_url · function · L383-L389 — fn mint_url() -> String
+- is_loopback_host · function · L392-L394 — fn is_loopback_host(host: Option<&str>) -> bool
+- verification_url_allowed · function · L398-L410 — fn verification_url_allowed(raw: &str) -> bool
+- validate_challenge · function · L412-L434 — fn validate_challenge(challenge: &DeviceChallenge) -> Result<()>
+- read_bounded_json · function · L441-L460 — async fn read_bounded_json<T>(mut response: reqwest::Response) -> Result<T>
+- begin_login · function · L464-L510 — pub async fn begin_login(client: &reqwest::Client) -> Result<DeviceChallenge>
+- poll_login · function · L518-L525 — pub async fn poll_login(
+- poll_login_by_code · function · L529-L573 — pub async fn poll_login_by_code(
+- mint_credentials · function · L580-L641 — pub async fn mint_credentials(
+- usage_snapshot · function · L646-L674 — fn usage_snapshot(
+- credentials_path · function · L678-L680 — pub fn credentials_path() -> Result<PathBuf>
+- credentials_lock_path · function · L683-L685 — pub fn credentials_lock_path() -> Result<PathBuf>
+- CREDENTIALS_MUTEX · constant · L688-L688 — static CREDENTIALS_MUTEX: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+- credentials_mutex · function · L690-L692 — fn credentials_mutex() -> &'static std::sync::Mutex<()>
+- REFRESH_CRITICAL_SECTION_HOOK · constant · L701-L702 — static REFRESH_CRITICAL_SECTION_HOOK: std::sync::Mutex<Option<Box<dyn Fn() + Send>>> =
+- RefreshCriticalSectionHookGuard · struct · L705-L705 — pub(crate) struct RefreshCriticalSectionHookGuard;
+- drop · function · L709-L713 — fn drop(&mut self)
+- set_refresh_critical_section_hook · function · L717-L725 — pub(crate) fn set_refresh_critical_section_hook<F>(hook: F) -> RefreshCriticalSectionHookGuard
+- run_refresh_critical_section_hook · function · L728-L738 — fn run_refresh_critical_section_hook()
+- FileLockGuard · struct · L747-L749 — pub(crate) struct FileLockGuard
+- drop · function · L752-L757 — fn drop(&mut self)
+- acquire_file_lock · function · L760-L775 — fn acquire_file_lock(lock_path: &Path) -> Result<FileLockGuard>
+- CredentialsLockGuard · struct · L780-L783 — pub(crate) struct CredentialsLockGuard
+- lock_credentials · function · L785-L795 — pub(crate) fn lock_credentials() -> Result<CredentialsLockGuard>
+- save_credentials · function · L801-L804 — pub fn save_credentials(credentials: &MuseCredentials) -> Result<()>
+- save_credentials_locked · function · L808-L818 — fn save_credentials_locked(credentials: &MuseCredentials) -> Result<()>
+- load_credentials · function · L823-L836 — pub fn load_credentials() -> Result<MuseCredentials>
+- validate_stored_credentials · function · L840-L859 — fn validate_stored_credentials(credentials: &MuseCredentials) -> Result<()>
+- has_cached_auth · function · L862-L866 — pub fn has_cached_auth() -> bool
+- clear_credentials · function · L869-L872 — pub fn clear_credentials() -> Result<()>
+- clear_credentials_locked · function · L876-L884 — fn clear_credentials_locked() -> Result<()>
+- refresh_credentials · function · L893-L907 — pub async fn refresh_credentials(client: &reqwest::Client) -> Result<MuseCredentials>
+- refresh_if_needed · function · L912-L921 — pub async fn refresh_if_needed(client: &reqwest::Client) -> Result<MuseCredentials>
+- usage_summary · function · L931-L964 — pub fn usage_summary() -> Option<String>
+- valid_percent · function · L968-L970 — fn valid_percent(value: Option<f64>) -> Option<f64>
+- sanitize_tier · function · L974-L982 — fn sanitize_tier(tier: &str) -> String
+- tests · module · L986-L986 — mod tests;

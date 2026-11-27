@@ -1,0 +1,53 @@
+# crates/jcode-base/src/transcript_sample.rs
+
+- SampleTurn · enum · L16-L26 — pub enum SampleTurn
+- TranscriptSample · struct · L29-L33 — pub struct TranscriptSample
+- MIN_TURNS · constant · L36-L36 — const MIN_TURNS: usize = 8;
+- MIN_USER_TURNS · constant · L38-L38 — const MIN_USER_TURNS: usize = 2;
+- MAX_TURNS · constant · L39-L39 — const MAX_TURNS: usize = 80;
+- MAX_TEXT · constant · L40-L40 — const MAX_TEXT: usize = 4_000;
+- MAX_OUTPUT · constant · L41-L41 — const MAX_OUTPUT: usize = 1_500;
+- SCAN_FILES · constant · L44-L44 — const SCAN_FILES: usize = 40;
+- PARSE_FILES · constant · L47-L47 — const PARSE_FILES: usize = 6;
+- MAX_FILE_BYTES · constant · L48-L48 — const MAX_FILE_BYTES: u64 = 24 * 1024 * 1024;
+- Format · enum · L51-L57 — enum Format
+- label · function · L60-L68 — fn label(self) -> &'static str
+- Parsed · struct · L73-L77 — struct Parsed
+- recent_external_transcript · function · L81-L83 — pub fn recent_external_transcript() -> Option<TranscriptSample>
+- recent_external_transcript_in · function · L85-L87 — pub fn recent_external_transcript_in(home: &Path) -> Option<TranscriptSample>
+- recent_external_transcripts · function · L93-L97 — pub fn recent_external_transcripts(limit: usize) -> Vec<TranscriptSample>
+- recent_external_transcripts_in · function · L99-L170 — pub fn recent_external_transcripts_in(home: &Path, limit: usize) -> Vec<TranscriptSample>
+- is_top_level_cursor_transcript · function · L173-L180 — fn is_top_level_cursor_transcript(path: &Path) -> bool
+- clip · function · L182-L192 — fn clip(text: &str, max: usize) -> String
+- is_synthetic · function · L195-L203 — fn is_synthetic(text: &str) -> bool
+- new · function · L206-L212 — fn new() -> Self
+- push · function · L215-L224 — fn push(&mut self, turn: SampleTurn) -> Option<usize>
+- set_output · function · L226-L230 — fn set_output(&mut self, index: usize, text: &str)
+- Pending · struct · L235-L235 — struct Pending(Vec<(String, usize)>);
+- add · function · L238-L242 — fn add(&mut self, id: Option<&str>, index: Option<usize>)
+- take · function · L244-L247 — fn take(&mut self, id: &str) -> Option<usize>
+- text_turn · function · L250-L256 — fn text_turn(user: bool, text: &str) -> SampleTurn
+- result_text · function · L259-L261 — fn result_text(value: Option<&serde_json::Value>) -> String
+- tool_args · function · L265-L277 — fn tool_args(value: Option<&serde_json::Value>) -> String
+- anthropic_blocks · function · L280-L364 — fn anthropic_blocks(
+- claude_turns · function · L366-L420 — fn claude_turns(path: &Path) -> Option<Parsed>
+- cursor_turns · function · L423-L443 — fn cursor_turns(path: &Path) -> Option<Parsed>
+- pi_turns · function · L447-L508 — fn pi_turns(path: &Path) -> Option<Parsed>
+- jcode_turns · function · L512-L541 — fn jcode_turns(path: &Path) -> Option<Parsed>
+- codex_text · function · L543-L553 — fn codex_text(content: Option<&serde_json::Value>) -> String
+- codex_tool_input · function · L558-L573 — fn codex_tool_input(raw: &str) -> String
+- codex_turns · function · L575-L657 — fn codex_turns(path: &Path) -> Option<Parsed>
+- tests · module · L660-L965 — mod tests
+- write · function · L663-L667 — fn write(path: &Path, lines: &[serde_json::Value])
+- codex_line · function · L669-L671 — fn codex_line(payload: serde_json::Value) -> serde_json::Value
+- codex_rollout_pairs_tool_output_and_skips_injected_context · function · L674-L700 — fn codex_rollout_pairs_tool_output_and_skips_injected_context()
+- codex_exec_scripts_unwrap_to_their_command · function · L703-L707 — fn codex_exec_scripts_unwrap_to_their_command()
+- short_or_missing_histories_yield_nothing · function · L710-L720 — fn short_or_missing_histories_yield_nothing()
+- claude_transcript_attaches_tool_results_to_their_calls · function · L723-L761 — fn claude_transcript_attaches_tool_results_to_their_calls()
+- jcode_session · function · L763-L785 — fn jcode_session(dir: &Path, name: &str, prompts: usize, extra: serde_json::Value)
+- reasoning_stored_after_text_replays_before_it · function · L788-L809 — fn reasoning_stored_after_text_replays_before_it()
+- jcode_sessions_replay_and_skip_debug_children_and_context · function · L812-L843 — fn jcode_sessions_replay_and_skip_debug_children_and_context()
+- the_longest_session_wins_over_the_newest_across_harnesses · function · L846-L873 — fn the_longest_session_wins_over_the_newest_across_harnesses()
+- showcase_spans_harnesses_before_repeating_one · function · L876-L909 — fn showcase_spans_harnesses_before_repeating_one()
+- a_single_prompt_tool_storm_is_not_a_conversation · function · L912-L922 — fn a_single_prompt_tool_storm_is_not_a_conversation()
+- pi_and_cursor_sessions_replay · function · L925-L964 — fn pi_and_cursor_sessions_replay()

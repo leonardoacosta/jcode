@@ -1,0 +1,64 @@
+# crates/jcode-base/src/mcp/protocol.rs
+
+- JsonRpcRequest · struct · L8-L14 — pub struct JsonRpcRequest
+- new · function · L17-L24 — pub fn new(id: u64, method: impl Into<String>, params: Option<Value>) -> Self
+- JsonRpcNotification · struct · L29-L34 — pub struct JsonRpcNotification
+- new · function · L37-L43 — pub fn new(method: impl Into<String>, params: Option<Value>) -> Self
+- JsonRpcResponse · struct · L48-L55 — pub struct JsonRpcResponse
+- JsonRpcError · struct · L59-L64 — pub struct JsonRpcError
+- InitializeParams · struct · L68-L74 — pub struct InitializeParams
+- ClientCapabilities · struct · L77-L77 — pub struct ClientCapabilities {}
+- ClientInfo · struct · L80-L83 — pub struct ClientInfo
+- InitializeResult · struct · L87-L93 — pub struct InitializeResult
+- ServerCapabilities · struct · L96-L103 — pub struct ServerCapabilities
+- ToolsCapability · struct · L106-L109 — pub struct ToolsCapability
+- ResourcesCapability · struct · L112-L117 — pub struct ResourcesCapability
+- PromptsCapability · struct · L120-L123 — pub struct PromptsCapability
+- ServerInfo · struct · L126-L130 — pub struct ServerInfo
+- McpToolDef · struct · L134-L140 — pub struct McpToolDef
+- ToolsListResult · struct · L144-L148 — pub struct ToolsListResult
+- ToolCallParams · struct · L152-L155 — pub struct ToolCallParams
+- ToolCallResult · struct · L159-L163 — pub struct ToolCallResult
+- ContentBlock · enum · L168-L179 — pub enum ContentBlock
+- ResourceContent · struct · L182-L188 — pub struct ResourceContent
+- McpServerConfig · struct · L192-L254 — pub struct McpServerConfig
+- is_direct · function · L259-L263 — pub fn is_direct(&self) -> bool
+- is_lazy · function · L265-L267 — pub fn is_lazy(&self) -> bool
+- in_workspace · function · L270-L284 — pub fn in_workspace(&self, cwd: Option<&std::path::Path>) -> bool
+- autostarts · function · L288-L290 — pub fn autostarts(&self, cwd: Option<&std::path::Path>) -> bool
+- is_stdio · function · L292-L296 — pub fn is_stdio(&self) -> bool
+- explicit_remote_transport · function · L298-L312 — fn explicit_remote_transport(&self) -> Option<RemoteTransport>
+- remote_transport · function · L316-L331 — pub fn remote_transport(&self) -> Option<RemoteTransport>
+- is_remote · function · L334-L336 — pub fn is_remote(&self) -> bool
+- is_runnable · function · L340-L345 — pub fn is_runnable(&self) -> bool
+- display_target · function · L349-L378 — pub fn display_target(&self) -> String
+- is_enabled · function · L384-L389 — pub fn is_enabled(&self) -> bool
+- RemoteTransport · enum · L394-L400 — pub enum RemoteTransport
+- label · function · L403-L408 — pub fn label(self) -> &'static str
+- default_shared · function · L411-L413 — fn default_shared() -> bool
+- McpConfig · struct · L417-L428 — pub struct McpConfig
+- server_scope · function · L431-L434 — pub fn server_scope(&self, server: &str) -> Option<&str>
+- with_scope · function · L436-L446 — fn with_scope(mut self, scope: &str) -> Self
+- merge_scoped · function · L448-L457 — fn merge_scoped(&mut self, incoming: Self)
+- is_direct_tool · function · L460-L468 — pub fn is_direct_tool(&self, server: &str, tool: &str) -> bool
+- workspace_glob_matches · function · L473-L490 — pub fn workspace_glob_matches(pattern: &str, path: &str) -> bool
+- UnresolvedEnvironmentVariable · struct · L493-L496 — struct UnresolvedEnvironmentVariable
+- valid_environment_variable_name · function · L498-L502 — fn valid_environment_variable_name(name: &str) -> bool
+- expand_environment_string · function · L506-L548 — fn expand_environment_string<F>(
+- load_from_file · function · L552-L555 — pub fn load_from_file(path: &std::path::Path) -> anyhow::Result<Self>
+- save_to_file · function · L558-L565 — pub fn save_to_file(&self, path: &std::path::Path) -> anyhow::Result<()>
+- expand_environment_variables_with · function · L571-L608 — fn expand_environment_variables_with<F>(
+- expand_environment_variables · function · L610-L619 — fn expand_environment_variables(&mut self)
+- import_from_codex_once · function · L627-L665 — fn import_from_codex_once()
+- codex_import_log_message · function · L667-L686 — fn codex_import_log_message(
+- live_claude_log_message · function · L688-L693 — fn live_claude_log_message(server_count: usize, source: &str) -> String
+- load_from_codex_toml · function · L696-L763 — fn load_from_codex_toml(path: &std::path::Path) -> anyhow::Result<Self>
+- read_external · function · L767-L781 — pub fn read_external(source: &str) -> anyhow::Result<Self>
+- merge_import · function · L785-L798 — pub fn merge_import(&mut self, imported: Self) -> (Vec<String>, Vec<String>)
+- load_claude_json · function · L806-L850 — fn load_claude_json(path: &std::path::Path, cwd: Option<&std::path::Path>) -> Self
+- load_project_locals · function · L856-L868 — fn load_project_locals(project_root: &std::path::Path) -> Self
+- strip_untrusted_notifications · function · L875-L885 — fn strip_untrusted_notifications(&mut self, source: &str)
+- load · function · L889-L892 — pub fn load() -> Self
+- load_for_dir · function · L906-L991 — pub fn load_for_dir(project_dir: Option<&std::path::Path>) -> Self
+- merge_servers_preferring_runnable · function · L1001-L1022 — fn merge_servers_preferring_runnable(
+- protocol_tests · module · L1027-L1027 — mod protocol_tests;

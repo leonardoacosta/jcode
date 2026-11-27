@@ -1,0 +1,20 @@
+# tests/test_preview_linux_hosted.py
+
+- HostedLinuxPreviewTests · class · L19-L249 — class HostedLinuxPreviewTests(unittest.TestCase)
+- setUp · method · L20-L107 — def setUp(self)
+- install · method · L109-L112 — def install(self, name, text)
+- command · method · L114-L116 — def command(self, *args)
+- run_script · method · L118-L121 — def run_script(self, target=X86, **updates)
+- records · method · L123-L125 — def records(self)
+- test_portable_x86_command_and_release_metadata · method · L127-L149 — def test_portable_x86_command_and_release_metadata(self)
+- test_arm_rebuilds_std_with_target_only_tls · method · L151-L164 — def test_arm_rebuilds_std_with_target_only_tls(self)
+- test_arm_overrides_stable_caller_without_changing_managed_contract · method · L166-L177 — def test_arm_overrides_stable_caller_without_changing_managed_contract(self)
+- test_stable_metadata_fixture_rejects_native_target_tls · method · L179-L186 — def test_stable_metadata_fixture_rejects_native_target_tls(self): # A managed nightly pin alone must not make the caller fixture pass.
+- test_arm_nightly_install_failure_stops_before_hosted_dispatch · method · L188-L191 — def test_arm_nightly_install_failure_stops_before_hosted_dispatch(self)
+- test_dirty_source_is_reported_honestly · method · L193-L197 — def test_dirty_source_is_reported_honestly(self)
+- test_invalid_inputs_fail_before_hosted_dispatch · method · L199-L214 — def test_invalid_inputs_fail_before_hosted_dispatch(self)
+- test_hosted_failure_never_reuses_stale_artifact_or_falls_back · method · L216-L221 — def test_hosted_failure_never_reuses_stale_artifact_or_falls_back(self)
+- test_backend_failure_prevents_build · method · L223-L226 — def test_backend_failure_prevents_build(self)
+- test_missing_download_fails · method · L228-L231 — def test_missing_download_fails(self)
+- test_x86_rejects_bad_abi · method · L233-L241 — def test_x86_rejects_bad_abi(self)
+- test_arm_rejects_native_tls_missing_emutls_and_newer_glibc · method · L243-L249 — def test_arm_rejects_native_tls_missing_emutls_and_newer_glibc(self)

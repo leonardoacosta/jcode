@@ -1,0 +1,32 @@
+# crates/jcode-app-core/src/server/swarm_persistence_tests.rs
+
+- EnvGuard · struct · L4-L8 — struct EnvGuard
+- drop · function · L11-L22 — fn drop(&mut self)
+- test_env · function · L25-L34 — fn test_env(dir: &tempfile::TempDir) -> EnvGuard
+- council_recovery_removes_seats_even_with_a_recoverable_owner · function · L37-L76 — fn council_recovery_removes_seats_even_with_a_recoverable_owner()
+- persisted_swarm_state_round_trips_and_marks_running_stale · function · L79-L187 — fn persisted_swarm_state_round_trips_and_marks_running_stale()
+- ready_headless_member_with_report_stops_without_losing_report · function · L190-L234 — fn ready_headless_member_with_report_stops_without_losing_report()
+- ready_detached_client_stops_on_reload_until_it_reattaches · function · L237-L273 — fn ready_detached_client_stops_on_reload_until_it_reattaches()
+- dormant_plan_expiry_preserves_active_work_and_prunes_old_unassigned_graphs · function · L276-L321 — fn dormant_plan_expiry_preserves_active_work_and_prunes_old_unassigned_graphs()
+- terminal_member_retention_preserves_recent_reports_and_prunes_expired_records · function · L324-L369 — fn terminal_member_retention_preserves_recent_reports_and_prunes_expired_records()
+- legacy_terminal_member_uses_snapshot_time_as_retention_fallback · function · L372-L410 — fn legacy_terminal_member_uses_snapshot_time_as_retention_fallback()
+- recovery_induced_terminal_status_starts_retention_at_load_time · function · L413-L450 — fn recovery_induced_terminal_status_starts_retention_at_load_time()
+- startup_gc_removes_expired_terminal_members_from_durable_snapshot · function · L453-L493 — fn startup_gc_removes_expired_terminal_members_from_durable_snapshot()
+- remove_swarm_state_deletes_persisted_snapshot · function · L496-L514 — fn remove_swarm_state_deletes_persisted_snapshot()
+- load_migrates_legacy_runtime_dir_state · function · L517-L540 — fn load_migrates_legacy_runtime_dir_state()
+- migration_does_not_clobber_existing_durable_state · function · L543-L568 — fn migration_does_not_clobber_existing_durable_state()
+- state_dir_is_durable_not_runtime · function · L571-L579 — fn state_dir_is_durable_not_runtime()
+- snapshot_with_retired_dag_fields_still_loads · function · L582-L624 — fn snapshot_with_retired_dag_fields_still_loads()
+- stale_persist_cannot_regress_newer_plan_version · function · L647-L722 — async fn stale_persist_cannot_regress_newer_plan_version()
+- persistence_operations_serialize_per_swarm_but_not_globally · function · L725-L749 — async fn persistence_operations_serialize_per_swarm_but_not_globally()
+- load_runtime_state_reads_bak_files_as_snapshots · function · L763-L788 — fn load_runtime_state_reads_bak_files_as_snapshots()
+- load_runtime_state_ignores_bak_when_primary_json_exists · function · L796-L845 — fn load_runtime_state_ignores_bak_when_primary_json_exists()
+- persisted_swarm_state_without_plan_still_restores_coordinator_and_members · function · L848-L895 — fn persisted_swarm_state_without_plan_still_restores_coordinator_and_members()
+- remove_swarm_state_removes_backup_and_cannot_resurrect · function · L898-L921 — fn remove_swarm_state_removes_backup_and_cannot_resurrect()
+- empty_persist_dissolution_removes_backup_and_cannot_resurrect · function · L924-L947 — fn empty_persist_dissolution_removes_backup_and_cannot_resurrect()
+- stale_remove_cannot_delete_fresh_snapshot_or_restore_backup · function · L972-L1037 — async fn stale_remove_cannot_delete_fresh_snapshot_or_restore_backup()
+- member_listed_in_several_snapshots_loads_only_into_its_newest_swarm · function · L1040-L1105 — fn member_listed_in_several_snapshots_loads_only_into_its_newest_swarm()
+- concurrent_same_swarm_persists_keep_highest_plan_version · function · L1108-L1141 — async fn concurrent_same_swarm_persists_keep_highest_plan_version()
+- running_worker · function · L1143-L1167 — fn running_worker(session_id: &str) -> SwarmMember
+- reload_orphans_lost_worker_and_resumes_restorable_one · function · L1170-L1231 — fn reload_orphans_lost_worker_and_resumes_restorable_one()
+- restore_reconciles_durable_control_before_membership_or_runnable_work · function · L1234-L1305 — fn restore_reconciles_durable_control_before_membership_or_runnable_work()

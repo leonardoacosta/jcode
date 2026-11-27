@@ -1,0 +1,41 @@
+# crates/jcode-tui/src/tui/session_picker/filter.rs
+
+- SearchSelection · struct · L4-L15 — pub(super) struct SearchSelection
+- BUSY_CHROME_DELAY · constant · L19-L19 — const BUSY_CHROME_DELAY: std::time::Duration = std::time::Duration::from_millis(150);
+- update_query · function · L23-L38 — fn update_query(&mut self, query: &str, shown: impl FnOnce() -> Vec<String>)
+- following · function · L40-L43 — pub(super) fn following(&self) -> bool
+- stop · function · L45-L47 — pub(super) fn stop(&mut self)
+- holding · function · L50-L52 — pub(super) fn holding(&self) -> bool
+- wants_focus · function · L55-L57 — fn wants_focus(&self) -> bool
+- busy_visible · function · L60-L63 — pub(super) fn busy_visible(&self) -> bool
+- show_busy_for_test · function · L66-L68 — pub(super) fn show_busy_for_test(&mut self)
+- publish_results · function · L73-L86 — fn publish_results(&mut self, changed: bool, pending: bool) -> bool
+- publish_next_poll_for_test · function · L89-L91 — pub(super) fn publish_next_poll_for_test(&mut self)
+- expire_for_test · function · L94-L96 — pub(super) fn expire_for_test(&mut self)
+- rebuild_items_following · function · L102-L118 — pub(super) fn rebuild_items_following(&mut self)
+- normalized_search_query · function · L120-L122 — fn normalized_search_query(query: &str) -> String
+- all_session_refs · function · L124-L140 — fn all_session_refs(&self) -> Vec<SessionRef>
+- search_matched_session_refs · function · L142-L202 — fn search_matched_session_refs(&mut self, query: &str) -> Vec<SessionRef>
+- search_busy_visible · function · L205-L207 — pub(super) fn search_busy_visible(&self) -> bool
+- poll_transcript_search · function · L211-L234 — pub(super) fn poll_transcript_search(&mut self)
+- filtered_session_refs · function · L236-L296 — fn filtered_session_refs(
+- hidden_test_count_for_refs · function · L298-L313 — fn hidden_test_count_for_refs(
+- visible_session_ids · function · L315-L321 — fn visible_session_ids(&self) -> std::collections::HashSet<String>
+- session_is_claude_code · function · L323-L325 — pub(super) fn session_is_claude_code(session: &SessionInfo) -> bool
+- session_is_codex · function · L327-L329 — pub(super) fn session_is_codex(session: &SessionInfo) -> bool
+- session_is_pi · function · L331-L337 — pub(super) fn session_is_pi(session: &SessionInfo) -> bool
+- session_is_open_code · function · L339-L344 — pub(super) fn session_is_open_code(session: &SessionInfo) -> bool
+- session_is_cursor · function · L346-L348 — pub(super) fn session_is_cursor(session: &SessionInfo) -> bool
+- session_matches_filter_mode · function · L350-L375 — fn session_matches_filter_mode(
+- rebuild_items · function · L378-L391 — pub(super) fn rebuild_items(&mut self)
+- rebuild_items_inner · function · L393-L618 — fn rebuild_items_inner(&mut self)
+- find_item_index_for_session_id · function · L620-L631 — pub(super) fn find_item_index_for_session_id(&self, session_id: &str) -> Option<usize>
+- toggle_test_sessions · function · L634-L637 — pub(super) fn toggle_test_sessions(&mut self)
+- apply_resume_project_scope_default · function · L642-L646 — pub fn apply_resume_project_scope_default(&mut self)
+- prefer_current_dir_filter · function · L651-L663 — pub fn prefer_current_dir_filter(&mut self)
+- cycle_filter_mode · function · L665-L672 — pub(super) fn cycle_filter_mode(&mut self)
+- cycle_filter_mode_backwards · function · L674-L681 — pub(super) fn cycle_filter_mode_backwards(&mut self)
+- search_selection_tests · module · L685-L738 — mod search_selection_tests
+- progressive_batches_wait_for_publish_interval_but_completion_flushes · function · L689-L701 — fn progressive_batches_wait_for_publish_interval_but_completion_flushes()
+- changing_query_discards_unpublished_results · function · L704-L710 — fn changing_query_discards_unpublished_results()
+- follows_for_one_second_without_extending_on_rebuild · function · L713-L737 — fn follows_for_one_second_without_extending_on_rebuild()

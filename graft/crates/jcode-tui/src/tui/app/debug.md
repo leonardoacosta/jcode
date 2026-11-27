@@ -1,0 +1,43 @@
+# crates/jcode-tui/src/tui/app/debug.rs
+
+- percentile_ms · function · L4-L11 — fn percentile_ms(samples_ms: &[f64], percentile: f64) -> f64
+- summarize_mermaid_ui_bench · function · L13-L76 — fn summarize_mermaid_ui_bench(
+- DebugSnapshot · struct · L79-L84 — pub(super) struct DebugSnapshot
+- DebugMessage · struct · L87-L93 — pub(super) struct DebugMessage
+- DebugAssertion · struct · L96-L100 — pub(super) struct DebugAssertion
+- DebugAssertResult · struct · L103-L110 — pub(super) struct DebugAssertResult
+- DebugStepResult · struct · L113-L117 — pub(super) struct DebugStepResult
+- DebugScript · struct · L120-L124 — pub(super) struct DebugScript
+- DebugRunReport · struct · L127-L131 — pub(super) struct DebugRunReport
+- estimate_display_message_bytes · function · L133-L147 — fn estimate_display_message_bytes(message: &DisplayMessage) -> usize
+- estimate_string_vec_bytes · function · L149-L151 — fn estimate_string_vec_bytes(values: &[String]) -> usize
+- estimate_pair_vec_bytes · function · L153-L155 — fn estimate_pair_vec_bytes(values: &[(String, usize)]) -> usize
+- estimate_pending_images_bytes · function · L157-L162 — fn estimate_pending_images_bytes(values: &[(String, String)]) -> usize
+- ScrollTestConfig · struct · L165-L180 — pub(super) struct ScrollTestConfig
+- ScrollTestExpectations · struct · L183-L188 — pub(super) struct ScrollTestExpectations
+- ScrollSuiteConfig · struct · L191-L203 — pub(super) struct ScrollSuiteConfig
+- WidgetStabilityConfig · struct · L206-L212 — pub(super) struct WidgetStabilityConfig
+- SidePanelLatencyConfig · struct · L215-L223 — pub(super) struct SidePanelLatencyConfig
+- MermaidUiBenchConfig · struct · L226-L236 — pub(super) struct MermaidUiBenchConfig
+- SidePanelLatencySample · struct · L239-L250 — pub(super) struct SidePanelLatencySample
+- MermaidUiBenchSample · struct · L253-L268 — pub(super) struct MermaidUiBenchSample
+- MermaidUiBenchSummary · struct · L271-L283 — pub(super) struct MermaidUiBenchSummary
+- DebugEvent · struct · L286-L290 — pub(super) struct DebugEvent
+- DebugTrace · struct · L292-L296 — pub(super) struct DebugTrace
+- new · function · L299-L305 — pub(super) fn new() -> Self
+- record · function · L307-L317 — pub(super) fn record(&mut self, kind: &str, detail: String)
+- LARGE_DISPLAY_BLOB_THRESHOLD_BYTES · constant · L320-L320 — const LARGE_DISPLAY_BLOB_THRESHOLD_BYTES: usize = 16 * 1024;
+- ProviderMessageMemoryStats · struct · L323-L336 — struct ProviderMessageMemoryStats
+- record_bytes · function · L339-L345 — fn record_bytes(&mut self, bytes: usize)
+- record_message · function · L347-L412 — fn record_message(&mut self, message: &crate::message::Message)
+- payload_text_bytes · function · L414-L420 — fn payload_text_bytes(&self) -> usize
+- DisplayMessageMemoryStats · struct · L424-L433 — struct DisplayMessageMemoryStats
+- record_message · function · L436-L455 — fn record_message(&mut self, message: &DisplayMessage)
+- ScrollTestState · struct · L459-L493 — pub(super) struct ScrollTestState
+- capture · function · L496-L532 — fn capture(app: &App) -> Self
+- restore · function · L534-L568 — fn restore(self, app: &mut App)
+- debug_bench · module · L572-L572 — mod debug_bench;
+- debug_cmds · module · L574-L574 — mod debug_cmds;
+- debug_profile · module · L576-L576 — mod debug_profile;
+- debug_script · module · L578-L578 — mod debug_script;
+- handle_debug_command · function · L580-L805 — pub(super) fn handle_debug_command(app: &mut App, trimmed: &str) -> bool

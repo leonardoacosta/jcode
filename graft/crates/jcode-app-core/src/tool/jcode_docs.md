@@ -1,0 +1,28 @@
+# crates/jcode-app-core/src/tool/jcode_docs.rs
+
+- BundledDocs · type · L12-L12 — pub type BundledDocs = &'static [(&'static str, &'static str)];
+- DOCUMENTS · constant · L14-L14 — static DOCUMENTS: OnceLock<BundledDocs> = OnceLock::new();
+- register_bundled_docs · function · L21-L27 — pub fn register_bundled_docs(docs: BundledDocs)
+- bundled_docs · function · L30-L39 — pub fn bundled_docs() -> Result<BundledDocs>
+- DEFAULT_LIMIT · constant · L41-L41 — const DEFAULT_LIMIT: usize = 5;
+- MAX_LIMIT · constant · L42-L42 — const MAX_LIMIT: usize = 10;
+- MAX_SECTION_CHARS · constant · L43-L43 — const MAX_SECTION_CHARS: usize = 4_000;
+- JcodeDocsTool · struct · L45-L45 — pub struct JcodeDocsTool;
+- new · function · L48-L50 — pub fn new() -> Self
+- JcodeDocsInput · struct · L54-L63 — struct JcodeDocsInput
+- default_action · function · L65-L67 — fn default_action() -> String
+- Section · struct · L70-L74 — struct Section<'a>
+- name · function · L78-L80 — fn name(&self) -> &str
+- description · function · L82-L84 — fn description(&self) -> &str
+- parameters_schema · function · L86-L112 — fn parameters_schema(&self) -> Value
+- execute · function · L114-L141 — async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput>
+- list_docs · function · L144-L154 — fn list_docs(docs: BundledDocs) -> String
+- read_doc · function · L156-L166 — fn read_doc(docs: BundledDocs, path: &str) -> Result<String>
+- search · function · L168-L217 — fn search(docs: BundledDocs, query: &str, limit: Option<usize>) -> String
+- terms · function · L219-L231 — fn terms(query: &str) -> Vec<String>
+- sections · function · L233-L262 — fn sections(docs: BundledDocs) -> Vec<Section<'static>>
+- relevant_excerpt · function · L264-L286 — fn relevant_excerpt(body: &str, terms: &[String]) -> String
+- tests · module · L289-L316 — mod tests
+- corpus_includes_current_docs_but_not_plans · function · L293-L298 — fn corpus_includes_current_docs_but_not_plans()
+- search_finds_relevant_version_matched_documentation · function · L301-L309 — fn search_finds_relevant_version_matched_documentation()
+- exact_document_can_be_read · function · L312-L315 — fn exact_document_can_be_read()

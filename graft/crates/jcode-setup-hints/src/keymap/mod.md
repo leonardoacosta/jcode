@@ -1,0 +1,23 @@
+# crates/jcode-setup-hints/src/keymap/mod.rs
+
+- chord · module · L13-L13 — pub mod chord;
+- conflicts · module · L14-L14 — pub mod conflicts;
+- external · module · L15-L15 — pub mod external;
+- macos_hotkeys · module · L16-L16 — pub mod macos_hotkeys;
+- report · module · L17-L17 — pub mod report;
+- source · module · L18-L18 — pub mod source;
+- terminal · module · L19-L19 — pub mod terminal;
+- SNAPSHOT_VERSION · constant · L29-L29 — const SNAPSHOT_VERSION: u32 = 1;
+- KeymapSnapshot · struct · L33-L45 — pub struct KeymapSnapshot
+- from_source · function · L49-L51 — pub fn from_source(&self, source: KeySource) -> impl Iterator<Item = &DiscoveredBinding>
+- detect_terminal_label · function · L57-L82 — fn detect_terminal_label() -> String
+- now_timestamp · function · L84-L92 — fn now_timestamp() -> String
+- collect_snapshot · function · L97-L111 — pub fn collect_snapshot() -> KeymapSnapshot
+- snapshot_path · function · L114-L116 — pub fn snapshot_path() -> anyhow::Result<std::path::PathBuf>
+- refresh_and_save · function · L120-L131 — pub fn refresh_and_save() -> KeymapSnapshot
+- load_snapshot · function · L134-L137 — pub fn load_snapshot() -> Option<KeymapSnapshot>
+- SNAPSHOT_MAX_AGE_SECS · constant · L141-L141 — const SNAPSHOT_MAX_AGE_SECS: u64 = 24 * 60 * 60;
+- snapshot_cached_or_refresh · function · L147-L155 — pub fn snapshot_cached_or_refresh() -> KeymapSnapshot
+- snapshot_is_stale · function · L157-L167 — fn snapshot_is_stale(snapshot: &KeymapSnapshot) -> bool
+- tests · module · L170-L199 — mod tests
+- snapshot_roundtrips_through_json · function · L174-L198 — fn snapshot_roundtrips_through_json()

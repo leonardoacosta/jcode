@@ -1,0 +1,25 @@
+# crates/jcode-setup-hints/src/launch_hotkeys.rs
+
+- escape_shell_single_quotes · function · L29-L31 — fn escape_shell_single_quotes(input: &str) -> String
+- paused_jcode_shell_command_with_args · function · L37-L50 — fn paused_jcode_shell_command_with_args(exe_path: &str, args: &[String]) -> String
+- PlanEntry · struct · L57-L60 — pub(crate) struct PlanEntry
+- ResolvedLaunchHotkey · struct · L65-L80 — pub(crate) struct ResolvedLaunchHotkey
+- cd_from_dir_file · function · L84-L89 — fn cd_from_dir_file(dir_file: &str) -> String
+- cd_to_fixed_dir · function · L94-L97 — fn cd_to_fixed_dir(dir: &str) -> String
+- cd_prefix_for_dir · function · L100-L107 — fn cd_prefix_for_dir(dir: &str, last_dir_file: &str, last_repo_file: &str) -> String
+- script_name_for · function · L112-L134 — fn script_name_for(chord: &str, index: usize) -> String
+- default_launch_entries · function · L138-L159 — pub(crate) fn default_launch_entries() -> Vec<LaunchHotkeyEntry>
+- resolve_launch_hotkeys · function · L165-L210 — pub(crate) fn resolve_launch_hotkeys(
+- resolve_target_dir · function · L215-L230 — pub(crate) fn resolve_target_dir(dir: &str, last_dir_file: &str, last_repo_file: &str) -> PathBuf
+- read_existing_dir · function · L232-L236 — fn read_existing_dir(file: &str) -> Option<PathBuf>
+- shell_command_for · function · L241-L247 — pub(crate) fn shell_command_for(entry: &ResolvedLaunchHotkey, exe_path: &str) -> String
+- key_token_to_code · function · L252-L304 — pub(crate) fn key_token_to_code(key: &str) -> Option<global_hotkey::hotkey::Code>
+- chord_to_global_hotkey · function · L309-L326 — pub(crate) fn chord_to_global_hotkey(chord: &KeyChord) -> Option<global_hotkey::hotkey::HotKey>
+- tests · module · L329-L488 — mod tests
+- cfg · function · L332-L338 — fn cfg(entries: Vec<LaunchHotkeyEntry>) -> LaunchHotkeysConfig
+- empty_config_reproduces_three_builtins · function · L341-L357 — fn empty_config_reproduces_three_builtins()
+- fixed_dir_entry_cds_to_path_with_home_fallback · function · L360-L377 — fn fixed_dir_entry_cds_to_path_with_home_fallback()
+- duplicate_chords_keep_first · function · L380-L402 — fn duplicate_chords_keep_first()
+- invalid_chord_is_skipped · function · L405-L427 — fn invalid_chord_is_skipped()
+- script_names_are_unique_and_safe · function · L430-L469 — fn script_names_are_unique_and_safe()
+- shell_command_includes_cd_and_exe · function · L472-L487 — fn shell_command_includes_cd_and_exe()

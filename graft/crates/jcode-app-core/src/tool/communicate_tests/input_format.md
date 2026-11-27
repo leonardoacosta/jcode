@@ -1,0 +1,16 @@
+# crates/jcode-app-core/src/tool/communicate_tests/input_format.rs
+
+- spawn_initial_message_accepts_prompt_alias_and_prefers_explicit_initial_message · function · L2-L44 — fn spawn_initial_message_accepts_prompt_alias_and_prefers_explicit_initial_message()
+- communicate_input_accepts_delivery_and_share_append · function · L47-L67 — fn communicate_input_accepts_delivery_and_share_append()
+- communicate_input_accepts_spawn_if_needed · function · L70-L77 — fn communicate_input_accepts_spawn_if_needed()
+- communicate_input_accepts_prefer_spawn · function · L80-L87 — fn communicate_input_accepts_prefer_spawn()
+- communicate_input_accepts_cleanup_lifecycle_flags · function · L90-L97 — fn communicate_input_accepts_cleanup_lifecycle_flags()
+- cleanup_candidates_default_to_owned_terminal_workers · function · L100-L168 — fn cleanup_candidates_default_to_owned_terminal_workers()
+- format_tool_summary_includes_call_count · function · L171-L195 — fn format_tool_summary_includes_call_count()
+- format_members_includes_status_and_detail · function · L198-L235 — fn format_members_includes_status_and_detail()
+- format_members_renders_activity_progress_churn_and_turns · function · L238-L295 — fn format_members_renders_activity_progress_churn_and_turns()
+- format_members_flags_watchdog_stalled_worker · function · L298-L319 — fn format_members_flags_watchdog_stalled_worker()
+- format_members_labels_idle_ready_agent · function · L322-L347 — fn format_members_labels_idle_ready_agent()
+- format_members_disambiguates_duplicate_friendly_names · function · L350-L391 — fn format_members_disambiguates_duplicate_friendly_names()
+- format_awaited_members_disambiguates_duplicate_friendly_names · function · L394-L420 — fn format_awaited_members_disambiguates_duplicate_friendly_names()
+- format_status_snapshot_includes_activity_and_metadata · function · L423-L466 — fn format_status_snapshot_includes_activity_and_metadata()

@@ -1,0 +1,55 @@
+# crates/jcode-app-core/src/server/client_lifecycle_tests.rs
+
+- plan_mode_human_token_resets_server_budget_once · function · L4-L35 — fn plan_mode_human_token_resets_server_budget_once()
+- daemon_continuation_socket_tests · module · L46-L46 — mod daemon_continuation_socket_tests;
+- turn_payload · function · L48-L53 — fn turn_payload(event: ServerEvent) -> ServerEvent
+- recv_turn_payload · function · L55-L62 — async fn recv_turn_payload(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> Option<ServerEvent>
+- IsolatedRuntimeDir · struct · L64-L67 — struct IsolatedRuntimeDir
+- IsolatedReloadRecoveryEnv · struct · L69-L74 — struct IsolatedReloadRecoveryEnv
+- control_requests · module · L77-L77 — mod control_requests;
+- new · function · L80-L89 — fn new() -> Self
+- new · function · L93-L107 — fn new() -> Self
+- drop · function · L111-L123 — fn drop(&mut self)
+- drop · function · L127-L134 — fn drop(&mut self)
+- idle_cancel_does_not_arm_the_signal_for_the_next_turn · function · L147-L210 — fn idle_cancel_does_not_arm_the_signal_for_the_next_turn() -> anyhow::Result<()>
+- PanicOnForkProvider · struct · L212-L214 — struct PanicOnForkProvider
+- NeverEndingStreamProvider · struct · L218-L218 — struct NeverEndingStreamProvider;
+- complete · function · L222-L233 — async fn complete(
+- name · function · L235-L237 — fn name(&self) -> &str
+- fork · function · L239-L241 — fn fork(&self) -> Arc<dyn Provider>
+- CompleteImmediatelyProvider · struct · L245-L245 — struct CompleteImmediatelyProvider;
+- complete · function · L249-L259 — async fn complete(
+- name · function · L261-L263 — fn name(&self) -> &str
+- fork · function · L265-L267 — fn fork(&self) -> Arc<dyn Provider>
+- FanoutStreamProvider · struct · L271-L271 — struct FanoutStreamProvider;
+- complete · function · L275-L298 — async fn complete(
+- name · function · L300-L302 — fn name(&self) -> &str
+- fork · function · L304-L306 — fn fork(&self) -> Arc<dyn Provider>
+- complete · function · L311-L319 — async fn complete(
+- name · function · L321-L323 — fn name(&self) -> &str
+- fork · function · L325-L328 — fn fork(&self) -> Arc<dyn Provider>
+- ping_request_is_lightweight_control_request · function · L332-L334 — fn ping_request_is_lightweight_control_request()
+- subscribe_request · function · L336-L356 — fn subscribe_request(working_dir: Option<&str>) -> Request
+- initial_subscribe_requires_an_absolute_client_working_dir · function · L359-L376 — fn initial_subscribe_requires_an_absolute_client_working_dir()
+- remote_subscribe_requires_an_existing_server_directory · function · L379-L409 — fn remote_subscribe_requires_an_existing_server_directory() -> anyhow::Result<()>
+- new_client_agent_stamps_client_cwd_into_initial_context · function · L412-L425 — async fn new_client_agent_stamps_client_cwd_into_initial_context()
+- server_reload_starting_is_true_only_for_recent_starting_marker · function · L428-L449 — fn server_reload_starting_is_true_only_for_recent_starting_marker()
+- reload_starting_rejects_new_turn_without_spawning_processing_task · function · L452-L539 — fn reload_starting_rejects_new_turn_without_spawning_processing_task()
+- client_initiated_turn_fans_out_stream_and_terminal_events_to_live_attachments · function · L542-L674 — async fn client_initiated_turn_fans_out_stream_and_terminal_events_to_live_attachments()
+- turn_publication_reserves_runtime_until_aborted_or_finished_queue_drains · function · L677-L773 — async fn turn_publication_reserves_runtime_until_aborted_or_finished_queue_drains()
+- terminal_done_then_immediate_message_reconciles_finished_turn · function · L776-L969 — async fn terminal_done_then_immediate_message_reconciles_finished_turn()
+- terminal_reconciliation_waits_for_terminal_enqueue_for_done_and_error · function · L972-L1081 — async fn terminal_reconciliation_waits_for_terminal_enqueue_for_done_and_error()
+- accepted_reload_recovery_continuation_marks_intent_delivered · function · L1084-L1302 — fn accepted_reload_recovery_continuation_marks_intent_delivered() -> anyhow::Result<()>
+- reload_starting_rejects_new_turns_for_multiple_sessions · function · L1305-L1415 — fn reload_starting_rejects_new_turns_for_multiple_sessions()
+- lightweight_comm_request_skips_full_session_initialization · function · L1418-L1540 — async fn lightweight_comm_request_skips_full_session_initialization()
+- decode_request_or_event · function · L1542-L1544 — fn decode_request_or_event(line: &str) -> ServerEvent
+- soft_interrupt_dispatch_starts_idle_session_and_queues_busy_session · function · L1547-L1552 — fn soft_interrupt_dispatch_starts_idle_session_and_queues_busy_session()
+- socket_workflows · module · L1555-L1555 — mod socket_workflows;
+- system_prompt · module · L1558-L1558 — mod system_prompt;
+- SteadyDeltaProvider · struct · L1562-L1562 — struct SteadyDeltaProvider;
+- STEADY_DELTAS · constant · L1564-L1564 — const STEADY_DELTAS: usize = 30;
+- complete · function · L1568-L1590 — async fn complete(
+- name · function · L1592-L1594 — fn name(&self) -> &str
+- fork · function · L1596-L1598 — fn fork(&self) -> Arc<dyn Provider>
+- streamed_text_is_coalesced_only_when_every_client_is_unfocused · function · L1605-L1659 — async fn streamed_text_is_coalesced_only_when_every_client_is_unfocused()
+- additional_identity_transport_negotiation_preserves_legacy_payload_shape · module · L1662-L1662 — mod additional_identity_transport_negotiation_preserves_legacy_payload_shape;

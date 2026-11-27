@@ -1,0 +1,35 @@
+# crates/jcode-app-core/src/overnight/usage.rs
+
+- LEDGER_FILE · constant · L18-L18 — const LEDGER_FILE: &str = "usage.jsonl";
+- RECONCILED_FILE · constant · L19-L19 — const RECONCILED_FILE: &str = "usage-reconciled.json";
+- END_LIMIT_FETCH_TIMEOUT · constant · L20-L20 — const END_LIMIT_FETCH_TIMEOUT: Duration = Duration::from_secs(20);
+- MAX_OWNER_HOPS · constant · L21-L21 — const MAX_OWNER_HOPS: usize = 16;
+- ActiveRun · struct · L24-L27 — struct ActiveRun
+- ACTIVE · constant · L30-L30 — static ACTIVE: LazyLock<Mutex<HashMap<String, ActiveRun>>> = LazyLock::new(Default::default);
+- ACCOUNTS · constant · L32-L32 — static ACCOUNTS: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Default::default);
+- lock · function · L34-L36 — fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T>
+- ActiveRunGuard · struct · L38-L38 — pub(super) struct ActiveRunGuard(String);
+- drop · function · L41-L47 — fn drop(&mut self)
+- register_run · function · L50-L59 — pub(super) fn register_run(manifest: &OvernightManifest) -> ActiveRunGuard
+- note_session_account · function · L62-L71 — pub(crate) fn note_session_account(session_id: &str, label: Option<&str>)
+- owning_run · function · L73-L93 — fn owning_run(session_id: &str) -> Option<ActiveRun>
+- observe_stream_usage · function · L99-L129 — pub(crate) fn observe_stream_usage(
+- append_observation · function · L131-L142 — fn append_observation(run_dir: &Path, observation: &UsageObservation) -> Result<()>
+- read_ledger · function · L145-L156 — fn read_ledger(run_dir: &Path) -> (Vec<UsageObservation>, usize)
+- reconciled_path · function · L158-L160 — pub fn reconciled_path(manifest: &OvernightManifest) -> PathBuf
+- read_usage_reconciled · function · L162-L164 — pub fn read_usage_reconciled(manifest: &OvernightManifest) -> Option<UsageReconciled>
+- session_state · function · L166-L175 — fn session_state(record: &ControlRecord) -> RunSessionState
+- reconcile_run · function · L178-L247 — pub(super) fn reconcile_run(
+- finalize · function · L250-L266 — pub(super) async fn finalize(manifest: &OvernightManifest)
+- tests · module · L269-L585 — mod tests
+- Env · struct · L273-L277 — struct Env
+- new · function · L280-L290 — fn new() -> Self
+- drop · function · L294-L301 — fn drop(&mut self)
+- manifest · function · L304-L310 — fn manifest(temp: &Path) -> OvernightManifest
+- worker_and_resumed_generations_attribute_to_run_and_replays_dedupe · function · L313-L412 — async fn worker_and_resumed_generations_attribute_to_run_and_replays_dedupe()
+- cancelled_worker_stays_attributable_and_never_reads_as_zero · function · L415-L452 — async fn cancelled_worker_stays_attributable_and_never_reads_as_zero()
+- no_usage_is_estimated_not_zero_and_report_renders_it · function · L455-L469 — async fn no_usage_is_estimated_not_zero_and_report_renders_it()
+- accounting_does_not_change_dispatch_admission · function · L472-L493 — fn accounting_does_not_change_dispatch_admission()
+- corrupt_control_record_and_garbage_ledger_line_fail_closed · function · L496-L543 — async fn corrupt_control_record_and_garbage_ledger_line_fail_closed()
+- missing_coordinator_record_is_unsettled_lower_bound · function · L546-L558 — async fn missing_coordinator_record_is_unsettled_lower_bound()
+- reported_provider_renders_tokens_and_reported_badge_end_to_end · function · L561-L584 — async fn reported_provider_renders_tokens_and_reported_badge_end_to_end()

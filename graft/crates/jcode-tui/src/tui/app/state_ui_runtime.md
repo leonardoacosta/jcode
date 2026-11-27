@@ -1,0 +1,37 @@
+# crates/jcode-tui/src/tui/app/state_ui_runtime.rs
+
+- current_skills_snapshot · function · L5-L27 — pub(super) fn current_skills_snapshot(&self) -> std::sync::Arc<crate::skill::SkillRegistry>
+- refresh_skills_snapshot · function · L37-L54 — pub(super) fn refresh_skills_snapshot(&mut self)
+- cursor_pos · function · L56-L58 — pub fn cursor_pos(&self) -> usize
+- scroll_offset · function · L60-L62 — pub fn scroll_offset(&self) -> usize
+- is_processing · function · L64-L66 — pub fn is_processing(&self) -> bool
+- sync_sleep_guard · function · L71-L75 — pub(super) fn sync_sleep_guard(&mut self)
+- streaming_text · function · L77-L79 — pub fn streaming_text(&self) -> &str
+- active_skill · function · L81-L83 — pub fn active_skill(&self) -> Option<&str>
+- available_skills · function · L85-L88 — pub fn available_skills(&self) -> Vec<String>
+- queued_count · function · L90-L92 — pub fn queued_count(&self) -> usize
+- queued_messages · function · L94-L96 — pub fn queued_messages(&self) -> &[String]
+- streaming_tokens · function · L98-L103 — pub fn streaming_tokens(&self) -> (u64, u64)
+- build_turn_footer · function · L105-L137 — pub(super) fn build_turn_footer(&self, duration: Option<f32>) -> Option<String>
+- has_streaming_footer_stats · function · L139-L148 — pub(super) fn has_streaming_footer_stats(&self) -> bool
+- push_turn_footer · function · L150-L183 — pub(super) fn push_turn_footer(&mut self, duration: Option<f32>)
+- log_cache_miss_if_unexpected · function · L186-L258 — pub(super) fn log_cache_miss_if_unexpected(&self)
+- check_context_warning · function · L261-L284 — pub(super) fn check_context_warning(&mut self, input_tokens: u64)
+- context_usage_percent · function · L287-L291 — pub fn context_usage_percent(&self) -> f64
+- time_since_activity · function · L294-L302 — pub fn time_since_activity(&self) -> Option<Duration>
+- split_launch_in_flight · function · L304-L310 — pub(super) fn split_launch_in_flight(&self) -> bool
+- streaming_tool_calls · function · L312-L314 — pub fn streaming_tool_calls(&self) -> &[ToolCall]
+- status · function · L316-L318 — pub fn status(&self) -> &ProcessingStatus
+- subagent_status · function · L320-L322 — pub fn subagent_status(&self) -> Option<&str>
+- elapsed · function · L324-L340 — pub fn elapsed(&self) -> Option<Duration>
+- display_turn_duration_secs · function · L342-L346 — pub(super) fn display_turn_duration_secs(&self) -> Option<f32>
+- clear_visible_turn_started · function · L348-L351 — pub(super) fn clear_visible_turn_started(&mut self)
+- provider_name · function · L353-L355 — pub fn provider_name(&self) -> &str
+- provider_model · function · L357-L359 — pub fn provider_model(&self) -> String
+- upstream_provider · function · L362-L364 — pub fn upstream_provider(&self) -> Option<&str>
+- mcp_servers · function · L366-L368 — pub fn mcp_servers(&self) -> Vec<(String, usize)>
+- prompt_row_starts · function · L376-L380 — fn prompt_row_starts(&self) -> Vec<usize>
+- scroll_to_prev_prompt · function · L383-L426 — pub fn scroll_to_prev_prompt(&mut self)
+- scroll_to_next_prompt · function · L429-L449 — pub fn scroll_to_next_prompt(&mut self)
+- scroll_to_recent_prompt_rank · function · L454-L478 — pub(super) fn scroll_to_recent_prompt_rank(&mut self, rank: usize)
+- toggle_input_stash · function · L480-L496 — pub(super) fn toggle_input_stash(&mut self)

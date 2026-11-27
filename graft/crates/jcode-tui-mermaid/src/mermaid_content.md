@@ -1,0 +1,43 @@
+# crates/jcode-tui-mermaid/src/mermaid_content.rs
+
+- estimate_image_height · function · L4-L24 — pub fn estimate_image_height(width: u32, height: u32, max_width: u16) -> u16
+- MermaidContent · enum · L28-L33 — pub enum MermaidContent
+- result_to_content · function · L36-L60 — pub fn result_to_content(result: RenderResult, max_width: Option<usize>) -> MermaidContent
+- INLINE_FIT_MIN_ROWS · constant · L63-L63 — pub const INLINE_FIT_MIN_ROWS: u16 = 3;
+- INLINE_DIAGRAM_MAX_ROWS · constant · L69-L69 — pub const INLINE_DIAGRAM_MAX_ROWS: u16 = 200;
+- TERMINAL_IMAGE_FALLBACK_NOTE · constant · L74-L75 — pub const TERMINAL_IMAGE_FALLBACK_NOTE: &str =
+- text_image_fallback_note_line · function · L77-L85 — pub fn text_image_fallback_note_line() -> Line<'static>
+- INLINE_ASPECT_CHROME_ROWS · constant · L90-L90 — const INLINE_ASPECT_CHROME_ROWS: u16 = 4;
+- INLINE_ASPECT_QUANT_STEP · constant · L96-L96 — const INLINE_ASPECT_QUANT_STEP: f32 = 0.25;
+- INLINE_ASPECT_MIN · constant · L102-L102 — const INLINE_ASPECT_MIN: f32 = 4.0 / 3.0;
+- INLINE_ASPECT_MAX · constant · L106-L106 — const INLINE_ASPECT_MAX: f32 = 6.0;
+- inline_transcript_aspect_goal_with_font · function · L116-L135 — pub fn inline_transcript_aspect_goal_with_font(
+- inline_transcript_aspect_goal · function · L140-L142 — pub fn inline_transcript_aspect_goal(chat_width: u16, chat_height: u16) -> Option<f32>
+- transcript_preferred_aspect_ratio_with_font · function · L147-L155 — pub fn transcript_preferred_aspect_ratio_with_font(
+- transcript_preferred_aspect_ratio · function · L159-L170 — pub fn transcript_preferred_aspect_ratio(
+- inline_fit_geometry · function · L177-L179 — pub fn inline_fit_geometry(width: u32, height: u32, chat_width: u16, cap_rows: u16) -> (u16, u16)
+- inline_fit_geometry_upscaled · function · L185-L192 — pub fn inline_fit_geometry_upscaled(
+- inline_fit_geometry_impl · function · L194-L244 — fn inline_fit_geometry_impl(
+- result_to_lines · function · L250-L258 — pub fn result_to_lines(result: RenderResult, max_width: Option<usize>) -> Vec<Line<'static>>
+- result_to_lines_with_capabilities · function · L260-L298 — fn result_to_lines_with_capabilities(
+- MERMAID_MARKER_PREFIX · constant · L301-L301 — const MERMAID_MARKER_PREFIX: &str = "\x00MERMAID_IMAGE:";
+- MERMAID_MARKER_SUFFIX · constant · L302-L302 — const MERMAID_MARKER_SUFFIX: &str = "\x00";
+- image_widget_placeholder · function · L306-L328 — pub(super) fn image_widget_placeholder(hash: u64, height: u16) -> Vec<Line<'static>>
+- image_widget_placeholder_markdown · function · L332-L337 — pub fn image_widget_placeholder_markdown(hash: u64) -> String
+- first_content_span · function · L342-L347 — fn first_content_span<'a>(line: &'a Line<'_>) -> Option<&'a str>
+- parse_image_placeholder · function · L350-L362 — pub fn parse_image_placeholder(line: &Line<'_>) -> Option<u64>
+- INLINE_IMAGE_MARKER_PREFIX · constant · L369-L369 — const INLINE_IMAGE_MARKER_PREFIX: &str = "\x00IIMG:";
+- inline_image_placeholder_lines · function · L375-L389 — pub fn inline_image_placeholder_lines(hash: u64, rows: u16, cols: u16) -> Vec<Line<'static>>
+- parse_inline_image_placeholder · function · L393-L405 — pub fn parse_inline_image_placeholder(line: &Line<'_>) -> Option<(u64, u16, u16)>
+- write_video_export_marker · function · L409-L430 — pub fn write_video_export_marker(hash: u64, area: Rect, buf: &mut Buffer)
+- image_placeholder_lines · function · L433-L448 — fn image_placeholder_lines(width: u32, height: u32) -> Vec<Line<'static>>
+- diagram_placeholder_lines · function · L451-L453 — pub fn diagram_placeholder_lines(width: u32, height: u32) -> Vec<Line<'static>>
+- error_to_lines · function · L456-L484 — pub fn error_to_lines(error: &str) -> Vec<Line<'static>>
+- terminal_theme · function · L488-L583 — pub fn terminal_theme() -> Theme
+- fallback_note_tests · module · L586-L668 — mod fallback_note_tests
+- inline_image_placeholder_zero_rows_preserves_collapsed_anchor · function · L590-L597 — fn inline_image_placeholder_zero_rows_preserves_collapsed_anchor()
+- fallback_note_explains_why_the_image_is_text · function · L600-L608 — fn fallback_note_explains_why_the_image_is_text()
+- image_result · function · L610-L617 — fn image_result() -> RenderResult
+- clicked_mermaid_expand_level_changes_placeholder_height · function · L620-L641 — fn clicked_mermaid_expand_level_changes_placeholder_height()
+- halfblock_result_attaches_note_after_image_placeholder · function · L644-L655 — fn halfblock_result_attaches_note_after_image_placeholder()
+- native_protocol_result_starts_with_image_placeholder_without_note · function · L658-L667 — fn native_protocol_result_starts_with_image_placeholder_without_note()
