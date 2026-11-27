@@ -1,0 +1,340 @@
+[cloud]
+local_access_seconds = 86400
+
+[session]
+hibernation_idle_secs = 1800
+hibernation_mode = "caches"
+
+[server]
+wake_mode = "internal"
+
+[keybindings]
+scroll_up = "ctrl+shift+k"
+scroll_down = "ctrl+shift+j"
+scroll_page_up = "alt+u"
+scroll_page_down = "alt+d"
+model_switch_next = "ctrl+tab"
+model_switch_prev = "ctrl+shift+tab"
+fallback_switch = "ctrl+y"
+effort_increase = "cmd+right"
+effort_decrease = "cmd+left"
+speed_increase = "alt+up"
+speed_decrease = "alt+down"
+centered_toggle = "alt+c"
+scroll_prompt_up = "ctrl+["
+scroll_prompt_down = "ctrl+]"
+scroll_bookmark = "ctrl+g"
+auto_poke_toggle = "ctrl+p"
+scroll_up_fallback = ""
+scroll_down_fallback = ""
+workspace_left = "alt+h"
+workspace_down = "alt+j"
+workspace_up = "alt+k"
+workspace_right = "alt+l"
+side_panel_toggle = "alt+m"
+copy_selection_toggle = "alt+y"
+diagram_pane_toggle = "alt+t"
+diagram_pane_visibility_toggle = "alt+shift+m"
+typing_scroll_lock_toggle = "alt+s"
+diff_mode_cycle = "alt+g"
+commit_log = "alt+g"
+info_widget_toggle = "alt+i"
+todo_card_toggle = "alt+x"
+swarm_panel_focus = "cmd+n"
+new_terminal = "alt+shift+;"
+open_resume = "alt+r"
+voice_input = "ctrl+space"
+session_picker_enter = "current-terminal"
+
+[dictation]
+command = ""
+mode = "send"
+key = "off"
+timeout_secs = 90
+vocabulary = []
+recorder = ""
+global_devices = []
+composer_preview = true
+
+[jarvis]
+show_raw_requests = false
+show_exact_request_payload = false
+
+[jarvis.speech]
+model = "piper-jarvis"
+voice = "jarvis"
+
+[jarvis.listening]
+max_audio_seconds_per_hour = 600
+max_classifications_per_hour = 120
+max_agent_turns_per_hour = 0
+action_probability = 0.5
+trigger_sound = "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"
+warm_nari = false
+
+[display]
+diff_mode = "inline"
+queue_mode = false
+auto_server_reload = true
+mouse_capture = true
+debug_socket = false
+emoji = true
+centered = false
+show_thinking = true
+compact_thinking = true
+reasoning_display = "full"
+diagram_mode = "margin"
+markdown_spacing = "document"
+show_link_urls = true
+latex_rendering = "unicode"
+pin_images = true
+pin_todos = true
+idle_animation = false
+prompt_entry_animation = false
+disabled_animations = []
+performance = "full"
+animation_fps = 60
+redraw_fps = 60
+prompt_preview = true
+compact_notifications = true
+copy_badge_alt_label = "⌥"
+show_agentgrep_output = false
+show_bash_output = false
+tool_call_details = false
+keybinding_hints = true
+theme = ""
+active_sessions_manager = false
+external_sessions = false
+resume_project_scope = true
+resume_recent_close_seconds = 30
+resume_time = "message"
+resume_open_elsewhere = "off"
+usage_display = "left"
+
+[display.native_scrollbars]
+chat = true
+side_panel = true
+
+[display.colors]
+accent = "#dc4c4c"
+ai = "#b0a9de"
+asap = "#ffb814"
+border = "#b0a9de"
+dim = "#8a8a8a"
+error = "#dc4c4c"
+file_link = "#74e6fc"
+info = "#74e6fc"
+pending = "#dcd179"
+queued = "#dcd179"
+selection_bg = "#6a2f2f"
+success = "#0de756"
+system = "#dcafde"
+tool = "#dcafde"
+user = "#4897d4"
+warning = "#ffd77a"
+
+[features]
+check_updates = true
+memory = true
+swarm = true
+mermaid = true
+auto_poke = true
+todo_gate_digest = true
+todo_gate_diagnostics = true
+message_timestamps = true
+persist_memory_injections = false
+kv_cache_miss_notices = true
+update_channel = "stable"
+
+[websearch]
+engine = "duckduckgo"
+fallback_engines = ["bing"]
+bing_api_key_env = "JCODE_BING_API_KEY"
+bing_market = "en-US"
+kagi_api_key_env = "KAGI_API_KEY"
+searxng_url_env = "JCODE_SEARXNG_URL"
+prefer_native = false
+native_max_uses = 5
+native_allowed_domains = []
+native_blocked_domains = []
+native_anthropic_tool_version = "web_search_20250305"
+
+[tools]
+browser_handoff = true
+auto_background_timeout_ms = 3000
+profile = "full"
+enabled = []
+disabled = []
+disable_base_tools = false
+mcp_tools = "auto"
+mcp_tools_token_threshold = 8000
+codemode = false
+
+[acp]
+profile = "standard"
+tool_profile = "acp"
+
+[auth]
+trusted_external_sources = []
+
+[provider]
+default_model = "claude-sonnet-5.5"
+default_provider = "omni"
+openai_reasoning_effort = "low"
+anthropic_reasoning_effort = "low"
+anthropic_cache_ttl_1h = true
+openai_service_tier = "off"
+openai_native_compaction_mode = "auto"
+openai_native_compaction_threshold_tokens = 200000
+preserve_reasoning_context = true
+cross_provider_failover = "manual"
+exhausted_usage_immediate_failover = true
+anthropic_retry_recoverable_rate_limits = true
+same_provider_account_failover = true
+openai_auto_banked_reset = false
+anthropic_auto_fable_reset = false
+auto_reset_only_when_no_routes = true
+gemini_force_oauth = false
+stream_idle_timeout_secs = 180
+max_retries = 8
+retry_backoff_cap_secs = 30
+request_compression = "auto"
+
+[providers.omni]
+type = "open-ai-compatible"
+base_url = "https://omni.leonardoacosta.dev/v1"
+api = "responses"
+auth = "bearer"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+env_file = "omni.env"
+requires_api_key = true
+provider_routing = false
+model_catalog = true
+allow_provider_pinning = false
+supports_reasoning_effort = true
+disable_reasoning_heuristics = false
+
+[agents]
+swarm_model = "omni:claude-sonnet-5.5"
+swarm_model_selection = true
+swarm_model_allowlist = [
+    "omni:claude-sonnet-5.5",
+    "omni:claude-haiku-5.5",
+    "omni:gpt-6-luna",
+    "omni:DeepSeek-V4.1-Flash",
+    "omni:qwen3.5-35b",
+]
+swarm_effort = "high"
+swarm_root_effort = "medium"
+swarm_spawn_mode = "headless"
+memory_jev_provider = "auto"
+memory_jev_threshold = 0.800000011920929
+memory_model = "inherit"
+memory_sidecar_enabled = true
+memory_rerank_cadence = 3
+memory_rerank_votes = 2
+memory_rerank_min_agree = 2
+memory_embedding_backend = "local"
+swarm_max_concurrent_agents = 32
+swarm_stall_after_secs = 600
+swarm_stall_nudge = false
+
+[terminal]
+preferred = "tern"
+
+[hooks]
+pre_tool_transform_timeout_ms = 500
+turn_start = ""
+turn_end = "~/.local/bin/jws name-hook"
+session_start = ""
+session_end = ""
+post_tool_feedback_timeout_ms = 10000
+pre_tool_timeout_ms = 5000
+
+[ambient]
+enabled = true
+allow_api_keys = false
+min_interval_minutes = 5
+max_interval_minutes = 120
+pause_on_active_session = true
+proactive_work = true
+work_branch_prefix = "ambient/"
+visible = true
+
+[safety]
+ntfy_topic = "jcode"
+ntfy_server = "https://ntfy.leonardoacosta.dev"
+desktop_notifications = true
+email_enabled = false
+email_smtp_port = 587
+email_imap_port = 993
+email_reply_enabled = false
+telegram_enabled = false
+telegram_reply_enabled = true
+discord_enabled = false
+discord_reply_enabled = false
+jade_relay_enabled = false
+jade_relay_reply_enabled = false
+jade_relay_launch_enabled = false
+
+[notifications]
+turn_complete = true
+turn_complete_min_secs = 120
+turn_complete_todo_min_secs = 30
+turn_complete_only_when_unfocused = true
+turn_complete_sound = "Glass"
+
+[gateway]
+enabled = true
+port = 7643
+bind_addr = "100.73.182.4"
+
+[compaction]
+mode = "semantic"
+reactive_threshold = 0.800000011920929
+reactive_threshold_tokens = 400000
+lookahead_turns = 15
+ewma_alpha = 0.30000001192092896
+proactive_floor = 0.4000000059604645
+proactive_floor_tokens = 150000
+min_samples = 3
+stall_window = 5
+min_turns_between_compactions = 10
+topic_shift_threshold = 0.44999998807907104
+relevance_keep_threshold = 0.6499999761581421
+goal_window_turns = 5
+max_context_tokens = 0
+
+[power]
+prevent_sleep_while_streaming = true
+block_lid_close = true
+
+[companion]
+autostart = true
+voice = true
+voice_waveform = true
+voice_notifications = true
+jarvis_fn_key = false
+jarvis_key = "fn"
+jarvis_fn_launch = true
+jarvis_fn_launch_args = []
+open = true
+spawn_terminal = true
+lid = true
+browser_updates = true
+
+[menubar]
+enabled = true
+
+[autoreview]
+enabled = true
+model = "omni:review-gpt-6.2-sol"
+
+[autojudge]
+enabled = true
+model = "omni:claude-haiku-5.5"
+
+[launch_hotkeys]
+enabled = true
+entries = []
+imported = true

@@ -1,0 +1,294 @@
+{
+  "mcpServers": {
+    "AgentMail": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "AGENTMAIL_API_KEY=$(op read 'op://JCode CLI/AGENTMAIL_API_KEY/credential') || exit; export AGENTMAIL_API_KEY; exec npx -y agentmail-mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Azure": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://346-c9220xh7gg.tail296462.ts.net:8444/"
+      ],
+      "timeout_secs": 120
+    },
+    "AzureDevops": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://346-c9220xh7gg.tail296462.ts.net:8790/azure-devops/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Beeper": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "BEEPER_API_KEY=$(op read 'op://JCode CLI/BEEPER_API_KEY/credential') || exit; export BEEPER_API_KEY; exec npx -y mcp-remote https://macbook.tail296462.ts.net:23373/v0/mcp --header 'Authorization: Bearer ${BEEPER_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "BrowserUse": {
+      "command": "mcp-remote-homelab",
+      "args": [
+        "BROWSER_USE_API_KEY",
+        "X-Browser-Use-API-Key",
+        "",
+        "https://api.browser-use.com/v3/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.context7.com/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Discord": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://homelab.tail296462.ts.net:8790/discord/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Firecrawl": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "FIRECRAWL_API_KEY=$(op read 'op://JCode CLI/FIRECRAWL_API_KEY/credential') || exit; export FIRECRAWL_API_KEY; exec npx -y mcp-remote https://mcp.firecrawl.dev/v2/mcp --header 'Authorization: Bearer ${FIRECRAWL_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "GitHub": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "GITHUB_PERSONAL_ACCESS_TOKEN=$(op read 'op://JCode CLI/GITHUB_PERSONAL_ACCESS_TOKEN/credential') || exit; export GITHUB_PERSONAL_ACCESS_TOKEN; exec npx -y mcp-remote https://api.githubcopilot.com/mcp/ --header 'Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}'"
+      ],
+      "timeout_secs": 120
+    },
+    "GitKraken": {
+      "command": "gk",
+      "args": [
+        "mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Gmail": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://homelab.tail296462.ts.net:8790/gmail/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "GrafanaBrown": {
+      "command": "mcp-remote-homelab",
+      "args": [
+        "MCP_GRAFANA_SERVER_TOKEN",
+        "Authorization",
+        "Bearer",
+        "https://grafana.mcp.leonardoacosta.dev/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Graft": {
+      "command": "graft",
+      "args": [
+        "mcp"
+      ],
+      "shared": true
+    },
+    "Hindsight": {
+      "command": "mcp-remote-homelab",
+      "args": [
+        "HINDSIGHT_MCP_TOKEN",
+        "Authorization",
+        "Bearer",
+        "https://hindsight.leonardoacosta.dev:18443/mcp/leonardo/"
+      ],
+      "timeout_secs": 120
+    },
+    "Hyprland": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "exec npx -y mcp-remote https://hyperland.mcp.leonardoacosta.dev/mcp --header \"Authorization: Bearer $(cat \"$HOME/.local/share/hyprland-mcp/token\")\""
+      ],
+      "timeout_secs": 120
+    },
+    "Inspo": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://inspomcp.dev/api/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Jev": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://homelab.tail296462.ts.net:8790/jev/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Linear": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "CI=$(op read 'op://JCode CLI/5egvqb55p23yyupmsmsyrwewhm/credential') && CS=$(op read 'op://JCode CLI/ultnql4ui4ro2cqjlutm5xl5t4/credential') && LINEAR_API_KEY=$(curl -sf -X POST https://api.linear.app/oauth/token -d grant_type=client_credentials -d client_id=$CI -d client_secret=$CS -d 'scope=read,write,issues:create,comments:create' | python3 -c 'import sys,json;print(json.load(sys.stdin)[\"access_token\"])') || exit; export LINEAR_API_KEY; exec npx -y mcp-remote https://mcp.linear.app/mcp --header 'Authorization: Bearer ${LINEAR_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "LinearPriceless": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "CI=$(op read 'op://JCode CLI/nsgwon4exeur4mvltz3vpt5zqm/token') && CS=$(op read 'op://JCode CLI/6cbawdbzgxpiusaqlwka7pckuq/token') && LINEAR_PRICELESS_API_KEY=$(curl -sf -X POST https://api.linear.app/oauth/token -d grant_type=client_credentials -d client_id=$CI -d client_secret=$CS -d 'scope=read,write,issues:create,comments:create' | python3 -c 'import sys,json;print(json.load(sys.stdin)[\"access_token\"])') || exit; export LINEAR_PRICELESS_API_KEY; exec npx -y mcp-remote https://mcp.linear.app/mcp --header 'Authorization: Bearer ${LINEAR_PRICELESS_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "Mermaid": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "MERMAID_API_KEY=$(op read 'op://JCode CLI/MERMAID_API_KEY/credential') || exit; export MERMAID_API_KEY; exec npx -y mcp-remote https://mcp.mermaid.ai/mcp --header 'Authorization: Bearer ${MERMAID_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "Neon": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "NEON_API_KEY=$(op read 'op://JCode CLI/qncj42sfstu6wgbrwxoawb7xoi/token') || exit; export NEON_API_KEY; exec npx -y mcp-remote https://mcp.neon.tech/mcp --header 'Authorization: Bearer ${NEON_API_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "Notion": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "NOTION_TOKEN=$(op read 'op://JCode CLI/hor4bhydd7jkbtwihjoiqolyci/token') || exit; export NOTION_TOKEN; exec npx -y @notionhq/notion-mcp-server"
+      ],
+      "timeout_secs": 120
+    },
+    "OmniRoute": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "OMNIROUTE_MCP_KEY=$(op read 'op://JCode CLI/v5qlxvspzvlwqmfbesr3ixszwa/credential') || exit; export OMNIROUTE_MCP_KEY; exec npx -y mcp-remote https://omni.leonardoacosta.dev/api/mcp/stream --header 'Authorization: Bearer ${OMNIROUTE_MCP_KEY}'"
+      ],
+      "timeout_secs": 120
+    },
+    "OnePassword": {
+      "command": "/usr/bin/1password-mcp",
+      "timeout_secs": 300
+    },
+    "Outlook": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://346-c9220xh7gg.tail296462.ts.net:8790/outlook/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Rea": {
+      "command": "/home/nyaptor/.local/bin/mcp-rea",
+      "args": [],
+      "timeout_secs": 120
+    },
+    "Resend": {
+      "command": "mcp-remote-homelab",
+      "args": [
+        "RESEND_API_KEY",
+        "Authorization",
+        "Bearer",
+        "https://mcp.resend.com/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Shadcn": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential') || exit; export CODEDVISUALS_TOKEN; exec npx -y shadcn@latest mcp"
+      ],
+      "timeout_secs": 120,
+      "shared": false
+    },
+    "Teams": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://346-c9220xh7gg.tail296462.ts.net:8790/teams/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "Vercel": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "VERCEL_TOKEN=$(op read 'op://JCode CLI/qyylq5mea6l5mo5b6b5wzfcaji/token') || exit; export VERCEL_TOKEN; exec npx -y mcp-remote https://mcp.vercel.com --header 'Authorization: Bearer ${VERCEL_TOKEN}'"
+      ],
+      "timeout_secs": 120
+    },
+    "Wisprflow": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://api.wisprflow.ai/connect/mcp"
+      ],
+      "timeout_secs": 120
+    },
+    "NotionNova": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "NOTION_TOKEN=$(op read 'op://JCode CLI/abntebwx4ndndtwwaotpyefxnq/password') || exit; export NOTION_TOKEN; exec npx -y @notionhq/notion-mcp-server"
+      ],
+      "timeout_secs": 120
+    },
+    "GrafanaPriceless": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "GRAFANA_WHOLESALE_SERVICE_ACCOUNT_TOKEN=$(op read 'op://JCode CLI/GRAFANA_WHOLESALE_SERVICE_ACCOUNT_TOKEN/token') || exit; export GRAFANA_WHOLESALE_SERVICE_ACCOUNT_TOKEN; exec npx -y mcp-remote https://346-c9220xh7gg.tail296462.ts.net:8446/mcp --header 'X-Grafana-Service-Account-Token: ${GRAFANA_WHOLESALE_SERVICE_ACCOUNT_TOKEN}'"
+      ],
+      "timeout_secs": 120
+    },
+    "cloudflare": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "CLOUDFLARE_MCP_API_TOKEN=$(op read 'op://JCode CLI/CLOUDFLARE_MCP_API_TOKEN/Token') || exit; export CLOUDFLARE_MCP_API_TOKEN; exec npx -y mcp-remote https://mcp.cloudflare.com/mcp --header 'Authorization: Bearer ${CLOUDFLARE_MCP_API_TOKEN}'"
+      ],
+      "timeout_secs": 120
+    },
+    "Tailscale": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "K=$(op read 'op://JCode CLI/TAILSCALE_API_KEY/Toekn' 2>/dev/null); case \"$K\" in tskey-*) export TAILSCALE_API_KEY=\"$K\" ;; esac; export TAILSCALE_MCP_ALLOW_WRITE=true; exec npx -y @tailscale-mcp/tailscale-mcp"
+      ],
+      "timeout_secs": 120
+    }
+  }
+}
